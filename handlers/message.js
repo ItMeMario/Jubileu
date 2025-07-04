@@ -3,8 +3,8 @@ const enviarMensagemMenu = require('./menuMessage');
 const delay = require('../utils/delay');
 const HORARIOS = require('../horarios'); // Importa o novo mapeamento
 
-// Defina o ID do seu grupo
-const GRUPO_UNICO = "5511999999999-9999999999@g.us";
+// Defina o link do seu grupo
+const LINK_DO_GRUPO = "https://chat.whatsapp.com/I6UNPCXkrkU3sr3n7ceOkG"; // Substitua pelo link real
 
 // Objeto para controlar o estado dos usuários
 const userStates = {};
@@ -53,39 +53,31 @@ module.exports = async function messageHandler(msg) {
                 selectedTimeObj: opcao // Guarda o objeto completo para referência
             };
             await chat.sendStateTyping();
-            await client.sendMessage(msg.from, `Você escolheu *${opcao.horario} - ${opcao.descricao}*.\nAgora, *digite seu nome completo* para confirmar:`);
+            await client.sendMessage(msg.from, `Você escolheu *${opcao.horario} - ${opcao.descricao}*.\nPor favor, digite seu nome completo para confirmar. 😊`);
         } else {
             // Mensagem de erro mais informativa
-            const exemplos = ["10h", "15:30", "tarde", "noite", "sete e meia", "1-6"];
             await client.sendMessage(msg.from, `🤔 Desculpe, não entendi. Qual horário você gostaria mesmo?`);
         }
     }
 
-    // Se o usuário está no estado "awaiting_name" (enviando nome) - MANTIDO IGUAL
+    // Se o usuário está no estado "awaiting_name" (enviando nome) - MODIFICADO PARA ENVIAR LINK
     else if (userStates[userNumber]?.step === 'awaiting_name') {
         const nomeCompleto = msg.body.trim();
         const horarioSelecionado = userStates[userNumber].selectedTime;
 
         try {
-            const group = await client.getChatById(GRUPO_UNICO);
-            await group.addParticipants([userNumber]);
-
-            // Mensagem no grupo
+            // Mensagem no privado com o link do grupo
             await client.sendMessage(
-                GRUPO_UNICO,
-                `✅ *${nomeCompleto}* entrou no evento!\n⏰ Horário: *${horarioSelecionado}*`
+                msg.from,
+                `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${LINK_DO_GRUPO}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`
             );
-
-            // Confirmação no privado
-            await msg.reply(`✅ Pronto! Você foi adicionado ao grupo. Seu horário: *${horarioSelecionado}*`);
             
             // Limpa o estado
             delete userStates[userNumber];
         } catch (error) {
-            console.error("Erro ao adicionar:", error);
-            await msg.reply('❌ Erro ao adicionar. Verifique:\n1. O Jubileu não é admin do grupo\n2. Seu número não está nos contatos do Jubileu');
+            console.error("Erro ao enviar mensagem:", error);
+            await msg.reply('❌ Ocorreu um erro ao enviar o link do grupo. Por favor, tente novamente mais tarde.');
             delete userStates[userNumber];
         }
     }
-
 };
