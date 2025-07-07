@@ -5,7 +5,7 @@ const HORARIOS = require('../horarios'); // Importa o novo mapeamento
 const faq = require('./faq')
 
 // Defina o link do seu grupo
-const LINK_DO_GRUPO = "https://chat.whatsapp.com/I6UNPCXkrkU3sr3n7ceOkG"; // Substitua pelo link real
+const LINK_DO_GRUPO = "https://chat.whatsapp.com/Lg2h2Yc5p1s38oefhLsWO8?mode=r_c"; // Substitua pelo link real
 
 // Objeto para controlar o estado dos usuários
 const userStates = {};
@@ -31,7 +31,7 @@ function encontrarHorario(inputUsuario) {
     }
     
     return HORARIOS[inputNormalizado] || null;
-}1
+}
 
 module.exports = async function messageHandler(msg) {
     const chat = await msg.getChat();
@@ -45,7 +45,23 @@ module.exports = async function messageHandler(msg) {
     }
 
     // Se for mensagem inicial (menu, oi, etc.)
-    if (msg.body.match(/(menu)/i) && msg.from.endsWith('@c.us')) {
+    const hasTriggerText = (text) => {
+        return (
+            text.match(/menu/i) || 
+            text.match(/Olá! Tenho interesse e queria mais informações, por favor/i) || 
+            text.match(/Link Olá! Tenho interesse e queria mais informações, por favor/i) || 
+            text.match(/Olá! Posso saber mais informações sobre isto?/i)
+        );
+    };
+
+    if (
+        (
+            (msg.body && hasTriggerText(msg.body)) || 
+            (msg.hasMedia && msg.caption && hasTriggerText(msg.caption)) ||
+            (msg.hasMedia && msg.body && hasTriggerText(msg.body)) 
+        ) && 
+        msg.from.endsWith('@c.us')
+    ) {
         await enviarMensagemMenu(client, msg, chat);
         userStates[userNumber] = { step: 'awaiting_time' }; // Define estado
         return;
