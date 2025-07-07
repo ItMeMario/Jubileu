@@ -1,6 +1,5 @@
 const client = require('../client');
 const enviarMensagemMenu = require('./menuMessage');
-const delay = require('../utils/delay');
 const HORARIOS = require('../horarios'); // Importa o novo mapeamento
 const faq = require('./faq')
 
