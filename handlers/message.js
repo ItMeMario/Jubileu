@@ -2,6 +2,7 @@ const client = require('../client');
 const enviarMensagemMenu = require('./menuMessage');
 const delay = require('../utils/delay');
 const HORARIOS = require('../horarios'); // Importa o novo mapeamento
+const faq = require('./faq')
 
 // Defina o link do seu grupo
 const LINK_DO_GRUPO = "https://chat.whatsapp.com/I6UNPCXkrkU3sr3n7ceOkG"; // Substitua pelo link real
@@ -30,20 +31,28 @@ function encontrarHorario(inputUsuario) {
     }
     
     return HORARIOS[inputNormalizado] || null;
-}
+}1
 
 module.exports = async function messageHandler(msg) {
     const chat = await msg.getChat();
     const userNumber = msg.from;
 
+    // Primeiro verifica se é o comando FAQ (7) - isso precisa vir antes dos outros checks
+    if (msg.body.trim() === '7') {
+        // Chama a função do FAQ
+        await faq.enviarFAQ(client, msg.from);
+        return; // Importante: sair da função após processar o FAQ
+    }
+
     // Se for mensagem inicial (menu, oi, etc.)
     if (msg.body.match(/(menu)/i) && msg.from.endsWith('@c.us')) {
         await enviarMensagemMenu(client, msg, chat);
         userStates[userNumber] = { step: 'awaiting_time' }; // Define estado
+        return;
     }
 
     // Se o usuário está no estado "awaiting_time" (escolhendo horário)
-    else if (userStates[userNumber]?.step === 'awaiting_time') {
+    if (userStates[userNumber]?.step === 'awaiting_time') {
         const opcao = encontrarHorario(msg.body.trim());
 
         if (opcao) {
@@ -55,13 +64,17 @@ module.exports = async function messageHandler(msg) {
             await chat.sendStateTyping();
             await client.sendMessage(msg.from, `Você escolheu *${opcao.horario} - ${opcao.descricao}*.\nPor favor, digite seu nome completo para confirmar. 😊`);
         } else {
-            // Mensagem de erro mais informativa
-            await client.sendMessage(msg.from, `🤔 Desculpe, não entendi. Qual horário você gostaria mesmo?`);
+            // Mensagem de erro com opção de FAQ
+            await client.sendMessage(msg.from, 
+                `🤔 Desculpe, não entendi. Qual horário você gostaria mesmo?\n\n` +
+                `Se precisar de ajuda, digite *7* para acessar as *Perguntas Frequentes (FAQ)*`
+            );
         }
+        return;
     }
 
-    // Se o usuário está no estado "awaiting_name" (enviando nome) - MODIFICADO PARA ENVIAR LINK
-    else if (userStates[userNumber]?.step === 'awaiting_name') {
+    // Se o usuário está no estado "awaiting_name" (enviando nome)
+    if (userStates[userNumber]?.step === 'awaiting_name') {
         const nomeCompleto = msg.body.trim();
         const horarioSelecionado = userStates[userNumber].selectedTime;
 
