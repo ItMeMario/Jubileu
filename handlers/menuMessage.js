@@ -2,8 +2,8 @@ const delay = require('../utils/delay');
 const randomDelay = require('../utils/randomDelay')
 
 async function enviarMensagemMenu(client, msg, chat) {
-  //  await delay(3000);
-    await randomDelay(60, 180)
+    await delay(3000); //delay de 3 segundos para testes
+    //await randomDelay(60, 180)
     await chat.sendStateTyping();
 
     const contact = await msg.getContact();
@@ -23,8 +23,8 @@ Estamos organizando um evento para escolher novos modelos, atores, atrizes e inf
 *Redes sociais:*
 Instagram: @Leorieper
 Tiktok: @Leonardorieper`);
-   //  await delay(3000);
-    await randomDelay(60, 180)
+     await delay(3000);  //delay de 3 segundos para testes
+    //await randomDelay(60, 180)
     await chat.sendStateTyping();
 
     let menu = `⚠ *IMPORTANTE:* Escolha seu horário:
