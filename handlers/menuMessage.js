@@ -1,15 +1,29 @@
 const delay = require('../utils/delay');
-const randomDelay = require('../utils/randomDelay')
+const randomDelay = require('../utils/randomDelay');
+const messageDB = require('../database/messageDB');
 
-async function enviarMensagemMenu(client, msg, chat) {
-    await delay(3000); //delay de 3 segundos para testes
-    //await randomDelay(60, 180)
+async function enviarMensagemMenu(client, msg, chat, customMessage = null) {
+    await delay(3000);
     await chat.sendStateTyping();
 
     const contact = await msg.getContact();
     const name = contact.pushname.split(" ")[0];
 
-    await client.sendMessage(msg.from, `Olá ${name}! Tudo bem? 
+    let messageContent;
+    
+    if (customMessage) {
+        // Usar mensagem personalizada fornecida
+        messageContent = customMessage;
+        // Salvar no banco de dados para uso futuro
+        await messageDB.saveMessage(customMessage);
+    } else {
+        // Tentar obter a última mensagem padrão
+        const defaultMessage = await messageDB.getDefaultMessage();
+        if (defaultMessage) {
+            messageContent = defaultMessage.content;
+        } else {
+            // Mensagem padrão caso não haja nenhuma configurada
+            messageContent = `Olá ${name}! Tudo bem? 
 Aqui é o Léo Rieper, da empresa *Dilson Stein!* 
 Estamos organizando um evento para escolher novos modelos, atores, atrizes e influencers em *VITÓRIA-ES.* E eu gostaria de convidar VOCÊ para participar!
  
@@ -22,9 +36,14 @@ Estamos organizando um evento para escolher novos modelos, atores, atrizes e inf
 -
 *Redes sociais:*
 Instagram: @Leorieper
-Tiktok: @Leonardorieper`);
-     await delay(3000);  //delay de 3 segundos para testes
-    //await randomDelay(60, 180)
+Tiktok: @Leonardorieper`;
+        }
+    }
+
+    // Envia a mensagem principal
+    await client.sendMessage(msg.from, messageContent.replace('{name}', name));
+    
+    await delay(3000);
     await chat.sendStateTyping();
 
     let menu = `⚠ *IMPORTANTE:* Escolha seu horário:
@@ -38,7 +57,6 @@ Tiktok: @Leonardorieper`);
     menu += `19:30h (Noite)\n\n`;
 
     await client.sendMessage(msg.from, menu);
-
 }
 
 module.exports = enviarMensagemMenu;
