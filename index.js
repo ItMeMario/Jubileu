@@ -66,13 +66,32 @@ async function handleConfigMenu(rl) {
 }
 
 async function handleAddMessage(rl) {
-    const message = await new Promise(resolve => {
-        rl.question('Digite a nova mensagem: ', resolve);
-    });
-    const newMessage = messageService.addMessage(message);
-    console.log('Mensagem adicionada com sucesso!');
+    console.log('\nDigite sua mensagem (digite "/end" em uma nova linha para finalizar):');
+    
+    let messageLines = [];
+    let collecting = true;
+    
+    while (collecting) {
+        const line = await new Promise(resolve => rl.question('> ', resolve));
+        if (line.trim() === '/end') {
+            collecting = false;
+        } else {
+            messageLines.push(line);
+        }
+    }
+    
+    const fullMessage = messageLines.join('\n');
+    
+    if (fullMessage.trim() === '') {
+        console.log('Mensagem vazia não foi salva.');
+        return;
+    }
+    
+    const newMessage = messageService.addMessage(fullMessage);
+    console.log('\nMensagem adicionada com sucesso!');
     console.log(`ID: ${newMessage.id}`);
-    console.log(`Conteúdo: ${newMessage.content}`);
+    console.log('\nConteúdo:');
+    console.log(newMessage.content);
 }
 
 async function handleListMessages() {
@@ -81,12 +100,29 @@ async function handleListMessages() {
         console.log('Nenhuma mensagem cadastrada.');
         return;
     }
+    
     console.log('\n=== Mensagens Cadastradas ===');
-    messages.forEach(msg => {
-        console.log(`\nID: ${msg.id}`);
-        console.log(`Conteúdo: ${msg.content}`);
+    messages.forEach((msg, index) => {
+        console.log(`\n[${index + 1}] ID: ${msg.id}`);
         console.log(`Data: ${msg.createdAt}`);
+        console.log('Conteúdo:');
+        console.log(msg.content);
+        console.log('─'.repeat(50)); // Linha separadora
     });
+}
+
+async function handleShowLastMessage() {
+    const lastMessage = messageService.getLastMessage();
+    if (!lastMessage) {
+        console.log('Nenhuma mensagem cadastrada.');
+        return;
+    }
+    
+    console.log('\n=== Última Mensagem Adicionada ===');
+    console.log(`ID: ${lastMessage.id}`);
+    console.log(`Data: ${lastMessage.createdAt}`);
+    console.log('Conteúdo:');
+    console.log(lastMessage.content);
 }
 
 async function handleDeleteMessage(rl) {
