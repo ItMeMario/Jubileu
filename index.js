@@ -35,9 +35,10 @@ async function handleConfigMenu(rl) {
         console.log('\n=== Menu de Configuração de Mensagens ===');
         console.log('1. Adicionar nova mensagem');
         console.log('2. Ver todas as mensagens');
-        console.log('3. Deletar uma mensagem');
-        console.log('4. Ver última mensagem adicionada');
-        console.log('5. Sair');
+        console.log('3. Editar uma mensagem');
+        console.log('4. Deletar uma mensagem');
+        console.log('5. Ver última mensagem adicionada');
+        console.log('6. Sair');
 
         const choice = await new Promise(resolve => {
             rl.question('Escolha uma opção: ', resolve);
@@ -51,12 +52,15 @@ async function handleConfigMenu(rl) {
                 await handleListMessages();
                 break;
             case '3':
-                await handleDeleteMessage(rl);
+                await handleEditMessage(rl);
                 break;
             case '4':
-                await handleShowLastMessage();
+                await handleDeleteMessage(rl);
                 break;
             case '5':
+                await handleShowLastMessage();
+                break;
+            case '6':
                 console.log('Saindo do menu de configuração...');
                 return;
             default:
@@ -100,14 +104,17 @@ async function handleListMessages() {
         console.log('Nenhuma mensagem cadastrada.');
         return;
     }
-    
+
     console.log('\n=== Mensagens Cadastradas ===');
-    messages.forEach((msg, index) => {
-        console.log(`\n[${index + 1}] ID: ${msg.id}`);
-        console.log(`Data: ${msg.createdAt}`);
+    messages.forEach(msg => {
+        console.log(`\nID: ${msg.id}`);
+        console.log(`Criada em: ${msg.createdAt}`);
+        if (msg.updatedAt) {
+            console.log(`Atualizada em: ${msg.updatedAt}`);
+        }
         console.log('Conteúdo:');
         console.log(msg.content);
-        console.log('─'.repeat(50)); // Linha separadora
+        console.log('─'.repeat(50));
     });
 }
 
@@ -160,6 +167,59 @@ async function handleShowLastMessage() {
     console.log(`ID: ${lastMessage.id}`);
     console.log(`Conteúdo: ${lastMessage.content}`);
     console.log(`Data: ${lastMessage.createdAt}`);
+}
+
+async function handleEditMessage(rl) {
+    const messages = messageService.getMessages();
+    if (messages.length === 0) {
+        console.log('Nenhuma mensagem para editar.');
+        return;
+    }
+
+    console.log('\n=== Mensagens Disponíveis para Edição ===');
+    messages.forEach(msg => {
+        console.log(`\nID: ${msg.id}`);
+        console.log('Conteúdo:');
+        console.log(msg.content);
+        console.log('─'.repeat(50));
+    });
+
+    const idToEdit = await new Promise(resolve => {
+        rl.question('\nDigite o ID da mensagem que deseja editar: ', resolve);
+    });
+
+    const messageToEdit = messageService.getMessageById(idToEdit);
+    if (!messageToEdit) {
+        console.log('Mensagem não encontrada.');
+        return;
+    }
+
+    console.log('\nEditando mensagem:');
+    console.log(messageToEdit.content);
+    console.log('\nDigite a nova versão da mensagem (digite "/end" em uma nova linha para finalizar):');
+
+    let messageLines = [];
+    let collecting = true;
+    
+    while (collecting) {
+        const line = await new Promise(resolve => rl.question('> ', resolve));
+        if (line.trim() === '/end') {
+            collecting = false;
+        } else {
+            messageLines.push(line);
+        }
+    }
+
+    const newContent = messageLines.join('\n');
+    const success = messageService.updateMessage(idToEdit, newContent);
+
+    if (success) {
+        console.log('\nMensagem atualizada com sucesso!');
+        console.log('Novo conteúdo:');
+        console.log(newContent);
+    } else {
+        console.log('Falha ao atualizar a mensagem.');
+    }
 }
 
 // Inicializa a aplicação

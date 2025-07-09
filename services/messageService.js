@@ -25,6 +25,11 @@ function initializeStorage() {
     }
 }
 
+// Função para salvar todas as mensagens no arquivo
+function saveMessages(messages) {
+    fs.writeFileSync(storagePath, JSON.stringify(messages, null, 2));
+}
+
 // Lê todas as mensagens
 function getMessages() {
     return initializeStorage();
@@ -36,10 +41,11 @@ function addMessage(message) {
     const newMessage = {
         id: Date.now().toString(),
         content: message,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: null
     };
     messages.push(newMessage);
-    fs.writeFileSync(storagePath, JSON.stringify(messages, null, 2));
+    saveMessages(messages);
     return newMessage;
 }
 
@@ -50,7 +56,7 @@ function deleteMessage(id) {
     const filteredMessages = messages.filter(msg => msg.id !== id);
     
     if (filteredMessages.length !== initialLength) {
-        fs.writeFileSync(storagePath, JSON.stringify(filteredMessages, null, 2));
+        saveMessages(filteredMessages);
         return true;
     }
     return false;
@@ -62,9 +68,45 @@ function getLastMessage() {
     return messages.length > 0 ? messages[messages.length - 1] : null;
 }
 
+// Obtém uma mensagem específica por ID
+function getMessageById(id) {
+    const messages = getMessages();
+    return messages.find(msg => msg.id === id);
+}
+
+// Atualiza uma mensagem existente
+function updateMessage(id, newContent) {
+    const messages = getMessages();
+    const messageIndex = messages.findIndex(msg => msg.id === id);
+    
+    if (messageIndex === -1) {
+        return { success: false, message: 'Mensagem não encontrada' };
+    }
+    
+    messages[messageIndex] = {
+        ...messages[messageIndex],
+        content: newContent,
+        updatedAt: new Date().toISOString()
+    };
+    
+    saveMessages(messages);
+    return { success: true, updatedMessage: messages[messageIndex] };
+}
+
+// Função para buscar mensagens que contenham determinado texto
+function searchMessages(searchTerm) {
+    const messages = getMessages();
+    return messages.filter(msg => 
+        msg.content.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+}
+
 module.exports = {
     getMessages,
     addMessage,
     deleteMessage,
-    getLastMessage
+    getLastMessage,
+    getMessageById,
+    updateMessage,
+    searchMessages
 };
