@@ -1,8 +1,10 @@
-function getMultiLineInput(initialContent = '') {
-    console.log('\nEnter your message (Ctrl+D to finish on Linux/Mac, Ctrl+Z on Windows):');
-    
+function getMultiLine(prompt = '', initialContent = '') {
+    if (prompt) console.log('\n' + prompt);
+
+    console.log('(Finalize com Ctrl+D no Linux/Mac ou Ctrl+Z no Windows)\n');
+
     if (initialContent) {
-        console.log(`\nCurrent content:\n${initialContent}\n`);
+        console.log(`\nConteúdo atual:\n${initialContent}\n`);
     }
 
     process.stdin.resume();
@@ -24,10 +26,10 @@ function getMultiLineInput(initialContent = '') {
 function askQuestion(question) {
     return new Promise((resolve) => {
         process.stdout.write(question);
-        
+
         process.stdin.resume();
         process.stdin.setEncoding('utf8');
-        
+
         process.stdin.once('data', (data) => {
             process.stdin.pause();
             resolve(data.toString().trim());
@@ -36,6 +38,6 @@ function askQuestion(question) {
 }
 
 module.exports = {
-    getMultiLineInput,
-    askQuestion
+    askQuestion,
+    getMultiLine
 };

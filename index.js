@@ -1,7 +1,7 @@
 const client = require('./client');
 const qrcode = require('qrcode-terminal');
 const messageHandler = require('./handlers/message');
-const setupMessage = require('./handlers/setupMessage');
+const setupMessage = require('./controllers/messageEditor');
 const readline = require('readline');
 
 async function initializeApp() {
