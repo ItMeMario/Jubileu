@@ -1,6 +1,6 @@
 const delay = require('../utils/delay');
 const randomDelay = require('../utils/randomDelay');
-const messageDB = require('../database/messageDB');
+const messageDB = require('../services/messageService');
 
 async function enviarMensagemMenu(client, msg, chat, customMessage = null) {
     await delay(3000);

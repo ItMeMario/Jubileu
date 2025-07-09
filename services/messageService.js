@@ -1,45 +1,70 @@
-const messageDB = require('../database/messageDB');
-const clipboardy = require('clipboardy');
+const fs = require('fs');
+const path = require('path');
 
-async function getLastMessages(limit) {
-    return await messageDB.getLastMessages(limit);
+const storagePath = path.join(__dirname, 'messagesStorage.json');
+
+// Inicializa o arquivo de armazenamento se não existir ou estiver vazio/corrompido
+function initializeStorage() {
+    try {
+        if (!fs.existsSync(storagePath)) {
+            fs.writeFileSync(storagePath, JSON.stringify([], null, 2));
+            return [];
+        }
+        
+        const fileContent = fs.readFileSync(storagePath, 'utf-8');
+        if (!fileContent.trim()) {
+            fs.writeFileSync(storagePath, JSON.stringify([], null, 2));
+            return [];
+        }
+        
+        return JSON.parse(fileContent);
+    } catch (error) {
+        console.error('Erro ao ler o arquivo de armazenamento, recriando...', error);
+        fs.writeFileSync(storagePath, JSON.stringify([], null, 2));
+        return [];
+    }
 }
 
-async function saveMessage(content) {
-    return await messageDB.saveMessage(content);
+// Lê todas as mensagens
+function getMessages() {
+    return initializeStorage();
 }
 
-async function setDefaultMessage(id) {
-    return await messageDB.setDefaultMessage(id);
+// Adiciona uma nova mensagem
+function addMessage(message) {
+    const messages = getMessages();
+    const newMessage = {
+        id: Date.now().toString(),
+        content: message,
+        createdAt: new Date().toISOString()
+    };
+    messages.push(newMessage);
+    fs.writeFileSync(storagePath, JSON.stringify(messages, null, 2));
+    return newMessage;
 }
 
-async function getMessageById(id) {
-    return await messageDB.getMessageById(id);
+// Remove uma mensagem pelo ID
+function deleteMessage(id) {
+    const messages = getMessages();
+    const initialLength = messages.length;
+    const filteredMessages = messages.filter(msg => msg.id !== id);
+    
+    if (filteredMessages.length !== initialLength) {
+        fs.writeFileSync(storagePath, JSON.stringify(filteredMessages, null, 2));
+        return true;
+    }
+    return false;
 }
 
-async function updateMessage(id, content) {
-    return await messageDB.updateMessage(id, content);
-}
-
-async function getAllMessages() {
-    return await messageDB.getAllMessages();
-}
-
-async function getLastMessage() {
-    return await messageDB.getLastMessage();
-}
-
-async function readFromClipboard() {
-    return clipboardy.readSync();
+// Obtém a última mensagem adicionada
+function getLastMessage() {
+    const messages = getMessages();
+    return messages.length > 0 ? messages[messages.length - 1] : null;
 }
 
 module.exports = {
-    getLastMessages,
-    saveMessage,
-    setDefaultMessage,
-    getMessageById,
-    updateMessage,
-    getAllMessages,
-    getLastMessage,
-    readFromClipboard
+    getMessages,
+    addMessage,
+    deleteMessage,
+    getLastMessage
 };
