@@ -1,11 +1,9 @@
 const client = require("../client");
 const enviarMensagemMenu = require("./menuMessage");
 const HORARIOS = require("../horarios");
-const { enviarFAQ } = require("../handlers/faq"); // Importação corrigida
+const { enviarFAQ } = require("../handlers/faq");
 const { normalizarTexto, hasTriggerText } = require("../utils/triggers");
-
-// Link do grupo (ajuste conforme necessário)
-const LINK_DO_GRUPO = "https://chat.whatsapp.com/Lg2h2Yc5p1s38oefhLsWO8?mode=r_c";
+const configService = require("../services/configServices"); // Importação adicionada
 
 // Estado dos usuários
 const userStates = {};
@@ -45,7 +43,7 @@ module.exports = async function messageHandler(msg) {
     
     // Verifica se o usuário digitou "7" para acessar o FAQ
     if (inputUsuario === "7") {
-      await enviarFAQ(client, msg); // Chamada corrigida
+      await enviarFAQ(client, msg);
       return;
     }
 
@@ -76,11 +74,12 @@ module.exports = async function messageHandler(msg) {
   if (userStates[userNumber]?.step === "awaiting_name") {
     const nomeCompleto = msg.body?.trim();
     const horarioSelecionado = userStates[userNumber].selectedTime;
+    const groupLink = configService.getGroupLink(); // Obtém o link dinamicamente
 
     try {
       await client.sendMessage(
         msg.from,
-        `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${LINK_DO_GRUPO}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`
+        `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${groupLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`
       );
       delete userStates[userNumber];
     } catch (error) {

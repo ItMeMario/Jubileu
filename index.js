@@ -3,6 +3,7 @@ const qrcode = require('qrcode-terminal');
 const messageHandler = require('./handlers/message');
 const readline = require('readline');
 const messageService = require('./services/messageService');
+const configService = require('./services/configServices')
 
 async function initializeApp() {
     const rl = readline.createInterface({
@@ -11,7 +12,7 @@ async function initializeApp() {
     });
 
     const answer = await new Promise(resolve => {
-        rl.question('Pressione Enter para continuar ou digite "config" para configurar a mensagem: ', resolve);
+        rl.question('Pressione Enter para continuar ou digite "config" para configurar: ', resolve);
     });
 
     if (answer.toLowerCase() === 'config') {
@@ -20,7 +21,6 @@ async function initializeApp() {
         return;
     }
 
-    // Configuração normal do cliente WhatsApp
     client.on('qr', qr => qrcode.generate(qr, { small: true }));
     client.on('ready', () => {
         console.log('Tudo certo! WhatsApp conectado.');
@@ -32,12 +32,13 @@ async function initializeApp() {
 
 async function handleConfigMenu(rl) {
     while (true) {
-        console.log('\n=== Menu de Configuração de Mensagens ===');
+        console.log('\n=== Menu de Configuração ===');
         console.log('1. Adicionar nova mensagem');
         console.log('2. Ver todas as mensagens');
         console.log('3. Editar uma mensagem');
         console.log('4. Deletar uma mensagem');
         console.log('5. Ver última mensagem adicionada');
+        console.log('6. Gerenciar link do grupo'); // Nova opção
         console.log('0. Sair');
 
         const choice = await new Promise(resolve => {
@@ -60,11 +61,45 @@ async function handleConfigMenu(rl) {
             case '5':
                 await handleShowLastMessage();
                 break;
+            case '6':
+                await handleGroupLink(rl); // Nova função
+                break;
             case '0':
                 console.log('Saindo do menu de configuração...');
                 return;
             default:
                 console.log('Opção inválida. Tente novamente.');
+        }
+    }
+}
+
+// Nova função para gerenciar o link do grupo
+async function handleGroupLink(rl) {
+    while (true) {
+        const currentLink = configService.getGroupLink();
+        console.log('\n=== Gerenciar Link do Grupo ===');
+        console.log(`Link atual: ${currentLink || 'Nenhum link configurado'}`);
+        console.log('1. Alterar link do grupo');
+        console.log('2. Voltar');
+
+        const option = await new Promise(resolve => {
+            rl.question('Escolha uma opção: ', resolve);
+        });
+
+        if (option === '1') {
+            const newLink = await new Promise(resolve => {
+                rl.question('Digite o novo link do grupo: ', resolve);
+            });
+            
+            if (configService.setGroupLink(newLink)) {
+                console.log('Link atualizado com sucesso!');
+            } else {
+                console.log('Erro ao atualizar o link.');
+            }
+        } else if (option === '2') {
+            break;
+        } else {
+            console.log('Opção inválida.');
         }
     }
 }
@@ -222,7 +257,6 @@ async function handleEditMessage(rl) {
     }
 }
 
-// Inicializa a aplicação
 initializeApp().catch(err => {
     console.error('Erro durante a inicialização:', err);
     process.exit(1);
