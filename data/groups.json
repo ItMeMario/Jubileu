@@ -2,7 +2,7 @@
   {
     "id": "1752166759333",
     "link": "https://br.pinterest.com/",
-    "isPrimary": true,
+    "isPrimary": false,
     "createdAt": "2025-07-10T16:59:19.333Z",
     "updatedAt": "2025-07-10T16:59:19.334Z"
   },
@@ -19,5 +19,12 @@
     "isPrimary": false,
     "createdAt": "2025-07-10T18:08:53.100Z",
     "updatedAt": "2025-07-10T18:08:53.101Z"
+  },
+  {
+    "id": "1752177520718",
+    "link": "https://chat.whatsapp.com/Lg2h2Yc5p1s38oefhLsWO8?mode=r_c",
+    "isPrimary": true,
+    "createdAt": "2025-07-10T19:58:40.718Z",
+    "updatedAt": "2025-07-10T20:10:44.974Z"
   }
 ]

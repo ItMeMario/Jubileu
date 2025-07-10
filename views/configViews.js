@@ -1,5 +1,6 @@
 const messageController = require('../controllers/messageController');
 const groupController = require('../controllers/groupController');
+const cityController = require('../controllers/cityController');
 
 async function handleConfigMenu(rl) {
     while (true) {
@@ -10,6 +11,7 @@ async function handleConfigMenu(rl) {
         console.log('4. Deletar uma mensagem');
         console.log('5. Ver última mensagem adicionada');
         console.log('6. Gerenciar grupos');
+        console.log('7. Gerenciar cidades');
         console.log('0. Sair');
 
         const choice = await new Promise(resolve => {
@@ -34,6 +36,9 @@ async function handleConfigMenu(rl) {
                 break;
             case '6':
                 await groupController.handleGroupManagement(rl);
+                break;
+            case '7':
+                await groupController.handleCities(rl);
                 break;
             case '0':
                 console.log('Saindo do menu de configuração...');

@@ -2,27 +2,36 @@ const delay = require('../utils/delay');
 const randomDelay = require('../utils/randomDelay');
 const fs = require('fs');
 const path = require('path');
+const messagesDir = path.join(__dirname, '../data/messages');
 
 // Carrega as mensagens do arquivo JSON
-const messageStoragePath = path.join(__dirname, '../data/messagesStorage.json');
+const messageStoragePath = path.join(__dirname, '../data/messages.json');
 const messages = JSON.parse(fs.readFileSync(messageStoragePath, 'utf-8'));
 
 // Pega a última mensagem válida (ignorando mensagens muito curtas ou de teste)
 const getLatestValidMessage = () => {
   if (!messages || messages.length === 0) return null;
-  
-  // Ordena por data (da mais recente para a mais antiga)
-  const sortedMessages = [...messages].sort((a, b) => 
+
+  const sortedMessages = [...messages].sort((a, b) =>
     new Date(b.createdAt) - new Date(a.createdAt)
   );
 
-  // Filtra mensagens que parecem ser oficiais (com mais de 100 caracteres)
-  const validMessages = sortedMessages.filter(msg => 
-    msg.content && msg.content.length > 100
-  );
+  for (const msg of sortedMessages) {
+    const filePath = path.join(messagesDir, msg.filename);
 
-  return validMessages.length > 0 ? validMessages[0].content : null;
+    if (!fs.existsSync(filePath)) continue;
+
+    const content = fs.readFileSync(filePath, 'utf8');
+
+    if (content && content.length > 100) {
+      return content;
+    }
+  }
+
+  return null; // fallback padrão
 };
+
+
 
 async function enviarMensagemMenu(client, msg, chat) {
   await delay(3000);
