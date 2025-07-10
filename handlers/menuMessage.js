@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Carrega as mensagens do arquivo JSON
-const messageStoragePath = path.join(__dirname, '../services/messagesStorage.json');
+const messageStoragePath = path.join(__dirname, '../data/messagesStorage.json');
 const messages = JSON.parse(fs.readFileSync(messageStoragePath, 'utf-8'));
 
 // Pega a última mensagem válida (ignorando mensagens muito curtas ou de teste)
