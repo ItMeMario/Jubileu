@@ -38,7 +38,7 @@ async function handleConfigMenu(rl) {
         console.log('3. Editar uma mensagem');
         console.log('4. Deletar uma mensagem');
         console.log('5. Ver última mensagem adicionada');
-        console.log('6. Sair');
+        console.log('0. Sair');
 
         const choice = await new Promise(resolve => {
             rl.question('Escolha uma opção: ', resolve);
@@ -60,7 +60,7 @@ async function handleConfigMenu(rl) {
             case '5':
                 await handleShowLastMessage();
                 break;
-            case '6':
+            case '0':
                 console.log('Saindo do menu de configuração...');
                 return;
             default:
