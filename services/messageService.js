@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const storagePath = path.join(__dirname, 'messagesStorage.json');
+const storagePath = path.join(__dirname, '../data/messagesStorage.json');
 
 // Inicializa o arquivo de armazenamento se não existir ou estiver vazio/corrompido
 function initializeStorage() {
