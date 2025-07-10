@@ -55,6 +55,7 @@ class GroupService {
         }
     }
 
+
     addGroup(link) {
         const existing = this.groups.find(g => g.link === link);
         if (existing) return existing;
@@ -79,6 +80,11 @@ class GroupService {
         group.updatedAt = new Date().toISOString();
         this._saveGroups();
         return true;
+    }
+
+    updateGroupsOrder(newOrder) {
+        this.groups = newOrder;
+        this._saveGroups();
     }
 
     deleteGroup(id) {
@@ -117,6 +123,17 @@ class GroupService {
     getCurrentMode() {
         return this.mode;
     }
+    
+    moveToFirstPosition(groupId) {
+    const index = this.groups.findIndex(g => g.id === groupId);
+    if (index > 0) {  // Se não for já o primeiro
+        const [grupo] = this.groups.splice(index, 1);
+        this.groups.unshift(grupo);  // Adiciona no início
+        this._saveGroups();
+        return true;
+    }
+    return false;
+}
 }
 
 module.exports = new GroupService();

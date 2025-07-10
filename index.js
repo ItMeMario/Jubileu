@@ -4,7 +4,7 @@ const messageHandler = require('./handlers/message');
 const readline = require('readline');
 const messageService = require('./services/messageService');
 const configService = require('./services/configServices');
-const groupService = require('./services/groupService')
+const groupService = require('./services/groupService');
 
 async function initializeApp() {
     const rl = readline.createInterface({
@@ -39,7 +39,7 @@ async function handleConfigMenu(rl) {
         console.log('3. Editar uma mensagem');
         console.log('4. Deletar uma mensagem');
         console.log('5. Ver última mensagem adicionada');
-        console.log('6. Gerenciar link do grupo'); // Nova opção
+        console.log('6. Gerenciar grupos');
         console.log('0. Sair');
 
         const choice = await new Promise(resolve => {
@@ -63,7 +63,7 @@ async function handleConfigMenu(rl) {
                 await handleShowLastMessage();
                 break;
             case '6':
-                await handleGroupLink(rl); // Nova função
+                await handleGroupManagement(rl);
                 break;
             case '0':
                 console.log('Saindo do menu de configuração...');
@@ -74,22 +74,23 @@ async function handleConfigMenu(rl) {
     }
 }
 
-// Nova função para gerenciar o link do grupo
-async function handleGroupLink(rl) {
+async function handleGroupManagement(rl) {
     while (true) {
         const currentGroups = groupService.getAllGroups();
         const currentMode = groupService.getCurrentMode();
 
-        console.log('\n=== Gerenciar Links de Grupo ===');
+        console.log('\n=== Gerenciamento de Grupos ===');
         console.log(`Modo atual: ${currentMode}`);
         
         if (currentGroups.length > 0) {
             console.log('\nGrupos cadastrados:');
             currentGroups.forEach((group, index) => {
-                console.log(`\nID: ${group.id}`);
-                console.log(`Link: ${group.link}`);
-                console.log(`Criado em: ${group.createdAt}`);
-                console.log(`Atualizado em: ${group.updatedAt}`);
+                console.log(`\n${index + 1}. ID: ${group.id}`);
+                console.log(`   Link: ${group.link}`);
+                console.log(`   Criado em: ${group.createdAt}`);
+                if (index === 0 && currentMode === 'SINGLE') {
+                    console.log('   (PRIMEIRO - será usado no modo SINGLE)');
+                }
                 console.log('─'.repeat(50));
             });
         } else {
@@ -97,9 +98,10 @@ async function handleGroupLink(rl) {
         }
 
         console.log('\n1. Adicionar novo grupo');
-        console.log('2. Editar link de um grupo');
-        console.log('3. Alternar modo (SINGLE/MULTI)');
-        console.log('4. Remover grupo');
+        console.log('2. Editar grupo');
+        console.log('3. Remover grupo');
+        console.log('4. Definir como primeiro grupo (modo SINGLE)');
+        console.log('5. Alternar modo (SINGLE/MULTI)');
         console.log('0. Voltar');
 
         const option = await new Promise(resolve => {
@@ -114,16 +116,55 @@ async function handleGroupLink(rl) {
                 await handleEditGroup(rl);
                 break;
             case '3':
-                await handleToggleMode(rl);
+                await handleDeleteGroup(rl);
                 break;
             case '4':
-                await handleDeleteGroup(rl);
+                await handleSetFirstGroup(rl);
+                break;
+            case '5':
+                await handleToggleMode(rl);
                 break;
             case '0':
                 return;
             default:
                 console.log('Opção inválida.');
         }
+    }
+}
+
+async function handleSetFirstGroup(rl) {
+    const groups = groupService.getAllGroups();
+    if (groups.length < 2) {
+        console.log('\nÉ necessário ter pelo menos 2 grupos para reordenar.');
+        return;
+    }
+
+    console.log('\nSelecione o grupo que será o primeiro:');
+    groups.forEach((group, index) => {
+        console.log(`${index + 1}. ID: ${group.id} | Link: ${group.link}`);
+    });
+
+    const selectedId = await new Promise(resolve => {
+        rl.question('\nDigite o ID do grupo que deve ser o primeiro: ', resolve);
+    });
+
+    const selectedGroup = groupService.getGroupById(selectedId);
+    if (!selectedGroup) {
+        console.log('ID inválido ou grupo não encontrado.');
+        return;
+    }
+
+    // Move o grupo selecionado para a primeira posição
+    const updatedGroups = groupService.getAllGroups();
+    const groupIndex = updatedGroups.findIndex(g => g.id === selectedId);
+    
+    if (groupIndex > 0) {
+        const [movedGroup] = updatedGroups.splice(groupIndex, 1);
+        updatedGroups.unshift(movedGroup);
+        groupService.updateGroupsOrder(updatedGroups);
+        console.log(`\nGrupo ${selectedId} definido como primeiro com sucesso!`);
+    } else {
+        console.log('\nEste grupo já é o primeiro.');
     }
 }
 
@@ -230,7 +271,7 @@ async function handleDeleteGroup(rl) {
     }
 
     const confirm = await new Promise(resolve => {
-        rl.question(`\nTem certeza que deseja remover o grupo ${group.id}? (s/n): `, resolve);
+        rl.question(`\nTem certeza que deseja remover o grupo ${id}? (s/n): `, resolve);
     });
 
     if (confirm.toLowerCase() === 's') {
@@ -244,6 +285,7 @@ async function handleDeleteGroup(rl) {
         console.log('Operação cancelada.');
     }
 }
+
 
 async function handleAddMessage(rl) {
     console.log('\nDigite sua mensagem (digite "/end" em uma nova linha para finalizar):');
