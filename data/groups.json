@@ -1,17 +1,16 @@
-{
-  "groups": [
-    {
-      "id": "1752158404866",
-      "link": "https://br.pinterest.com/",
-      "createdAt": "2025-07-10T14:40:04.866Z",
-      "updatedAt": "2025-07-10T14:40:04.866Z"
-    },
-    {
-      "id": "1752158386080",
-      "link": "https://www.youtube.com/",
-      "createdAt": "2025-07-10T14:39:46.080Z",
-      "updatedAt": "2025-07-10T14:39:46.080Z"
-    }
-  ],
-  "mode": "SINGLE"
-}
+[
+  {
+    "id": "1752166759333",
+    "link": "https://br.pinterest.com/",
+    "isPrimary": true,
+    "createdAt": "2025-07-10T16:59:19.333Z",
+    "updatedAt": "2025-07-10T16:59:19.334Z"
+  },
+  {
+    "id": "1752166770890",
+    "link": "https://www.youtube.com/",
+    "isPrimary": false,
+    "createdAt": "2025-07-10T16:59:30.890Z",
+    "updatedAt": "2025-07-10T16:59:30.890Z"
+  }
+]

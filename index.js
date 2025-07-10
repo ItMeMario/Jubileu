@@ -80,12 +80,13 @@ async function handleGroupManagement(rl) {
         const currentMode = groupService.getCurrentMode();
 
         console.log('\n=== Gerenciamento de Grupos ===');
-        console.log(`Modo atual: ${currentMode}`);
+        console.log(`Modo atual: ${currentMode} (${currentMode === 'SINGLE' ? 'Usa apenas o grupo primário' : 'Usa todos os grupos'})`);
         
         if (currentGroups.length > 0) {
-            console.log('\nResumo dos grupos cadastrados:');
+            console.log('\nGrupos cadastrados:');
             currentGroups.forEach((group, index) => {
-                console.log(`${index + 1}. ID: ${group.id} | Link: ${group.link} ${index === 0 && currentMode === 'SINGLE' ? '(PRINCIPAL)' : ''}`);
+                const primaryStatus = group.isPrimary ? ' [PRIMÁRIO]' : '';
+                console.log(`${index + 1}. ${group.id} | ${group.link}${primaryStatus}`);
             });
         } else {
             console.log('\nNenhum grupo cadastrado.');
@@ -95,7 +96,7 @@ async function handleGroupManagement(rl) {
         console.log('2. Adicionar novo grupo');
         console.log('3. Editar grupo');
         console.log('4. Remover grupo');
-        console.log('5. Definir como primeiro grupo (modo SINGLE)');
+        console.log('5. Definir grupo primário');
         console.log('6. Alternar modo (SINGLE/MULTI)');
         console.log('0. Voltar');
 
@@ -117,7 +118,7 @@ async function handleGroupManagement(rl) {
                 await handleDeleteGroup(rl);
                 break;
             case '5':
-                await handleSetFirstGroup(rl);
+                await handleSetPrimaryGroup(rl);
                 break;
             case '6':
                 await handleToggleMode(rl);
@@ -161,77 +162,35 @@ async function handleViewGroups(rl) {
     await new Promise(resolve => rl.question('', resolve));
 }
 
-async function handleSetFirstGroup(rl) {
+
+
+async function handleSetPrimaryGroup(rl) {
     const groups = groupService.getAllGroups();
-    if (groups.length < 2) {
-        console.log('\nÉ necessário ter pelo menos 2 grupos para reordenar.');
+    if (groups.length === 0) {
+        console.log('\n❌ Nenhum grupo cadastrado.');
         return;
     }
 
-    console.log('\nSelecione o grupo que será o primeiro:');
+    console.log('\nSelecione o grupo primário:');
     groups.forEach((group, index) => {
-        console.log(`${index + 1}. ID: ${group.id} | Link: ${group.link}`);
+        console.log(`${index + 1}. ${group.id} | ${group.link} ${group.isPrimary ? '(ATUAL)' : ''}`);
     });
 
-    const selectedId = await new Promise(resolve => {
-        rl.question('\nDigite o ID do grupo que deve ser o primeiro: ', resolve);
+    const choice = await new Promise(resolve => {
+        rl.question('\nDigite o número do grupo: ', resolve);
     });
 
-    const selectedGroup = groupService.getGroupById(selectedId);
-    if (!selectedGroup) {
-        console.log('ID inválido ou grupo não encontrado.');
+    const index = parseInt(choice) - 1;
+    if (isNaN(index) || index < 0 || index >= groups.length) {
+        console.log('\n❌ Opção inválida.');
         return;
     }
 
-    // Move o grupo selecionado para a primeira posição
-    const updatedGroups = groupService.getAllGroups();
-    const groupIndex = updatedGroups.findIndex(g => g.id === selectedId);
+    const selectedGroup = groups[index];
+    groupService.setPrimaryGroup(selectedGroup.id);
     
-    if (groupIndex > 0) {
-        const [movedGroup] = updatedGroups.splice(groupIndex, 1);
-        updatedGroups.unshift(movedGroup);
-        groupService.updateGroupsOrder(updatedGroups);
-        console.log(`\nGrupo ${selectedId} definido como primeiro com sucesso!`);
-    } else {
-        console.log('\nEste grupo já é o primeiro.');
-    }
-}
-
-
-async function handleSetFirstGroup(rl) {
-    const groups = groupService.getAllGroups();
-    if (groups.length < 2) {
-        console.log('\nÉ necessário ter pelo menos 2 grupos para reordenar.');
-        return;
-    }
-
-    console.log('\nSelecione o grupo que será o primeiro:');
-    groups.forEach((group, index) => {
-        console.log(`${index + 1}. ID: ${group.id} | Link: ${group.link}`);
-    });
-
-    const selectedId = await new Promise(resolve => {
-        rl.question('\nDigite o ID do grupo que deve ser o primeiro: ', resolve);
-    });
-
-    const selectedGroup = groupService.getGroupById(selectedId);
-    if (!selectedGroup) {
-        console.log('ID inválido ou grupo não encontrado.');
-        return;
-    }
-
-    // Move o grupo selecionado para a primeira posição
-    const updatedGroups = groupService.getAllGroups();
-    const groupIndex = updatedGroups.findIndex(g => g.id === selectedId);
-    
-    if (groupIndex > 0) {
-        const [movedGroup] = updatedGroups.splice(groupIndex, 1);
-        updatedGroups.unshift(movedGroup);
-        groupService.updateGroupsOrder(updatedGroups);
-        console.log(`\nGrupo ${selectedId} definido como primeiro com sucesso!`);
-    } else {
-        console.log('\nEste grupo já é o primeiro.');
-    }
+    console.log(`\n✅ Grupo ${selectedGroup.id} definido como primário!`);
+    console.log(`🔗 Link: ${selectedGroup.link}`);
 }
 
 async function handleAddGroup(rl) {
@@ -240,14 +199,21 @@ async function handleAddGroup(rl) {
     });
 
     if (!link) {
-        console.log('Link não pode ser vazio.');
+        console.log('❌ Link não pode ser vazio.');
         return;
     }
 
-    const newGroup = groupService.addGroup(link);
-    console.log('\nGrupo adicionado com sucesso!');
-    console.log(`ID: ${newGroup.id}`);
-    console.log(`Link: ${newGroup.link}`);
+    const groups = groupService.getAllGroups();
+    const isFirstGroup = groups.length === 0;
+    
+    const newGroup = groupService.addGroup(link, isFirstGroup);
+    
+    console.log('\n✅ Grupo adicionado com sucesso!');
+    console.log(`🆔 ID: ${newGroup.id}`);
+    console.log(`🔗 Link: ${newGroup.link}`);
+    if (newGroup.isPrimary) {
+        console.log('⭐ Este é o grupo primário (modo SINGLE)');
+    }
 }
 
 async function handleEditGroup(rl) {
@@ -297,18 +263,28 @@ async function handleToggleMode(rl) {
 
     console.log(`\nModo atual: ${currentMode}`);
     console.log(`Novo modo: ${newMode}`);
-    console.log('\nNo modo SINGLE, apenas o primeiro grupo cadastrado será utilizado.');
-    console.log('No modo MULTI, todos os grupos cadastrados serão utilizados.');
+    console.log('\nIMPORTANTE:');
+    console.log('- SINGLE: Usará apenas o grupo marcado como "primário"');
+    console.log('- MULTI: Usará todos os grupos cadastrados');
 
     const confirm = await new Promise(resolve => {
-        rl.question(`\nDeseja alterar para modo ${newMode}? (s/n): `, resolve);
+        rl.question(`\nConfirmar mudança para modo ${newMode}? (s/n): `, resolve);
     });
 
     if (confirm.toLowerCase() === 's') {
         groupService.setMode(newMode);
-        console.log(`Modo alterado para ${newMode} com sucesso!`);
+        console.log(`\n✅ Modo alterado para ${newMode}!`);
+        
+        // Se mudou para SINGLE e não há grupo primário, define o primeiro
+        if (newMode === 'SINGLE') {
+            const groups = groupService.getAllGroups();
+            if (groups.length > 0 && !groups.some(g => g.isPrimary)) {
+                groupService.setPrimaryGroup(groups[0].id);
+                console.log(`⚠️ Grupo ${groups[0].id} definido como primário automaticamente.`);
+            }
+        }
     } else {
-        console.log('Operação cancelada.');
+        console.log('\nOperação cancelada.');
     }
 }
 
