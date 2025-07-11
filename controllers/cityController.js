@@ -6,6 +6,7 @@ const {
     showCityManagementMenu,
     showCityList,
     promptForCityName,
+    promptForCityLink,
     promptForCitySelection,
     confirmAction
 } = require('../views/cityViews');
@@ -51,19 +52,21 @@ class CityController {
     async addCity(rl) {
         console.log('\n=== Adicionar Nova Cidade ===');
         const name = await promptForCityName(rl);
+        if (!name) return;
         
-        if (name) {
-            const newCity = {
-                id: generateSimpleId(),
-                name,
-                isPrimary: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            
-            await this.cityRepository.add(newCity);
-            console.log('\n✅ Cidade adicionada com sucesso!');
-        }
+        const link = await promptForCityLink(rl);
+        
+        const newCity = {
+            id: generateSimpleId(),
+            name,
+            link: link || '', // Se não fornecer link, fica vazio
+            isPrimary: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        await this.cityRepository.add(newCity);
+        console.log('\n✅ Cidade adicionada com sucesso!');
     }
 
     async editCity(rl) {
@@ -80,17 +83,19 @@ class CityController {
         
         const cityToEdit = cities[index];
         const newName = await promptForCityName(rl, cityToEdit.name);
+        if (!newName) return;
         
-        if (newName) {
-            const updatedCity = {
-                ...cityToEdit,
-                name: newName,
-                updatedAt: new Date().toISOString()
-            };
-            
-            await this.cityRepository.update(updatedCity);
-            console.log('\n✅ Cidade atualizada com sucesso!');
-        }
+        const newLink = await promptForCityLink(rl, cityToEdit.link);
+        
+        const updatedCity = {
+            ...cityToEdit,
+            name: newName,
+            link: newLink || cityToEdit.link, // Mantém o link existente se não fornecer novo
+            updatedAt: new Date().toISOString()
+        };
+        
+        await this.cityRepository.update(updatedCity);
+        console.log('\n✅ Cidade atualizada com sucesso!');
     }
 
     async setPrimaryCity(rl) {
@@ -171,5 +176,4 @@ class CityController {
     }
 }
 
-// Exportação como instância pronta (padrão que você está usando para outros controllers)
 module.exports = new CityController();

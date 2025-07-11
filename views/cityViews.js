@@ -45,6 +45,7 @@ function showCityList(cities, showDetails = false) {
         }
         console.log(`Nome: ${city.name}`);
         if (showDetails) {
+            console.log(`Link: ${city.link || 'Nenhum link cadastrado'}`);
             console.log(`Primária: ${city.isPrimary ? 'Sim' : 'Não'}`);
             console.log(`Criada em: ${city.createdAt}`);
             console.log(`Última atualização: ${city.updatedAt}`);
@@ -63,6 +64,15 @@ async function promptForCityName(rl, currentName = '') {
         return null;
     }
     return name;
+}
+
+async function promptForCityLink(rl, currentLink = '') {
+    const prompt = currentLink 
+        ? `\nDigite o novo link da cidade (deixe em branco para manter o atual: ${currentLink}): `
+        : '\nDigite o link da cidade (opcional): ';
+    
+    const link = await new Promise(resolve => rl.question(prompt, resolve));
+    return link.trim(); // Retorna o link ou string vazia
 }
 
 async function promptForCitySelection(rl, cities, action) {
@@ -100,6 +110,7 @@ module.exports = {
     showCityManagementMenu,
     showCityList,
     promptForCityName,
+    promptForCityLink, // Adicionado a exportação
     promptForCitySelection,
     confirmAction
 };

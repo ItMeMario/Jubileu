@@ -1,16 +1,10 @@
 [
   {
-    "id": "mcywhrcgjr2p1",
+    "id": "mcyyrfd4yjm8z",
     "name": "São Paulo",
+    "link": "https://br.pinterest.com/",
     "isPrimary": false,
-    "createdAt": "2025-07-11T14:17:04.432Z",
-    "updatedAt": "2025-07-11T14:17:04.433Z"
-  },
-  {
-    "id": "mcywi3x0v34dy",
-    "name": "Joinville",
-    "isPrimary": false,
-    "createdAt": "2025-07-11T14:17:20.724Z",
-    "updatedAt": "2025-07-11T14:17:20.724Z"
+    "createdAt": "2025-07-11T15:20:34.696Z",
+    "updatedAt": "2025-07-11T15:20:34.697Z"
   }
 ]
