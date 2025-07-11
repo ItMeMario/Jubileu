@@ -1,13 +1,16 @@
+// Delay fixo
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const randomDelay = (minMinutes, maxMinutes) => {
-    const minMs = minMinutes * 60 * 1000;
-    const maxMs = maxMinutes * 60 * 1000;
-    const randomMs = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
-    return new Promise(resolve => setTimeout(resolve, randomMs));
+// Delay aleatório entre min e max (em milissegundos)
+const randomDelay = (minMs, maxMs) => {
+    const delayTime = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+    return new Promise(resolve => setTimeout(resolve, delayTime));
 };
 
-// Exportando ambas as funções
+// Exemplo de uso:
+// delay(3000) → espera exatamente 3 segundos
+// randomDelay(60000, 180000) → espera entre 1 e 3 minutos
+
 module.exports = {
     delay,
     randomDelay
