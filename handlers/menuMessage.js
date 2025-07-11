@@ -1,31 +1,32 @@
-const delay = require('../utils/delay');
-const fs = require('fs');
-const path = require('path');
+const delay = require("../utils/delay");
+const fs = require("fs");
+const path = require("path");
+const groupService = require("../services/groupService");
 
-
-const messageStorage = require('../services/messageService'); // Ajuste o caminho
+const messageStorage = require("../services/messageService"); // Ajuste o caminho
 
 // Pega a última mensagem válida de forma mais confiável
 const getLatestValidMessage = async () => {
   try {
     // Usa a função getLastMessage() do seu módulo de armazenamento
     const lastMessage = await messageStorage.getLastMessage();
-    
+
     if (!lastMessage || !lastMessage.content) {
-      console.log('Nenhuma mensagem encontrada ou conteúdo vazio');
+      console.log("Nenhuma mensagem encontrada ou conteúdo vazio");
       return null;
     }
 
     // Verificação mais flexível do conteúdo
     const trimmedContent = lastMessage.content.trim();
-    if (trimmedContent.length > 20) { // Reduzido para 20 caracteres mínimos
+    if (trimmedContent.length > 20) {
+      // Reduzido para 20 caracteres mínimos
       return trimmedContent;
     }
-    
-    console.log('Mensagem muito curta:', trimmedContent);
+
+    console.log("Mensagem muito curta:", trimmedContent);
     return null;
   } catch (error) {
-    console.error('Erro ao recuperar mensagem:', error);
+    console.error("Erro ao recuperar mensagem:", error);
     return null;
   }
 };
@@ -49,7 +50,19 @@ Estamos organizando um evento para escolher novos modelos...`;
 
   await client.sendMessage(msg.from, greetingMessage);
 
-  // Menu de horários
+  // Verifica o modo atual (SINGLE ou MULTI)
+  const currentMode = groupService.getCurrentMode(); // Não precisa de await, pois é síncrono
+
+  // Se estiver no MULTI, envia mensagem adicional
+  if (currentMode === "MULTI") {
+    await delay(3000);
+    await chat.sendStateTyping();
+    
+    const additionalMessage = "🔹 *MODO MULTI ATIVO* 🔹\nEsta é uma mensagem extra que só aparece quando há múltiplos grupos envolvidos!";
+    await client.sendMessage(msg.from, additionalMessage);
+  }
+
+  // Menu de horários (comum a SINGLE e MULTI)
   await delay(3000);
   await chat.sendStateTyping();
 
