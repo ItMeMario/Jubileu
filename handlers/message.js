@@ -1,5 +1,5 @@
 const client = require("../client");
-const enviarMensagemMenu = require("./menuMessage");
+const { enviarMensagemMenu, chatContext } = require("../handlers/menuMessage");
 const HORARIOS = require("../horarios");
 const { enviarFAQ } = require("../handlers/faq");
 const { normalizarTexto, hasTriggerText } = require("../utils/triggers");
@@ -70,41 +70,52 @@ module.exports = async function messageHandler(msg) {
     return;
   }
 
- // Se o usuário está enviando o nome
-if (userStates[userNumber]?.step === "awaiting_name") {
-  const nomeCompleto = msg.body?.trim();
-  const horarioSelecionado = userStates[userNumber].selectedTime;
-  
-  try {
-    const currentMode = groupService.getCurrentMode();
-    const allGroups = groupService.getAllGroups();
-
-    if (allGroups.length === 0) {
-      throw new Error('Nenhum grupo configurado');
-    }
-
-    let messageText;
+  // Se o usuário está enviando o nome
+  if (userStates[userNumber]?.step === "awaiting_name") {
+    const nomeCompleto = msg.body?.trim();
+    const horarioSelecionado = userStates[userNumber].selectedTime;
     
-    if (currentMode === 'SINGLE') {
-      const primaryLink = groupService.getPrimaryGroupLink();
-      messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
-    } else {
-      // Modo MULTI - envia todos os links formatados
-      const linksList = allGroups.map(group => 
-        `🔗 ${group.descricao || `Grupo ${group.id}`}: ${group.link}`
-      ).join('\n\n');
-      
-      messageText = `✅ Pronto, *${nomeCompleto}*! Aqui estão os links dos grupos disponíveis:\n\n${linksList}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
-    }
+    try {
+      const currentMode = groupService.getCurrentMode();
+      const allGroups = groupService.getAllGroups();
 
-    await client.sendMessage(msg.from, messageText);
-    delete userStates[userNumber];
-  } catch (error) {
-    console.error("Erro ao enviar mensagem:", error);
-    await msg.reply(
-      "❌ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde."
-    );
-    delete userStates[userNumber];
+      if (allGroups.length === 0) {
+        throw new Error('Nenhum grupo configurado');
+      }
+
+      let messageText;
+      
+      if (currentMode === 'SINGLE') {
+        const primaryLink = groupService.getPrimaryGroupLink();
+        messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+      } else {
+        // Modo MULTI - pega a cidade selecionada do chatContext
+        const selectedCityData = chatContext[userNumber]?.selectedCityData;
+        
+        if (selectedCityData) {
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+          
+          // Limpa o contexto após uso
+          delete chatContext[userNumber];
+        } else {
+          // Fallback caso não encontre a cidade selecionada
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui estão os links dos grupos disponíveis:\n\n`;
+          messageText += allGroups.map(group => 
+            `🔗 ${group.descricao || `Grupo ${group.id}`}: ${group.link}`
+          ).join('\n\n');
+          messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
+        }
+      }
+
+      await client.sendMessage(msg.from, messageText);
+      delete userStates[userNumber];
+    } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
+      await msg.reply(
+        "❌ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde."
+      );
+      delete userStates[userNumber];
+      delete chatContext[userNumber]; // Limpa o contexto em caso de erro
+    }
   }
-}
 };

@@ -17,6 +17,9 @@ try {
 // Objeto para controlar seleção em andamento
 const activeSelections = {};
 
+// Objeto para armazenar o contexto das conversas
+const chatContext = {};
+
 // Pega a última mensagem válida (mantido igual)
 const getLatestValidMessage = async () => {
   try {
@@ -68,14 +71,11 @@ Estamos organizando um evento para escolher novos modelos...`;
 
   // Se estiver no MULTI, mostra menu de cidades
   if (currentMode === "MULTI") {
-    activeSelections[chatId] = true; // Marca como em seleção
+    activeSelections[chatId] = true;
 
     await delay(3000);
     await chat.sendStateTyping();
 
-    // Links das cidades (personalize conforme necessário)
-
-    // Monta o menu dinâmico
     let cityMenu = "📍 *SELECIONE SUA CIDADE* 📍\n";
     cityMenu += "Por favor, responda com o NÚMERO da sua cidade:\n\n";
     
@@ -88,20 +88,27 @@ Estamos organizando um evento para escolher novos modelos...`;
     // Handler temporário para capturar a resposta
     const tempHandler = async (response) => {
       if (response.from === chatId) {
-        // Remove o handler após uso
         client.removeListener('message_create', tempHandler);
-        delete activeSelections[chatId]; // Libera o chat
+        delete activeSelections[chatId];
 
         const selectedNum = parseInt(response.body);
         if (selectedNum >= 1 && selectedNum <= cities.length) {
           const selectedCity = cities[selectedNum - 1].name;
+          const selectedCityData = cities[selectedNum - 1];
           
+          // Armazena os dados no contexto do chat
+          chatContext[chatId] = {
+            selectedCity: selectedCity,
+            selectedCityData: selectedCityData
+          };
+
           await client.sendMessage(
             chatId,
             `✅ Cidade selecionada: ${selectedCity}`
           );
         } else {
           await client.sendMessage(chatId, "❌ Número inválido. Por favor, inicie novamente.");
+          return;
         }
 
         // Continua com o menu de horários
@@ -119,24 +126,26 @@ Estamos organizando um evento para escolher novos modelos...`;
         await client.sendMessage(chatId, timeMenu);
       }
     };
-
     client.on('message_create', tempHandler);
-    return;
-  }
-
-  // Menu de horários (modo SINGLE)
-  await delay(3000);
-  await chat.sendStateTyping();
-  
-  const timeMenu = `⚠ *Escolha seu horário:*
+  } else {
+    // Modo SINGLE - mostra apenas o menu de horários
+    await delay(3000);
+    await chat.sendStateTyping();
+    
+    const timeMenu = `⚠ *Escolha seu horário:*
 1️⃣ - 10:00h (Manhã)
 2️⃣ - 12:00h (Meio-dia)
 3️⃣ - 14:00h (Tarde)
 4️⃣ - 15:30h (Tarde)
 5️⃣ - 17:30h (Final da tarde)
 6️⃣ - 19:30h (Noite)`;
-  
-  await client.sendMessage(chatId, timeMenu);
+    
+    await client.sendMessage(chatId, timeMenu);
+  }
 }
 
-module.exports = enviarMensagemMenu;
+// Exporta também o chatContext para ser acessado por outros módulos
+module.exports = {
+  enviarMensagemMenu,
+  chatContext
+};
