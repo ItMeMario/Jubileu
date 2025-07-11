@@ -1,14 +1,15 @@
 function generateSimpleId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
 }
 
 const { 
+    showCityManagementMenu,
     showCityList,
     promptForCityName,
     promptForCitySelection,
     confirmAction
 } = require('../views/cityViews');
-const CityRepository = require('../data/cities.json');
+const CityRepository = require('../services/cityServices');
 
 class CityController {
     constructor() {
@@ -170,4 +171,5 @@ class CityController {
     }
 }
 
-module.exports = CityController;
+// Exportação como instância pronta (padrão que você está usando para outros controllers)
+module.exports = new CityController();

@@ -1,6 +1,6 @@
 const messageController = require('../controllers/messageController');
 const groupController = require('../controllers/groupController');
-const cityController = require('../controllers/cityController');
+const cityController = require('../controllers/cityController')
 
 async function handleConfigMenu(rl) {
     while (true) {
@@ -38,7 +38,7 @@ async function handleConfigMenu(rl) {
                 await groupController.handleGroupManagement(rl);
                 break;
             case '7':
-                await groupController.handleCities(rl);
+                await cityController.handleCities(rl);
                 break;
             case '0':
                 console.log('Saindo do menu de configuração...');
