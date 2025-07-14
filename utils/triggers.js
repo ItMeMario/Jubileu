@@ -11,15 +11,35 @@ const TRIGGERS = [
   "boa noite"
 ];
 
-// Função para normalizar texto (remove acentos e pontuações)
+const horarios = require("../horarios");
+const aliases = require("../aliases");
+
+
 function normalizarTexto(texto) {
-  return texto
+  texto = texto
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // Remove acentos
-    .replace(/[^a-z0-9\s]/g, "") // Remove caracteres especiais
+    .replace(/[^a-z0-9\s:]/g, "") // Mantém ":"
     .trim();
+
+  // Regex para capturar formatos como "14", "14h", "14 horas", "14:00h"
+  const matchHora = texto.match(/(\d{1,2})(?::(\d{2}))?\s*(h|horas)?/);
+  if (matchHora) {
+    const hora = matchHora[1].padStart(2, "0");
+    const minuto = matchHora[2] ? matchHora[2].padStart(2, "0") : "00";
+    return `${hora}:${minuto}`;
+  }
+
+  return texto;
 }
+
+function buscarHorario(texto) {
+  const normalizado = normalizarTexto(texto);
+  return horarios[normalizado] || "Não entendi";
+}
+
+
 
 // Verifica se o texto contém alguma trigger para iniciar o menu
 function hasTriggerText(text) {
@@ -29,5 +49,6 @@ function hasTriggerText(text) {
 
 module.exports = {
   normalizarTexto,
-  hasTriggerText
+  hasTriggerText,
+  buscarHorario
 };

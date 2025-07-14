@@ -74,7 +74,7 @@ module.exports = async function messageHandler(msg) {
 
     if (selectedCityData) {
       chatContext[userNumber] = { selectedCityData };
-      await enviarMenuHorarios(client, msg.from, chat); // corrigido: não chama enviarMensagemMenu
+      await enviarMenuHorarios(client, msg.from, chat); 
       userStates[userNumber].step = "awaiting_time";
     } else {
       await client.sendMessage(
