@@ -4,7 +4,11 @@ const TRIGGERS = [
   "olá! posso saber mais informações sobre isto?",
   "tenho interesse e queria mais informações, por favor",
   "olá! tenho interesse e queria mais informações, por favor",
-  "olá"
+  "olá",
+  "oi",
+  "bom dia",
+  "boa tarde",
+  "boa noite"
 ];
 
 // Função para normalizar texto (remove acentos e pontuações)

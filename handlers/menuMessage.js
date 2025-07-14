@@ -80,7 +80,8 @@ async function enviarMenuHorarios(client, chatId, chat) {
   await delay(3000);
   await chat.sendStateTyping();
 
-  const timeMenu = `⚠ *Escolha seu hor\u00e1rio:*
+  const timeMenu = `⚠*IMPORTANTE: Escolha seu hor\u00e1rio:*
+  _Horarios disponíveis_
 1️⃣ - 10:00h (Manh\u00e3)
 2️⃣ - 12:00h (Meio-dia)
 3️⃣ - 14:00h (Tarde)
