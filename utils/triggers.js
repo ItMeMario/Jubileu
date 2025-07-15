@@ -8,7 +8,8 @@ const TRIGGERS = [
   "oi",
   "bom dia",
   "boa tarde",
-  "boa noite"
+  "boa noite",
+  "Hello! Can i get more info on this?"
 ];
 
 const horarios = require("../horarios");
@@ -19,11 +20,14 @@ function normalizarTexto(texto) {
   texto = texto
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
-    .replace(/[^a-z0-9\s:]/g, "") // Mantém ":"
+    .replace(/[\u0300-\u036f]/g, "")    // sem acentos
+    .replace(/[^a-z0-9\s:]/g, "")       // mantém “:”
     .trim();
 
-  // Regex para capturar formatos como "14", "14h", "14 horas", "14:00h"
+  // >>>  se o usuário digitou só um dígito (1-6), devolva-o sem mexer  <<<
+  if (/^[1-6]$/.test(texto)) return texto;
+
+  // continua igual
   const matchHora = texto.match(/(\d{1,2})(?::(\d{2}))?\s*(h|horas)?/);
   if (matchHora) {
     const hora = matchHora[1].padStart(2, "0");
@@ -33,6 +37,7 @@ function normalizarTexto(texto) {
 
   return texto;
 }
+
 
 function buscarHorario(texto) {
   const normalizado = normalizarTexto(texto);

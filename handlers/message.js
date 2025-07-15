@@ -91,7 +91,7 @@ module.exports = async function messageHandler(msg) {
   if (userStates[userNumber]?.step === "awaiting_time") {
     const inputUsuario = msg.body?.trim() || "";
 
-    if (inputUsuario === "7") {
+    if (inputUsuario.toLowerCase() === "ajuda") {
       await enviarFAQ(client, msg);
       return;
     }
@@ -113,8 +113,8 @@ Por favor, digite seu nome completo para confirmar. 😊`
     } else {
       await client.sendMessage(
         msg.from,
-        `🤔 Desculpe, não entendi. Qual horário você gostaria mesmo?\n\n` +
-        `Se precisar de ajuda, digite *7* para acessar as *Perguntas Frequentes (FAQ)*`
+        `🤔 Desculpe, não entendi. Digite apenas o horário que você escolheu para darmos sequência ao seu atendimento, por favor!\n\n` +
+        `E se precisar de ajuda, digite a palavra *AJUDA* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
       );
     }
     return;
