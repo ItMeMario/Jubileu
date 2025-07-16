@@ -12,7 +12,7 @@ const userStates = {};
 function encontrarHorario(inputUsuario) {
   const inputNormalizado = normalizarTexto(inputUsuario);
 
-  // Se for um número direto (1‑6)
+  // Se for um número direto (1-6)
   if (/^[1-6]$/.test(inputNormalizado)) {
     const opcao = parseInt(inputNormalizado);
     const horario = Object.values(HORARIOS).find((h) => h.id === opcao);
@@ -31,38 +31,34 @@ module.exports = async function messageHandler(msg) {
   const textoDaMensagem = msg.caption || msg.body || "";
 
   /* ─────────────────────────────────────
-     1) INÍCIO DO ATENDIMENTO
+     0) TRATAMENTO DO FAQ (nova seção)
   ────────────────────────────────────── */
-  if (!userStates[userNumber] && hasTriggerText(textoDaMensagem) && msg.from.endsWith("@c.us")) {
-    const currentMode = groupService.getCurrentMode();
+   if (textoDaMensagem.toLowerCase() === "ajuda" || textoDaMensagem.toLowerCase() === "faq") {
+    await enviarFAQ(client, msg);
+    return;
+  }
 
+  /* ─────────────────────────────────────
+     0.1) TRATAMENTO DO MENU (nova seção)
+  ────────────────────────────────────── */
+  if (textoDaMensagem.toLowerCase() === "menu") {
+    // Reseta o estado do usuário
+    delete userStates[userNumber];
+    delete chatContext[userNumber];
+    
+    // Reenvia o menu inicial
+    const currentMode = groupService.getCurrentMode();
+    
     if (currentMode === 'MULTI') {
-      await enviarMensagemMenu(client, msg, chat);
-      userStates[userNumber] = { step: "awaiting_city", started: true };
+        await enviarMensagemMenu(client, msg, chat);
+        userStates[userNumber] = { step: "awaiting_city", started: true };
     } else {
-      await enviarMensagemMenu(client, msg, chat);
-      userStates[userNumber] = { step: "awaiting_time", started: true };
+        await enviarMensagemMenu(client, msg, chat);
+        userStates[userNumber] = { step: "awaiting_time", started: true };
     }
     return;
   }
 
-  if (hasTriggerText(textoDaMensagem) && msg.from.endsWith("@c.us")) {
-    if (userStates[userNumber]?.started) {
-      // Já iniciou o fluxo, ignora novo gatilho
-      return;
-    }
-
-    const currentMode = groupService.getCurrentMode();
-
-    if (currentMode === 'MULTI') {
-      await enviarMensagemMenu(client, msg, chat);
-      userStates[userNumber] = { step: "awaiting_city", started: true };
-    } else {
-      await enviarMensagemMenu(client, msg, chat);
-      userStates[userNumber] = { step: "awaiting_time", started: true };
-    }
-    return;
-  }
 
   /* ─────────────────────────────────────
      2) ESCOLHA DE CIDADE (apenas MULTI)
@@ -91,6 +87,7 @@ module.exports = async function messageHandler(msg) {
   if (userStates[userNumber]?.step === "awaiting_time") {
     const inputUsuario = msg.body?.trim() || "";
 
+    // Tratamento do FAQ (mantido para compatibilidade)
     if (inputUsuario.toLowerCase() === "ajuda") {
       await enviarFAQ(client, msg);
       return;
@@ -114,7 +111,7 @@ Por favor, digite seu nome completo para confirmar. 😊`
       await client.sendMessage(
         msg.from,
         `🤔 Desculpe, não entendi. Digite apenas o horário que você escolheu para darmos sequência ao seu atendimento, por favor!\n\n` +
-        `E se precisar de ajuda, digite a palavra *AJUDA* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
+        `E se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
       );
     }
     return;
