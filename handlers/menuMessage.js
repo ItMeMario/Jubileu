@@ -35,8 +35,8 @@ const getLatestValidMessage = async () => {
 // Envia mensagem de boas-vindas e o menu inicial
 async function enviarMensagemMenu(client, msg, chat) {
   const chatId = msg.from;
-  await delay(3000); //delay de 3 segundos destinado para fins de teste;
-  //await randomDelay(60000, 180000);
+  //await delay(3000); //delay de 3 segundos destinado para fins de teste;
+  await randomDelay(60000, 180000);
 
   await chat.sendStateTyping();
 
@@ -61,8 +61,8 @@ async function enviarMensagemMenu(client, msg, chat) {
 
 // Menu de cidades para o modo MULTI
 async function enviarMenuCidades(client, chatId, chat) {
-  await delay(3000); //delay de 3 segundos estinado para fins de teste
-  //await randomDelay(60000, 180000);
+  //await delay(3000); //delay de 3 segundos estinado para fins de teste
+  await randomDelay(60000, 180000);
   await chat.sendStateTyping();
 
   let cityMenu = "\ud83d\udccd *SELECIONE SUA CIDADE* \ud83d\udccd\n";

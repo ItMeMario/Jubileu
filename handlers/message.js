@@ -4,6 +4,7 @@ const HORARIOS = require("../horarios");
 const { enviarFAQ } = require("../utils/faq");
 const { normalizarTexto, hasTriggerText } = require("../utils/triggers");
 const groupService = require("../services/groupService");
+const timeout = require('../utils/timeout');
 
 // Estado dos usuários
 const userStates = {};
@@ -35,6 +36,7 @@ module.exports = async function messageHandler(msg) {
   ────────────────────────────────────── */
    if (textoDaMensagem.toLowerCase() === "ajuda" || textoDaMensagem.toLowerCase() === "faq") {
     await enviarFAQ(client, msg);
+    timeout.cancelTimeout(userNumber);
     return;
   }
 
@@ -42,23 +44,23 @@ module.exports = async function messageHandler(msg) {
      0.1) TRATAMENTO DO MENU (nova seção)
   ────────────────────────────────────── */
   if (textoDaMensagem.toLowerCase() === "menu") {
-    // Reseta o estado do usuário
+    timeout.cancelTimeout(userNumber);
     delete userStates[userNumber];
     delete chatContext[userNumber];
     
-    // Reenvia o menu inicial
     const currentMode = groupService.getCurrentMode();
     
     if (currentMode === 'MULTI') {
         await enviarMensagemMenu(client, msg, chat);
         userStates[userNumber] = { step: "awaiting_city", started: true };
+        await timeout.startTimeout(client, userNumber, chat); // ADICIONADO - inicia timeout após menu
     } else {
         await enviarMensagemMenu(client, msg, chat);
         userStates[userNumber] = { step: "awaiting_time", started: true };
+        await timeout.startTimeout(client, userNumber, chat); // ADICIONADO - inicia timeout após menu
     }
     return;
   }
-
 
   /* ─────────────────────────────────────
      2) ESCOLHA DE CIDADE (apenas MULTI)
@@ -72,11 +74,13 @@ module.exports = async function messageHandler(msg) {
       chatContext[userNumber] = { selectedCityData };
       await enviarMenuHorarios(client, msg.from, chat); 
       userStates[userNumber].step = "awaiting_time";
+      await timeout.startTimeout(client, userNumber, chat); // ADICIONADO - inicia timeout após seleção de cidade
     } else {
       await client.sendMessage(
         msg.from,
         "🤔 Desculpe, não encontrei essa cidade. Tente novamente."
       );
+      await timeout.startTimeout(client, userNumber, chat); // ADICIONADO - reinicia timeout se cidade inválida
     }
     return;
   }
@@ -87,9 +91,9 @@ module.exports = async function messageHandler(msg) {
   if (userStates[userNumber]?.step === "awaiting_time") {
     const inputUsuario = msg.body?.trim() || "";
 
-    // Tratamento do FAQ (mantido para compatibilidade)
     if (inputUsuario.toLowerCase() === "ajuda") {
       await enviarFAQ(client, msg);
+      timeout.cancelTimeout(userNumber);
       return;
     }
 
@@ -107,12 +111,15 @@ module.exports = async function messageHandler(msg) {
         `Você escolheu *${opcao.horario} - ${opcao.descricao}*.
 Por favor, digite seu nome completo para confirmar. 😊`
       );
+      await timeout.startTimeout(client, userNumber, chat);
     } else {
+      timeout.cancelTimeout(userNumber);
       await client.sendMessage(
         msg.from,
         `🤔 Desculpe, não entendi. Digite apenas o horário que você escolheu para darmos sequência ao seu atendimento, por favor!\n\n` +
         `E se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
       );
+      await timeout.startTimeout(client, userNumber, chat);
     }
     return;
   }
@@ -125,6 +132,8 @@ Por favor, digite seu nome completo para confirmar. 😊`
     const horarioSelecionado = userStates[userNumber].selectedTime;
 
     try {
+      timeout.cancelTimeout(userNumber);
+      
       const currentMode = groupService.getCurrentMode();
       const allGroups = groupService.getAllGroups();
 
@@ -162,6 +171,7 @@ Por favor, digite seu nome completo para confirmar. 😊`
       await msg.reply(
         "❌ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde."
       );
+      timeout.cancelTimeout(userNumber);
       delete userStates[userNumber];
       delete chatContext[userNumber];
     }
