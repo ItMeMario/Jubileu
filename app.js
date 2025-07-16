@@ -1,4 +1,4 @@
-const client = require('./client');
+const client = require('./client/client');
 const { initializeApp } = require('./controllers/configController');
 const messageHandler = require('./handlers/message');
 

@@ -1,4 +1,4 @@
-const client = require("../client");
+const client = require('../client/client');
 const { enviarMensagemMenu, enviarMenuHorarios, chatContext } = require("../handlers/menuMessage");
 const HORARIOS = require("../horarios");
 const { enviarFAQ } = require("../handlers/faq");
