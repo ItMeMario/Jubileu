@@ -1,7 +1,7 @@
-const client = require("../client");
+const client = require("../client/client");
 const { enviarMensagemMenu, enviarMenuHorarios, chatContext } = require("../handlers/menuMessage");
 const HORARIOS = require("../horarios");
-const { enviarFAQ } = require("../handlers/faq");
+const { enviarFAQ } = require("../utils/faq");
 const { normalizarTexto, hasTriggerText } = require("../utils/triggers");
 const groupService = require("../services/groupService");
 
