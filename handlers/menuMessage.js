@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const groupService = require("../services/groupService");
 const messageStorage = require("../services/messageService");
+const indicadores = require('../utils/indicadores')
 
 // Carrega as cidades do JSON
 const CITIES_FILE = path.join(__dirname, '../data/cities.json');
@@ -39,7 +40,7 @@ async function enviarMensagemMenu(client, msg, chat) {
   //await randomDelay(60000, 180000);
 
   await chat.sendStateTyping();
-
+  indicadores.incrementarAtendidos(); //contador de clientes que receberam a mensagem do Jubileu
   const contact = await msg.getContact();
   const name = contact.pushname?.split(" ")[0] || "";
 

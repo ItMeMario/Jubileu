@@ -5,6 +5,7 @@ const { enviarFAQ } = require("../utils/faq");
 const { normalizarTexto, hasTriggerText } = require("../utils/triggers");
 const groupService = require("../services/groupService");
 const timeout = require('../utils/timeout');
+const indicadores = require('../utils/indicadores')
 
 // Estado dos usuários
 const userStates = {};
@@ -127,53 +128,57 @@ Agora digite somente o seu *NOME COMPLETO* para confirmar a sua inscrição, por
   /* ─────────────────────────────────────
      4) NOME E ENVIO DE LINK(S)
   ────────────────────────────────────── */
-  if (userStates[userNumber]?.step === "awaiting_name") {
-    const nomeCompleto = msg.body?.trim();
-    const horarioSelecionado = userStates[userNumber].selectedTime;
+if (userStates[userNumber]?.step === "awaiting_name") {
+  const nomeCompleto = msg.body?.trim();
+  const horarioSelecionado = userStates[userNumber].selectedTime;
 
-    try {
-      timeout.cancelTimeout(userNumber);
-      
-      const currentMode = groupService.getCurrentMode();
-      const allGroups = groupService.getAllGroups();
+  try {
+    timeout.cancelTimeout(userNumber);
+    
+    const currentMode = groupService.getCurrentMode();
+    const allGroups = groupService.getAllGroups();
 
-      if (allGroups.length === 0) {
-        throw new Error("Nenhum grupo configurado");
-      }
-
-      let messageText;
-
-      if (currentMode === "SINGLE") {
-        const primaryLink = groupService.getPrimaryGroupLink();
-        messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
-      } else {
-        const selectedCityData = chatContext[userNumber]?.selectedCityData;
-
-        if (selectedCityData) {
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
-          delete chatContext[userNumber];
-        } else {
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui estão os links dos grupos disponíveis:\n\n`;
-          messageText += allGroups
-            .map(
-              (group) =>
-                `🔗 ${group.descricao || `Grupo ${group.id}`}: ${group.link}`
-            )
-            .join("\n\n");
-          messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
-        }
-      }
-
-      await client.sendMessage(msg.from, messageText);
-      delete userStates[userNumber];
-    } catch (error) {
-      console.error("Erro ao enviar mensagem:", error);
-      await msg.reply(
-        "❌ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde."
-      );
-      timeout.cancelTimeout(userNumber);
-      delete userStates[userNumber];
-      delete chatContext[userNumber];
+    if (allGroups.length === 0) {
+      throw new Error("Nenhum grupo configurado");
     }
+
+    let messageText;
+
+    if (currentMode === "SINGLE") {
+      const primaryLink = groupService.getPrimaryGroupLink();
+      messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+    } else {
+      const selectedCityData = chatContext[userNumber]?.selectedCityData;
+
+      if (selectedCityData) {
+        messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+        delete chatContext[userNumber];
+      } else {
+        messageText = `✅ Pronto, *${nomeCompleto}*! Aqui estão os links dos grupos disponíveis:\n\n`;
+        messageText += allGroups
+          .map(
+            (group) =>
+              `🔗 ${group.descricao || `Grupo ${group.id}`}: ${group.link}`
+          )
+          .join("\n\n");
+        messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
+      }
+    }
+
+    await client.sendMessage(msg.from, messageText);
+    
+    // ✅ AQUI INCREMENTAMOS O CONTADOR DE CONVIDADOS
+    indicadores.incrementarConvidados(); 
+    
+    delete userStates[userNumber];
+  } catch (error) {
+    console.error("Erro ao enviar mensagem:", error);
+    await msg.reply(
+      "❌ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde."
+    );
+    timeout.cancelTimeout(userNumber);
+    delete userStates[userNumber];
+    delete chatContext[userNumber];
   }
+}
 };
