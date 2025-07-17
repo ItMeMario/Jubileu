@@ -109,7 +109,7 @@ module.exports = async function messageHandler(msg) {
       await client.sendMessage(
         msg.from,
         `Você escolheu *${opcao.horario} - ${opcao.descricao}*.
-Por favor, digite seu nome completo para confirmar. 😊`
+Agora digite somente o seu nome completo para confirmar a sua inscrição, por favor!😊`
       );
       await timeout.startTimeout(client, userNumber, chat);
     } else {

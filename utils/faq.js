@@ -21,7 +21,9 @@ module.exports = {
             `   - A empresa atua no mercado desde 1985 com o mesmo nome e descobriu nomes como: Gisele Bündchen, Alessandra Ambrósio, Carol Trentini, Jonas Sulzbach e Daiane Sodré.\n\n` +
             `10. *Já faço parte do portal?*\n` +
             `   - O evento presencial é uma programação diferente do portal e dos cursos online. Será tudo novidade.\n\n` +
-            `11. *Você continua com dúvidas?*\n` +
+            `11. *Posso participar se tiver tatuagem, cabelo colorido, aparelho dentário ou usar óculos?*\n` +
+            `   - Sim! Tatuagens, cabelos tingidos, aparelhos ortodônticos e óculos não impedem sua participação.\n\n` +
+            `12. *Você continua com dúvidas?*\n` +
             `   - MARQUE UM HORÁRIO AGORA MESMO e compareça na seleção! Haverá uma equipe para te orientar\n\n` +
             `Digite "menu" para voltar ao menu principal.`;
 
