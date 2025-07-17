@@ -1,7 +1,7 @@
-const delay = require('./delay');
+const delay = require('../utils/delay');
 
 // Tempo de timeout em milissegundos (30 segundos)
-const TIMEOUT_DURATION = delay(300000)
+const TIMEOUT_DURATION = 300000;
 
 // Mensagem de timeout
 const TIMEOUT_MESSAGE = "⏳ *Ops!* Parece que houve algum problema na conversa. Se ainda estiver interessado, digite *MENU* e tentamos novamente!";
@@ -45,5 +45,5 @@ function cancelTimeout(userNumber) {
 
 module.exports = {
   startTimeout,
-  cancelTimeout
+  cancelTimeout,
 };
