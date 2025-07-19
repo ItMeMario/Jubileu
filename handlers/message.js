@@ -41,27 +41,27 @@ module.exports = async function messageHandler(msg) {
     return;
   }
 
-  /* ─────────────────────────────────────
-     0.1) TRATAMENTO DO MENU (nova seção)
-  ────────────────────────────────────── */
-  if (textoDaMensagem.toLowerCase() === "menu") {
-    timeout.cancelTimeout(userNumber);
-    delete userStates[userNumber];
-    delete chatContext[userNumber];
-    
-    const currentMode = groupService.getCurrentMode();
-    
-    if (currentMode === 'MULTI') {
-        await enviarMensagemMenu(client, msg, chat);
-        userStates[userNumber] = { step: "awaiting_city", started: true };
-        await timeout.startTimeout(client, userNumber, chat); // ADICIONADO - inicia timeout após menu
-    } else {
-        await enviarMensagemMenu(client, msg, chat);
-        userStates[userNumber] = { step: "awaiting_time", started: true };
-        await timeout.startTimeout(client, userNumber, chat); // ADICIONADO - inicia timeout após menu
-    }
-    return;
+/* ─────────────────────────────────────
+   0) VERIFICAÇÃO DE TRIGGERS GERAIS  
+────────────────────────────────────── */
+if (hasTriggerText(textoDaMensagem)) {
+  timeout.cancelTimeout(userNumber);
+  delete userStates[userNumber];
+  delete chatContext[userNumber];
+  
+  const currentMode = groupService.getCurrentMode();
+  
+  if (currentMode === 'MULTI') {
+      await enviarMensagemMenu(client, msg, chat);
+      userStates[userNumber] = { step: "awaiting_city", started: true };
+      await timeout.startTimeout(client, userNumber, chat);
+  } else {
+      await enviarMensagemMenu(client, msg, chat);
+      userStates[userNumber] = { step: "awaiting_time", started: true };
+      await timeout.startTimeout(client, userNumber, chat);
   }
+  return;
+}
 
   /* ─────────────────────────────────────
      2) ESCOLHA DE CIDADE (apenas MULTI)
