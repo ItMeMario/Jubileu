@@ -13,7 +13,8 @@ const TRIGGERS = [
   "bom dia",
   "boa tarde",
   "boa noite",
-  "Hello! Can i get more info on this?"
+  "Hello! Can i get more info on this?",
+  "¡Hola! Me gustaría conseguir más información sobre esto."
 ];
 
 function normalizarTexto(texto) {
