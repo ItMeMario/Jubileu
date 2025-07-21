@@ -1,17 +1,14 @@
 const fs = require('fs');
 const path = require('path');
+const { ensureDataDirectory, readJsonFile, saveJsonFile } = require('../utils/initialize');
 
 // Configurações de caminhos
 const baseDir = path.join(__dirname, '../data');
 const messagesDir = path.join(baseDir, 'messagesTxt');
 const storagePath = path.join(baseDir, 'messages.json');
 
-// Verifica e cria diretórios se necessário
-function ensureDirectoriesExist() {
-  if (!fs.existsSync(baseDir)) {
-    fs.mkdirSync(baseDir, { recursive: true });
-  }
-
+// Verifica e cria diretório messagesTxt se necessário
+function ensureMessagesTxtDirectory() {
   if (fs.existsSync(messagesDir) && !fs.lstatSync(messagesDir).isDirectory()) {
     throw new Error(`'${messagesDir}' deve ser um diretório, não um arquivo`);
   }
@@ -21,36 +18,33 @@ function ensureDirectoriesExist() {
   }
 }
 
-// Inicializa o armazenamento
-function initializeStorage() {
-  ensureDirectoriesExist();
-
-  if (!fs.existsSync(storagePath)) {
-    fs.writeFileSync(storagePath, JSON.stringify([], null, 2));
-    return [];
-  }
+// Inicializa o armazenamento usando o sistema do initialize
+async function initializeStorage() {
+  await ensureDataDirectory();
+  ensureMessagesTxtDirectory();
 
   try {
-    const content = fs.readFileSync(storagePath, 'utf-8');
-    return content.trim() ? JSON.parse(content) : [];
-  } catch (err) {
-    console.error('Erro ao analisar o arquivo JSON, recriando:', err);
-    fs.writeFileSync(storagePath, JSON.stringify([], null, 2));
+    return await readJsonFile('messages.json', []);
+  } catch (error) {
+    console.error('Erro ao inicializar storage de mensagens:', error);
     return [];
   }
 }
 
 // Funções principais
-function saveIndex(messages) {
+async function saveIndex(messages) {
   try {
-    fs.writeFileSync(storagePath, JSON.stringify(messages, null, 2), 'utf8');
+    const success = await saveJsonFile('messages.json', messages);
+    if (!success) {
+      throw new Error('Falha ao salvar índice');
+    }
   } catch (error) {
     console.error('Erro ao salvar índice de mensagens:', error);
     throw error;
   }
 }
 
-function addMessage(rawContent) {
+async function addMessage(rawContent) {
   if (!rawContent || typeof rawContent !== 'string') {
     throw new Error('Conteúdo da mensagem inválido');
   }
@@ -60,9 +54,10 @@ function addMessage(rawContent) {
   const filePath = path.join(messagesDir, filename);
 
   try {
+    ensureMessagesTxtDirectory();
     fs.writeFileSync(filePath, rawContent, 'utf8');
     
-    const messages = initializeStorage();
+    const messages = await initializeStorage();
     const newMeta = {
       id,
       filename,
@@ -71,7 +66,7 @@ function addMessage(rawContent) {
     };
     
     messages.push(newMeta);
-    saveIndex(messages);
+    await saveIndex(messages);
     
     return newMeta;
   } catch (error) {
@@ -80,14 +75,14 @@ function addMessage(rawContent) {
   }
 }
 
-function getMessages() {
-  return initializeStorage();
+async function getMessages() {
+  return await initializeStorage();
 }
 
-function getMessageById(id) {
+async function getMessageById(id) {
   if (!id) return null;
 
-  const messages = getMessages();
+  const messages = await getMessages();
   const meta = messages.find((msg) => msg.id === id);
   if (!meta) return null;
 
@@ -103,9 +98,9 @@ function getMessageById(id) {
   }
 }
 
-function getLatestValidMessage() {
+async function getLatestValidMessage() {
   try {
-    const messages = getMessages();
+    const messages = await getMessages();
     
     if (!messages || messages.length === 0) return null;
 
@@ -116,7 +111,7 @@ function getLatestValidMessage() {
 
     // Encontra a primeira mensagem com conteúdo válido
     for (const msg of sortedMessages) {
-      const messageWithContent = getMessageById(msg.id);
+      const messageWithContent = await getMessageById(msg.id);
       if (messageWithContent && messageWithContent.content && messageWithContent.content.trim().length > 20) {
         return messageWithContent.content;
       }
@@ -129,19 +124,19 @@ function getLatestValidMessage() {
   }
 }
 
-function getLastMessage() {
-  const messages = getMessages();
+async function getLastMessage() {
+  const messages = await getMessages();
   if (messages.length === 0) return null;
-  return getMessageById(messages.at(-1).id);
+  return await getMessageById(messages.at(-1).id);
 }
 
-function updateMessage(id, newContent) {
+async function updateMessage(id, newContent) {
   if (!id || !newContent) {
     return { success: false, message: 'ID e conteúdo são obrigatórios' };
   }
 
   try {
-    const messages = getMessages();
+    const messages = await getMessages();
     const index = messages.findIndex((msg) => msg.id === id);
     
     if (index === -1) {
@@ -152,20 +147,20 @@ function updateMessage(id, newContent) {
     fs.writeFileSync(filePath, newContent, 'utf8');
 
     messages[index].updatedAt = new Date().toISOString();
-    saveIndex(messages);
+    await saveIndex(messages);
 
-    return { success: true, updatedMessage: getMessageById(id) };
+    return { success: true, updatedMessage: await getMessageById(id) };
   } catch (error) {
     console.error(`Erro ao atualizar mensagem ${id}:`, error);
     return { success: false, message: 'Erro ao atualizar mensagem' };
   }
 }
 
-function deleteMessage(id) {
+async function deleteMessage(id) {
   if (!id) return false;
 
   try {
-    const messages = getMessages();
+    const messages = await getMessages();
     const index = messages.findIndex((msg) => msg.id === id);
     
     if (index === -1) return false;
@@ -176,7 +171,7 @@ function deleteMessage(id) {
     }
 
     messages.splice(index, 1);
-    saveIndex(messages);
+    await saveIndex(messages);
     
     return true;
   } catch (error) {
@@ -185,14 +180,21 @@ function deleteMessage(id) {
   }
 }
 
-function searchMessages(term) {
+async function searchMessages(term) {
   if (!term || typeof term !== 'string') return [];
 
   try {
-    const messages = getMessages();
-    return messages
-      .map((meta) => getMessageById(meta.id))
-      .filter((entry) => entry && entry.content.toLowerCase().includes(term.toLowerCase()));
+    const messages = await getMessages();
+    const results = [];
+    
+    for (const meta of messages) {
+      const messageWithContent = await getMessageById(meta.id);
+      if (messageWithContent && messageWithContent.content.toLowerCase().includes(term.toLowerCase())) {
+        results.push(messageWithContent);
+      }
+    }
+    
+    return results;
   } catch (error) {
     console.error('Erro na busca de mensagens:', error);
     return [];
