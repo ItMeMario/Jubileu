@@ -76,13 +76,21 @@ async function promptForCityLink(rl, currentLink = '') {
 }
 
 async function promptForCityMessage(rl, currentMessage = '') {
-    const prompt = currentMessage 
-        ? `\nDigite a nova mensagem (atual: ${currentMessage}): `
-        : '\nDigite a mensagem da cidade: ';
-    
-    const message = await new Promise(resolve => rl.question(prompt, resolve));
-    return message.trim();
+    console.log('\nDigite a mensagem da cidade. Você pode colar várias linhas.');
+    console.log('Digite "/end" em uma nova linha para finalizar.\n');
+
+    const messageLines = [];
+
+    while (true) {
+        const line = await new Promise(resolve => rl.question('> ', resolve));
+        if (line.trim() === '/end') break;
+        messageLines.push(line);  // já são por linha
+    }
+
+    return messageLines.join('\n');  // <- GARANTIDO
 }
+
+
 
 async function promptForCitySelection(rl, cities, action) {
     if (cities.length === 0) {

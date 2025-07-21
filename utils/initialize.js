@@ -1,103 +1,68 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-// Diretório base para dados
 const DATA_DIR = path.join(__dirname, '../data');
 
-/**
- * Garante que o diretório data existe
- */
 async function ensureDataDirectory() {
     try {
         await fs.mkdir(DATA_DIR, { recursive: true });
+        console.log(`✅ Pasta data criada/verificada: ${DATA_DIR}`);
     } catch (error) {
-        if (error.code !== 'EEXIST') {
-            console.error('Erro ao criar diretório data:', error);
-            throw error;
-        }
-    }
-}
-
-/**
- * Cria um arquivo JSON se não existir
- */
-async function createJsonFileIfNotExists(filename, defaultContent) {
-    try {
-        await ensureDataDirectory();
-        
-        const filePath = path.join(DATA_DIR, filename);
-        
-        // Verifica se o arquivo já existe
-        try {
-            await fs.access(filePath);
-            return filePath; // Arquivo já existe
-        } catch (error) {
-            // Arquivo não existe, vamos criá-lo
-            if (error.code === 'ENOENT') {
-                await fs.writeFile(filePath, JSON.stringify(defaultContent, null, 2));
-                console.log(`✅ Arquivo ${filename} criado em ${DATA_DIR}`);
-                return filePath;
-            }
-            throw error;
-        }
-    } catch (error) {
-        console.error(`Erro ao inicializar ${filename}:`, error);
+        console.error('Erro ao criar diretório data:', error);
         throw error;
     }
 }
 
-/**
- * Inicializa o arquivo de configuração do Modo Dev
- */
+async function ensureCityMessageTxtFolder() {
+    const folderPath = path.join(DATA_DIR, 'cityMessageTxt');
+    try {
+        await fs.mkdir(folderPath, { recursive: true });
+        console.log(`✅ Pasta cityMessageTxt criada/verificada: ${folderPath}`);
+        return folderPath;
+    } catch (error) {
+        console.error('Erro ao criar pasta cityMessageTxt:', error);
+        throw error;
+    }
+}
+
+async function createJsonFileIfNotExists(filename, defaultContent) {
+    await ensureDataDirectory();
+    const filePath = path.join(DATA_DIR, filename);
+
+    try {
+        await fs.access(filePath); // Verifica se já existe
+        console.log(`✅ Arquivo ${filename} já existe em ${DATA_DIR}`);
+        return filePath;
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            await fs.writeFile(filePath, JSON.stringify(defaultContent, null, 2), 'utf8');
+            console.log(`✅ Arquivo ${filename} criado em ${DATA_DIR}`);
+            return filePath;
+        }
+        throw err;
+    }
+}
+
 async function initializeDevModeConfig() {
-    const defaultConfig = {
-        isDevMode: false,
-        lastChanged: null
-    };
-    
+    const defaultConfig = { isDevMode: false, lastChanged: null };
     return await createJsonFileIfNotExists('devMode.json', defaultConfig);
 }
 
-/**
- * Inicializa o arquivo de cidades (se você quiser padronizar)
- */
 async function initializeCitiesConfig() {
-    const defaultCities = [
-        { name: "São Paulo", active: true },
-        { name: "Rio de Janeiro", active: true },
-        { name: "Belo Horizonte", active: true }
-    ];
-    
+    const defaultCities = [];
     return await createJsonFileIfNotExists('cities.json', defaultCities);
 }
 
-/**
- * Inicializa o arquivo de grupos (exemplo)
- */
 async function initializeGroupsConfig() {
-    const defaultGroups = {
-        mode: "SINGLE",
-        groups: []
-    };
-    
+    const defaultGroups = { mode: "SINGLE", groups: [] };
     return await createJsonFileIfNotExists('groups.json', defaultGroups);
 }
 
-/**
- * Inicializa o arquivo de mensagens (exemplo)
- */
 async function initializeMessagesConfig() {
-    const defaultMessages = {
-        lastMessage: null,
-        messages: []
-    };
-    
+    const defaultMessages = { lastMessage: null, messages: [] };
     return await createJsonFileIfNotExists('messages.json', defaultMessages);
 }
 
-/**
- * Inicializa o arquivo de indicadores (exemplo)
- */
 async function initializeIndicadoresConfig() {
     const defaultIndicadores = {
         atendidos: 0,
@@ -105,76 +70,45 @@ async function initializeIndicadoresConfig() {
         conversoes: 0,
         lastReset: null
     };
-    
     return await createJsonFileIfNotExists('indicadores.json', defaultIndicadores);
 }
 
-/**
- * Inicializa todos os arquivos necessários do sistema
- */
 async function initializeAllConfigs() {
-    try {
-        console.log('🚀 Inicializando configurações do sistema...');
-        
-        await ensureDataDirectory();
-        
-        const results = await Promise.allSettled([
-            initializeDevModeConfig(),
-            initializeCitiesConfig(),
-            initializeGroupsConfig(),
-            initializeMessagesConfig(),
-            initializeIndicadoresConfig()
-        ]);
-        
-        const successCount = results.filter(r => r.status === 'fulfilled').length;
-        const errorCount = results.filter(r => r.status === 'rejected').length;
-        
-        console.log(`✅ Inicialização concluída: ${successCount} sucessos, ${errorCount} erros`);
-        
-        if (errorCount > 0) {
-            console.log('❌ Erros encontrados:');
-            results.forEach((result, index) => {
-                if (result.status === 'rejected') {
-                    console.log(`   - Arquivo ${index}: ${result.reason.message}`);
-                }
-            });
-        }
-        
-        return { success: successCount, errors: errorCount };
-        
-    } catch (error) {
-        console.error('❌ Erro crítico na inicialização:', error);
-        throw error;
-    }
-}
+    console.log('🚀 Inicializando arquivos e pastas do sistema...\n');
 
-/**
- * Utilitário para ler arquivo JSON com fallback
- */
-async function readJsonFile(filename, fallbackContent = {}) {
-    try {
-        const filePath = path.join(DATA_DIR, filename);
-        const data = await fs.readFile(filePath, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.warn(`Aviso: Erro ao ler ${filename}, usando fallback:`, error.message);
-        return fallbackContent;
-    }
-}
+    const results = await Promise.allSettled([
+        initializeDevModeConfig(),
+        initializeCitiesConfig(),
+        initializeGroupsConfig(),
+        initializeMessagesConfig(),
+        initializeIndicadoresConfig(),
+        ensureCityMessageTxtFolder() // Garantir que esta função seja chamada
+    ]);
 
-/**
- * Utilitário para salvar arquivo JSON
- */
-async function saveJsonFile(filename, content) {
-    try {
-        await ensureDataDirectory();
-        const filePath = path.join(DATA_DIR, filename);
-        await fs.writeFile(filePath, JSON.stringify(content, null, 2));
-        return true;
-    } catch (error) {
-        console.error(`Erro ao salvar ${filename}:`, error);
-        return false;
+    const successCount = results.filter(r => r.status === 'fulfilled').length;
+    const errorCount = results.filter(r => r.status === 'rejected').length;
+
+    console.log(`✅ Inicialização concluída: ${successCount} sucesso(s), ${errorCount} erro(s)\n`);
+    
+    if (errorCount > 0) {
+        console.log('❌ Detalhes dos erros:');
+        results.forEach((r, i) => {
+            if (r.status === 'rejected') {
+                const functionNames = [
+                    'initializeDevModeConfig',
+                    'initializeCitiesConfig', 
+                    'initializeGroupsConfig',
+                    'initializeMessagesConfig',
+                    'initializeIndicadoresConfig',
+                    'ensureCityMessageTxtFolder'
+                ];
+                console.error(`   ${functionNames[i]}: ${r.reason.message}`);
+            }
+        });
+        console.log('');
     }
+
+    return { success: successCount, errors: errorCount };
 }
 
 module.exports = {
@@ -186,7 +120,6 @@ module.exports = {
     initializeMessagesConfig,
     initializeIndicadoresConfig,
     initializeAllConfigs,
-    readJsonFile,
-    saveJsonFile,
+    ensureCityMessageTxtFolder,
     DATA_DIR
 };
