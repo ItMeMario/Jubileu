@@ -5,7 +5,6 @@ class CityRepository {
     constructor() {
         this.dataDir = path.join(__dirname, '../data');
         this.filePath = path.join(this.dataDir, 'cities.json');
-        this.ensureDataFileExists();
     }
 
     async getAll() {
