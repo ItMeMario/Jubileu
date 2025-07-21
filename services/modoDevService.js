@@ -1,9 +1,10 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { delay, randomDelay } = require("../utils/delay");
+const { initializeDevModeConfig } = require("../utils/initialize");
 
 // Arquivo de configuração para persistir o modo
-const CONFIG_FILE = path.join(__dirname, "../config/devMode.json");
+const CONFIG_FILE = path.join(__dirname, '../data/devMode.json');
 
 // Configuração padrão
 const DEFAULT_CONFIG = {
@@ -16,15 +17,14 @@ const DEFAULT_CONFIG = {
  */
 async function loadConfig() {
     try {
+        // Garante que o arquivo existe antes de tentar lê-lo
+        await initializeDevModeConfig();
+        
         const data = await fs.readFile(CONFIG_FILE, 'utf8');
         return JSON.parse(data);
     } catch (error) {
-        // Se o arquivo não existir, cria com configuração padrão
-        if (error.code === 'ENOENT') {
-            await saveConfig(DEFAULT_CONFIG);
-            return DEFAULT_CONFIG;
-        }
-        throw error;
+        console.error('Erro ao carregar configuração:', error);
+        return DEFAULT_CONFIG;
     }
 }
 
@@ -33,10 +33,6 @@ async function loadConfig() {
  */
 async function saveConfig(config) {
     try {
-        // Garante que o diretório existe
-        const configDir = path.dirname(CONFIG_FILE);
-        await fs.mkdir(configDir, { recursive: true });
-        
         await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2));
         return true;
     } catch (error) {
