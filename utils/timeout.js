@@ -1,10 +1,10 @@
 const delay = require('../utils/delay');
 
 // Tempo de timeout em milissegundos (30 segundos)
-const TIMEOUT_DURATION = 300000;
+const TIMEOUT_DURATION = 1800000 ;
 
 // Mensagem de timeout
-const TIMEOUT_MESSAGE = "⏳ *Ops!* Parece que houve algum problema na conversa. Se ainda estiver interessado, digite *MENU* e tentamos novamente!";
+const TIMEOUT_MESSAGE = "⏳ *Ops!* Parece que houve algum problema na conversa. Se ainda estiver interessado(a), digite *MENU* e tentamos novamente!";
 
 // Armazena os timeouts ativos
 const activeTimeouts = new Map();
