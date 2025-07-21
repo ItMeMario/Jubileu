@@ -75,6 +75,15 @@ async function promptForCityLink(rl, currentLink = '') {
     return link.trim(); // Retorna o link ou string vazia
 }
 
+async function promptForCityMessage(rl, currentMessage = '') {
+    const prompt = currentMessage 
+        ? `\nDigite a nova mensagem (atual: ${currentMessage}): `
+        : '\nDigite a mensagem da cidade: ';
+    
+    const message = await new Promise(resolve => rl.question(prompt, resolve));
+    return message.trim();
+}
+
 async function promptForCitySelection(rl, cities, action) {
     if (cities.length === 0) {
         console.log('\nNenhuma cidade cadastrada para esta ação.');
@@ -110,7 +119,8 @@ module.exports = {
     showCityManagementMenu,
     showCityList,
     promptForCityName,
-    promptForCityLink, // Adicionado a exportação
+    promptForCityLink, 
     promptForCitySelection,
+    promptForCityMessage,
     confirmAction
 };

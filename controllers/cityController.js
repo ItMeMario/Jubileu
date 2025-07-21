@@ -7,6 +7,7 @@ const {
     showCityList,
     promptForCityName,
     promptForCityLink,
+    promptForCityMessage,
     promptForCitySelection,
     confirmAction
 } = require('../views/cityViews');
@@ -49,54 +50,60 @@ class CityController {
         }
     }
 
-    async addCity(rl) {
-        console.log('\n=== Adicionar Nova Cidade ===');
-        const name = await promptForCityName(rl);
-        if (!name) return;
-        
-        const link = await promptForCityLink(rl);
-        
-        const newCity = {
-            id: generateSimpleId(),
-            name,
-            link: link || '', // Se não fornecer link, fica vazio
-            isPrimary: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        
-        await this.cityRepository.add(newCity);
-        console.log('\n✅ Cidade adicionada com sucesso!');
-    }
+  async addCity(rl) {
+    console.log('\n=== Adicionar Nova Cidade ===');
+    const name = await promptForCityName(rl);
+    if (!name) return;
+    
+    const link = await promptForCityLink(rl);
+    const message = await promptForCityMessage(rl); // ⬅️ novo campo
+    
+    const newCity = {
+        id: generateSimpleId(),
+        name,
+        link: link || '',
+        message: message || '', // ⬅️ armazenado aqui
+        isPrimary: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    
+    await this.cityRepository.add(newCity);
+    console.log('\n✅ Cidade adicionada com sucesso!');
+}
 
     async editCity(rl) {
-        console.log('\n=== Editar Cidade ===');
-        const cities = await this.cityRepository.getAll();
-        
-        if (cities.length === 0) {
-            console.log('\n❌ Nenhuma cidade cadastrada para editar.');
-            return;
-        }
-        
-        const index = await promptForCitySelection(rl, cities, 'editar');
-        if (index === null) return;
-        
-        const cityToEdit = cities[index];
-        const newName = await promptForCityName(rl, cityToEdit.name);
-        if (!newName) return;
-        
-        const newLink = await promptForCityLink(rl, cityToEdit.link);
-        
-        const updatedCity = {
-            ...cityToEdit,
-            name: newName,
-            link: newLink || cityToEdit.link, // Mantém o link existente se não fornecer novo
-            updatedAt: new Date().toISOString()
-        };
-        
-        await this.cityRepository.update(updatedCity);
-        console.log('\n✅ Cidade atualizada com sucesso!');
+    console.log('\n=== Editar Cidade ===');
+    const cities = await this.cityRepository.getAll();
+
+    if (cities.length === 0) {
+        console.log('\n❌ Nenhuma cidade cadastrada para editar.');
+        return;
     }
+
+    const index = await promptForCitySelection(rl, cities, 'editar');
+    if (index === null) return;
+
+    const cityToEdit = cities[index];
+
+    const newName = await promptForCityName(rl, cityToEdit.name);
+    if (!newName) return;
+
+    const newLink = await promptForCityLink(rl, cityToEdit.link);
+    const newMessage = await promptForCityMessage(rl, cityToEdit.message || ''); // ✅ Aqui
+
+    const updatedCity = {
+        ...cityToEdit,
+        name: newName,
+        link: newLink || cityToEdit.link,
+        message: newMessage || cityToEdit.message, // ✅ Aqui
+        updatedAt: new Date().toISOString()
+    };
+
+    await this.cityRepository.update(updatedCity);
+    console.log('\n✅ Cidade atualizada com sucesso!');
+}
+
 
     async setPrimaryCity(rl) {
         console.log('\n=== Definir Cidade Primária ===');
