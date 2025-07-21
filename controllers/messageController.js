@@ -18,15 +18,31 @@ async function handleAddMessage(rl) {
 }
 
 async function handleListMessages() {
-    const messages = await messageService.getMessages();
+    const metas = await messageService.getMessages();
 
-    if (!Array.isArray(messages)) {
-        console.error('Erro: getMessages() não retornou um array. Valor:', messages);
+    if (!Array.isArray(metas)) {
+        console.error('Erro: getMessages() não retornou um array. Valor:', metas);
         return;
     }
 
-    showMessageList(messages);
+    const messagesWithContent = await Promise.all(
+        metas.map(async (meta) => {
+            const full = await messageService.getMessageById(meta.id);
+            return {
+                id: full.id,
+                createdAt: full.createdAt,
+                preview: full.content ? full.content.slice(0, 50).replace(/\n/g, ' ') + (full.content.length > 50 ? '...' : '') : '[sem conteúdo]'
+            };
+        })
+    );
+
+    for (const msg of messagesWithContent) {
+        console.log(`ID: ${msg.id}`);
+        console.log(`Criada em: ${msg.createdAt}`);
+        console.log(`Conteúdo: ${msg.preview}\n`);
+    }
 }
+
 
 async function handleEditMessage(rl) {
     const messages = await messageService.getMessages();
