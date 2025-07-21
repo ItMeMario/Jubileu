@@ -8,16 +8,6 @@ class CityRepository {
         this.ensureDataFileExists();
     }
 
-    ensureDataFileExists() {
-        if (!fs.existsSync(this.dataDir)) {
-            fs.mkdirSync(this.dataDir, { recursive: true });
-        }
-        
-        if (!fs.existsSync(this.filePath)) {
-            fs.writeFileSync(this.filePath, '[]', 'utf8');
-        }
-    }
-
     async getAll() {
         try {
             const data = await fs.promises.readFile(this.filePath, 'utf8');
