@@ -145,11 +145,24 @@ function buscarHorario(texto) {
 }
 
 function hasTriggerText(texto) {
-  const textoNormalizado = normalizarTexto(texto || "");
-  const palavras = textoNormalizado.split(/\s+/);
-  const gatilhos = TRIGGERS.map(trigger => normalizarTexto(trigger));
-  return palavras.some(palavra => gatilhos.includes(palavra));
+  const inputNormalizado = normalizarTexto(texto || "");
+  const gatilhosNormalizados = TRIGGERS.map(trigger => normalizarTexto(trigger));
+
+  // Verificação direta (frase completa)
+  if (gatilhosNormalizados.includes(inputNormalizado)) {
+    return true;
+  }
+
+  // Verificação por substring (gatilho contido no texto)
+  if (gatilhosNormalizados.some(trigger => inputNormalizado.includes(trigger))) {
+    return true;
+  }
+
+  // Fallback: fuzzy matching (mais pesado, usar só como último recurso)
+  const match = stringSimilarity.findBestMatch(inputNormalizado, gatilhosNormalizados);
+  return match.bestMatch.rating > 0.75;
 }
+
 
 
 module.exports = {
