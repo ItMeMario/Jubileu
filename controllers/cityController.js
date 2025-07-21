@@ -18,6 +18,27 @@ class CityController {
         this.cityRepository = new CityRepository();
     }
 
+    // Função para sanitizar texto preservando quebras de linha
+    sanitizeText(text, preserveLineBreaks = true) {
+        if (!text) return '';
+        
+        if (preserveLineBreaks) {
+            // Remove apenas espaços em branco no início e fim, mantendo quebras de linha
+            return text.replace(/^\s+|\s+$/g, '');
+        } else {
+            // Para nome e link, remove tudo incluindo quebras de linha
+            return text.trim();
+        }
+    }
+
+    // Função para validar e normalizar quebras de linha
+    normalizeLineBreaks(text) {
+        if (!text) return '';
+        
+        // Normaliza diferentes tipos de quebras de linha para \n
+        return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    }
+
     async handleCities(rl) {
         let exit = false;
         
@@ -68,8 +89,9 @@ class CityController {
             
             // Verificar se já existe uma cidade com esse nome
             const existingCities = await this.cityRepository.getAll();
+            const sanitizedName = this.sanitizeText(name, false);
             const nameExists = existingCities.some(city => 
-                city.name.toLowerCase().trim() === name.toLowerCase().trim()
+                this.sanitizeText(city.name, false).toLowerCase() === sanitizedName.toLowerCase()
             );
             
             if (nameExists) {
@@ -82,9 +104,9 @@ class CityController {
             
             const newCity = {
                 id: generateSimpleId(),
-                name: name.trim(),
-                link: (link || '').trim(),
-                message: (message || '').trim(),
+                name: this.sanitizeText(name, false),
+                link: this.sanitizeText(link || '', false),
+                message: this.normalizeLineBreaks(this.sanitizeText(message || '', true)),
                 isPrimary: false,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
@@ -124,9 +146,10 @@ class CityController {
 
             // Verificar se o novo nome já existe (exceto para a cidade atual)
             const existingCities = await this.cityRepository.getAll();
+            const sanitizedNewName = this.sanitizeText(newName, false);
             const nameExists = existingCities.some(city => 
                 city.id !== cityToEdit.id && 
-                city.name.toLowerCase().trim() === newName.toLowerCase().trim()
+                this.sanitizeText(city.name, false).toLowerCase() === sanitizedNewName.toLowerCase()
             );
             
             if (nameExists) {
@@ -139,9 +162,11 @@ class CityController {
 
             const updatedCity = {
                 ...cityToEdit,
-                name: newName.trim(),
-                link: (newLink !== undefined ? newLink : cityToEdit.link).trim(),
-                message: newMessage !== undefined ? newMessage.trim() : (cityToEdit.message || '').trim(),
+                name: this.sanitizeText(newName, false),
+                link: newLink !== undefined ? this.sanitizeText(newLink, false) : cityToEdit.link,
+                message: newMessage !== undefined ? 
+                    this.normalizeLineBreaks(this.sanitizeText(newMessage, true)) : 
+                    (cityToEdit.message || ''),
                 updatedAt: new Date().toISOString()
             };
 
