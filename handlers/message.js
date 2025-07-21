@@ -106,7 +106,7 @@ module.exports = async function messageHandler(msg) {
 
     } else {
       // ❌ Cidade não encontrada — envia lista de cidades
-      let errorMessage = "🤔 Desculpe, não encontrei essa cidade.\n\n";
+      let errorMessage = "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
       errorMessage += "📍 *Cidades disponíveis:*\n";
 
       allGroups.forEach((group, index) => {
