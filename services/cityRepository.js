@@ -7,6 +7,12 @@ class CityRepository {
         this.initFile();
     }
 
+    initFile() {
+        if (!fs.existsSync(this.filePath)) {
+            fs.writeFileSync(this.filePath, '[]', 'utf8');
+        }
+    }
+
     async getAll() {
         const data = await fs.promises.readFile(this.filePath, 'utf8');
         return JSON.parse(data);
