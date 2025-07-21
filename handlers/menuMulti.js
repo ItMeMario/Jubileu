@@ -4,13 +4,9 @@ const path = require("path");
 const modoDevService = require("../services/modoDevService");
 const indicadores = require('../utils/indicadores');
 
-const CITIES_FILE = path.join(__dirname, '../data/cities.json');
-let cities = [];
-try {
-  cities = JSON.parse(fs.readFileSync(CITIES_FILE, 'utf8'));
-} catch (error) {
-  console.error("Erro ao carregar cities.json:", error);
-}
+const { readJsonFile } = require('../utils/initialize'); // ou o caminho real do initialize.js
+const cities = await readJsonFile('cities.json', []);
+
 
 const chatContext = {};
 
