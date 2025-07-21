@@ -144,10 +144,13 @@ function buscarHorario(texto) {
   return horarios[normalizado] || "Não entendi";
 }
 
-function hasTriggerText(text) {
-  const normalized = normalizarTexto(text || "");
-  return TRIGGERS.some(trigger => normalized.includes(normalizarTexto(trigger)));
+function hasTriggerText(texto) {
+  const textoNormalizado = normalizarTexto(texto || "");
+  const palavras = textoNormalizado.split(/\s+/);
+  const gatilhos = TRIGGERS.map(trigger => normalizarTexto(trigger));
+  return palavras.some(palavra => gatilhos.includes(palavra));
 }
+
 
 module.exports = {
   normalizarTexto,           // Agora exportada corretamente
