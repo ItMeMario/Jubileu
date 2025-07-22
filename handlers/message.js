@@ -53,8 +53,7 @@ module.exports = async function messageHandler(msg) {
       
       userStates[userNumber] = { step: "awaiting_time", started: true, forceSingle: true };
       
-      // Envia menu de horários logo após a saudação no modo SINGLE
-      await enviarMenuHorarios(client, msg.from, chat);
+     
     } else {
       userStates[userNumber] = { step: "awaiting_city", started: true, forceSingle: false };
     }
