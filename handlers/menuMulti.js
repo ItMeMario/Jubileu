@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const modoDevService = require("../services/modoDevService");
 const indicadores = require('../utils/indicadores');
+const messageReader = require('../utils/messageReader');
 
 const CITIES_FILE = path.join(__dirname, '../data/cities.json');
 let cities = [];
@@ -20,13 +21,13 @@ async function enviarMenuCidades(client, chatId, chat) {
 
   let cityMenu = "Estamos com seleções abertas em " + cities.length + " cidades neste momento: 📍\n\n";
 
-cities.forEach((city, index) => {
-  // Usando emojis de números circulares (1️⃣, 2️⃣, etc.)
-  const numberEmoji = (index + 1) + '\uFE0F\u20E3'; // Combina o número com os modificadores
-  cityMenu += `${numberEmoji} ${city.name}\n`;
-});
+  cities.forEach((city, index) => {
+    // Usando emojis de números circulares (1️⃣, 2️⃣, etc.)
+    const numberEmoji = (index + 1) + '\uFE0F\u20E3'; // Combina o número com os modificadores
+    cityMenu += `${numberEmoji} ${city.name}\n`;
+  });
 
-cityMenu += "\n✨ Em qual dessas cidades você gostaria de estar participando?";
+  cityMenu += "\n✨ Em qual dessas cidades você gostaria de estar participando?";
 
   await client.sendMessage(chatId, cityMenu);
 }
@@ -55,7 +56,11 @@ async function enviarMensagemMenu(client, msg, chat) {
   const contact = await msg.getContact();
   const name = contact.pushname?.split(" ")[0] || "";
 
-  const greetingMessage = `Olá ${name}! Tudo bem?\n\nAqui é o Léo Rieper, da empresa *Dilson Stein!*\nEstamos organizando um evento para escolher novos modelos...`;
+  // Lê a mensagem do arquivo de texto
+  const messageTemplate = messageReader.lerMensagemSaudacao();
+  
+  // Processa a mensagem com o nome do contato
+  const greetingMessage = `Olá ${name}! Tudo bem?\n\n${messageReader.processarMensagem(messageTemplate, name)}`;
 
   await client.sendMessage(msg.from, greetingMessage);
   await enviarMenuCidades(client, msg.from, chat);

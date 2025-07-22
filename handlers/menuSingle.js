@@ -1,6 +1,7 @@
 // menuSingle.js
 const modoDevService = require("../services/modoDevService");
 const indicadores = require('../utils/indicadores');
+const messageReader = require('../utils/messageReader');
 
 const chatContext = {};
 
@@ -28,7 +29,11 @@ async function enviarMensagemMenu(client, msg, chat) {
   const contact = await msg.getContact();
   const name = contact.pushname?.split(" ")[0] || "";
 
-  const greetingMessage = `Olá ${name}! Tudo bem?\n\nAqui é o Léo Rieper, da empresa *Dilson Stein!*\nEstamos organizando um evento para escolher novos modelos...`;
+  // Lê a mensagem do arquivo de texto
+  const messageTemplate = messageReader.lerMensagemSaudacao();
+  
+  // Processa a mensagem com o nome do contato
+  const greetingMessage = `Olá ${name}! Tudo bem?\n\n${messageReader.processarMensagem(messageTemplate, name)}`;
 
   await client.sendMessage(msg.from, greetingMessage);
   await enviarMenuHorarios(client, msg.from, chat);
