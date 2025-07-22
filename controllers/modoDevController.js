@@ -1,0 +1,59 @@
+const modoDevService = require("../services/modoDevService");
+const modoDevView = require("../views/modoDevView");
+
+async function handleModoDevMenu(rl) {
+    while (true) {
+        console.log("\n=== MODO DEV ===");
+
+        const currentMode = await modoDevService.getCurrentMode();
+        modoDevView.showStatusLabel(currentMode.isDevMode);
+
+        console.log("\n1. Alternar Modo (Dev <-> Produção)");
+        console.log("2. Ver Status Detalhado");
+        console.log("0. Voltar ao Menu Principal");
+
+        const choice = await new Promise((resolve) => rl.question("Escolha uma opção: ", resolve));
+
+        switch (choice) {
+            case "1":
+                await toggleMode(rl);
+                break;
+            case "2":
+                await showStatus();
+                break;
+            case "0":
+                console.log("Voltando ao menu principal...");
+                return;
+            default:
+                console.log("Opção inválida. Tente novamente.");
+        }
+    }
+}
+
+async function toggleMode(rl) {
+    try {
+        const result = await modoDevService.toggleDevMode();
+        if (result.success) {
+            modoDevView.showToggleMessage(result.isDevMode);
+        } else {
+            modoDevView.showError(result.error);
+        }
+    } catch (error) {
+        modoDevView.showError(error.message);
+    }
+
+    await modoDevView.waitForEnter(rl);
+}
+
+async function showStatus() {
+    try {
+        const status = await modoDevService.getDetailedStatus();
+        modoDevView.showDetailedStatus(status);
+    } catch (error) {
+        modoDevView.showError(error.message);
+    }
+}
+
+module.exports = {
+    handleModoDevMenu
+};

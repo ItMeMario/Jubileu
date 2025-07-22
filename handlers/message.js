@@ -1,184 +1,241 @@
+// message.js - Versão Corrigida para Novo Fluxo MULTI
 const client = require("../client/client");
 const { enviarMensagemMenu, enviarMenuHorarios, chatContext } = require("../handlers/menuMessage");
 const HORARIOS = require("../horarios");
-const { enviarFAQ } = require("../utils/faq");
-const { normalizarTexto, hasTriggerText } = require("../utils/triggers");
+const { normalizarTexto, hasTriggerText, identificarCidadeFuzzy, normalizarTextoHorario } = require("../utils/triggers");
 const groupService = require("../services/groupService");
 const timeout = require('../utils/timeout');
-const indicadores = require('../utils/indicadores')
+const indicadores = require('../utils/indicadores');
+const faq = require('../utils/faq.js'); // Importa o FAQ
 
-// Estado dos usuários
 const userStates = {};
 
-// Encontra o horário baseado no input do usuário
+// 🧠 Função auxiliar para encontrar horário
 function encontrarHorario(inputUsuario) {
-  const inputNormalizado = normalizarTexto(inputUsuario);
-
-  // Se for um número direto (1-6)
+  const inputNormalizado = normalizarTextoHorario(inputUsuario);
   if (/^[1-6]$/.test(inputNormalizado)) {
     const opcao = parseInt(inputNormalizado);
     const horario = Object.values(HORARIOS).find((h) => h.id === opcao);
     return horario ? { ...horario, id: opcao } : null;
   }
-
   return HORARIOS[inputNormalizado] || null;
 }
 
-// Handler principal
+// 📋 FAQ - Função corrigida para usar o arquivo faq.js
+async function enviarFAQ(client, msg) {
+  try {
+    await faq.enviarFAQ(client, msg); 
+  } catch (error) {
+    console.error("Erro ao enviar FAQ:", error);
+    await client.sendMessage(msg.from, "📋 *FAQ - Perguntas Frequentes*\n\nPara mais informações, digite 'menu' para começar novamente.");
+  }
+}
+
+// 🔍 Função para verificar se é comando FAQ/AJUDA
+function isRequestingHelp(texto) {
+  const textoNormalizado = normalizarTexto(texto);
+  return textoNormalizado.includes('ajuda') || textoNormalizado.includes('faq') || textoNormalizado.includes('help');
+}
+
 module.exports = async function messageHandler(msg) {
   const chat = await msg.getChat();
   const userNumber = msg.from;
-
-  // Extrai o texto da mensagem (se for texto puro, imagem ou vídeo com legenda)
   const textoDaMensagem = msg.caption || msg.body || "";
 
-  /* ─────────────────────────────────────
-     0) TRATAMENTO DO FAQ (nova seção)
-  ────────────────────────────────────── */
-   if (textoDaMensagem.toLowerCase() === "ajuda" || textoDaMensagem.toLowerCase() === "faq") {
+  // 📋 Verifica se é uma solicitação de ajuda/FAQ (em qualquer momento)
+  if (isRequestingHelp(textoDaMensagem)) {
     await enviarFAQ(client, msg);
-    timeout.cancelTimeout(userNumber);
+    await timeout.startTimeout(client, userNumber, chat);
     return;
   }
 
-/* ─────────────────────────────────────
-   0) VERIFICAÇÃO DE TRIGGERS GERAIS  
-────────────────────────────────────── */
-if (hasTriggerText(textoDaMensagem)) {
-  timeout.cancelTimeout(userNumber);
-  delete userStates[userNumber];
-  delete chatContext[userNumber];
-  
-  const currentMode = groupService.getCurrentMode();
-  
-  if (currentMode === 'MULTI') {
-      await enviarMensagemMenu(client, msg, chat);
-      userStates[userNumber] = { step: "awaiting_city", started: true };
-      await timeout.startTimeout(client, userNumber, chat);
-  } else {
-      await enviarMensagemMenu(client, msg, chat);
-      userStates[userNumber] = { step: "awaiting_time", started: true };
-      await timeout.startTimeout(client, userNumber, chat);
+  // 🔁 Reseta conversa com "oi", "menu", etc.
+  if (hasTriggerText(textoDaMensagem)) {
+    timeout.cancelTimeout(userNumber);
+    delete userStates[userNumber];
+    delete chatContext[userNumber];
+
+    const currentMode = groupService.getCurrentMode();
+
+    // 👋 Envia saudação e menu de cidades (usa função original)
+    await enviarMensagemMenu(client, msg, chat);
+
+    // Define próximo passo com base no modo
+    if (currentMode === 'SINGLE') {
+      // No modo SINGLE, configura a cidade primary automaticamente
+      const primaryGroup = groupService.getAllGroups().find(group => group.isPrimary);
+      if (primaryGroup) {
+        chatContext[userNumber] = { selectedCityData: primaryGroup };
+      }
+      
+      userStates[userNumber] = { step: "awaiting_time", started: true, forceSingle: true };
+      
+     
+    } else {
+      userStates[userNumber] = { step: "awaiting_city", started: true, forceSingle: false };
+    }
+
+    await timeout.startTimeout(client, userNumber, chat);
+    return;
   }
-  return;
-}
 
-  /* ─────────────────────────────────────
-     2) ESCOLHA DE CIDADE (apenas MULTI)
-  ────────────────────────────────────── */
+  // 🏙️ Usuário está escolhendo cidade (apenas no modo MULTI)
   if (userStates[userNumber]?.step === "awaiting_city") {
-    const inputCidade = normalizarTexto(msg.body?.trim() || "");
+    const inputCidade = (msg.body?.trim() || "");
+    const inputCidadeNormalizado = normalizarTexto(inputCidade);
     const allGroups = groupService.getAllGroups();
-    const selectedCityData = groupService.findCityByInput(inputCidade, allGroups);
+    let selectedCityData = null;
 
+    // Busca por número
+    const numero = parseInt(inputCidade.trim());
+    if (!isNaN(numero) && numero >= 1 && numero <= allGroups.length) {
+      selectedCityData = allGroups[numero - 1];
+    }
+
+    // Busca por nome exato
+    if (!selectedCityData) {
+      selectedCityData = allGroups.find(group => 
+        normalizarTexto(group.name) === inputCidadeNormalizado
+      );
+    }
+
+    // Busca parcial
+    if (!selectedCityData) {
+      selectedCityData = allGroups.find(group => {
+        const nomeNormalizado = normalizarTexto(group.name);
+        return nomeNormalizado.includes(inputCidadeNormalizado) || 
+               inputCidadeNormalizado.includes(nomeNormalizado);
+      });
+    }
+
+    // Busca fuzzy (inteligente)
+    if (!selectedCityData) {
+      const fuzzyNomeCidade = identificarCidadeFuzzy(inputCidade);
+      if (fuzzyNomeCidade) {
+        selectedCityData = allGroups.find(
+          (group) => group.name === fuzzyNomeCidade
+        );
+      }
+    }
+
+    // ✅ Cidade encontrada
     if (selectedCityData) {
       chatContext[userNumber] = { selectedCityData };
-      await enviarMenuHorarios(client, msg.from, chat); 
-      userStates[userNumber].step = "awaiting_time";
-      await timeout.startTimeout(client, userNumber, chat); // ADICIONADO - inicia timeout após seleção de cidade
-    } else {
+
       await client.sendMessage(
         msg.from,
-        "🤔 Desculpe, não encontrei essa cidade. Tente novamente."
+        `✅ Cidade selecionada: *${selectedCityData.name}*\n\n${selectedCityData.message || ''}`
       );
-      await timeout.startTimeout(client, userNumber, chat); // ADICIONADO - reinicia timeout se cidade inválida
+
+      // ⏰ Envia menu de horários (logo após cidade)
+      await enviarMenuHorarios(client, msg.from, chat);
+      userStates[userNumber].step = "awaiting_time";
+
+    } else {
+      // ❌ Cidade não encontrada — envia lista de cidades COM opção de ajuda
+      let errorMessage = "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
+      errorMessage += "📍 *Cidades disponíveis:*\n";
+
+      allGroups.forEach((group, index) => {
+        errorMessage += `${index + 1}. ${group.name}\n`;
+      });
+
+      errorMessage += "\n💡 Você pode digitar:\n";
+      errorMessage += "• O *número* da cidade (1, 2, 3...)\n";
+      errorMessage += "• O *nome completo* (São Paulo, Joinville...)\n";
+      errorMessage += "• Parte do nome (São, Join...)\n";
+      errorMessage += "\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.\n";
+      errorMessage += "\nTente novamente! 😊";
+
+      await client.sendMessage(msg.from, errorMessage);
     }
+
+    await timeout.startTimeout(client, userNumber, chat);
     return;
   }
 
-  /* ─────────────────────────────────────
-     3) ESCOLHA DE HORÁRIO
-  ────────────────────────────────────── */
+  // ⏰ Usuário está escolhendo horário
   if (userStates[userNumber]?.step === "awaiting_time") {
     const inputUsuario = msg.body?.trim() || "";
 
-    if (inputUsuario.toLowerCase() === "ajuda") {
-      await enviarFAQ(client, msg);
-      timeout.cancelTimeout(userNumber);
-      return;
-    }
-
     const opcao = encontrarHorario(inputUsuario);
-
     if (opcao) {
       userStates[userNumber] = {
+        ...userStates[userNumber], // Preserva as configurações anteriores
         step: "awaiting_name",
         selectedTime: `${opcao.horario} - ${opcao.descricao}`,
         selectedTimeObj: opcao,
       };
+
       await chat.sendStateTyping();
       await client.sendMessage(
         msg.from,
-        `Você escolheu *${opcao.horario} - ${opcao.descricao}*.
-Agora digite somente o seu *NOME COMPLETO* para confirmar a sua inscrição, por favor!😊`
+        `Você escolheu *${opcao.horario} - ${opcao.descricao}*.` +
+        `\nAgora digite somente o seu *NOME COMPLETO* para confirmar a sua inscrição, por favor!😊`
       );
-      await timeout.startTimeout(client, userNumber, chat);
     } else {
-      timeout.cancelTimeout(userNumber);
+      // ❌ Horário não entendido — COM opção de ajuda
       await client.sendMessage(
         msg.from,
-        `🤔 Desculpe, não entendi. Digite apenas o horário que você escolheu para darmos sequência ao seu atendimento, por favor!\n\n` +
-        `E se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
+        `🤔 Desculpe, não entendi. Digite apenas o horário que você escolheu.\n\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
       );
-      await timeout.startTimeout(client, userNumber, chat);
     }
+
+    await timeout.startTimeout(client, userNumber, chat);
     return;
   }
 
-  /* ─────────────────────────────────────
-     4) NOME E ENVIO DE LINK(S)
-  ────────────────────────────────────── */
-if (userStates[userNumber]?.step === "awaiting_name") {
-  const nomeCompleto = msg.body?.trim();
-  const horarioSelecionado = userStates[userNumber].selectedTime;
+  // 🧑 Usuário digitou o nome
+  if (userStates[userNumber]?.step === "awaiting_name") {
+    const nomeCompleto = msg.body?.trim();
+    const horarioSelecionado = userStates[userNumber].selectedTime;
 
-  try {
-    timeout.cancelTimeout(userNumber);
-    
-    const currentMode = groupService.getCurrentMode();
-    const allGroups = groupService.getAllGroups();
+    try {
+      timeout.cancelTimeout(userNumber);
+      const currentMode = groupService.getCurrentMode();
+      const allGroups = groupService.getAllGroups();
+      if (allGroups.length === 0) throw new Error("Nenhum grupo configurado");
 
-    if (allGroups.length === 0) {
-      throw new Error("Nenhum grupo configurado");
-    }
+      let messageText;
 
-    let messageText;
-
-    if (currentMode === "SINGLE") {
-      const primaryLink = groupService.getPrimaryGroupLink();
-      messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
-    } else {
-      const selectedCityData = chatContext[userNumber]?.selectedCityData;
-
-      if (selectedCityData) {
-        messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
-        delete chatContext[userNumber];
+      if (currentMode === 'SINGLE' || userStates[userNumber].forceSingle) {
+        // 🔗 Modo SINGLE - Envia apenas o link da cidade primary
+        const primaryGroup = allGroups.find(group => group.isPrimary);
+        if (primaryGroup) {
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${primaryGroup.name}:\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+        } else {
+          // Fallback caso não encontre cidade primary
+          const primaryLink = groupService.getPrimaryGroupLink();
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+        }
       } else {
-        messageText = `✅ Pronto, *${nomeCompleto}*! Aqui estão os links dos grupos disponíveis:\n\n`;
-        messageText += allGroups
-          .map(
-            (group) =>
-              `🔗 ${group.descricao || `Grupo ${group.id}`}: ${group.link}`
-          )
-          .join("\n\n");
-        messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
+        // 🔗 Modo MULTI
+        const selectedCityData = chatContext[userNumber]?.selectedCityData;
+        if (selectedCityData) {
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+        } else {
+          // Fallback para modo MULTI sem cidade selecionada
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui estão os links dos grupos disponíveis:\n\n`;
+          messageText += allGroups
+            .map((group) => `🔗 ${group.descricao || group.name}: ${group.link}`)
+            .join("\n\n");
+          messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
+        }
       }
-    }
 
-    await client.sendMessage(msg.from, messageText);
-    
-    // ✅ AQUI INCREMENTAMOS O CONTADOR DE CONVIDADOS
-    indicadores.incrementarConvidados(); 
-    
-    delete userStates[userNumber];
-  } catch (error) {
-    console.error("Erro ao enviar mensagem:", error);
-    await msg.reply(
-      "❌ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde."
-    );
-    timeout.cancelTimeout(userNumber);
-    delete userStates[userNumber];
-    delete chatContext[userNumber];
+      await client.sendMessage(msg.from, messageText);
+      indicadores.incrementarConvidados();
+
+      delete userStates[userNumber];
+      delete chatContext[userNumber];
+
+    } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
+      await msg.reply("❌ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde.");
+
+      timeout.cancelTimeout(userNumber);
+      delete userStates[userNumber];
+      delete chatContext[userNumber];
+    }
   }
-}
 };

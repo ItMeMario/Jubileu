@@ -10,7 +10,7 @@ async function handleAddMessage(rl) {
     const content = await promptForMessageContent(rl);
     if (!content) return;
 
-    const newMessage = messageService.addMessage(content);
+    const newMessage = await messageService.addMessage(content);
     console.log('\nMensagem adicionada com sucesso!');
     console.log(`ID: ${newMessage.id}`);
     console.log('\nConteúdo:');
@@ -18,26 +18,48 @@ async function handleAddMessage(rl) {
 }
 
 async function handleListMessages() {
-    const messages = messageService.getMessages();
-    showMessageList(messages);
+    const metas = await messageService.getMessages();
+
+    if (!Array.isArray(metas)) {
+        console.error('Erro: getMessages() não retornou um array. Valor:', metas);
+        return;
+    }
+
+    const messagesWithContent = await Promise.all(
+        metas.map(async (meta) => {
+            const full = await messageService.getMessageById(meta.id);
+            return {
+                id: full.id,
+                createdAt: full.createdAt,
+                preview: full.content ? full.content.slice(0, 50).replace(/\n/g, ' ') + (full.content.length > 50 ? '...' : '') : '[sem conteúdo]'
+            };
+        })
+    );
+
+    for (const msg of messagesWithContent) {
+        console.log(`ID: ${msg.id}`);
+        console.log(`Criada em: ${msg.createdAt}`);
+        console.log(`Conteúdo: ${msg.preview}\n`);
+    }
 }
 
+
 async function handleEditMessage(rl) {
-    const messages = messageService.getMessages();
-    if (messages.length === 0) {
+    const messages = await messageService.getMessages();
+    if (!Array.isArray(messages) || messages.length === 0) {
         console.log('Nenhuma mensagem para editar.');
         return;
     }
 
     showMessageList(messages);
     const idToEdit = await promptForMessageId(rl, 'editar');
-    const messageToEdit = messageService.getMessageById(idToEdit);
+    const messageToEdit = await messageService.getMessageById(idToEdit);
     if (!messageToEdit) return;
 
     const newContent = await promptForMessageContent(rl, messageToEdit.content);
-    const success = messageService.updateMessage(idToEdit, newContent);
+    const result = await messageService.updateMessage(idToEdit, newContent);
 
-    if (success) {
+    if (result.success) {
         console.log('\nMensagem atualizada com sucesso!');
         console.log('Novo conteúdo:');
         console.log(newContent);
@@ -47,15 +69,15 @@ async function handleEditMessage(rl) {
 }
 
 async function handleDeleteMessage(rl) {
-    const messages = messageService.getMessages();
-    if (messages.length === 0) {
+    const messages = await messageService.getMessages();
+    if (!Array.isArray(messages) || messages.length === 0) {
         console.log('Nenhuma mensagem para deletar.');
         return;
     }
 
     showMessageList(messages);
     const idToDelete = await promptForMessageId(rl, 'deletar');
-    const deleted = messageService.deleteMessage(idToDelete);
+    const deleted = await messageService.deleteMessage(idToDelete);
 
     if (deleted) {
         console.log('Mensagem deletada com sucesso!');
@@ -65,7 +87,7 @@ async function handleDeleteMessage(rl) {
 }
 
 async function handleShowLastMessage() {
-    const lastMessage = messageService.getLastMessage();
+    const lastMessage = await messageService.getLastMessage();
     showLastMessage(lastMessage);
 }
 

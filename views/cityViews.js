@@ -75,6 +75,23 @@ async function promptForCityLink(rl, currentLink = '') {
     return link.trim(); // Retorna o link ou string vazia
 }
 
+async function promptForCityMessage(rl, currentMessage = '') {
+    console.log('\nDigite a mensagem da cidade. Você pode colar várias linhas.');
+    console.log('Digite "/end" em uma nova linha para finalizar.\n');
+
+    const messageLines = [];
+
+    while (true) {
+        const line = await new Promise(resolve => rl.question('> ', resolve));
+        if (line.trim() === '/end') break;
+        messageLines.push(line);  // já são por linha
+    }
+
+    return messageLines.join('\n');  // <- GARANTIDO
+}
+
+
+
 async function promptForCitySelection(rl, cities, action) {
     if (cities.length === 0) {
         console.log('\nNenhuma cidade cadastrada para esta ação.');
@@ -110,7 +127,8 @@ module.exports = {
     showCityManagementMenu,
     showCityList,
     promptForCityName,
-    promptForCityLink, // Adicionado a exportação
+    promptForCityLink, 
     promptForCitySelection,
+    promptForCityMessage,
     confirmAction
 };
