@@ -6,6 +6,7 @@ const { normalizarTexto, hasTriggerText, identificarCidadeFuzzy, normalizarTexto
 const groupService = require("../services/groupService");
 const timeout = require('../utils/timeout');
 const indicadores = require('../utils/indicadores');
+const faq = require('../utils/faq.js'); // Importa o FAQ
 
 const userStates = {};
 
@@ -20,17 +21,33 @@ function encontrarHorario(inputUsuario) {
   return HORARIOS[inputNormalizado] || null;
 }
 
-// 📋 FAQ
+// 📋 FAQ - Função corrigida para usar o arquivo faq.js
 async function enviarFAQ(client, msg) {
-  await client.sendMessage(msg.from, "📋 *FAQ - Perguntas Frequentes*\n\nPara mais informações, digite 'menu' para começar novamente.");
+  try {
+    await faq.enviarFAQ(client, msg); 
+  } catch (error) {
+    console.error("Erro ao enviar FAQ:", error);
+    await client.sendMessage(msg.from, "📋 *FAQ - Perguntas Frequentes*\n\nPara mais informações, digite 'menu' para começar novamente.");
+  }
 }
 
-
+// 🔍 Função para verificar se é comando FAQ/AJUDA
+function isRequestingHelp(texto) {
+  const textoNormalizado = normalizarTexto(texto);
+  return textoNormalizado.includes('ajuda') || textoNormalizado.includes('faq') || textoNormalizado.includes('help');
+}
 
 module.exports = async function messageHandler(msg) {
   const chat = await msg.getChat();
   const userNumber = msg.from;
   const textoDaMensagem = msg.caption || msg.body || "";
+
+  // 📋 Verifica se é uma solicitação de ajuda/FAQ (em qualquer momento)
+  if (isRequestingHelp(textoDaMensagem)) {
+    await enviarFAQ(client, msg);
+    await timeout.startTimeout(client, userNumber, chat);
+    return;
+  }
 
   // 🔁 Reseta conversa com "oi", "menu", etc.
   if (hasTriggerText(textoDaMensagem)) {
@@ -115,7 +132,7 @@ module.exports = async function messageHandler(msg) {
       userStates[userNumber].step = "awaiting_time";
 
     } else {
-      // ❌ Cidade não encontrada — envia lista de cidades
+      // ❌ Cidade não encontrada — envia lista de cidades COM opção de ajuda
       let errorMessage = "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
       errorMessage += "📍 *Cidades disponíveis:*\n";
 
@@ -127,6 +144,7 @@ module.exports = async function messageHandler(msg) {
       errorMessage += "• O *número* da cidade (1, 2, 3...)\n";
       errorMessage += "• O *nome completo* (São Paulo, Joinville...)\n";
       errorMessage += "• Parte do nome (São, Join...)\n";
+      errorMessage += "\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.\n";
       errorMessage += "\nTente novamente! 😊";
 
       await client.sendMessage(msg.from, errorMessage);
@@ -156,9 +174,10 @@ module.exports = async function messageHandler(msg) {
         `\nAgora digite somente o seu *NOME COMPLETO* para confirmar a sua inscrição, por favor!😊`
       );
     } else {
+      // ❌ Horário não entendido — COM opção de ajuda
       await client.sendMessage(
         msg.from,
-        `🤔 Desculpe, não entendi. Digite apenas o horário que você escolheu.`
+        `🤔 Desculpe, não entendi. Digite apenas o horário que você escolheu.\n\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
       );
     }
 
