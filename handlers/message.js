@@ -1,4 +1,4 @@
-// message.js - Versão Refatorada para Novo Fluxo MULTI
+// message.js - Versão Corrigida para Novo Fluxo MULTI
 const client = require("../client/client");
 const { enviarMensagemMenu, enviarMenuHorarios, chatContext } = require("../handlers/menuMessage");
 const HORARIOS = require("../horarios");
@@ -25,6 +25,8 @@ async function enviarFAQ(client, msg) {
   await client.sendMessage(msg.from, "📋 *FAQ - Perguntas Frequentes*\n\nPara mais informações, digite 'menu' para começar novamente.");
 }
 
+
+
 module.exports = async function messageHandler(msg) {
   const chat = await msg.getChat();
   const userNumber = msg.from;
@@ -38,12 +40,21 @@ module.exports = async function messageHandler(msg) {
 
     const currentMode = groupService.getCurrentMode();
 
-    // 👋 Envia saudação e menu de cidades (modo MULTI)
+    // 👋 Envia saudação e menu de cidades (usa função original)
     await enviarMensagemMenu(client, msg, chat);
 
     // Define próximo passo com base no modo
     if (currentMode === 'SINGLE') {
+      // No modo SINGLE, configura a cidade primary automaticamente
+      const primaryGroup = groupService.getAllGroups().find(group => group.isPrimary);
+      if (primaryGroup) {
+        chatContext[userNumber] = { selectedCityData: primaryGroup };
+      }
+      
       userStates[userNumber] = { step: "awaiting_time", started: true, forceSingle: true };
+      
+      // Envia menu de horários logo após a saudação no modo SINGLE
+      await enviarMenuHorarios(client, msg.from, chat);
     } else {
       userStates[userNumber] = { step: "awaiting_city", started: true, forceSingle: false };
     }
@@ -52,7 +63,7 @@ module.exports = async function messageHandler(msg) {
     return;
   }
 
-  // 🏙️ Usuário está escolhendo cidade
+  // 🏙️ Usuário está escolhendo cidade (apenas no modo MULTI)
   if (userStates[userNumber]?.step === "awaiting_city") {
     const inputCidade = (msg.body?.trim() || "");
     const inputCidadeNormalizado = normalizarTexto(inputCidade);
@@ -133,6 +144,7 @@ module.exports = async function messageHandler(msg) {
     const opcao = encontrarHorario(inputUsuario);
     if (opcao) {
       userStates[userNumber] = {
+        ...userStates[userNumber], // Preserva as configurações anteriores
         step: "awaiting_name",
         selectedTime: `${opcao.horario} - ${opcao.descricao}`,
         selectedTimeObj: opcao,
@@ -168,19 +180,26 @@ module.exports = async function messageHandler(msg) {
 
       let messageText;
 
-      if (userStates[userNumber].forceSingle) {
-        // 🔗 Modo SINGLE
-        const primaryLink = groupService.getPrimaryGroupLink();
-        messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+      if (currentMode === 'SINGLE' || userStates[userNumber].forceSingle) {
+        // 🔗 Modo SINGLE - Envia apenas o link da cidade primary
+        const primaryGroup = allGroups.find(group => group.isPrimary);
+        if (primaryGroup) {
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${primaryGroup.name}:\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+        } else {
+          // Fallback caso não encontre cidade primary
+          const primaryLink = groupService.getPrimaryGroupLink();
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+        }
       } else {
         // 🔗 Modo MULTI
         const selectedCityData = chatContext[userNumber]?.selectedCityData;
         if (selectedCityData) {
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
         } else {
+          // Fallback para modo MULTI sem cidade selecionada
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui estão os links dos grupos disponíveis:\n\n`;
           messageText += allGroups
-            .map((group) => `🔗 ${group.descricao || `Grupo ${group.id}`}: ${group.link}`)
+            .map((group) => `🔗 ${group.descricao || group.name}: ${group.link}`)
             .join("\n\n");
           messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
         }
