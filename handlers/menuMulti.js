@@ -18,11 +18,15 @@ async function enviarMenuCidades(client, chatId, chat) {
   await modoDevService.testDelay();
   await chat.sendStateTyping();
 
-  let cityMenu = "📍 *SELECIONE SUA CIDADE* 📍\nPor favor, responda com o NÚMERO da sua cidade:\n\n";
+  let cityMenu = "Estamos com seleções abertas em " + cities.length + " cidades neste momento: 📍\n\n";
 
-  cities.forEach((city, index) => {
-    cityMenu += `${index + 1} - ${city.name}\n`;
-  });
+cities.forEach((city, index) => {
+  // Usando emojis de números circulares (1️⃣, 2️⃣, etc.)
+  const numberEmoji = (index + 1) + '\uFE0F\u20E3'; // Combina o número com os modificadores
+  cityMenu += `${numberEmoji} ${city.name}\n`;
+});
+
+cityMenu += "\n✨ Em qual dessas cidades você gostaria de estar participando?";
 
   await client.sendMessage(chatId, cityMenu);
 }
