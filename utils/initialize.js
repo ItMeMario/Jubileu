@@ -25,6 +25,37 @@ async function ensureCityMessageTxtFolder() {
     }
 }
 
+// Funções adicionadas para corrigir o erro do messageService
+async function readJsonFile(filename, defaultValue = null) {
+    await ensureDataDirectory();
+    const filePath = path.join(DATA_DIR, filename);
+    
+    try {
+        const data = await fs.readFile(filePath, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            // Arquivo não existe, retorna valor padrão
+            return defaultValue;
+        }
+        console.error(`Erro ao ler ${filename}:`, error);
+        throw error;
+    }
+}
+
+async function saveJsonFile(filename, data) {
+    await ensureDataDirectory();
+    const filePath = path.join(DATA_DIR, filename);
+    
+    try {
+        await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+        return true;
+    } catch (error) {
+        console.error(`Erro ao salvar ${filename}:`, error);
+        return false;
+    }
+}
+
 async function createJsonFileIfNotExists(filename, defaultContent) {
     await ensureDataDirectory();
     const filePath = path.join(DATA_DIR, filename);
@@ -59,7 +90,7 @@ async function initializeGroupsConfig() {
 }
 
 async function initializeMessagesConfig() {
-    const defaultMessages = { lastMessage: null, messages: [] };
+    const defaultMessages = [];
     return await createJsonFileIfNotExists('messages.json', defaultMessages);
 }
 
@@ -121,5 +152,7 @@ module.exports = {
     initializeIndicadoresConfig,
     initializeAllConfigs,
     ensureCityMessageTxtFolder,
-    DATA_DIR
+    DATA_DIR,
+    readJsonFile,
+    saveJsonFile
 };
