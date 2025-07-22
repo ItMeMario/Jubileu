@@ -16,7 +16,6 @@ try {
 const chatContext = {};
 
 async function enviarMenuCidades(client, chatId, chat) {
-  await modoDevService.testDelay();
   await chat.sendStateTyping();
 
   let cityMenu = "Estamos com seleções abertas em " + cities.length + " cidades neste momento: 📍\n\n";
@@ -33,7 +32,6 @@ async function enviarMenuCidades(client, chatId, chat) {
 }
 
 async function enviarMenuHorarios(client, chatId, chat) {
-  await modoDevService.testDelay();
   await chat.sendStateTyping();
 
   const timeMenu = `⚠*IMPORTANTE: Escolha seu horário:*

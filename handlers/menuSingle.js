@@ -6,7 +6,7 @@ const messageReader = require('../utils/messageReader');
 const chatContext = {};
 
 async function enviarMenuHorarios(client, chatId, chat) {
-  await modoDevService.testDelay();
+  
   await chat.sendStateTyping();
 
   const timeMenu = `⚠*IMPORTANTE: Escolha seu horário:*
