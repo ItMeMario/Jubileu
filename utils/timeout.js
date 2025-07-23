@@ -1,6 +1,6 @@
 
 
-// Tempo de timeout em milissegundos (30 segundos)
+// Tempo de timeout em milissegundos (30 minutos)
 const TIMEOUT_DURATION = 1800000 ;
 
 // Mensagem de timeout

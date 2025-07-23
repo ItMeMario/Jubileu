@@ -106,19 +106,10 @@ async function getDetailedStatus() {
     }
 }
 
-// async function testDelay() {
-//     const config = await loadConfig();
-//     if (config.isDevMode) {
-//         await delay(3000);
-//     } else {
-//         await randomDelay(60000, 180000);
-//     }
-// }
 
 module.exports = {
     toggleDevMode,
     toggleDebugMode,
     getCurrentMode,
     getDetailedStatus,
-   // testDelay
 };
