@@ -1,4 +1,4 @@
-const delay = require('../utils/delay');
+
 
 // Tempo de timeout em milissegundos (30 segundos)
 const TIMEOUT_DURATION = 1800000 ;

@@ -1,12 +1,12 @@
 // menuSingle.js
 const modoDevService = require("../services/modoDevService");
-const indicadores = require('../utils/indicadores');
-const messageReader = require('../utils/messageReader');
+const indicadores = require("../utils/indicadores");
+const messageReader = require("../utils/messageReader");
+const delay = require("../utils/delay");
 
 const chatContext = {};
 
 async function enviarMenuHorarios(client, chatId, chat) {
-  
   await chat.sendStateTyping();
 
   const timeMenu = `⚠*IMPORTANTE: Escolha seu horário:*
@@ -18,11 +18,13 @@ _Horarios disponíveis_
 5️⃣ - 17:30h (Final da tarde)
 6️⃣ - 19:30h (Noite)`;
 
+  await delay.smartDelay({ ms: 5000 });
   await client.sendMessage(chatId, timeMenu);
 }
 
 async function enviarMensagemMenu(client, msg, chat) {
-  await modoDevService.testDelay();
+  //await modoDevService.testDelay();
+  await delay.smartDelay();
   await chat.sendStateTyping();
   indicadores.incrementarAtendidos();
 
@@ -31,9 +33,12 @@ async function enviarMensagemMenu(client, msg, chat) {
 
   // Lê a mensagem do arquivo de texto
   const messageTemplate = messageReader.lerMensagemSaudacao();
-  
+
   // Processa a mensagem com o nome do contato
-  const greetingMessage = `Olá ${name}! Tudo bem?\n\n${messageReader.processarMensagem(messageTemplate, name)}`;
+  const greetingMessage = `Olá ${name}! Tudo bem?\n\n${messageReader.processarMensagem(
+    messageTemplate,
+    name
+  )}`;
 
   await client.sendMessage(msg.from, greetingMessage);
   await enviarMenuHorarios(client, msg.from, chat);
@@ -42,5 +47,5 @@ async function enviarMensagemMenu(client, msg, chat) {
 module.exports = {
   enviarMensagemMenu,
   enviarMenuHorarios,
-  chatContext
+  chatContext,
 };

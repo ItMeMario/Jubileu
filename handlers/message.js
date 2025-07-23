@@ -57,7 +57,7 @@ module.exports = async function messageHandler(msg) {
     await enviarMensagemMenu(client, msg, chat);
 
     if (currentMode === 'SINGLE') {
-      const primaryGroup = groupService.getAllGroups().find(group => group.isPrimary);
+      const primaryGroup = (await groupService.getAllGroups()).find(group => group.isPrimary);
       if (primaryGroup) {
         chatContext[userNumber] = { selectedCityData: primaryGroup };
       }
@@ -73,7 +73,7 @@ module.exports = async function messageHandler(msg) {
   if (userStates[userNumber]?.step === "awaiting_city") {
     const inputCidade = (msg.body?.trim() || "");
     const inputCidadeNormalizado = normalizarTexto(inputCidade);
-    const allGroups = groupService.getAllGroups();
+    const allGroups = await groupService.getAllGroups();
     let selectedCityData = null;
 
     const numero = parseInt(inputCidade.trim());
@@ -177,7 +177,7 @@ module.exports = async function messageHandler(msg) {
     try {
       timeout.cancelTimeout(userNumber);
       const currentMode = groupService.getCurrentMode();
-      const allGroups = groupService.getAllGroups();
+      const allGroups = await groupService.getAllGroups();
       if (allGroups.length === 0) throw new Error("Nenhum grupo configurado");
 
       let messageText;
@@ -187,7 +187,7 @@ module.exports = async function messageHandler(msg) {
         if (primaryGroup) {
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${primaryGroup.name}:\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
         } else {
-          const primaryLink = groupService.getPrimaryGroupLink();
+          const primaryLink = await groupService.getPrimaryGroupLink();
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
         }
       } else {

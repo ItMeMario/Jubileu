@@ -308,7 +308,7 @@ class GroupService {
      getters
   ────────────────────────────── */
   async getPrimaryGroup() { 
-    const primary = this.groups.find(g => g.isPrimary) || this.groups[0];
+    const primaryGroup = (await groupService.getAllGroups()).find(group => group.isPrimary);
     if (primary) {
       // Enriquecer com mensagem do arquivo
       return await this._enrichGroupWithMessage(primary);
