@@ -18,7 +18,8 @@ _Horarios disponíveis_
 5️⃣ - 17:30h (Final da tarde)
 6️⃣ - 19:30h (Noite)`;
 
-  await delay.smartDelay({ ms: 5000 });
+  // Delay antes do menu de horários
+  await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
   await client.sendMessage(chatId, timeMenu);
 }
 

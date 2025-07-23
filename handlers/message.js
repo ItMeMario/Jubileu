@@ -7,6 +7,7 @@ const groupService = require("../services/groupService");
 const timeout = require('../utils/timeout');
 const indicadores = require('../utils/indicadores');
 const faq = require('../utils/faq.js'); // Importa o FAQ
+const delay = require('../utils/delay'); // Importa o delay
 
 const userStates = {};
 
@@ -107,6 +108,8 @@ module.exports = async function messageHandler(msg) {
     if (selectedCityData) {
       chatContext[userNumber] = { selectedCityData };
 
+      // Delay antes da mensagem de confirmação da cidade
+      await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
       await client.sendMessage(
         msg.from,
         `✅ Cidade selecionada: *${selectedCityData.name}*\n\n${selectedCityData.message || ''}`
@@ -120,6 +123,7 @@ module.exports = async function messageHandler(msg) {
       await enviarMenuHorarios(client, msg.from, chat);
 
     } else {
+      // Mensagem de erro - SEM delay
       let errorMessage = "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
       errorMessage += "📍 *Cidades disponíveis:*\n";
 
@@ -154,12 +158,15 @@ module.exports = async function messageHandler(msg) {
       };
 
       await chat.sendStateTyping();
+      // Delay antes da confirmação do horário
+      await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
       await client.sendMessage(
         msg.from,
         `Você escolheu *${opcao.horario} - ${opcao.descricao}*.\nAgora digite somente o seu *NOME COMPLETO* para confirmar a sua inscrição, por favor!😊`
       );
 
     } else {
+      // Mensagem de erro - SEM delay
       await client.sendMessage(
         msg.from,
         `🤔 Desculpe, não entendi. Digite apenas o horário que você escolheu.\n\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
@@ -203,6 +210,8 @@ module.exports = async function messageHandler(msg) {
         }
       }
 
+      // Delay antes da mensagem final com links
+      await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
       await client.sendMessage(msg.from, messageText);
       indicadores.incrementarConvidados();
 
@@ -211,6 +220,7 @@ module.exports = async function messageHandler(msg) {
 
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
+      // Mensagem de erro - SEM delay
       await msg.reply("❌ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde.");
 
       timeout.cancelTimeout(userNumber);
