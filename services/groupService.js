@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { debug } = require('./debugService'); // Nova importação do sistema de debug
 
 const DATA_DIR = path.join(__dirname, '../data');
 const GROUPS_FILE = path.join(DATA_DIR, 'groups.json');
@@ -34,18 +35,18 @@ class GroupService {
    * @param {string} cityId - ID da cidade
    * @returns {string|null} - Mensagem ou null se não existir
    */
-  _loadCityMessage(cityId) {
+  async _loadCityMessage(cityId) {
     try {
       const messagePath = path.join(CITIES_MESSAGE_DIR, `${cityId}.txt`);
       if (fs.existsSync(messagePath)) {
         const message = fs.readFileSync(messagePath, 'utf8').trim();
-        console.log(`[DEBUG] Mensagem carregada para cidade ${cityId}: ${message.substring(0, 50)}...`);
+        await debug(`Mensagem carregada para cidade ${cityId}: ${message.substring(0, 50)}...`);
         return message;
       }
-      console.log(`[DEBUG] Arquivo de mensagem não encontrado para cidade ${cityId}`);
+      await debug(`Arquivo de mensagem não encontrado para cidade ${cityId}`);
       return null;
     } catch (error) {
-      console.error(`[DEBUG] Erro ao carregar mensagem para cidade ${cityId}:`, error);
+      await debug(`Erro ao carregar mensagem para cidade ${cityId}:`, error);
       return null;
     }
   }
@@ -55,23 +56,23 @@ class GroupService {
    * @param {string} cityId - ID da cidade
    * @param {string} message - Mensagem a ser salva
    */
-  _saveCityMessage(cityId, message) {
+  async _saveCityMessage(cityId, message) {
     try {
       if (!message || !message.trim()) {
         // Se mensagem vazia, remove o arquivo
         const messagePath = path.join(CITIES_MESSAGE_DIR, `${cityId}.txt`);
         if (fs.existsSync(messagePath)) {
           fs.unlinkSync(messagePath);
-          console.log(`[DEBUG] Arquivo de mensagem removido para cidade ${cityId}`);
+          await debug(`Arquivo de mensagem removido para cidade ${cityId}`);
         }
         return;
       }
 
       const messagePath = path.join(CITIES_MESSAGE_DIR, `${cityId}.txt`);
       fs.writeFileSync(messagePath, message.trim(), 'utf8');
-      console.log(`[DEBUG] Mensagem salva para cidade ${cityId}`);
+      await debug(`Mensagem salva para cidade ${cityId}`);
     } catch (error) {
-      console.error(`[DEBUG] Erro ao salvar mensagem para cidade ${cityId}:`, error);
+      await debug(`Erro ao salvar mensagem para cidade ${cityId}:`, error);
     }
   }
 
@@ -79,46 +80,47 @@ class GroupService {
    * Remove arquivo de mensagem quando cidade é deletada
    * @param {string} cityId - ID da cidade
    */
-  _deleteCityMessage(cityId) {
+  async _deleteCityMessage(cityId) {
     try {
       const messagePath = path.join(CITIES_MESSAGE_DIR, `${cityId}.txt`);
       if (fs.existsSync(messagePath)) {
         fs.unlinkSync(messagePath);
-        console.log(`[DEBUG] Arquivo de mensagem removido para cidade ${cityId}`);
+        await debug(`Arquivo de mensagem removido para cidade ${cityId}`);
       }
     } catch (error) {
-      console.error(`[DEBUG] Erro ao remover mensagem para cidade ${cityId}:`, error);
+      await debug(`Erro ao remover mensagem para cidade ${cityId}:`, error);
     }
   }
 
-  _loadData() {
+  async _loadData() {
     try {
       // PRIORIDADE 1: Carregar cidades do cities.json
-      console.log('[DEBUG] Verificando existência do cities.json:', CITIES_FILE);
-      console.log('[DEBUG] Arquivo existe?', fs.existsSync(CITIES_FILE));
+      await debug('Verificando existência do cities.json:', CITIES_FILE);
+      await debug('Arquivo existe?', fs.existsSync(CITIES_FILE));
       
       if (fs.existsSync(CITIES_FILE)) {
-        console.log('[DEBUG] Carregando cities.json...');
+        await debug('Carregando cities.json...');
         const rawData = fs.readFileSync(CITIES_FILE, 'utf8');
-        console.log('[DEBUG] Dados brutos do cities.json:', rawData);
+        await debug('Dados brutos do cities.json:', rawData);
         
         const citiesData = JSON.parse(rawData);
-        console.log('[DEBUG] Dados parseados:', citiesData);
-        console.log('[DEBUG] Tipo dos dados:', Array.isArray(citiesData) ? 'Array' : typeof citiesData);
+        await debug('Dados parseados:', citiesData);
+        await debug('Tipo dos dados:', Array.isArray(citiesData) ? 'Array' : typeof citiesData);
         
         if (!Array.isArray(citiesData)) {
-          console.error('[DEBUG] cities.json não é um array válido');
+          await debug('cities.json não é um array válido');
           throw new Error('cities.json deve conter um array');
         }
         
         // Converter formato cities.json para formato groups
-        this.groups = citiesData.map(city => {
-          console.log('[DEBUG] Processando cidade:', city);
+        this.groups = [];
+        for (const city of citiesData) {
+          await debug('Processando cidade:', city);
           
           // Carregar mensagem do arquivo .txt (não do JSON)
-          const messageFromFile = this._loadCityMessage(city.id);
+          const messageFromFile = await this._loadCityMessage(city.id);
           
-          return {
+          this.groups.push({
             id: city.id,
             link: city.link,
             name: city.name.toLowerCase(),
@@ -128,11 +130,11 @@ class GroupService {
             updatedAt: city.updatedAt || new Date().toISOString(),
             // Não armazenar message aqui - será carregada dinamicamente
             _messageFromFile: messageFromFile // Cache temporário interno
-          };
-        });
+          });
+        }
         
-        console.log(`[DEBUG] Carregadas ${this.groups.length} cidades do cities.json`);
-        console.log('[DEBUG] Grupos após conversão:', this.groups.map(g => ({
+        await debug(`Carregadas ${this.groups.length} cidades do cities.json`);
+        await debug('Grupos após conversão:', this.groups.map(g => ({
           id: g.id,
           name: g.name,
           hasMessage: !!g._messageFromFile
@@ -140,30 +142,30 @@ class GroupService {
       }
       // FALLBACK: Carregar do groups.json se cities.json não existir
       else if (fs.existsSync(GROUPS_FILE)) {
-        console.log('[DEBUG] cities.json não encontrado, tentando groups.json...');
+        await debug('cities.json não encontrado, tentando groups.json...');
         this.groups = JSON.parse(fs.readFileSync(GROUPS_FILE, 'utf8'));
         
         // Para grupos carregados do formato antigo, tentar carregar mensagens dos arquivos
-        this.groups.forEach(group => {
-          const messageFromFile = this._loadCityMessage(group.id);
+        for (const group of this.groups) {
+          const messageFromFile = await this._loadCityMessage(group.id);
           if (messageFromFile) {
             group._messageFromFile = messageFromFile;
           }
-        });
+        }
         
-        console.log(`[DEBUG] Carregadas ${this.groups.length} grupos do groups.json`);
+        await debug(`Carregadas ${this.groups.length} grupos do groups.json`);
       } else {
-        console.log('[DEBUG] Nenhum arquivo de dados encontrado, inicializando array vazio');
+        await debug('Nenhum arquivo de dados encontrado, inicializando array vazio');
         this.groups = [];
         this._saveGroups();
       }
 
       // config
       if (fs.existsSync(CONFIG_FILE)) {
-        console.log('[DEBUG] Carregando config.json...');
+        await debug('Carregando config.json...');
         this.config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
       } else {
-        console.log('[DEBUG] config.json não encontrado, criando com padrões...');
+        await debug('config.json não encontrado, criando com padrões...');
         this.config = { mode: DEFAULT_MODE };
         this._saveConfig();
       }
@@ -177,8 +179,8 @@ class GroupService {
       }
 
       // DEBUG: Log da estrutura carregada
-      console.log(`[DEBUG] Total de grupos carregados: ${this.groups.length}`);
-      console.log('[DEBUG] Estrutura dos grupos:', this.groups.map(g => ({
+      await debug(`Total de grupos carregados: ${this.groups.length}`);
+      await debug('Estrutura dos grupos:', this.groups.map(g => ({
         id: g.id,
         name: g.name,
         isPrimary: g.isPrimary,
@@ -186,19 +188,19 @@ class GroupService {
       })));
 
     } catch (err) {
-      console.error('[DEBUG] Erro ao carregar dados - Detalhes completos:', err);
-      console.error('[DEBUG] Stack trace:', err.stack);
-      console.error('[DEBUG] Arquivo cities.json existe?', fs.existsSync(CITIES_FILE));
-      console.error('[DEBUG] Caminho absoluto do cities.json:', path.resolve(CITIES_FILE));
+      await debug('Erro ao carregar dados - Detalhes completos:', err);
+      await debug('Stack trace:', err.stack);
+      await debug('Arquivo cities.json existe?', fs.existsSync(CITIES_FILE));
+      await debug('Caminho absoluto do cities.json:', path.resolve(CITIES_FILE));
       
       // Tentar ler o arquivo mesmo assim para debug
       try {
         if (fs.existsSync(CITIES_FILE)) {
           const rawContent = fs.readFileSync(CITIES_FILE, 'utf8');
-          console.error('[DEBUG] Conteúdo bruto do arquivo:', rawContent.substring(0, 200));
+          await debug('Conteúdo bruto do arquivo:', rawContent.substring(0, 200));
         }
       } catch (readErr) {
-        console.error('[DEBUG] Erro ao tentar ler o arquivo para debug:', readErr);
+        await debug('Erro ao tentar ler o arquivo para debug:', readErr);
       }
       
       this.groups = [];
@@ -206,7 +208,7 @@ class GroupService {
     }
   }
 
-  _saveGroups() { 
+  async _saveGroups() { 
     fs.writeFileSync(GROUPS_FILE, JSON.stringify(this.groups, null, 2)); 
     
     // NOVO: Também salvar no formato cities.json para manter compatibilidade
@@ -223,7 +225,7 @@ class GroupService {
       
       try {
         fs.writeFileSync(CITIES_FILE, JSON.stringify(citiesFormat, null, 2));
-        console.log('[DEBUG] cities.json atualizado (sem mensagens inline)');
+        await debug('cities.json atualizado (sem mensagens inline)');
       } catch (err) {
         console.error('Erro ao salvar cities.json:', err);
       }
@@ -237,7 +239,7 @@ class GroupService {
   /* ──────────────────────────────
      CRUD de grupos
   ────────────────────────────── */
-  addGroup(link, setAsPrimary = false, name = '', descricao = '', message = '') {
+  async addGroup(link, setAsPrimary = false, name = '', descricao = '', message = '') {
     const newGroup = {
       id: Date.now().toString(),
       link,
@@ -252,70 +254,70 @@ class GroupService {
     
     // Salvar mensagem em arquivo separado se fornecida
     if (message && message.trim()) {
-      this._saveCityMessage(newGroup.id, message);
+      await this._saveCityMessage(newGroup.id, message);
       newGroup._messageFromFile = message; // Cache temporário
     }
     
     this.groups.push(newGroup);
-    this._saveGroups();
+    await this._saveGroups();
     return newGroup;
   }
 
-  updateGroup(id, updates = {}) {
+  async updateGroup(id, updates = {}) {
     const group = this.groups.find(g => g.id === id);
     if (!group) return false;
 
     // Se há mensagem nos updates, salvar em arquivo separado
     if (updates.hasOwnProperty('message')) {
-      this._saveCityMessage(id, updates.message);
+      await this._saveCityMessage(id, updates.message);
       group._messageFromFile = updates.message; // Atualizar cache
       delete updates.message; // Remover do objeto antes de fazer assign
     }
 
     Object.assign(group, updates, { updatedAt: new Date().toISOString() });
-    this._saveGroups();
+    await this._saveGroups();
     return true;
   }
 
-  deleteGroup(id) {
+  async deleteGroup(id) {
     const idx = this.groups.findIndex(g => g.id === id);
     if (idx === -1) return false;
 
     const [removed] = this.groups.splice(idx, 1);
     
     // Remover arquivo de mensagem
-    this._deleteCityMessage(id);
+    await this._deleteCityMessage(id);
     
     if (removed.isPrimary && this.groups.length) this.groups[0].isPrimary = true;
-    this._saveGroups();
+    await this._saveGroups();
     return true;
   }
 
-  setPrimaryGroup(id) {
+  async setPrimaryGroup(id) {
     const group = this.groups.find(g => g.id === id);
     if (!group) return false;
 
     this.groups.forEach(g => g.isPrimary = false);
     group.isPrimary = true;
     group.updatedAt = new Date().toISOString();
-    this._saveGroups();
+    await this._saveGroups();
     return true;
   }
 
   /* ──────────────────────────────
      getters
   ────────────────────────────── */
-  getPrimaryGroup() { 
+  async getPrimaryGroup() { 
     const primary = this.groups.find(g => g.isPrimary) || this.groups[0];
     if (primary) {
       // Enriquecer com mensagem do arquivo
-      return this._enrichGroupWithMessage(primary);
+      return await this._enrichGroupWithMessage(primary);
     }
     return primary;
   }
   
-  getPrimaryGroupLink() { 
-    const g = this.getPrimaryGroup(); 
+  async getPrimaryGroupLink() { 
+    const g = await this.getPrimaryGroup(); 
     return g ? g.link : ''; 
   }
   
@@ -323,28 +325,32 @@ class GroupService {
     return this.groups.map(g => g.link); 
   }
   
-  getAllGroups() { 
-    console.log(`[DEBUG] getAllGroups() retornando ${this.groups.length} grupos`);
+  async getAllGroups() { 
+    await debug(`getAllGroups() retornando ${this.groups.length} grupos`);
     // Enriquecer todos os grupos com suas mensagens
-    return this.groups.map(group => this._enrichGroupWithMessage(group));
+    const enrichedGroups = [];
+    for (const group of this.groups) {
+      enrichedGroups.push(await this._enrichGroupWithMessage(group));
+    }
+    return enrichedGroups;
   }
   
-  getGroupById(id) { 
+  async getGroupById(id) { 
     const group = this.groups.find(g => g.id === id);
-    return group ? this._enrichGroupWithMessage(group) : null;
+    return group ? await this._enrichGroupWithMessage(group) : null;
   }
   
   getCurrentMode() { 
     return this.config.mode; 
   }
 
-  getActiveGroups() {
+  async getActiveGroups() {
     if (this.config.mode === 'SINGLE') {
-      const primary = this.getPrimaryGroup();
+      const primary = await this.getPrimaryGroup();
       return primary ? [primary] : [];
     }
-    console.log(`[DEBUG] Modo MULTI: retornando ${this.groups.length} grupos ativos`);
-    return this.getAllGroups(); // Já enriquecidos com mensagens
+    await debug(`Modo MULTI: retornando ${this.groups.length} grupos ativos`);
+    return await this.getAllGroups(); // Já enriquecidos com mensagens
   }
 
   /**
@@ -352,7 +358,7 @@ class GroupService {
    * @param {Object} group - Objeto do grupo
    * @returns {Object} - Grupo enriquecido com propriedade 'message'
    */
-  _enrichGroupWithMessage(group) {
+  async _enrichGroupWithMessage(group) {
     if (!group) return group;
     
     // Criar uma cópia para não modificar o original
@@ -361,7 +367,7 @@ class GroupService {
     // Usar cache se disponível, senão carregar do arquivo
     let message = group._messageFromFile;
     if (!message) {
-      message = this._loadCityMessage(group.id);
+      message = await this._loadCityMessage(group.id);
     }
     
     // Adicionar mensagem ou usar padrão
@@ -376,25 +382,25 @@ class GroupService {
   /* ──────────────────────────────
      modo de operação
   ────────────────────────────── */
-  setMode(newMode) {
+  async setMode(newMode) {
     if (!['SINGLE', 'MULTI'].includes(newMode)) return false;
-    console.log(`[DEBUG] Alterando modo de ${this.config.mode} para ${newMode}`);
+    await debug(`Alterando modo de ${this.config.mode} para ${newMode}`);
     this.config.mode = newMode;
     this._saveConfig();
 
     if (newMode === 'SINGLE' && this.groups.length && !this.groups.some(g => g.isPrimary)) {
       this.groups[0].isPrimary = true;
-      this._saveGroups();
+      await this._saveGroups();
     }
     return true;
   }
 
-  moveToFirstPosition(groupId) {
+  async moveToFirstPosition(groupId) {
     const idx = this.groups.findIndex(g => g.id === groupId);
     if (idx > 0) {
       const [g] = this.groups.splice(idx, 1);
       this.groups.unshift(g);
-      this._saveGroups();
+      await this._saveGroups();
       return true;
     }
     return false;
@@ -404,20 +410,20 @@ class GroupService {
      NOVO: encontrar cidade pelo input
      - aceita texto (nome/descrição) ou número do menu (1,2,3...)
   ────────────────────────────── */
-  findCityByInput(input, cityList = []) {
+  async findCityByInput(input, cityList = []) {
     if (!input) return null;
     const entrada = input.toString().trim().toLowerCase();
 
     // Use a lista interna se nenhuma for fornecida (enriquecida com mensagens)
-    const listaParaUsar = cityList.length > 0 ? cityList : this.getAllGroups();
+    const listaParaUsar = cityList.length > 0 ? cityList : await this.getAllGroups();
 
-    console.log(`[DEBUG] findCityByInput: "${entrada}" em lista de ${listaParaUsar.length} itens`);
+    await debug(`findCityByInput: "${entrada}" em lista de ${listaParaUsar.length} itens`);
 
     // 1) Se for número, usa índice baseado na lista fornecida
     if (/^\d+$/.test(entrada)) {
       const idx = parseInt(entrada, 10) - 1;
       const resultado = listaParaUsar[idx] || null;
-      console.log(`[DEBUG] Busca por índice ${idx + 1}: ${resultado ? resultado.name : 'não encontrado'}`);
+      await debug(`Busca por índice ${idx + 1}: ${resultado ? resultado.name : 'não encontrado'}`);
       return resultado;
     }
 
@@ -426,16 +432,16 @@ class GroupService {
       g.name === entrada || g.descricao === entrada
     ) || null;
     
-    console.log(`[DEBUG] Busca exata por "${entrada}": ${resultado ? resultado.name : 'não encontrado'}`);
+    await debug(`Busca exata por "${entrada}": ${resultado ? resultado.name : 'não encontrado'}`);
     return resultado;
   }
 
   /* ──────────────────────────────
      NOVO: método para recarregar dados
   ────────────────────────────── */
-  reloadData() {
-    console.log('[DEBUG] Recarregando dados do GroupService...');
-    this._loadData();
+  async reloadData() {
+    await debug('Recarregando dados do GroupService...');
+    await this._loadData();
   }
 
   /* ──────────────────────────────
@@ -447,14 +453,14 @@ class GroupService {
    * @param {string} cityId - ID da cidade
    * @param {string} message - Nova mensagem
    */
-  updateCityMessage(cityId, message) {
+  async updateCityMessage(cityId, message) {
     const group = this.groups.find(g => g.id === cityId);
     if (!group) return false;
     
-    this._saveCityMessage(cityId, message);
+    await this._saveCityMessage(cityId, message);
     group._messageFromFile = message; // Atualizar cache
     group.updatedAt = new Date().toISOString();
-    this._saveGroups(); // Atualizar timestamp
+    await this._saveGroups(); // Atualizar timestamp
     
     return true;
   }
@@ -463,14 +469,16 @@ class GroupService {
    * Obtém mensagem de uma cidade específica
    * @param {string} cityId - ID da cidade
    */
-  getCityMessage(cityId) {
-    return this._loadCityMessage(cityId) || `Bem vindo a ${this.getGroupById(cityId)?.name || 'nossa cidade'}`;
+  async getCityMessage(cityId) {
+    const message = await this._loadCityMessage(cityId);
+    const group = await this.getGroupById(cityId);
+    return message || `Bem vindo a ${group?.name || 'nossa cidade'}`;
   }
 
   /**
    * Lista arquivos de mensagem órfãos (sem cidade correspondente)
    */
-  getOrphanMessageFiles() {
+  async getOrphanMessageFiles() {
     try {
       const messageFiles = fs.readdirSync(CITIES_MESSAGE_DIR)
         .filter(file => file.endsWith('.txt'))
@@ -485,7 +493,7 @@ class GroupService {
         path: path.join(CITIES_MESSAGE_DIR, `${orphanId}.txt`)
       }));
     } catch (error) {
-      console.error('[DEBUG] Erro ao buscar arquivos órfãos:', error);
+      await debug('Erro ao buscar arquivos órfãos:', error);
       return [];
     }
   }
@@ -493,29 +501,29 @@ class GroupService {
   /**
    * Remove arquivos de mensagem órfãos
    */
-  cleanupOrphanMessageFiles() {
-    const orphans = this.getOrphanMessageFiles();
-    orphans.forEach(orphan => {
+  async cleanupOrphanMessageFiles() {
+    const orphans = await this.getOrphanMessageFiles();
+    for (const orphan of orphans) {
       try {
         fs.unlinkSync(orphan.path);
-        console.log(`[DEBUG] Arquivo órfão removido: ${orphan.file}`);
+        await debug(`Arquivo órfão removido: ${orphan.file}`);
       } catch (error) {
-        console.error(`[DEBUG] Erro ao remover arquivo órfão ${orphan.file}:`, error);
+        await debug(`Erro ao remover arquivo órfão ${orphan.file}:`, error);
       }
-    });
+    }
     return orphans.length;
   }
 
   /* ──────────────────────────────
      NOVO: método para debug
   ────────────────────────────── */
-  getDebugInfo() {
-    const orphans = this.getOrphanMessageFiles();
+  async getDebugInfo() {
+    const orphans = await this.getOrphanMessageFiles();
     
-    return {
+    const debugInfo = {
       totalGroups: this.groups.length,
       mode: this.config.mode,
-      primaryGroup: this.getPrimaryGroup()?.name || 'nenhum',
+      primaryGroup: (await this.getPrimaryGroup())?.name || 'nenhum',
       citiesFileExists: fs.existsSync(CITIES_FILE),
       citiesFilePath: path.resolve(CITIES_FILE),
       groupsFileExists: fs.existsSync(GROUPS_FILE),
@@ -526,27 +534,34 @@ class GroupService {
       totalMessageFiles: fs.existsSync(CITIES_MESSAGE_DIR) ? 
         fs.readdirSync(CITIES_MESSAGE_DIR).filter(f => f.endsWith('.txt')).length : 0,
       orphanMessageFiles: orphans.length,
-      groupsStructure: this.groups.map(g => ({
+      groupsStructure: []
+    };
+
+    // Enriquecer com estrutura dos grupos
+    for (const g of this.groups) {
+      debugInfo.groupsStructure.push({
         id: g.id,
         name: g.name,
         isPrimary: g.isPrimary,
         hasLink: !!g.link,
         hasMessageFile: fs.existsSync(path.join(CITIES_MESSAGE_DIR, `${g.id}.txt`)),
-        messagePreview: this._loadCityMessage(g.id)?.substring(0, 50) + '...' || 'sem mensagem'
-      }))
-    };
+        messagePreview: (await this._loadCityMessage(g.id))?.substring(0, 50) + '...' || 'sem mensagem'
+      });
+    }
+
+    return debugInfo;
   }
 
   /* ──────────────────────────────
      NOVO: método para debug de caminhos
   ────────────────────────────── */
-  debugPaths() {
-    console.log('[DEBUG PATHS] __dirname:', __dirname);
-    console.log('[DEBUG PATHS] CITIES_FILE:', CITIES_FILE);
-    console.log('[DEBUG PATHS] CITIES_FILE absoluto:', path.resolve(CITIES_FILE));
-    console.log('[DEBUG PATHS] CITIES_MESSAGE_DIR:', CITIES_MESSAGE_DIR);
-    console.log('[DEBUG PATHS] cities.json existe?:', fs.existsSync(CITIES_FILE));
-    console.log('[DEBUG PATHS] citiesMessageTxt/ existe?:', fs.existsSync(CITIES_MESSAGE_DIR));
+  async debugPaths() {
+    await debug('__dirname:', __dirname);
+    await debug('CITIES_FILE:', CITIES_FILE);
+    await debug('CITIES_FILE absoluto:', path.resolve(CITIES_FILE));
+    await debug('CITIES_MESSAGE_DIR:', CITIES_MESSAGE_DIR);
+    await debug('cities.json existe?:', fs.existsSync(CITIES_FILE));
+    await debug('citiesMessageTxt/ existe?:', fs.existsSync(CITIES_MESSAGE_DIR));
     
     // Tentar diferentes caminhos possíveis
     const possiblePaths = [
@@ -558,39 +573,41 @@ class GroupService {
       path.join(process.cwd(), 'data/cities.json')
     ];
     
-    console.log('[DEBUG PATHS] Testando caminhos possíveis:');
-    possiblePaths.forEach((caminho, index) => {
+    await debug('Testando caminhos possíveis:');
+    for (let index = 0; index < possiblePaths.length; index++) {
+      const caminho = possiblePaths[index];
       const existe = fs.existsSync(caminho);
-      console.log(`[DEBUG PATHS] ${index + 1}. ${caminho} - ${existe ? 'EXISTE' : 'não existe'}`);
+      await debug(`${index + 1}. ${caminho} - ${existe ? 'EXISTE' : 'não existe'}`);
       
       if (existe) {
         try {
           const conteudo = fs.readFileSync(caminho, 'utf8');
           const dados = JSON.parse(conteudo);
-          console.log(`[DEBUG PATHS] Conteúdo encontrado: ${dados.length} itens`);
+          await debug(`Conteúdo encontrado: ${dados.length} itens`);
         } catch (err) {
-          console.log(`[DEBUG PATHS] Erro ao ler: ${err.message}`);
+          await debug(`Erro ao ler: ${err.message}`);
         }
       }
-    });
+    }
   }
 
   /* ──────────────────────────────
      NOVO: método para forçar reload com caminho específico
   ────────────────────────────── */
-  forceReloadWithPath(customPath = null) {
+  async forceReloadWithPath(customPath = null) {
     const pathToUse = customPath || CITIES_FILE;
-    console.log(`[DEBUG RELOAD] Tentando recarregar com caminho: ${pathToUse}`);
+    await debug(`Tentando recarregar com caminho: ${pathToUse}`);
     
     try {
       if (fs.existsSync(pathToUse)) {
         const rawData = fs.readFileSync(pathToUse, 'utf8');
         const citiesData = JSON.parse(rawData);
         
-        this.groups = citiesData.map(city => {
-          const messageFromFile = this._loadCityMessage(city.id);
+        this.groups = [];
+        for (const city of citiesData) {
+          const messageFromFile = await this._loadCityMessage(city.id);
           
-          return {
+          this.groups.push({
             id: city.id,
             link: city.link,
             name: city.name.toLowerCase(),
@@ -599,17 +616,17 @@ class GroupService {
             createdAt: city.createdAt || new Date().toISOString(),
             updatedAt: city.updatedAt || new Date().toISOString(),
             _messageFromFile: messageFromFile
-          };
-        });
+          });
+        }
         
-        console.log(`[DEBUG RELOAD] Sucesso! ${this.groups.length} grupos carregados`);
+        await debug(`Sucesso! ${this.groups.length} grupos carregados`);
         return true;
       } else {
-        console.log('[DEBUG RELOAD] Arquivo não encontrado no caminho especificado');
+        await debug('Arquivo não encontrado no caminho especificado');
         return false;
       }
     } catch (err) {
-      console.error('[DEBUG RELOAD] Erro:', err);
+      await debug('Erro:', err);
       return false;
     }
   }

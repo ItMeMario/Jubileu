@@ -6,10 +6,11 @@ async function handleModoDevMenu(rl) {
         console.log("\n=== MODO DEV ===");
 
         const currentMode = await modoDevService.getCurrentMode();
-        modoDevView.showStatusLabel(currentMode.isDevMode);
+        modoDevView.showStatusLabel(currentMode.isDevMode, currentMode.debugEnabled);
 
         console.log("\n1. Alternar Modo (Dev <-> Produção)");
-        console.log("2. Ver Status Detalhado");
+        console.log("2. Alternar Debug (ON <-> OFF)");
+        console.log("3. Ver Status Detalhado");
         console.log("0. Voltar ao Menu Principal");
 
         const choice = await new Promise((resolve) => rl.question("Escolha uma opção: ", resolve));
@@ -19,7 +20,10 @@ async function handleModoDevMenu(rl) {
                 await toggleMode(rl);
                 break;
             case "2":
-                await showStatus();
+                await toggleDebug(rl);
+                break;
+            case "3":
+                await showStatus(rl);
                 break;
             case "0":
                 console.log("Voltando ao menu principal...");
@@ -45,13 +49,30 @@ async function toggleMode(rl) {
     await modoDevView.waitForEnter(rl);
 }
 
-async function showStatus() {
+async function toggleDebug(rl) {
+    try {
+        const result = await modoDevService.toggleDebugMode();
+        if (result.success) {
+            modoDevView.showDebugToggleMessage(result.debugEnabled);
+        } else {
+            modoDevView.showError(result.error);
+        }
+    } catch (error) {
+        modoDevView.showError(error.message);
+    }
+
+    await modoDevView.waitForEnter(rl);
+}
+
+async function showStatus(rl) {
     try {
         const status = await modoDevService.getDetailedStatus();
         modoDevView.showDetailedStatus(status);
     } catch (error) {
         modoDevView.showError(error.message);
     }
+
+    await modoDevView.waitForEnter(rl);
 }
 
 module.exports = {

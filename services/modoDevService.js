@@ -7,7 +7,9 @@ const CONFIG_FILE = path.join(__dirname, '../data/devMode.json');
 
 const DEFAULT_CONFIG = {
     isDevMode: false,
-    lastChanged: null
+    debugEnabled: false,
+    lastChanged: null,
+    lastDebugChanged: null
 };
 
 async function loadConfig() {
@@ -48,12 +50,31 @@ async function toggleDevMode() {
     }
 }
 
+async function toggleDebugMode() {
+    try {
+        const config = await loadConfig();
+        config.debugEnabled = !config.debugEnabled;
+        config.lastDebugChanged = new Date().toISOString();
+
+        const saved = await saveConfig(config);
+        if (saved) {
+            return { success: true, debugEnabled: config.debugEnabled };
+        } else {
+            return { success: false, error: 'Falha ao salvar configuração de debug' };
+        }
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
 async function getCurrentMode() {
     try {
         const config = await loadConfig();
         return {
             isDevMode: config.isDevMode,
-            lastChanged: config.lastChanged
+            debugEnabled: config.debugEnabled || false,
+            lastChanged: config.lastChanged,
+            lastDebugChanged: config.lastDebugChanged
         };
     } catch (error) {
         console.error('Erro ao carregar configuração:', error);
@@ -73,8 +94,11 @@ async function getDetailedStatus() {
 
         return {
             isDevMode: config.isDevMode,
+            debugEnabled: config.debugEnabled || false,
             delayDescription: config.isDevMode ? '3 segundos (fixo)' : '1-3 minutos (aleatório)',
+            debugDescription: config.debugEnabled ? 'Habilitado' : 'Desabilitado',
             lastChanged: config.lastChanged ? new Date(config.lastChanged).toLocaleString('pt-BR') : null,
+            lastDebugChanged: config.lastDebugChanged ? new Date(config.lastDebugChanged).toLocaleString('pt-BR') : null,
             configExists
         };
     } catch (error) {
@@ -93,6 +117,7 @@ async function testDelay() {
 
 module.exports = {
     toggleDevMode,
+    toggleDebugMode,
     getCurrentMode,
     getDetailedStatus,
     testDelay

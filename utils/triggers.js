@@ -1,8 +1,9 @@
-// triggers.js - Versão Corrigida
+// triggers.js - Versão com novo sistema de debug
 const horarios = require("../horarios");
 const aliases = require("../aliases");
 const stringSimilarity = require("string-similarity");
 const groupService = require("../services/groupService");
+const { debug } = require("../services/debugService"); // Nova importação
 
 const TRIGGERS = [
   "menu",
@@ -64,16 +65,16 @@ function normalizarTextoCidade(texto) {
 function identificarCidadeFuzzy(texto) {
   const input = normalizarTexto(texto || '');
   
-  // Debug log
-  console.log('[DEBUG] Fuzzy matching - Input original:', texto);
-  console.log('[DEBUG] Fuzzy matching - Input normalizado:', input);
+  // Usando o novo sistema de debug
+  debug('Fuzzy matching - Input original:', texto);
+  debug('Fuzzy matching - Input normalizado:', input);
   
   const allGroups = groupService.getAllGroups();
-  console.log('[DEBUG] Grupos disponíveis:', allGroups.length);
-  console.log('[DEBUG] Estrutura dos grupos:', allGroups);
+  debug('Grupos disponíveis:', allGroups.length);
+  debug('Estrutura dos grupos:', allGroups);
 
   if (!allGroups || allGroups.length === 0) {
-    console.log('[DEBUG] Nenhum grupo disponível');
+    debug('Nenhum grupo disponível');
     return null;
   }
 
@@ -97,17 +98,17 @@ function identificarCidadeFuzzy(texto) {
       };
     });
 
-  console.log('[DEBUG] Cidades mapeadas com variações:', cityMap);
+  debug('Cidades mapeadas com variações:', cityMap);
 
   if (!input || input.length === 0) {
-    console.log('[DEBUG] Input vazio');
+    debug('Input vazio');
     return null;
   }
 
   // Primeira tentativa: busca exata em todas as variações
   for (const city of cityMap) {
     if (city.variações.some(variacao => normalizarTexto(variacao) === input)) {
-      console.log('[DEBUG] Match exato encontrado:', city.original);
+      debug('Match exato encontrado:', city.original);
       return city.original;
     }
   }
@@ -118,7 +119,7 @@ function identificarCidadeFuzzy(texto) {
       const varNorm = normalizarTexto(variacao);
       return varNorm.includes(input) || input.includes(varNorm);
     })) {
-      console.log('[DEBUG] Match por substring encontrado:', city.original);
+      debug('Match por substring encontrado:', city.original);
       return city.original;
     }
   }
@@ -126,16 +127,16 @@ function identificarCidadeFuzzy(texto) {
   // Terceira tentativa: fuzzy matching
   const normalizados = cityMap.map(c => c.normalizado);
   const match = stringSimilarity.findBestMatch(input, normalizados);
-  console.log('[DEBUG] Melhor match fuzzy:', match.bestMatch);
+  debug('Melhor match fuzzy:', match.bestMatch);
 
   // Reduzindo threshold para 0.3 para ser mais flexível
   if (match.bestMatch.rating > 0.3) {
     const item = cityMap.find(c => c.normalizado === match.bestMatch.target);
-    console.log('[DEBUG] Cidade encontrada via fuzzy:', item?.original);
+    debug('Cidade encontrada via fuzzy:', item?.original);
     return item?.original || null;
   }
 
-  console.log('[DEBUG] Nenhuma cidade encontrada com similaridade suficiente');
+  debug('Nenhuma cidade encontrada com similaridade suficiente');
   return null;
 }
 
@@ -162,8 +163,6 @@ function hasTriggerText(texto) {
   const match = stringSimilarity.findBestMatch(inputNormalizado, gatilhosNormalizados);
   return match.bestMatch.rating > 0.75;
 }
-
-
 
 module.exports = {
   normalizarTexto,           // Agora exportada corretamente
