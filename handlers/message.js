@@ -42,35 +42,26 @@ module.exports = async function messageHandler(msg) {
   const userNumber = msg.from;
   const textoDaMensagem = msg.caption || msg.body || "";
 
-  // 📋 Verifica se é uma solicitação de ajuda/FAQ (em qualquer momento)
   if (isRequestingHelp(textoDaMensagem)) {
     await enviarFAQ(client, msg);
     await timeout.startTimeout(client, userNumber, chat);
     return;
   }
 
-  // 🔁 Reseta conversa com "oi", "menu", etc.
   if (hasTriggerText(textoDaMensagem)) {
     timeout.cancelTimeout(userNumber);
     delete userStates[userNumber];
     delete chatContext[userNumber];
 
     const currentMode = groupService.getCurrentMode();
-
-    // 👋 Envia saudação e menu de cidades (usa função original)
     await enviarMensagemMenu(client, msg, chat);
 
-    // Define próximo passo com base no modo
     if (currentMode === 'SINGLE') {
-      // No modo SINGLE, configura a cidade primary automaticamente
       const primaryGroup = groupService.getAllGroups().find(group => group.isPrimary);
       if (primaryGroup) {
         chatContext[userNumber] = { selectedCityData: primaryGroup };
       }
-      
       userStates[userNumber] = { step: "awaiting_time", started: true, forceSingle: true };
-      
-     
     } else {
       userStates[userNumber] = { step: "awaiting_city", started: true, forceSingle: false };
     }
@@ -79,27 +70,23 @@ module.exports = async function messageHandler(msg) {
     return;
   }
 
-  // 🏙️ Usuário está escolhendo cidade (apenas no modo MULTI)
   if (userStates[userNumber]?.step === "awaiting_city") {
     const inputCidade = (msg.body?.trim() || "");
     const inputCidadeNormalizado = normalizarTexto(inputCidade);
     const allGroups = groupService.getAllGroups();
     let selectedCityData = null;
 
-    // Busca por número
     const numero = parseInt(inputCidade.trim());
     if (!isNaN(numero) && numero >= 1 && numero <= allGroups.length) {
       selectedCityData = allGroups[numero - 1];
     }
 
-    // Busca por nome exato
     if (!selectedCityData) {
       selectedCityData = allGroups.find(group => 
         normalizarTexto(group.name) === inputCidadeNormalizado
       );
     }
 
-    // Busca parcial
     if (!selectedCityData) {
       selectedCityData = allGroups.find(group => {
         const nomeNormalizado = normalizarTexto(group.name);
@@ -108,7 +95,6 @@ module.exports = async function messageHandler(msg) {
       });
     }
 
-    // Busca fuzzy (inteligente)
     if (!selectedCityData) {
       const fuzzyNomeCidade = identificarCidadeFuzzy(inputCidade);
       if (fuzzyNomeCidade) {
@@ -118,7 +104,6 @@ module.exports = async function messageHandler(msg) {
       }
     }
 
-    // ✅ Cidade encontrada
     if (selectedCityData) {
       chatContext[userNumber] = { selectedCityData };
 
@@ -127,12 +112,14 @@ module.exports = async function messageHandler(msg) {
         `✅ Cidade selecionada: *${selectedCityData.name}*\n\n${selectedCityData.message || ''}`
       );
 
-      // ⏰ Envia menu de horários (logo após cidade)
-      await enviarMenuHorarios(client, msg.from, chat);
+      if (!userStates[userNumber]) {
+        userStates[userNumber] = {};
+      }
+
       userStates[userNumber].step = "awaiting_time";
+      await enviarMenuHorarios(client, msg.from, chat);
 
     } else {
-      // ❌ Cidade não encontrada — envia lista de cidades COM opção de ajuda
       let errorMessage = "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
       errorMessage += "📍 *Cidades disponíveis:*\n";
 
@@ -154,14 +141,13 @@ module.exports = async function messageHandler(msg) {
     return;
   }
 
-  // ⏰ Usuário está escolhendo horário
   if (userStates[userNumber]?.step === "awaiting_time") {
     const inputUsuario = msg.body?.trim() || "";
-
     const opcao = encontrarHorario(inputUsuario);
+
     if (opcao) {
       userStates[userNumber] = {
-        ...userStates[userNumber], // Preserva as configurações anteriores
+        ...userStates[userNumber],
         step: "awaiting_name",
         selectedTime: `${opcao.horario} - ${opcao.descricao}`,
         selectedTimeObj: opcao,
@@ -170,11 +156,10 @@ module.exports = async function messageHandler(msg) {
       await chat.sendStateTyping();
       await client.sendMessage(
         msg.from,
-        `Você escolheu *${opcao.horario} - ${opcao.descricao}*.` +
-        `\nAgora digite somente o seu *NOME COMPLETO* para confirmar a sua inscrição, por favor!😊`
+        `Você escolheu *${opcao.horario} - ${opcao.descricao}*.\nAgora digite somente o seu *NOME COMPLETO* para confirmar a sua inscrição, por favor!😊`
       );
+
     } else {
-      // ❌ Horário não entendido — COM opção de ajuda
       await client.sendMessage(
         msg.from,
         `🤔 Desculpe, não entendi. Digite apenas o horário que você escolheu.\n\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
@@ -185,7 +170,6 @@ module.exports = async function messageHandler(msg) {
     return;
   }
 
-  // 🧑 Usuário digitou o nome
   if (userStates[userNumber]?.step === "awaiting_name") {
     const nomeCompleto = msg.body?.trim();
     const horarioSelecionado = userStates[userNumber].selectedTime;
@@ -199,12 +183,10 @@ module.exports = async function messageHandler(msg) {
       let messageText;
 
       if (currentMode === 'SINGLE' || userStates[userNumber].forceSingle) {
-        // 🔗 Modo SINGLE - Envia apenas o link da cidade primary
         const primaryGroup = allGroups.find(group => group.isPrimary);
         if (primaryGroup) {
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${primaryGroup.name}:\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
         } else {
-          // Fallback caso não encontre cidade primary
           const primaryLink = groupService.getPrimaryGroupLink();
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
         }
@@ -214,7 +196,6 @@ module.exports = async function messageHandler(msg) {
         if (selectedCityData) {
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
         } else {
-          // Fallback para modo MULTI sem cidade selecionada
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui estão os links dos grupos disponíveis:\n\n`;
           messageText += allGroups
             .map((group) => `🔗 ${group.descricao || group.name}: ${group.link}`)
