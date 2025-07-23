@@ -191,7 +191,6 @@ module.exports = async function messageHandler(msg) {
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
         }
       } else {
-        // 🔗 Modo MULTI
         const selectedCityData = chatContext[userNumber]?.selectedCityData;
         if (selectedCityData) {
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;

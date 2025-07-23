@@ -4,7 +4,7 @@ const delay = require('../utils/delay');
 const TIMEOUT_DURATION = 1800000 ;
 
 // Mensagem de timeout
-const TIMEOUT_MESSAGE = "⏳ *Ops!* Parece que houve algum problema na conversa. Se ainda estiver interessado(a), digite *MENU* e tentamos novamente!";
+const TIMEOUT_MESSAGE = "Oi, eu percebi seu interesse em participar da seleção... Digite *MENU* para fazer a sua inscrição e garantir a sua vaga.";
 
 // Armazena os timeouts ativos
 const activeTimeouts = new Map();
