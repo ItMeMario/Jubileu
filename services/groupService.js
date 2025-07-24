@@ -125,6 +125,7 @@ class GroupService {
             link: city.link,
             name: city.name.toLowerCase(),
             descricao: city.name.toLowerCase(), // usar name como descrição
+            date: city.date, // CAMPO DATE PRESERVADO
             isPrimary: city.isPrimary || false,
             createdAt: city.createdAt || new Date().toISOString(),
             updatedAt: city.updatedAt || new Date().toISOString(),
@@ -137,6 +138,7 @@ class GroupService {
         await debug('Grupos após conversão:', this.groups.map(g => ({
           id: g.id,
           name: g.name,
+          date: g.date, // LOG PARA VERIFICAR SE DATE ESTÁ PRESENTE
           hasMessage: !!g._messageFromFile
         })));
       }
@@ -183,6 +185,7 @@ class GroupService {
       await debug('Estrutura dos grupos:', this.groups.map(g => ({
         id: g.id,
         name: g.name,
+        date: g.date, // VERIFICAR SE DATE ESTÁ PRESENTE
         isPrimary: g.isPrimary,
         hasMessage: !!g._messageFromFile
       })));
@@ -217,6 +220,7 @@ class GroupService {
         id: group.id,
         name: group.name.charAt(0).toUpperCase() + group.name.slice(1), // Capitalizar
         link: group.link,
+        date: group.date, // PRESERVAR O CAMPO DATE AO SALVAR
         // Não salvar message no JSON - fica apenas nos arquivos .txt
         isPrimary: group.isPrimary,
         createdAt: group.createdAt,
@@ -239,12 +243,13 @@ class GroupService {
   /* ──────────────────────────────
      CRUD de grupos
   ────────────────────────────── */
-  async addGroup(link, setAsPrimary = false, name = '', descricao = '', message = '') {
+  async addGroup(link, setAsPrimary = false, name = '', descricao = '', message = '', date = '') {
     const newGroup = {
       id: Date.now().toString(),
       link,
       name: name.toLowerCase(),          // opcional
       descricao: descricao.toLowerCase(),// opcional
+      date: date || undefined, // ADICIONAR SUPORTE PARA DATE
       isPrimary: setAsPrimary || !this.groups.length,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -308,7 +313,7 @@ class GroupService {
      getters
   ────────────────────────────── */
   async getPrimaryGroup() { 
-    const primaryGroup = (await groupService.getAllGroups()).find(group => group.isPrimary);
+    const primary = this.groups.find(group => group.isPrimary); // CORREÇÃO: primary em vez de primaryGroup
     if (primary) {
       // Enriquecer com mensagem do arquivo
       return await this._enrichGroupWithMessage(primary);
@@ -375,6 +380,9 @@ class GroupService {
     
     // Remover cache interno do objeto retornado
     delete enrichedGroup._messageFromFile;
+    
+    // IMPORTANTE: Preservar TODOS os campos originais, incluindo 'date'
+    // (O spread operator {...group} já cuida disso, mas vamos garantir)
     
     return enrichedGroup;
   }
@@ -542,6 +550,7 @@ class GroupService {
       debugInfo.groupsStructure.push({
         id: g.id,
         name: g.name,
+        date: g.date, // INCLUIR DATE NO DEBUG
         isPrimary: g.isPrimary,
         hasLink: !!g.link,
         hasMessageFile: fs.existsSync(path.join(CITIES_MESSAGE_DIR, `${g.id}.txt`)),
@@ -612,6 +621,7 @@ class GroupService {
             link: city.link,
             name: city.name.toLowerCase(),
             descricao: city.name.toLowerCase(),
+            date: city.date, // PRESERVAR DATE TAMBÉM AQUI
             isPrimary: city.isPrimary || false,
             createdAt: city.createdAt || new Date().toISOString(),
             updatedAt: city.updatedAt || new Date().toISOString(),

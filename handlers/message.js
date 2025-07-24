@@ -78,6 +78,7 @@ module.exports = async function messageHandler(msg) {
     const inputCidade = (msg.body?.trim() || "");
     const inputCidadeNormalizado = normalizarTexto(inputCidade);
     const allGroups = await groupService.getAllGroups();
+    
     let selectedCityData = null;
 
     const numero = parseInt(inputCidade.trim());
@@ -109,6 +110,7 @@ module.exports = async function messageHandler(msg) {
     }
 
     if (selectedCityData) {
+
       chatContext[userNumber] = { selectedCityData };
 
       // Delay antes da mensagem de confirmação da cidade
@@ -198,15 +200,19 @@ module.exports = async function messageHandler(msg) {
       if (currentMode === 'SINGLE' || userStates[userNumber].forceSingle) {
         const primaryGroup = allGroups.find(group => group.isPrimary);
         if (primaryGroup) {
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para ${primaryGroup.name}:\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+
+          const dataEvento = primaryGroup.date ? `\n📅 Dia: *${primaryGroup.date}*` : '';
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para o grupo de ${primaryGroup.name}:\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁${dataEvento}\n\nClique no link para participar!`;
         } else {
           const primaryLink = await groupService.getPrimaryGroupLink();
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para o grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
         }
       } else {
         const selectedCityData = chatContext[userNumber]?.selectedCityData;
         if (selectedCityData) {
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+ 
+          const dataEvento = selectedCityData.date ? `\n📅 Dia: *${selectedCityData.date}*` : '';
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para o grupo de ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁${dataEvento}\n\nClique no link para participar!`;
         } else {
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para os grupos disponíveis:\n\n`;
           messageText += allGroups
