@@ -41,11 +41,14 @@ function isRequestingHelp(texto) {
 module.exports = async function messageHandler(msg) {
   const chat = await msg.getChat();
   const userNumber = msg.from;
+  const contact = await msg.getContact();
+  const name = contact.pushname?.split(" ")[0] || "";
+
   const textoDaMensagem = msg.caption || msg.body || "";
 
   if (isRequestingHelp(textoDaMensagem)) {
     await enviarFAQ(client, msg);
-    await timeout.startTimeout(client, userNumber, chat);
+    await timeout.startTimeout(client, userNumber, chat, name);
     return;
   }
 
@@ -67,7 +70,7 @@ module.exports = async function messageHandler(msg) {
       userStates[userNumber] = { step: "awaiting_city", started: true, forceSingle: false };
     }
 
-    await timeout.startTimeout(client, userNumber, chat);
+    await timeout.startTimeout(client, userNumber, chat, name);
     return;
   }
 
@@ -141,7 +144,7 @@ module.exports = async function messageHandler(msg) {
       await client.sendMessage(msg.from, errorMessage);
     }
 
-    await timeout.startTimeout(client, userNumber, chat);
+    await timeout.startTimeout(client, userNumber, chat, name);
     return;
   }
 
@@ -173,7 +176,7 @@ module.exports = async function messageHandler(msg) {
       );
     }
 
-    await timeout.startTimeout(client, userNumber, chat);
+    await timeout.startTimeout(client, userNumber, chat, name);
     return;
   }
 
