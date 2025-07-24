@@ -23,6 +23,8 @@ module.exports = {
             `   - O evento presencial é uma programação diferente do portal e dos cursos online. Será tudo novidade.\n\n` +
             ` *Posso participar se tiver tatuagem, cabelo colorido, aparelho dentário ou usar óculos?*\n` +
             `   - Sim! Tatuagens, cabelos tingidos, aparelhos ortodônticos e óculos não impedem sua participação.\n\n` +
+            `   - Tem limite de idade?.\n\n` +
+            ` *Não há restrição de idade*\n` +
             ` *Você continua com dúvidas?*\n` +
             `   - MARQUE UM HORÁRIO AGORA MESMO e compareça na seleção! Haverá uma equipe para te orientar\n\n` +
             `Digite "menu" para voltar ao menu principal.`;
