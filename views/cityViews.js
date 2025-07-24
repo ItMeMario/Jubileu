@@ -46,6 +46,7 @@ function showCityList(cities, showDetails = false) {
         console.log(`Nome: ${city.name}`);
         if (showDetails) {
             console.log(`Link: ${city.link || 'Nenhum link cadastrado'}`);
+            console.log(`Data: ${city.date || 'Nenhuma data cadastrada'}`);
             console.log(`Primária: ${city.isPrimary ? 'Sim' : 'Não'}`);
             console.log(`Criada em: ${city.createdAt}`);
             console.log(`Última atualização: ${city.updatedAt}`);
@@ -90,7 +91,14 @@ async function promptForCityMessage(rl, currentMessage = '') {
     return messageLines.join('\n');  // <- GARANTIDO
 }
 
-
+async function promptForCityDate(rl, currentDate = '') {
+    const prompt = currentDate 
+        ? `\nDigite a nova data do evento (deixe em branco para manter a atual: ${currentDate}): `
+        : '\nDigite a data do evento (opcional): ';
+    
+    const date = await new Promise(resolve => rl.question(prompt, resolve));
+    return date.trim(); // Retorna a data ou string vazia
+}
 
 async function promptForCitySelection(rl, cities, action) {
     if (cities.length === 0) {
@@ -130,5 +138,6 @@ module.exports = {
     promptForCityLink, 
     promptForCitySelection,
     promptForCityMessage,
+    promptForCityDate,
     confirmAction
 };

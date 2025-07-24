@@ -8,6 +8,7 @@ const {
     promptForCityName,
     promptForCityLink,
     promptForCityMessage,
+    promptForCityDate,
     promptForCitySelection,
     confirmAction
 } = require('../views/cityViews');
@@ -101,12 +102,14 @@ class CityController {
             
             const link = await promptForCityLink(rl);
             const message = await promptForCityMessage(rl);
+            const date = await promptForCityDate(rl);
             
             const newCity = {
                 id: generateSimpleId(),
                 name: this.sanitizeText(name, false),
                 link: this.sanitizeText(link || '', false),
                 message: this.normalizeLineBreaks(this.sanitizeText(message || '', true)),
+                date: this.sanitizeText(date || '', false),
                 isPrimary: false,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
@@ -159,6 +162,7 @@ class CityController {
 
             const newLink = await promptForCityLink(rl, cityToEdit.link);
             const newMessage = await promptForCityMessage(rl, cityToEdit.message || '');
+            const newDate = await promptForCityDate(rl, cityToEdit.date || '');
 
             const updatedCity = {
                 ...cityToEdit,
@@ -167,6 +171,7 @@ class CityController {
                 message: newMessage !== undefined ? 
                     this.normalizeLineBreaks(this.sanitizeText(newMessage, true)) : 
                     (cityToEdit.message || ''),
+                date: newDate !== undefined ? this.sanitizeText(newDate, false) : (cityToEdit.date || ''),
                 updatedAt: new Date().toISOString()
             };
 
@@ -277,6 +282,7 @@ class CityController {
             console.log(`   Nome: ${cityToDelete.name}`);
             console.log(`   Link: ${cityToDelete.link || 'Não definido'}`);
             console.log(`   Mensagem: ${cityToDelete.message ? 'Definida' : 'Não definida'}`);
+            console.log(`   Data: ${cityToDelete.date || 'Não definida'}`);
             
             const confirm = await confirmAction(rl, `excluir a cidade "${cityToDelete.name}"`);
             if (!confirm) return;
