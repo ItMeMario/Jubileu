@@ -1,9 +1,11 @@
-// triggers.js - Versão com novo sistema de debug
+// triggers.js - Versão com novo sistema de debug e FAQ integrado
 const horarios = require("../horarios");
 const aliases = require("../aliases");
 const stringSimilarity = require("string-similarity");
 const groupService = require("../services/groupService");
-const { debug } = require("../services/debugService"); // Nova importação
+const { debug } = require("../services/debugService");
+const FAQ_TRIGGERS = require("../faqAliases"); // Importa os triggers do FAQ
+const faq = require('../utils/faq.js'); // Importa o FAQ
 
 const TRIGGERS = [
   "menu",
@@ -142,7 +144,7 @@ function identificarCidadeFuzzy(texto) {
 
 function buscarHorario(texto) {
   const normalizado = normalizarTexto(texto);
-  return horarios[normalizado] || "Não entendi";
+  return horarios[normalizado] || null; // Alterado de "Não entendi" para null
 }
 
 function hasTriggerText(texto) {
@@ -164,12 +166,54 @@ function hasTriggerText(texto) {
   return match.bestMatch.rating > 0.75;
 }
 
+// 🔍 Nova função para verificar se é comando FAQ/AJUDA
+function isRequestingHelp(texto) {
+  const textoNormalizado = normalizarTexto(texto || "");
+  const faqTriggersNormalizados = FAQ_TRIGGERS.map(trigger => normalizarTexto(trigger));
+
+  // Verificação direta (frase completa)
+  if (faqTriggersNormalizados.includes(textoNormalizado)) {
+    debug('FAQ trigger encontrado (match exato):', texto);
+    return true;
+  }
+
+  // Verificação por substring (gatilho contido no texto)
+  if (faqTriggersNormalizados.some(trigger => textoNormalizado.includes(trigger))) {
+    debug('FAQ trigger encontrado (substring):', texto);
+    return true;
+  }
+
+  // Fuzzy matching para FAQ triggers (mais tolerante)
+  const match = stringSimilarity.findBestMatch(textoNormalizado, faqTriggersNormalizados);
+  if (match.bestMatch.rating > 0.7) {
+    debug('FAQ trigger encontrado (fuzzy):', texto, 'rating:', match.bestMatch.rating);
+    return true;
+  }
+
+  debug('Nenhum FAQ trigger encontrado para:', texto);
+  return false;
+}
+
+// 📋 Função para enviar FAQ - movida para cá para manter modularidade
+async function enviarFAQ(client, msg) {
+  try {
+    debug('Enviando FAQ para:', msg.from);
+    await faq.enviarFAQ(client, msg); 
+  } catch (error) {
+    console.error("Erro ao enviar FAQ:", error);
+    debug('Erro ao enviar FAQ:', error);
+    await client.sendMessage(msg.from, "📋 *FAQ - Perguntas Frequentes*\n\nPara mais informações, digite 'menu' para começar novamente.");
+  }
+}
+
 module.exports = {
-  normalizarTexto,           // Agora exportada corretamente
-  normalizarTextoBase,       // Também exportando a base
-  normalizarTextoHorario,    // Para casos específicos de horário
-  normalizarTextoCidade,     // Para casos específicos de cidade
+  normalizarTexto,           
+  normalizarTextoBase,       
+  normalizarTextoHorario,    
+  normalizarTextoCidade,     
   hasTriggerText,
   buscarHorario,
-  identificarCidadeFuzzy
+  identificarCidadeFuzzy,
+  isRequestingHelp,          // Nova função exportada
+  enviarFAQ                  // Nova função exportada
 };

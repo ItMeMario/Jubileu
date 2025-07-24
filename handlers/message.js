@@ -1,13 +1,19 @@
-// message.js - Versão Corrigida para Novo Fluxo MULTI
+// message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular
 const client = require("../client/client");
 const { enviarMensagemMenu, enviarMenuHorarios, chatContext } = require("../handlers/menuMessage");
 const HORARIOS = require("../horarios");
-const { normalizarTexto, hasTriggerText, identificarCidadeFuzzy, normalizarTextoHorario } = require("../utils/triggers");
+const { 
+  normalizarTexto, 
+  hasTriggerText, 
+  identificarCidadeFuzzy, 
+  normalizarTextoHorario,
+  isRequestingHelp,  // Importa a função do triggers.js
+  enviarFAQ          // Importa a função do triggers.js
+} = require("../utils/triggers");
 const groupService = require("../services/groupService");
 const timeout = require('../utils/timeout');
 const indicadores = require('../utils/indicadores');
-const faq = require('../utils/faq.js'); // Importa o FAQ
-const delay = require('../utils/delay'); // Importa o delay
+const delay = require('../utils/delay');
 
 const userStates = {};
 
@@ -22,22 +28,6 @@ function encontrarHorario(inputUsuario) {
   return HORARIOS[inputNormalizado] || null;
 }
 
-// 📋 FAQ - Função corrigida para usar o arquivo faq.js
-async function enviarFAQ(client, msg) {
-  try {
-    await faq.enviarFAQ(client, msg); 
-  } catch (error) {
-    console.error("Erro ao enviar FAQ:", error);
-    await client.sendMessage(msg.from, "📋 *FAQ - Perguntas Frequentes*\n\nPara mais informações, digite 'menu' para começar novamente.");
-  }
-}
-
-// 🔍 Função para verificar se é comando FAQ/AJUDA
-function isRequestingHelp(texto) {
-  const textoNormalizado = normalizarTexto(texto);
-  return textoNormalizado.includes('ajuda') || textoNormalizado.includes('faq') || textoNormalizado.includes('help');
-}
-
 module.exports = async function messageHandler(msg) {
   const chat = await msg.getChat();
   const userNumber = msg.from;
@@ -46,6 +36,7 @@ module.exports = async function messageHandler(msg) {
 
   const textoDaMensagem = msg.caption || msg.body || "";
 
+  // 🔍 Verificação de FAQ/AJUDA usando a função do triggers.js
   if (isRequestingHelp(textoDaMensagem)) {
     await enviarFAQ(client, msg);
     await timeout.startTimeout(client, userNumber, chat, name);
@@ -128,7 +119,6 @@ module.exports = async function messageHandler(msg) {
       await enviarMenuHorarios(client, msg.from, chat);
 
     } else {
-      // Mensagem de erro - SEM delay
       let errorMessage = "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
       errorMessage += "📍 *Cidades disponíveis:*\n";
 
@@ -155,7 +145,7 @@ module.exports = async function messageHandler(msg) {
     const opcao = encontrarHorario(inputUsuario);
 
     if (opcao) {
-      // ADICIONAR ESTA LINHA AQUI: 👇
+      
       indicadores.incrementarHorario(opcao.id);
       
       userStates[userNumber] = {
@@ -174,10 +164,9 @@ module.exports = async function messageHandler(msg) {
       );
 
     } else {
-      // Mensagem de erro - SEM delay
       await client.sendMessage(
         msg.from,
-        `🤔 Desculpe, não entendi. Digite apenas o horário que você escolheu.\n\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
+        `🤔 Desculpe, horário não reconhecido. Digite apenas o horário que você escolheu.\n\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
       );
     }
 
