@@ -198,17 +198,17 @@ module.exports = async function messageHandler(msg) {
       if (currentMode === 'SINGLE' || userStates[userNumber].forceSingle) {
         const primaryGroup = allGroups.find(group => group.isPrimary);
         if (primaryGroup) {
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${primaryGroup.name}:\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para ${primaryGroup.name}:\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
         } else {
           const primaryLink = await groupService.getPrimaryGroupLink();
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para entrar no grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
         }
       } else {
         const selectedCityData = chatContext[userNumber]?.selectedCityData;
         if (selectedCityData) {
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o link para ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
         } else {
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui estão os links dos grupos disponíveis:\n\n`;
+          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para os grupos disponíveis:\n\n`;
           messageText += allGroups
             .map((group) => `🔗 ${group.descricao || group.name}: ${group.link}`)
             .join("\n\n");
