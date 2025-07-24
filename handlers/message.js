@@ -148,11 +148,14 @@ module.exports = async function messageHandler(msg) {
     return;
   }
 
-  if (userStates[userNumber]?.step === "awaiting_time") {
+ if (userStates[userNumber]?.step === "awaiting_time") {
     const inputUsuario = msg.body?.trim() || "";
     const opcao = encontrarHorario(inputUsuario);
 
     if (opcao) {
+      // ADICIONAR ESTA LINHA AQUI: 👇
+      indicadores.incrementarHorario(opcao.id);
+      
       userStates[userNumber] = {
         ...userStates[userNumber],
         step: "awaiting_name",

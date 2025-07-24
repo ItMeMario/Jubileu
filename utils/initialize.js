@@ -94,14 +94,71 @@ async function initializeMessagesConfig() {
     return await createJsonFileIfNotExists('messages.json', defaultMessages);
 }
 
+// FUNÇÃO ATUALIZADA: Nova estrutura de indicadores com horários
 async function initializeIndicadoresConfig() {
     const defaultIndicadores = {
-        atendidos: 0,
-        interessados: 0,
-        conversoes: 0,
-        lastReset: null
+        clientesAtendidos: 0,
+        clientesConvidados: 0,
+        horariosEscolhidos: {
+            "1": { horario: "10:00h (Manhã)", count: 0 },
+            "2": { horario: "12:00h (Meio-dia)", count: 0 },
+            "3": { horario: "14:00h (Depois do almoço)", count: 0 },
+            "4": { horario: "15:30h (Tarde)", count: 0 },
+            "5": { horario: "17:30h (Final da tarde)", count: 0 },
+            "6": { horario: "19:30h (Noite)", count: 0 }
+        },
+        lastUpdated: new Date().toISOString()
     };
-    return await createJsonFileIfNotExists('indicadores.json', defaultIndicadores);
+    return await createJsonFileIfNotExists('indicadoresData.json', defaultIndicadores);
+}
+
+// NOVA FUNÇÃO: Para migrar dados antigos se necessário
+async function migrateIndicadoresIfNeeded() {
+    const filePath = path.join(DATA_DIR, 'indicadoresData.json');
+    
+    try {
+        const data = await readJsonFile('indicadoresData.json');
+        
+        if (data && !data.horariosEscolhidos) {
+            console.log('🔄 Migrando estrutura antiga de indicadores...');
+            
+            data.horariosEscolhidos = {
+                "1": { horario: "10:00h (Manhã)", count: 0 },
+                "2": { horario: "12:00h (Meio-dia)", count: 0 },
+                "3": { horario: "14:00h (Depois do almoço)", count: 0 },
+                "4": { horario: "15:30h (Tarde)", count: 0 },
+                "5": { horario: "17:30h (Final da tarde)", count: 0 },
+                "6": { horario: "19:30h (Noite)", count: 0 }
+            };
+            
+            // Remove campos antigos se existirem
+            if (data.atendidos !== undefined) {
+                data.clientesAtendidos = data.atendidos || 0;
+                delete data.atendidos;
+            }
+            if (data.interessados !== undefined) {
+                delete data.interessados;
+            }
+            if (data.conversoes !== undefined) {
+                delete data.conversoes;
+            }
+            if (data.lastReset !== undefined) {
+                delete data.lastReset;
+            }
+            
+            // Garante que existe clientesConvidados
+            if (data.clientesConvidados === undefined) {
+                data.clientesConvidados = 0;
+            }
+            
+            data.lastUpdated = new Date().toISOString();
+            
+            await saveJsonFile('indicadoresData.json', data);
+            console.log('✅ Migração de indicadores concluída com sucesso!');
+        }
+    } catch (error) {
+        console.error('Erro durante migração de indicadores:', error);
+    }
 }
 
 async function initializeAllConfigs() {
@@ -113,8 +170,11 @@ async function initializeAllConfigs() {
         initializeGroupsConfig(),
         initializeMessagesConfig(),
         initializeIndicadoresConfig(),
-        ensureCityMessageTxtFolder() // Garantir que esta função seja chamada
+        ensureCityMessageTxtFolder()
     ]);
+
+    // Executa migração após inicialização
+    await migrateIndicadoresIfNeeded();
 
     const successCount = results.filter(r => r.status === 'fulfilled').length;
     const errorCount = results.filter(r => r.status === 'rejected').length;
@@ -152,6 +212,7 @@ module.exports = {
     initializeIndicadoresConfig,
     initializeAllConfigs,
     ensureCityMessageTxtFolder,
+    migrateIndicadoresIfNeeded,
     DATA_DIR,
     readJsonFile,
     saveJsonFile
