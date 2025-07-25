@@ -34,7 +34,9 @@ const FAQ_TRIGGERS = [
   "buki",
   "bok",
   "album",
-  "álbum"
+  "álbum",
+  "vocês buscam",
+  "busca em casa"
 ];
 
 module.exports = FAQ_TRIGGERS;
