@@ -75,7 +75,18 @@ async function createJsonFileIfNotExists(filename, defaultContent) {
 }
 
 async function initializeDevModeConfig() {
-    const defaultConfig = { isDevMode: false, lastChanged: null };
+    const defaultConfig = { 
+        isDevMode: false, 
+        debugEnabled: false,
+        lastChanged: null,
+        lastDebugChanged: null,
+        scoutConfig: {
+            enabled: false,
+            timeSeconds: 300, // 5 minutos padrão
+            timeFormatted: "00:05:00",
+            lastChanged: null
+        }
+    };
     return await createJsonFileIfNotExists('devMode.json', defaultConfig);
 }
 
@@ -161,6 +172,34 @@ async function migrateIndicadoresIfNeeded() {
     }
 }
 
+// NOVA FUNÇÃO: Para migrar configuração do devMode e adicionar Scout
+async function migrateDevModeIfNeeded() {
+    try {
+        const data = await readJsonFile('devMode.json');
+        
+        if (data && !data.scoutConfig) {
+            console.log('🔄 Migrando configuração de devMode para incluir Scout...');
+            
+            data.scoutConfig = {
+                enabled: false,
+                timeSeconds: 300, // 5 minutos padrão
+                timeFormatted: "00:05:00",
+                lastChanged: null
+            };
+            
+            // Garante que debugEnabled existe
+            if (data.debugEnabled === undefined) {
+                data.debugEnabled = false;
+            }
+            
+            await saveJsonFile('devMode.json', data);
+            console.log('✅ Migração de devMode concluída com sucesso!');
+        }
+    } catch (error) {
+        console.error('Erro durante migração de devMode:', error);
+    }
+}
+
 async function initializeAllConfigs() {
     console.log('🚀 Inicializando arquivos e pastas do sistema...\n');
 
@@ -173,8 +212,9 @@ async function initializeAllConfigs() {
         ensureCityMessageTxtFolder()
     ]);
 
-    // Executa migração após inicialização
+    // Executa migrações após inicialização
     await migrateIndicadoresIfNeeded();
+    await migrateDevModeIfNeeded();
 
     const successCount = results.filter(r => r.status === 'fulfilled').length;
     const errorCount = results.filter(r => r.status === 'rejected').length;
@@ -213,6 +253,7 @@ module.exports = {
     initializeAllConfigs,
     ensureCityMessageTxtFolder,
     migrateIndicadoresIfNeeded,
+    migrateDevModeIfNeeded,
     DATA_DIR,
     readJsonFile,
     saveJsonFile

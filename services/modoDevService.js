@@ -9,14 +9,28 @@ const DEFAULT_CONFIG = {
     isDevMode: false,
     debugEnabled: false,
     lastChanged: null,
-    lastDebugChanged: null
+    lastDebugChanged: null,
+    scoutConfig: {
+        enabled: false,
+        timeSeconds: 300, // 5 minutos padrão
+        timeFormatted: "00:05:00",
+        lastChanged: null
+    }
 };
 
 async function loadConfig() {
     try {
         await initializeDevModeConfig();
         const data = await fs.readFile(CONFIG_FILE, 'utf8');
-        return JSON.parse(data);
+        const config = JSON.parse(data);
+        
+        // Garante que scoutConfig existe (migração automática)
+        if (!config.scoutConfig) {
+            config.scoutConfig = DEFAULT_CONFIG.scoutConfig;
+            await saveConfig(config);
+        }
+        
+        return config;
     } catch (error) {
         console.error('Erro ao carregar configuração:', error);
         return DEFAULT_CONFIG;
@@ -31,6 +45,50 @@ async function saveConfig(config) {
         console.error('Erro ao salvar configuração:', error);
         return false;
     }
+}
+
+function parseTimeInput(timeInput) {
+    // Remove espaços e valida formato básico
+    const cleanInput = timeInput.trim();
+    const timeRegex = /^(\d{1,2}):(\d{1,2}):(\d{1,2})$/;
+    
+    const match = cleanInput.match(timeRegex);
+    if (!match) {
+        return { valid: false, error: 'Formato inválido. Use HH:MM:SS (exemplo: 01:30:45)' };
+    }
+    
+    const hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const seconds = parseInt(match[3], 10);
+    
+    // Validações
+    if (hours > 23) {
+        return { valid: false, error: 'Horas devem ser entre 00 e 23' };
+    }
+    if (minutes > 59) {
+        return { valid: false, error: 'Minutos devem ser entre 00 e 59' };
+    }
+    if (seconds > 59) {
+        return { valid: false, error: 'Segundos devem ser entre 00 e 59' };
+    }
+    
+    const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+    
+    if (totalSeconds === 0) {
+        return { valid: false, error: 'O tempo total não pode ser zero' };
+    }
+    
+    // Formata com zeros à esquerda
+    const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    return {
+        valid: true,
+        hours,
+        minutes,
+        seconds,
+        totalSeconds,
+        formatted: formattedTime
+    };
 }
 
 async function toggleDevMode() {
@@ -67,6 +125,50 @@ async function toggleDebugMode() {
     }
 }
 
+async function setScoutTime(timeInput) {
+    try {
+        const parsedTime = parseTimeInput(timeInput);
+        
+        if (!parsedTime.valid) {
+            return { success: false, error: parsedTime.error };
+        }
+        
+        const config = await loadConfig();
+        config.scoutConfig.timeSeconds = parsedTime.totalSeconds;
+        config.scoutConfig.timeFormatted = parsedTime.formatted;
+        config.scoutConfig.enabled = true;
+        config.scoutConfig.lastChanged = new Date().toISOString();
+
+        const saved = await saveConfig(config);
+        if (saved) {
+            return { 
+                success: true, 
+                timeFormatted: parsedTime.formatted,
+                totalSeconds: parsedTime.totalSeconds
+            };
+        } else {
+            return { success: false, error: 'Falha ao salvar configuração do Scout' };
+        }
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function getScoutConfig() {
+    try {
+        const config = await loadConfig();
+        return {
+            enabled: config.scoutConfig.enabled || false,
+            timeSeconds: config.scoutConfig.timeSeconds || 300,
+            timeFormatted: config.scoutConfig.timeFormatted || "00:05:00",
+            lastChanged: config.scoutConfig.lastChanged
+        };
+    } catch (error) {
+        console.error('Erro ao carregar configuração do Scout:', error);
+        return DEFAULT_CONFIG.scoutConfig;
+    }
+}
+
 async function getCurrentMode() {
     try {
         const config = await loadConfig();
@@ -74,7 +176,8 @@ async function getCurrentMode() {
             isDevMode: config.isDevMode,
             debugEnabled: config.debugEnabled || false,
             lastChanged: config.lastChanged,
-            lastDebugChanged: config.lastDebugChanged
+            lastDebugChanged: config.lastDebugChanged,
+            scoutConfig: config.scoutConfig || DEFAULT_CONFIG.scoutConfig
         };
     } catch (error) {
         console.error('Erro ao carregar configuração:', error);
@@ -97,8 +200,12 @@ async function getDetailedStatus() {
             debugEnabled: config.debugEnabled || false,
             delayDescription: config.isDevMode ? '3 segundos (fixo)' : '1-3 minutos (aleatório)',
             debugDescription: config.debugEnabled ? 'Habilitado' : 'Desabilitado',
+            scoutEnabled: config.scoutConfig?.enabled || false,
+            scoutTime: config.scoutConfig?.timeFormatted || "00:05:00",
+            scoutSeconds: config.scoutConfig?.timeSeconds || 300,
             lastChanged: config.lastChanged ? new Date(config.lastChanged).toLocaleString('pt-BR') : null,
             lastDebugChanged: config.lastDebugChanged ? new Date(config.lastDebugChanged).toLocaleString('pt-BR') : null,
+            lastScoutChanged: config.scoutConfig?.lastChanged ? new Date(config.scoutConfig.lastChanged).toLocaleString('pt-BR') : null,
             configExists
         };
     } catch (error) {
@@ -106,10 +213,11 @@ async function getDetailedStatus() {
     }
 }
 
-
 module.exports = {
     toggleDevMode,
     toggleDebugMode,
+    setScoutTime,
+    getScoutConfig,
     getCurrentMode,
     getDetailedStatus,
 };
