@@ -1,19 +1,23 @@
 // message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular
 const client = require("../client/client");
-const { enviarMensagemMenu, enviarMenuHorarios, chatContext } = require("../handlers/menuMessage");
+const {
+  enviarMensagemMenu,
+  enviarMenuHorarios,
+  chatContext,
+} = require("../handlers/menuMessage");
 const HORARIOS = require("../horarios");
-const { 
-  normalizarTexto, 
-  hasTriggerText, 
-  identificarCidadeFuzzy, 
+const {
+  normalizarTexto,
+  hasTriggerText,
+  identificarCidadeFuzzy,
   normalizarTextoHorario,
-  isRequestingHelp,  // Importa a função do triggers.js
-  enviarFAQ          // Importa a função do triggers.js
+  isRequestingHelp, // Importa a função do triggers.js
+  enviarFAQ, // Importa a função do triggers.js
 } = require("../utils/triggers");
 const groupService = require("../services/groupService");
-const timeout = require('../utils/timeout');
-const indicadores = require('../utils/indicadores');
-const delay = require('../utils/delay');
+const timeout = require("../utils/timeout");
+const indicadores = require("../utils/indicadores");
+const delay = require("../utils/delay");
 
 const userStates = {};
 
@@ -43,7 +47,10 @@ module.exports = async function messageHandler(msg) {
     return;
   }
 
-  if (hasTriggerText(textoDaMensagem)) {
+  if (
+    hasTriggerText(textoDaMensagem) &&
+    userStates[userNumber]?.step !== "awaiting_name"
+  ) {
     timeout.cancelTimeout(userNumber);
     delete userStates[userNumber];
     delete chatContext[userNumber];
@@ -51,14 +58,24 @@ module.exports = async function messageHandler(msg) {
     const currentMode = groupService.getCurrentMode();
     await enviarMensagemMenu(client, msg, chat);
 
-    if (currentMode === 'SINGLE') {
-      const primaryGroup = (await groupService.getAllGroups()).find(group => group.isPrimary);
+    if (currentMode === "SINGLE") {
+      const primaryGroup = (await groupService.getAllGroups()).find(
+        (group) => group.isPrimary
+      );
       if (primaryGroup) {
         chatContext[userNumber] = { selectedCityData: primaryGroup };
       }
-      userStates[userNumber] = { step: "awaiting_time", started: true, forceSingle: true };
+      userStates[userNumber] = {
+        step: "awaiting_time",
+        started: true,
+        forceSingle: true,
+      };
     } else {
-      userStates[userNumber] = { step: "awaiting_city", started: true, forceSingle: false };
+      userStates[userNumber] = {
+        step: "awaiting_city",
+        started: true,
+        forceSingle: false,
+      };
     }
 
     await timeout.startTimeout(client, userNumber, chat, name);
@@ -66,10 +83,10 @@ module.exports = async function messageHandler(msg) {
   }
 
   if (userStates[userNumber]?.step === "awaiting_city") {
-    const inputCidade = (msg.body?.trim() || "");
+    const inputCidade = msg.body?.trim() || "";
     const inputCidadeNormalizado = normalizarTexto(inputCidade);
     const allGroups = await groupService.getAllGroups();
-    
+
     let selectedCityData = null;
 
     const numero = parseInt(inputCidade.trim());
@@ -78,16 +95,18 @@ module.exports = async function messageHandler(msg) {
     }
 
     if (!selectedCityData) {
-      selectedCityData = allGroups.find(group => 
-        normalizarTexto(group.name) === inputCidadeNormalizado
+      selectedCityData = allGroups.find(
+        (group) => normalizarTexto(group.name) === inputCidadeNormalizado
       );
     }
 
     if (!selectedCityData) {
-      selectedCityData = allGroups.find(group => {
+      selectedCityData = allGroups.find((group) => {
         const nomeNormalizado = normalizarTexto(group.name);
-        return nomeNormalizado.includes(inputCidadeNormalizado) || 
-               inputCidadeNormalizado.includes(nomeNormalizado);
+        return (
+          nomeNormalizado.includes(inputCidadeNormalizado) ||
+          inputCidadeNormalizado.includes(nomeNormalizado)
+        );
       });
     }
 
@@ -101,14 +120,15 @@ module.exports = async function messageHandler(msg) {
     }
 
     if (selectedCityData) {
-
       chatContext[userNumber] = { selectedCityData };
 
       // Delay antes da mensagem de confirmação da cidade
       await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
       await client.sendMessage(
         msg.from,
-        `✅ Cidade selecionada: *${selectedCityData.name}*\n\n${selectedCityData.message || ''}`
+        `✅ Cidade selecionada: *${selectedCityData.name}*\n\n${
+          selectedCityData.message || ""
+        }`
       );
 
       if (!userStates[userNumber]) {
@@ -117,9 +137,9 @@ module.exports = async function messageHandler(msg) {
 
       userStates[userNumber].step = "awaiting_time";
       await enviarMenuHorarios(client, msg.from, chat);
-
     } else {
-      let errorMessage = "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
+      let errorMessage =
+        "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
       errorMessage += "📍 *Cidades disponíveis:*\n";
 
       allGroups.forEach((group, index) => {
@@ -130,7 +150,8 @@ module.exports = async function messageHandler(msg) {
       errorMessage += "• O *número* da cidade (1, 2, 3...)\n";
       errorMessage += "• O *nome completo* (São Paulo, Joinville...)\n";
       errorMessage += "• Parte do nome (São, Join...)\n";
-      errorMessage += "\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.\n";
+      errorMessage +=
+        "\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.\n";
       errorMessage += "\nTente novamente! 😊";
 
       await client.sendMessage(msg.from, errorMessage);
@@ -140,14 +161,13 @@ module.exports = async function messageHandler(msg) {
     return;
   }
 
- if (userStates[userNumber]?.step === "awaiting_time") {
+  if (userStates[userNumber]?.step === "awaiting_time") {
     const inputUsuario = msg.body?.trim() || "";
     const opcao = encontrarHorario(inputUsuario);
 
     if (opcao) {
-      
       indicadores.incrementarHorario(opcao.id);
-      
+
       userStates[userNumber] = {
         ...userStates[userNumber],
         step: "awaiting_name",
@@ -162,7 +182,6 @@ module.exports = async function messageHandler(msg) {
         msg.from,
         `Você escolheu *${opcao.horario} - ${opcao.descricao}*.\nAgora digite somente o seu *NOME COMPLETO* para confirmar a sua inscrição, por favor!😊`
       );
-
     } else {
       await client.sendMessage(
         msg.from,
@@ -186,11 +205,12 @@ module.exports = async function messageHandler(msg) {
 
       let messageText;
 
-      if (currentMode === 'SINGLE' || userStates[userNumber].forceSingle) {
-        const primaryGroup = allGroups.find(group => group.isPrimary);
+      if (currentMode === "SINGLE" || userStates[userNumber].forceSingle) {
+        const primaryGroup = allGroups.find((group) => group.isPrimary);
         if (primaryGroup) {
-
-          const dataEvento = primaryGroup.date ? `\n📅 Dia: *${primaryGroup.date}*` : '';
+          const dataEvento = primaryGroup.date
+            ? `\n📅 Dia: *${primaryGroup.date}*`
+            : "";
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para o grupo de ${primaryGroup.name}:\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁${dataEvento}\n\nClique no link para participar!`;
         } else {
           const primaryLink = await groupService.getPrimaryGroupLink();
@@ -199,13 +219,16 @@ module.exports = async function messageHandler(msg) {
       } else {
         const selectedCityData = chatContext[userNumber]?.selectedCityData;
         if (selectedCityData) {
- 
-          const dataEvento = selectedCityData.date ? `\n📅 Dia: *${selectedCityData.date}*` : '';
+          const dataEvento = selectedCityData.date
+            ? `\n📅 Dia: *${selectedCityData.date}*`
+            : "";
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para o grupo de ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁${dataEvento}\n\nClique no link para participar!`;
         } else {
           messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para os grupos disponíveis:\n\n`;
           messageText += allGroups
-            .map((group) => `🔗 ${group.descricao || group.name}: ${group.link}`)
+            .map(
+              (group) => `🔗 ${group.descricao || group.name}: ${group.link}`
+            )
             .join("\n\n");
           messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
         }
@@ -218,11 +241,12 @@ module.exports = async function messageHandler(msg) {
 
       delete userStates[userNumber];
       delete chatContext[userNumber];
-
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
       // Mensagem de erro - SEM delay
-      await msg.reply("❌ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde.");
+      await msg.reply(
+        "❌ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde."
+      );
 
       timeout.cancelTimeout(userNumber);
       delete userStates[userNumber];
