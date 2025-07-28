@@ -1,25 +1,26 @@
 // util/scout.js
 const devMode = require('../data/devMode.json');
 const { getLastMenuTime } = require('../utils/lastActivity');
+const { debug } = require('../services/debugService');
 
 function startScout(client) {
   const isDev = devMode.isDevMode;
   const scoutEnabled = devMode.scoutConfig?.enabled;
 
   if (!scoutEnabled) {
-    console.log('[SCOUT] Scout desativado em devMode.json');
+    debug('[SCOUT] Scout desativado em devMode.json');
     return;
   }
 
   const interval = isDev ? 10000 : (devMode.scoutConfig.timeSeconds || 60) * 1000;
 
   client.on('ready', () => {
-    console.log('[SCOUT] Client pronto, iniciando scout...');
+    debug('[SCOUT] Client pronto, iniciando scout...');
 
     const chatId = client.info?.wid?._serialized;
 
     if (!chatId) {
-      console.error('[SCOUT] Não foi possível obter o ID do bot via client.info');
+      debug('[SCOUT] Não foi possível obter o ID do bot via client.info');
       return;
     }
 
@@ -47,9 +48,9 @@ function startScout(client) {
 
         await client.sendMessage(chatId, mensagem);
         
-        console.log(`[SCOUT] Mensagem enviada para ${chatId} às ${horaAtual}`);
+        await debug(`[SCOUT] Mensagem enviada para ${chatId} às ${horaAtual}`);
       } catch (err) {
-        console.error('[SCOUT] Erro ao enviar mensagem:', err.message);
+        await debug('[SCOUT] Erro ao enviar mensagem:', err.message);
       }
     }, interval);
   });
