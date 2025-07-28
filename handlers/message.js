@@ -18,6 +18,7 @@ const groupService = require("../services/groupService");
 const timeout = require("../utils/timeout");
 const indicadores = require("../utils/indicadores");
 const delay = require("../utils/delay");
+const { updateLastMenuTime } = require("../utils/lastActivity"); // 🆕 Importa a função
 
 const userStates = {};
 
@@ -57,6 +58,9 @@ module.exports = async function messageHandler(msg) {
 
     const currentMode = groupService.getCurrentMode();
     await enviarMensagemMenu(client, msg, chat);
+    
+    // 🆕 Atualiza o horário do último menu enviado
+    updateLastMenuTime();
 
     if (currentMode === "SINGLE") {
       const primaryGroup = (await groupService.getAllGroups()).find(

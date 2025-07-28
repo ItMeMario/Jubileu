@@ -1,5 +1,6 @@
 // util/scout.js
 const devMode = require('../data/devMode.json');
+const { getLastMenuTime } = require('../utils/lastActivity');
 
 function startScout(client) {
   const isDev = devMode.isDevMode;
@@ -24,8 +25,29 @@ function startScout(client) {
 
     setInterval(async () => {
       try {
-        await client.sendMessage(chatId, 'oi eu to online');
-        console.log(`[SCOUT] Mensagem enviada para ${chatId}`);
+        const agora = new Date();
+        const horaAtual = agora.toLocaleString('pt-BR', {
+          timeZone: 'America/Sao_Paulo',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+
+        let mensagem = 'oi eu to online';
+        
+        const lastMenuTime = getLastMenuTime();
+        if (lastMenuTime) {
+          mensagem += `\n⏰ Último menu enviado: ${lastMenuTime}`;
+        } else {
+          mensagem += '\n⏰ Nenhum menu enviado ainda nesta sessão';
+        }
+
+        await client.sendMessage(chatId, mensagem);
+        
+        console.log(`[SCOUT] Mensagem enviada para ${chatId} às ${horaAtual}`);
       } catch (err) {
         console.error('[SCOUT] Erro ao enviar mensagem:', err.message);
       }
