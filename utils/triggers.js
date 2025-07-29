@@ -64,14 +64,13 @@ function normalizarTextoCidade(texto) {
   return normalizarTextoBase(texto);
 }
 
-function identificarCidadeFuzzy(texto) {
+async function identificarCidadeFuzzy(texto) {
   const input = normalizarTexto(texto || '');
   
-  // Usando o novo sistema de debug
   debug('Fuzzy matching - Input original:', texto);
   debug('Fuzzy matching - Input normalizado:', input);
   
-  const allGroups = groupService.getAllGroups();
+  const allGroups = await groupService.getAllGroups(); // << CORREÇÃO AQUI
   debug('Grupos disponíveis:', allGroups.length);
   debug('Estrutura dos grupos:', allGroups);
 
@@ -80,17 +79,15 @@ function identificarCidadeFuzzy(texto) {
     return null;
   }
 
-  // Mapear as cidades com suas variações
   const cityMap = allGroups
     .filter(group => group?.name)
     .map(group => {
       const normalizado = normalizarTexto(group.name);
-      // Criar variações da cidade para melhor matching
       const variações = [
-        group.name,                    // Nome original
-        normalizado,                   // Nome normalizado
-        group.name.split(' ')[0],      // Primeira palavra (ex: "São" de "São Paulo")
-        normalizado.split(' ')[0]      // Primeira palavra normalizada
+        group.name,
+        normalizado,
+        group.name.split(' ')[0],
+        normalizado.split(' ')[0]
       ];
       
       return {
@@ -107,7 +104,6 @@ function identificarCidadeFuzzy(texto) {
     return null;
   }
 
-  // Primeira tentativa: busca exata em todas as variações
   for (const city of cityMap) {
     if (city.variações.some(variacao => normalizarTexto(variacao) === input)) {
       debug('Match exato encontrado:', city.original);
@@ -115,7 +111,6 @@ function identificarCidadeFuzzy(texto) {
     }
   }
 
-  // Segunda tentativa: busca por substring (contém)
   for (const city of cityMap) {
     if (city.variações.some(variacao => {
       const varNorm = normalizarTexto(variacao);
@@ -126,12 +121,10 @@ function identificarCidadeFuzzy(texto) {
     }
   }
 
-  // Terceira tentativa: fuzzy matching
   const normalizados = cityMap.map(c => c.normalizado);
   const match = stringSimilarity.findBestMatch(input, normalizados);
   debug('Melhor match fuzzy:', match.bestMatch);
 
-  // Reduzindo threshold para 0.3 para ser mais flexível
   if (match.bestMatch.rating > 0.3) {
     const item = cityMap.find(c => c.normalizado === match.bestMatch.target);
     debug('Cidade encontrada via fuzzy:', item?.original);
@@ -141,6 +134,7 @@ function identificarCidadeFuzzy(texto) {
   debug('Nenhuma cidade encontrada com similaridade suficiente');
   return null;
 }
+
 
 function buscarHorario(texto) {
   const normalizado = normalizarTexto(texto);
