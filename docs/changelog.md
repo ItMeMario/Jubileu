@@ -73,4 +73,4 @@ Corrigido bug nas triggers que fazia com que o termo "tarde" acionasse o horári
 
 Corrigido problema que causava reinício do sistema caso o cliente digitasse uma trigger enquanto informava o próprio nome.
 
-📅 Data de Lançamento: [28/00/2025]
+📅 Data de Lançamento: [28/08/2025]
