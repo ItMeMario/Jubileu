@@ -4,7 +4,7 @@ const {
     showLastMessage,
     promptForMessageContent,
     promptForMessageId
-} = require('../views/messageViews');
+} = require('../utils/messageUtils');
 
 async function handleAddMessage(rl) {
     const content = await promptForMessageContent(rl);
