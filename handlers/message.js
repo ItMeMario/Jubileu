@@ -1,4 +1,4 @@
-// message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular
+// message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular + Correção triggers indevidos
 const client = require("../client/client");
 const {
   enviarMensagemMenu,
@@ -48,8 +48,9 @@ module.exports = async function messageHandler(msg) {
     return;
   }
 
+  // 🆕 MODIFICAÇÃO PRINCIPAL: Passa o userState para hasTriggerText
   if (
-    hasTriggerText(textoDaMensagem) &&
+    hasTriggerText(textoDaMensagem, userStates[userNumber]) &&
     userStates[userNumber]?.step !== "awaiting_name"
   ) {
     timeout.cancelTimeout(userNumber);
