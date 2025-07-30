@@ -58,7 +58,7 @@ module.exports = async function messageHandler(msg) {
 
     const currentMode = groupService.getCurrentMode();
     await enviarMensagemMenu(client, msg, chat);
-    
+
     // 🆕 Atualiza o horário do último menu enviado
     updateLastMenuTime();
 
@@ -213,27 +213,23 @@ module.exports = async function messageHandler(msg) {
         const primaryGroup = allGroups.find((group) => group.isPrimary);
         if (primaryGroup) {
           const dataEvento = primaryGroup.date
-            ? `\n📅 Dia: *${primaryGroup.date}*`
+            ? `\n📅 Dia: ${primaryGroup.date}`
             : "";
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para o grupo de ${primaryGroup.name}:\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁${dataEvento}\n\nClique no link para participar!`;
+          messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!${dataEvento}\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\n*Clique no link para participar!*`;
         } else {
           const primaryLink = await groupService.getPrimaryGroupLink();
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para o grupo:\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nClique no link para participar!`;
+          messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\n*Clique no link para participar!*`;
         }
       } else {
         const selectedCityData = chatContext[userNumber]?.selectedCityData;
         if (selectedCityData) {
           const dataEvento = selectedCityData.date
-            ? `\n📅 Dia: *${selectedCityData.date}*`
+            ? `\n📅 Dia: ${selectedCityData.date}`
             : "";
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para o grupo de ${selectedCityData.name}:\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁${dataEvento}\n\nClique no link para participar!`;
+          messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!${dataEvento}\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nAqui está o acesso para o grupo de ${selectedCityData.name}:\n*Clique no link para participar!*`;
         } else {
-          messageText = `✅ Pronto, *${nomeCompleto}*! Aqui está o acesso para os grupos disponíveis:\n\n`;
-          messageText += allGroups
-            .map(
-              (group) => `🔗 ${group.descricao || group.name}: ${group.link}`
-            )
-            .join("\n\n");
+          messageText = `✅ Parabéns, *${nomeCompleto}*! Aqui está o acesso para os grupos disponíveis:\n\n`;
+          messageText += allGroups.map((group) => `${group.link}`).join("\n\n");
           messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
         }
       }
