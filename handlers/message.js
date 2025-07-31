@@ -1,4 +1,4 @@
-// message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular + Correção triggers indevidos
+// message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular + Correção triggers indevidos + Anti-Spam
 const client = require("../client/client");
 const {
   enviarMensagemMenu,
@@ -19,8 +19,14 @@ const timeout = require("../utils/timeout");
 const indicadores = require("../utils/indicadores");
 const delay = require("../utils/delay");
 const { updateLastMenuTime } = require("../utils/lastActivity"); // 🆕 Importa a função
+const { antiSpamManager } = require("../utils/antiSpam"); // 🆕 Importa o anti-spam
 
 const userStates = {};
+
+// 🆕 Inicializa o anti-spam manager
+(async () => {
+  await antiSpamManager.initialize();
+})();
 
 // 🧠 Função auxiliar para encontrar horário
 function encontrarHorario(inputUsuario) {
@@ -41,6 +47,16 @@ module.exports = async function messageHandler(msg) {
 
   const textoDaMensagem = msg.caption || msg.body || "";
 
+  // 🆕 Verificação de usuário suspenso - Anti-Spam (PRIMEIRA VERIFICAÇÃO)
+  if (antiSpamManager.isUserSuspended(userNumber)) {
+    const remainingMinutes =
+      antiSpamManager.getSuspensionTimeRemaining(userNumber);
+    await antiSpamManager.handleSpamAction(client, msg, "suspended", {
+      remainingMinutes,
+    });
+    return;
+  }
+
   // 🔍 Verificação de FAQ/AJUDA usando a função do triggers.js
   if (isRequestingHelp(textoDaMensagem)) {
     await enviarFAQ(client, msg);
@@ -56,6 +72,9 @@ module.exports = async function messageHandler(msg) {
     timeout.cancelTimeout(userNumber);
     delete userStates[userNumber];
     delete chatContext[userNumber];
+
+    // 🆕 Reset contador anti-spam quando usuário reinicia conversa
+    await antiSpamManager.resetUserAttempts(userNumber);
 
     const currentMode = groupService.getCurrentMode();
     await enviarMensagemMenu(client, msg, chat);
@@ -125,6 +144,9 @@ module.exports = async function messageHandler(msg) {
     }
 
     if (selectedCityData) {
+      // 🆕 Reset contador anti-spam quando usuário acerta a cidade
+      await antiSpamManager.resetUserAttempts(userNumber);
+
       chatContext[userNumber] = { selectedCityData };
 
       // Delay antes da mensagem de confirmação da cidade
@@ -143,23 +165,36 @@ module.exports = async function messageHandler(msg) {
       userStates[userNumber].step = "awaiting_time";
       await enviarMenuHorarios(client, msg.from, chat);
     } else {
-      let errorMessage =
-        "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
-      errorMessage += "📍 *Cidades disponíveis:*\n";
+      // 🆕 Anti-Spam: Incrementa tentativas e verifica ação necessária
+      const spamCheck = await antiSpamManager.incrementAttempts(userNumber);
 
-      allGroups.forEach((group, index) => {
-        errorMessage += `${index + 1}. ${group.name}\n`;
-      });
+      if (spamCheck.action === "send_faq") {
+        await antiSpamManager.handleSpamAction(client, msg, "send_faq");
+      } else if (spamCheck.action === "suspend") {
+        await antiSpamManager.handleSpamAction(client, msg, "suspend", {
+          suspendDurationMinutes: spamCheck.suspendDurationMinutes,
+        });
+        return;
+      } else {
+        // Mensagem normal de erro
+        let errorMessage =
+          "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
+        errorMessage += "📍 *Cidades disponíveis:*\n";
 
-      errorMessage += "\n💡 Você pode digitar:\n";
-      errorMessage += "• O *número* da cidade (1, 2, 3...)\n";
-      errorMessage += "• O *nome completo* (São Paulo, Joinville...)\n";
-      errorMessage += "• Parte do nome (São, Join...)\n";
-      errorMessage +=
-        "\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.\n";
-      errorMessage += "\nTente novamente! 😊";
+        allGroups.forEach((group, index) => {
+          errorMessage += `${index + 1}. ${group.name}\n`;
+        });
 
-      await client.sendMessage(msg.from, errorMessage);
+        errorMessage += "\n💡 Você pode digitar:\n";
+        errorMessage += "• O *número* da cidade (1, 2, 3...)\n";
+        errorMessage += "• O *nome completo* (São Paulo, Joinville...)\n";
+        errorMessage += "• Parte do nome (São, Join...)\n";
+        errorMessage +=
+          "\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.\n";
+        errorMessage += "\nTente novamente! 😊";
+
+        await client.sendMessage(msg.from, errorMessage);
+      }
     }
 
     await timeout.startTimeout(client, userNumber, chat, name);
@@ -171,6 +206,9 @@ module.exports = async function messageHandler(msg) {
     const opcao = encontrarHorario(inputUsuario);
 
     if (opcao) {
+      // 🆕 Reset contador anti-spam quando usuário acerta o horário
+      await antiSpamManager.resetUserAttempts(userNumber);
+
       indicadores.incrementarHorario(opcao.id);
 
       userStates[userNumber] = {
@@ -188,10 +226,23 @@ module.exports = async function messageHandler(msg) {
         `Você escolheu *${opcao.horario} - ${opcao.descricao}*.\nAgora digite somente o seu *NOME COMPLETO* para confirmar a sua inscrição, por favor!😊`
       );
     } else {
-      await client.sendMessage(
-        msg.from,
-        `🤔 Desculpe, horário não reconhecido. Digite apenas o horário que você escolheu.\n\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
-      );
+      // 🆕 Anti-Spam: Incrementa tentativas e verifica ação necessária
+      const spamCheck = await antiSpamManager.incrementAttempts(userNumber);
+
+      if (spamCheck.action === "send_faq") {
+        await antiSpamManager.handleSpamAction(client, msg, "send_faq");
+      } else if (spamCheck.action === "suspend") {
+        await antiSpamManager.handleSpamAction(client, msg, "suspend", {
+          suspendDurationMinutes: spamCheck.suspendDurationMinutes,
+        });
+        return;
+      } else {
+        // Mensagem normal de erro
+        await client.sendMessage(
+          msg.from,
+          `🤔 Desculpe, horário não reconhecido. Digite apenas o horário que você escolheu.\n\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
+        );
+      }
     }
 
     await timeout.startTimeout(client, userNumber, chat, name);
@@ -239,6 +290,9 @@ module.exports = async function messageHandler(msg) {
       await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
       await client.sendMessage(msg.from, messageText);
       indicadores.incrementarConvidados();
+
+      // 🆕 Reset contador anti-spam após sucesso completo
+      await antiSpamManager.resetUserAttempts(userNumber);
 
       delete userStates[userNumber];
       delete chatContext[userNumber];
