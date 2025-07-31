@@ -169,9 +169,7 @@ class AntiSpamManager {
       case "suspend":
         await client.sendMessage(
           userNumber,
-          `⚠️ Detectamos muitas tentativas inválidas. Por segurança, suas mensagens foram temporariamente suspensas por ${Math.ceil(
-            extraData.suspendDurationMinutes
-          )} minutos.\n\n🕐 Tente novamente mais tarde.`
+          `Oi, Léo aqui! 😊 Poderia me explicar, por gentileza, com detalhes por escrito a sua questão? Assim que possível, te respondo. Obrigado! 🙏`
         );
         break;
 
@@ -179,7 +177,7 @@ class AntiSpamManager {
         // Usuário já suspenso tentando enviar mensagem
         await client.sendMessage(
           userNumber,
-          `🚫 Suas mensagens ainda estão suspensas. Tempo restante: aproximadamente ${extraData.remainingMinutes} minuto(s).\n\n⏳ Aguarde e tente novamente mais tarde.`
+          `Por favor, aguarde. Responderei assim que possível. ⏳\nAtenciosamente,\nLeonardo Rieper 👍🏻`
         );
         break;
     }
