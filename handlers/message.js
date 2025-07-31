@@ -1,4 +1,4 @@
-// message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular + Correção triggers indevidos + Anti-Spam
+// message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular + Correção triggers indevidos + Anti-Spam + Tratamento de Áudio
 const client = require("../client/client");
 const {
   enviarMensagemMenu,
@@ -20,6 +20,7 @@ const indicadores = require("../utils/indicadores");
 const delay = require("../utils/delay");
 const { updateLastMenuTime } = require("../utils/lastActivity"); // 🆕 Importa a função
 const { antiSpamManager } = require("../utils/antiSpam"); // 🆕 Importa o anti-spam
+const { messageTypeHandler } = require("../handlers/messageType"); // 🆕 Importa o handler de tipos de mensagem
 
 const userStates = {};
 
@@ -47,7 +48,24 @@ module.exports = async function messageHandler(msg) {
 
   const textoDaMensagem = msg.caption || msg.body || "";
 
-  // 🆕 Verificação de usuário suspenso - Anti-Spam (PRIMEIRA VERIFICAÇÃO)
+  // 🆕 PRIMEIRA VERIFICAÇÃO: Verifica tipos de mensagem não suportados (áudio, vídeo, etc.)
+  const unsupportedResult = await messageTypeHandler.processMessage(
+    client,
+    msg
+  );
+  if (unsupportedResult.handled) {
+    console.log(
+      `📱 Mensagem não suportada tratada: ${unsupportedResult.action}`
+    );
+
+    // Se foi suspenso ou já estava suspenso, inicia timeout e retorna
+    if (unsupportedResult.action === "suspended") {
+      await timeout.startTimeout(client, userNumber, chat, name);
+    }
+    return;
+  }
+
+  // 🆕 Verificação de usuário suspenso - Anti-Spam (SEGUNDA VERIFICAÇÃO)
   if (antiSpamManager.isUserSuspended(userNumber)) {
     const remainingMinutes =
       antiSpamManager.getSuspensionTimeRemaining(userNumber);
