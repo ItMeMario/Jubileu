@@ -1,7 +1,6 @@
 const modoDevService = require("../services/modoDevService");
 const modoDevView = require("../views/modoDevView");
 const groupService = require("../services/groupService");
-const { confirmAction } = require("../views/groupViews");
 
 async function handleModoDevMenu(rl) {
   while (true) {

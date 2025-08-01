@@ -1,6 +1,5 @@
 const { handleConfigMenu } = require("../views/configViews");
 const messageController = require("../controllers/messageController");
-const groupController = require("../controllers/groupController");
 const { createInterface } = require("readline");
 
 async function initializeApp() {
