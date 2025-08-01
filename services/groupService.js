@@ -120,6 +120,11 @@ class GroupService {
     return this.config.mode;
   }
 
+  setMode(mode) {
+    this.config.mode = mode;
+    this._saveConfig();
+  }
+
   async _enrichGroupWithMessage(group) {
     const message =
       group._messageFromFile || (await this._loadCityMessage(group.id));
