@@ -134,8 +134,14 @@ async function toggleGroupMode(rl) {
   console.log('- SINGLE: Usará apenas o grupo marcado como "primário"');
   console.log("- MULTI: Usará todos os grupos cadastrados");
 
-  const shouldToggle = await confirmAction(rl, `mudar para modo ${newMode}`);
-  if (!shouldToggle) {
+  const resposta = await new Promise((resolve) =>
+    rl.question(
+      `Tem certeza que deseja mudar para modo ${newMode}? (s/n): `,
+      resolve
+    )
+  );
+
+  if (resposta.toLowerCase() !== "s") {
     console.log("\nOperação cancelada.");
     return;
   }
