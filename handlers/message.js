@@ -1,4 +1,4 @@
-// message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular + Correção triggers indevidos + Anti-Spam + Tratamento de Áudio
+// message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular + Correção triggers indevidos + Anti-Spam + Tratamento de Áudio + InviteManager
 const client = require("../client/client");
 const {
   enviarMensagemMenu,
@@ -21,6 +21,8 @@ const delay = require("../utils/delay");
 const { updateLastMenuTime } = require("../utils/lastActivity"); // 🆕 Importa a função
 const { antiSpamManager } = require("../utils/antiSpam"); // 🆕 Importa o anti-spam
 const { messageTypeHandler } = require("../handlers/messageType"); // 🆕 Importa o handler de tipos de mensagem
+const inviteManager = require("../utils/inviteManager");
+
 
 const userStates = {};
 
@@ -282,6 +284,37 @@ module.exports = async function messageHandler(msg) {
       if (currentMode === "SINGLE" || userStates[userNumber].forceSingle) {
         const primaryGroup = allGroups.find((group) => group.isPrimary);
         if (primaryGroup) {
+          // 🆕 VERIFICAÇÃO SE USUÁRIO JÁ ESTÁ NO GRUPO (MODO SINGLE)
+          console.log("🔍 Verificando se usuário já está no grupo primário...");
+
+          // Só verifica se for um link válido do WhatsApp
+          if (inviteManager.isValidWhatsAppLink(primaryGroup.link)) {
+            const checkResult = await inviteManager.isUserInGroup(
+              client,
+              userNumber,
+              primaryGroup.link
+            );
+
+            if (checkResult.isInGroup) {
+              // Usuário já está no grupo
+              const alreadyInMessage =
+                inviteManager.generateAlreadyInGroupMessage(
+                  nomeCompleto,
+                  primaryGroup.name
+                );
+
+              await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
+              await client.sendMessage(msg.from, alreadyInMessage);
+
+              // Reset contador anti-spam e limpa estados
+              await antiSpamManager.resetUserAttempts(userNumber);
+              delete userStates[userNumber];
+              delete chatContext[userNumber];
+              return;
+            }
+          }
+
+          // Usuário não está no grupo ou link não é do WhatsApp - envia normalmente
           const dataEvento = primaryGroup.date
             ? `\n📅 Dia: ${primaryGroup.date}`
             : "";
@@ -291,16 +324,97 @@ module.exports = async function messageHandler(msg) {
           messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\n*Clique no link para participar!*`;
         }
       } else {
+        // 🆕 VERIFICAÇÃO PARA MODO MÚLTIPLOS GRUPOS
         const selectedCityData = chatContext[userNumber]?.selectedCityData;
+
         if (selectedCityData) {
+          // Modo com cidade específica selecionada
+          console.log(
+            "🔍 Verificando se usuário já está no grupo da cidade selecionada..."
+          );
+
+          if (inviteManager.isValidWhatsAppLink(selectedCityData.link)) {
+            const checkResult = await inviteManager.isUserInGroup(
+              client,
+              userNumber,
+              selectedCityData.link
+            );
+
+            if (checkResult.isInGroup) {
+              // Usuário já está no grupo
+              const alreadyInMessage =
+                inviteManager.generateAlreadyInGroupMessage(
+                  nomeCompleto,
+                  selectedCityData.name
+                );
+
+              await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
+              await client.sendMessage(msg.from, alreadyInMessage);
+
+              // Reset contador anti-spam e limpa estados
+              await antiSpamManager.resetUserAttempts(userNumber);
+              delete userStates[userNumber];
+              delete chatContext[userNumber];
+              return;
+            }
+          }
+
+          // Usuário não está no grupo - envia normalmente
           const dataEvento = selectedCityData.date
             ? `\n📅 Dia: ${selectedCityData.date}`
             : "";
           messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!${dataEvento}\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nAqui está o acesso para o grupo de ${selectedCityData.name}:\n*Clique no link para participar!*`;
         } else {
-          messageText = `✅ Parabéns, *${nomeCompleto}*! Aqui está o acesso para os grupos disponíveis:\n\n`;
-          messageText += allGroups.map((group) => `${group.link}`).join("\n\n");
-          messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
+          // Modo todos os grupos - verifica participação em múltiplos grupos
+          console.log("🔍 Verificando participação em múltiplos grupos...");
+
+          const { availableGroups, userInAnyGroup } =
+            await inviteManager.getAvailableGroups(
+              client,
+              userNumber,
+              allGroups
+            );
+
+          if (availableGroups.length === 0 && userInAnyGroup) {
+            // Usuário já está em todos os grupos
+            const alreadyInMessage =
+              inviteManager.generateAlreadyInGroupMessage(nomeCompleto);
+
+            await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
+            await client.sendMessage(msg.from, alreadyInMessage);
+
+            // Reset contador anti-spam e limpa estados
+            await antiSpamManager.resetUserAttempts(userNumber);
+            delete userStates[userNumber];
+            delete chatContext[userNumber];
+            return;
+          } else if (
+            availableGroups.length < allGroups.length &&
+            userInAnyGroup
+          ) {
+            // Usuário está em alguns grupos, mas não em todos
+            const partialMessage = inviteManager.generatePartialGroupMessage(
+              nomeCompleto,
+              availableGroups,
+              horarioSelecionado
+            );
+
+            await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
+            await client.sendMessage(msg.from, partialMessage);
+
+            // Reset contador anti-spam e limpa estados
+            await antiSpamManager.resetUserAttempts(userNumber);
+            delete userStates[userNumber];
+            delete chatContext[userNumber];
+            return;
+          } else {
+            // Usuário não está em nenhum grupo ou todos os grupos estão disponíveis
+            messageText = `✅ Parabéns, *${nomeCompleto}*! Aqui está o acesso para os grupos disponíveis:\n\n`;
+            messageText += availableGroups
+              .map((group) => `📍 *${group.name}*\n${group.link}`)
+              .join("\n\n");
+            messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
+          }
         }
       }
 
