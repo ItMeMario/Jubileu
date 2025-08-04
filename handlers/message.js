@@ -1,4 +1,4 @@
-// message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular + Correção triggers indevidos + Anti-Spam + Tratamento de Áudio + InviteManager
+// message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular + Correção triggers indevidos + Anti-Spam + Tratamento de Áudio + InviteManager + FILTRO DE GRUPOS
 const client = require("../client/client");
 const {
   enviarMensagemMenu,
@@ -23,6 +23,12 @@ const { antiSpamManager } = require("../utils/antiSpam"); // 🆕 Importa o anti
 const { messageTypeHandler } = require("../handlers/messageType"); // 🆕 Importa o handler de tipos de mensagem
 const inviteManager = require("../utils/inviteManager");
 
+// 🆕 IMPORTA O FILTRO DE GRUPOS
+const {
+  shouldIgnoreMessage,
+  getChatInfo,
+  logChatStats,
+} = require("../utils/groupFilter");
 
 const userStates = {};
 
@@ -43,6 +49,17 @@ function encontrarHorario(inputUsuario) {
 }
 
 module.exports = async function messageHandler(msg) {
+  // 🛡️ PRIMEIRA VERIFICAÇÃO: Filtro de grupos (MAIS IMPORTANTE)
+  const shouldIgnore = await shouldIgnoreMessage(msg);
+  if (shouldIgnore) {
+    // Opcionalmente pode logar informações para debug
+    const chatInfo = await getChatInfo(msg);
+    logChatStats(chatInfo);
+    return; // PARA AQUI - Ignora completamente mensagens de grupos
+  }
+
+  console.log("✅ Mensagem aceita para processamento - conversa privada");
+
   const chat = await msg.getChat();
   const userNumber = msg.from;
   const contact = await msg.getContact();
@@ -50,7 +67,7 @@ module.exports = async function messageHandler(msg) {
 
   const textoDaMensagem = msg.caption || msg.body || "";
 
-  // 🆕 PRIMEIRA VERIFICAÇÃO: Verifica tipos de mensagem não suportados (áudio, vídeo, etc.)
+  // 🆕 SEGUNDA VERIFICAÇÃO: Verifica tipos de mensagem não suportados (áudio, vídeo, etc.)
   const unsupportedResult = await messageTypeHandler.processMessage(
     client,
     msg
@@ -67,7 +84,7 @@ module.exports = async function messageHandler(msg) {
     return;
   }
 
-  // 🆕 Verificação de usuário suspenso - Anti-Spam (SEGUNDA VERIFICAÇÃO)
+  // 🆕 Verificação de usuário suspenso - Anti-Spam (TERCEIRA VERIFICAÇÃO)
   if (antiSpamManager.isUserSuspended(userNumber)) {
     const remainingMinutes =
       antiSpamManager.getSuspensionTimeRemaining(userNumber);
