@@ -5,6 +5,8 @@ class InviteManager {
   constructor() {
     this.cache = new Map();
     this.cacheExpiry = 5 * 60 * 1000;
+    // Adiciona controle de tentativas para revalidação inteligente
+    this.revalidationAttempts = new Map();
   }
 
   extractGroupIdFromLink(groupLink) {
@@ -51,6 +53,49 @@ class InviteManager {
     return null;
   }
 
+  // Método para verificar se o cache deve ser revalidado
+  shouldRevalidateCache(cacheKey, cached) {
+    const now = Date.now();
+
+    // Se o cache expirou, sempre revalidar
+    if (now - cached.timestamp >= this.cacheExpiry) {
+      return true;
+    }
+
+    // NOVA LÓGICA MAIS AMIGÁVEL:
+    // Se o resultado anterior foi "não está no grupo", sempre revalida na próxima consulta
+    // Mas com proteção contra spam (máximo 1 revalidação por minuto)
+    if (!cached.isInGroup) {
+      const attempts = this.revalidationAttempts.get(cacheKey) || {
+        lastAttempt: 0,
+      };
+      const timeSinceLastAttempt = now - attempts.lastAttempt;
+
+      // Revalida se passou pelo menos 1 minuto da última verificação
+      // OU se é a primeira tentativa após o cache negativo
+      if (attempts.lastAttempt === 0 || timeSinceLastAttempt >= 60 * 1000) {
+        this.revalidationAttempts.set(cacheKey, {
+          lastAttempt: now,
+        });
+
+        console.log(`🔄 Revalidando cache negativo para ${cacheKey}`);
+        console.log(
+          `⏱️ Tempo desde última verificação: ${Math.round(
+            timeSinceLastAttempt / 1000
+          )}s`
+        );
+        return true;
+      } else {
+        const waitTime = Math.ceil((60 * 1000 - timeSinceLastAttempt) / 1000);
+        console.log(
+          `⏳ Aguardando ${waitTime}s para próxima revalidação de ${cacheKey}`
+        );
+      }
+    }
+
+    return false;
+  }
+
   async isUserInGroup(client, userNumber, groupLink) {
     try {
       const normalizedUserNumber = this.normalizeUserNumber(userNumber);
@@ -85,9 +130,15 @@ class InviteManager {
 
       const cacheKey = `${normalizedUserNumber}-${realGroupId}`;
       const cached = this.cache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
+
+      // Verifica se deve usar cache ou revalidar
+      if (cached && !this.shouldRevalidateCache(cacheKey, cached)) {
         console.log("📋 Usando cache para verificação:", cacheKey);
         return { isInGroup: cached.isInGroup, error: null, isValidLink: true };
+      }
+
+      if (cached) {
+        console.log("🔄 Cache encontrado mas será revalidado:", cacheKey);
       }
 
       const directResult = await this.checkGroupDirectly(
@@ -121,7 +172,6 @@ class InviteManager {
 
   async checkGroupDirectly(client, userNumber, groupId) {
     try {
-      await delay.smartDelay({ minMs: 500, maxMs: 1000 });
 
       const possibleChatIds = [`${groupId}`, groupId.replace("@g.us", "")];
       let chat = null;
@@ -146,14 +196,23 @@ class InviteManager {
 
       if (!chat) return { success: false, isInGroup: false };
 
-      await delay.smartDelay({ minMs: 800, maxMs: 1200 });
-
       const participants = chat.groupMetadata?.participants || [];
       const isInGroup = this.checkUserInParticipants(participants, userNumber);
-      this.cache.set(`${userNumber}-${groupId}`, {
+
+      // Atualiza o cache com o novo resultado
+      const cacheKey = `${userNumber}-${groupId}`;
+      this.cache.set(cacheKey, {
         isInGroup,
         timestamp: Date.now(),
       });
+
+      // Se o usuário foi encontrado no grupo, limpa os dados de revalidação
+      if (isInGroup) {
+        this.revalidationAttempts.delete(cacheKey);
+        console.log(
+          `✅ Usuário encontrado no grupo - limpando histórico de revalidação`
+        );
+      }
 
       console.log(
         `🔍 Usuário ${userNumber} ${
@@ -172,7 +231,6 @@ class InviteManager {
       console.log(
         "🔍 Usando método alternativo - verificando todos os chats..."
       );
-      await delay.smartDelay({ minMs: 2000, maxMs: 3000 });
 
       const chats = await Promise.race([
         client.getChats(),
@@ -216,10 +274,21 @@ class InviteManager {
 
       const participants = targetChat.groupMetadata?.participants || [];
       const isInGroup = this.checkUserInParticipants(participants, userNumber);
-      this.cache.set(`${userNumber}-${groupId}`, {
+
+      // Atualiza o cache com o novo resultado
+      const cacheKey = `${userNumber}-${groupId}`;
+      this.cache.set(cacheKey, {
         isInGroup,
         timestamp: Date.now(),
       });
+
+      // Se o usuário foi encontrado no grupo, limpa os dados de revalidação
+      if (isInGroup) {
+        this.revalidationAttempts.delete(cacheKey);
+        console.log(
+          `✅ Usuário encontrado no grupo - limpando histórico de revalidação`
+        );
+      }
 
       console.log(
         `🔍 (Alternativo) Usuário ${userNumber} ${
@@ -321,15 +390,48 @@ class InviteManager {
 
   clearCache() {
     this.cache.clear();
+    this.revalidationAttempts.clear(); // Limpa também os dados de revalidação
     console.log("🧹 Cache do InviteManager limpo");
   }
 
   cleanExpiredCache() {
     const now = Date.now();
+
+    // Limpa cache expirado
     for (const [key, value] of this.cache.entries()) {
       if (now - value.timestamp >= this.cacheExpiry) {
         this.cache.delete(key);
       }
+    }
+
+    // Limpa dados de revalidação antigos (mais de 1 hora)
+    for (const [key, value] of this.revalidationAttempts.entries()) {
+      if (now - value.lastAttempt >= 60 * 60 * 1000) {
+        this.revalidationAttempts.delete(key);
+      }
+    }
+  }
+
+  // Método adicional para forçar revalidação de um usuário específico
+  forceRevalidateUser(userNumber, groupId = null) {
+    if (groupId) {
+      const normalizedUserNumber = this.normalizeUserNumber(userNumber);
+      const cacheKey = `${normalizedUserNumber}-${groupId}`;
+      this.cache.delete(cacheKey);
+      this.revalidationAttempts.delete(cacheKey);
+      console.log(`🔄 Forçando revalidação para ${cacheKey}`);
+    } else {
+      // Remove todas as entradas relacionadas ao usuário
+      const normalizedUserNumber = this.normalizeUserNumber(userNumber);
+      for (const key of this.cache.keys()) {
+        if (key.startsWith(normalizedUserNumber)) {
+          this.cache.delete(key);
+          this.revalidationAttempts.delete(key);
+        }
+      }
+      console.log(
+        `🔄 Forçando revalidação para todas as entradas do usuário ${normalizedUserNumber}`
+      );
     }
   }
 }
