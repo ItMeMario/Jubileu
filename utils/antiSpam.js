@@ -1,6 +1,7 @@
 // antiSpam.js - Sistema Anti-Spam para controle de tentativas inválidas
 const { readJsonFile, saveJsonFile } = require("./initialize");
 const { enviarFAQ } = require("./triggers");
+const { debug } = require("../services/debugService");
 
 const SPAM_CONFIG = {
   FAQ_THRESHOLD: 3, // Envia FAQ após 3 tentativas
@@ -29,7 +30,7 @@ class AntiSpamManager {
       // Limpa usuários com suspensão expirada
       await this.cleanupExpiredSuspensions();
 
-      console.log("✅ AntiSpam inicializado com sucesso");
+      await debug("✅ AntiSpam inicializado com sucesso");
     } catch (error) {
       console.error("Erro ao inicializar AntiSpam:", error);
       this.userAttempts = {};
@@ -46,7 +47,7 @@ class AntiSpamManager {
       if (now >= suspensionData.expiresAt) {
         delete this.suspendedUsers[userNumber];
         hasChanges = true;
-        console.log(`🔓 Suspensão expirada para usuário: ${userNumber}`);
+        await debug(`🔓 Suspensão expirada para usuário: ${userNumber}`);
       }
     }
 

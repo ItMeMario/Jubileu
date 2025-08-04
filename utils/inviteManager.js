@@ -1,5 +1,6 @@
 // inviteManager.js - Módulo para gerenciar convites e verificar participação em grupos
 const delay = require("../utils/delay");
+const { debug } = require("../services/debugService");
 
 class InviteManager {
   constructor() {
@@ -54,7 +55,7 @@ class InviteManager {
   }
 
   // Método para verificar se o cache deve ser revalidado
-  shouldRevalidateCache(cacheKey, cached) {
+  async shouldRevalidateCache(cacheKey, cached) {
     const now = Date.now();
 
     // Se o cache expirou, sempre revalidar
@@ -78,8 +79,8 @@ class InviteManager {
           lastAttempt: now,
         });
 
-        console.log(`🔄 Revalidando cache negativo para ${cacheKey}`);
-        console.log(
+        await debug(`🔄 Revalidando cache negativo para ${cacheKey}`);
+        await debug(
           `⏱️ Tempo desde última verificação: ${Math.round(
             timeSinceLastAttempt / 1000
           )}s`
@@ -87,7 +88,7 @@ class InviteManager {
         return true;
       } else {
         const waitTime = Math.ceil((60 * 1000 - timeSinceLastAttempt) / 1000);
-        console.log(
+        await debug(
           `⏳ Aguardando ${waitTime}s para próxima revalidação de ${cacheKey}`
         );
       }
@@ -101,13 +102,13 @@ class InviteManager {
       const normalizedUserNumber = this.normalizeUserNumber(userNumber);
 
       if (!this.isValidWhatsAppLink(groupLink)) {
-        console.log("⚠️ Link não é válido:", groupLink);
+        await debug("⚠️ Link não é válido:", groupLink);
         return { isInGroup: false, error: "Link inválido", isValidLink: false };
       }
 
       const inviteCode = this.extractGroupIdFromLink(groupLink);
       if (!inviteCode) {
-        console.log("❌ Não foi possível extrair código do grupo:", groupLink);
+        await debug("❌ Não foi possível extrair código do grupo:", groupLink);
         return {
           isInGroup: false,
           error: "Código inválido",
@@ -120,7 +121,7 @@ class InviteManager {
         inviteCode
       );
       if (!realGroupId) {
-        console.log("❌ Grupo não encontrado a partir do código:", inviteCode);
+        await debug("❌ Grupo não encontrado a partir do código:", inviteCode);
         return {
           isInGroup: false,
           error: "Grupo não encontrado",
@@ -132,13 +133,13 @@ class InviteManager {
       const cached = this.cache.get(cacheKey);
 
       // Verifica se deve usar cache ou revalidar
-      if (cached && !this.shouldRevalidateCache(cacheKey, cached)) {
-        console.log("📋 Usando cache para verificação:", cacheKey);
+      if (cached && !(await this.shouldRevalidateCache(cacheKey, cached))) {
+        await debug("📋 Usando cache para verificação:", cacheKey);
         return { isInGroup: cached.isInGroup, error: null, isValidLink: true };
       }
 
       if (cached) {
-        console.log("🔄 Cache encontrado mas será revalidado:", cacheKey);
+        await debug("🔄 Cache encontrado mas será revalidado:", cacheKey);
       }
 
       const directResult = await this.checkGroupDirectly(
@@ -154,7 +155,7 @@ class InviteManager {
         };
       }
 
-      console.log("🔄 Método direto falhou, tentando método alternativo...");
+      await debug("🔄 Método direto falhou, tentando método alternativo...");
       return await this.checkGroupByAlternativeMethod(
         client,
         normalizedUserNumber,
@@ -172,13 +173,12 @@ class InviteManager {
 
   async checkGroupDirectly(client, userNumber, groupId) {
     try {
-
       const possibleChatIds = [`${groupId}`, groupId.replace("@g.us", "")];
       let chat = null;
 
       for (const possibleId of possibleChatIds) {
         try {
-          console.log(`🔍 Tentando acessar grupo com ID: ${possibleId}`);
+          await debug(`🔍 Tentando acessar grupo com ID: ${possibleId}`);
           const chatResult = await Promise.race([
             client.getChatById(possibleId),
             new Promise((_, reject) =>
@@ -190,7 +190,7 @@ class InviteManager {
             break;
           }
         } catch (error) {
-          console.log(`⚠️ Falha ao acessar ${possibleId}:`, error.message);
+          await debug(`⚠️ Falha ao acessar ${possibleId}:`, error.message);
         }
       }
 
@@ -209,26 +209,26 @@ class InviteManager {
       // Se o usuário foi encontrado no grupo, limpa os dados de revalidação
       if (isInGroup) {
         this.revalidationAttempts.delete(cacheKey);
-        console.log(
+        await debug(
           `✅ Usuário encontrado no grupo - limpando histórico de revalidação`
         );
       }
 
-      console.log(
+      await debug(
         `🔍 Usuário ${userNumber} ${
           isInGroup ? "ESTÁ" : "NÃO ESTÁ"
         } no grupo ${groupId}`
       );
       return { success: true, isInGroup };
     } catch (error) {
-      console.log("❌ Erro no método direto:", error.message);
+      await debug("❌ Erro no método direto:", error.message);
       return { success: false, isInGroup: false };
     }
   }
 
   async checkGroupByAlternativeMethod(client, userNumber, groupId) {
     try {
-      console.log(
+      await debug(
         "🔍 Usando método alternativo - verificando todos os chats..."
       );
 
@@ -257,11 +257,11 @@ class InviteManager {
       });
 
       if (!targetChat) {
-        console.log(
+        await debug(
           `⚠️ Grupo ${groupId} não encontrado nos ${chats.length} chats disponíveis`
         );
         const sample = chats.filter((c) => c.isGroup).slice(0, 5);
-        console.log(
+        await debug(
           "📋 Alguns grupos:",
           sample.map((c) => c.id._serialized || c.id)
         );
@@ -285,19 +285,19 @@ class InviteManager {
       // Se o usuário foi encontrado no grupo, limpa os dados de revalidação
       if (isInGroup) {
         this.revalidationAttempts.delete(cacheKey);
-        console.log(
+        await debug(
           `✅ Usuário encontrado no grupo - limpando histórico de revalidação`
         );
       }
 
-      console.log(
+      await debug(
         `🔍 (Alternativo) Usuário ${userNumber} ${
           isInGroup ? "ESTÁ" : "NÃO ESTÁ"
         } no grupo ${groupId}`
       );
       return { isInGroup, error: null, isValidLink: true };
     } catch (error) {
-      console.log("❌ Método alternativo falhou:", error.message);
+      await debug("❌ Método alternativo falhou:", error.message);
       return {
         isInGroup: false,
         error: `Erro alternativo: ${error.message}`,
@@ -388,13 +388,13 @@ class InviteManager {
     return message;
   }
 
-  clearCache() {
+  async clearCache() {
     this.cache.clear();
     this.revalidationAttempts.clear(); // Limpa também os dados de revalidação
-    console.log("🧹 Cache do InviteManager limpo");
+    await debug("🧹 Cache do InviteManager limpo");
   }
 
-  cleanExpiredCache() {
+  async cleanExpiredCache() {
     const now = Date.now();
 
     // Limpa cache expirado
@@ -413,13 +413,13 @@ class InviteManager {
   }
 
   // Método adicional para forçar revalidação de um usuário específico
-  forceRevalidateUser(userNumber, groupId = null) {
+  async forceRevalidateUser(userNumber, groupId = null) {
     if (groupId) {
       const normalizedUserNumber = this.normalizeUserNumber(userNumber);
       const cacheKey = `${normalizedUserNumber}-${groupId}`;
       this.cache.delete(cacheKey);
       this.revalidationAttempts.delete(cacheKey);
-      console.log(`🔄 Forçando revalidação para ${cacheKey}`);
+      await debug(`🔄 Forçando revalidação para ${cacheKey}`);
     } else {
       // Remove todas as entradas relacionadas ao usuário
       const normalizedUserNumber = this.normalizeUserNumber(userNumber);
@@ -429,7 +429,7 @@ class InviteManager {
           this.revalidationAttempts.delete(key);
         }
       }
-      console.log(
+      await debug(
         `🔄 Forçando revalidação para todas as entradas do usuário ${normalizedUserNumber}`
       );
     }

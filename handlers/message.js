@@ -22,6 +22,7 @@ const { updateLastMenuTime } = require("../utils/lastActivity"); // 🆕 Importa
 const { antiSpamManager } = require("../utils/antiSpam"); // 🆕 Importa o anti-spam
 const { messageTypeHandler } = require("../handlers/messageType"); // 🆕 Importa o handler de tipos de mensagem
 const inviteManager = require("../utils/inviteManager");
+const { debug } = require("../services/debugService");
 
 // 🆕 IMPORTA O FILTRO DE GRUPOS
 const {
@@ -58,7 +59,7 @@ module.exports = async function messageHandler(msg) {
     return; // PARA AQUI - Ignora completamente mensagens de grupos
   }
 
-  console.log("✅ Mensagem aceita para processamento - conversa privada");
+  await debug("✅ Mensagem aceita para processamento - conversa privada");
 
   const chat = await msg.getChat();
   const userNumber = msg.from;
@@ -73,7 +74,7 @@ module.exports = async function messageHandler(msg) {
     msg
   );
   if (unsupportedResult.handled) {
-    console.log(
+    await debug(
       `📱 Mensagem não suportada tratada: ${unsupportedResult.action}`
     );
 
@@ -302,7 +303,7 @@ module.exports = async function messageHandler(msg) {
         const primaryGroup = allGroups.find((group) => group.isPrimary);
         if (primaryGroup) {
           // 🆕 VERIFICAÇÃO SE USUÁRIO JÁ ESTÁ NO GRUPO (MODO SINGLE)
-          console.log("🔍 Verificando se usuário já está no grupo primário...");
+          await debug("🔍 Verificando se usuário já está no grupo primário...");
 
           // Só verifica se for um link válido do WhatsApp
           if (inviteManager.isValidWhatsAppLink(primaryGroup.link)) {
@@ -346,7 +347,7 @@ module.exports = async function messageHandler(msg) {
 
         if (selectedCityData) {
           // Modo com cidade específica selecionada
-          console.log(
+          await debug(
             "🔍 Verificando se usuário já está no grupo da cidade selecionada..."
           );
 
@@ -383,7 +384,7 @@ module.exports = async function messageHandler(msg) {
           messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!${dataEvento}\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nAqui está o acesso para o grupo de ${selectedCityData.name}:\n*Clique no link para participar!*`;
         } else {
           // Modo todos os grupos - verifica participação em múltiplos grupos
-          console.log("🔍 Verificando participação em múltiplos grupos...");
+          await debug("🔍 Verificando participação em múltiplos grupos...");
 
           const { availableGroups, userInAnyGroup } =
             await inviteManager.getAvailableGroups(

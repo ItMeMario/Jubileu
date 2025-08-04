@@ -1,5 +1,6 @@
 // groupFilter.js - Middleware para filtrar mensagens de grupos
 const { GroupChat } = require("whatsapp-web.js");
+const { debug } = require("../services/debugService");
 
 /**
  * Middleware para filtrar mensagens vindas de grupos
@@ -13,7 +14,7 @@ async function shouldIgnoreMessage(msg) {
 
     // Verifica se é um grupo
     if (chat.isGroup) {
-      console.log(
+      await debug(
         `🚫 Mensagem ignorada - veio do grupo: ${chat.name} (ID: ${chat.id._serialized})`
       );
       return true; // Ignorar mensagem de grupo
@@ -21,7 +22,7 @@ async function shouldIgnoreMessage(msg) {
 
     // Verificação adicional usando instanceof (backup)
     if (chat instanceof GroupChat) {
-      console.log(
+      await debug(
         `🚫 Mensagem ignorada - detectado como GroupChat: ${chat.name} (ID: ${chat.id._serialized})`
       );
       return true; // Ignorar mensagem de grupo
@@ -29,14 +30,14 @@ async function shouldIgnoreMessage(msg) {
 
     // Verificação pelo ID do chat (grupos sempre têm '-g' no ID)
     if (chat.id._serialized.includes("@g.us")) {
-      console.log(
+      await debug(
         `🚫 Mensagem ignorada - ID indica grupo: ${chat.id._serialized}`
       );
       return true; // Ignorar mensagem de grupo
     }
 
     // Se chegou até aqui, é uma conversa privada
-    console.log(
+    await debug(
       `✅ Mensagem aceita - conversa privada com: ${
         chat.name || "Usuário"
       } (ID: ${chat.id._serialized})`
@@ -46,7 +47,7 @@ async function shouldIgnoreMessage(msg) {
     console.error("❌ Erro ao verificar tipo de chat:", error);
 
     // Em caso de erro, assume como grupo por segurança (para não enviar mensagens indevidas)
-    console.log("🚫 Mensagem ignorada por precaução devido ao erro");
+    await debug("🚫 Mensagem ignorada por precaução devido ao erro");
     return true;
   }
 }
@@ -80,7 +81,7 @@ async function getChatInfo(msg) {
 function logChatStats(chatInfo) {
   if (!chatInfo) return;
 
-  console.log(`📊 Chat Info:`, {
+  debug(`📊 Chat Info:`, {
     tipo: chatInfo.isGroup ? "👥 Grupo" : "👤 Privado",
     nome: chatInfo.chatName,
     id: chatInfo.chatId,

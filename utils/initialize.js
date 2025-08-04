@@ -1,12 +1,12 @@
 const fs = require("fs").promises;
 const path = require("path");
-
+const { debug } = require("../services/debugService");
 const DATA_DIR = path.join(__dirname, "../data");
 
 async function ensureDataDirectory() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
-    console.log(`✅ Pasta data criada/verificada: ${DATA_DIR}`);
+    await debug(`✅ Pasta data criada/verificada: ${DATA_DIR}`);
   } catch (error) {
     console.error("Erro ao criar diretório data:", error);
     throw error;
@@ -17,7 +17,7 @@ async function ensureCityMessageTxtFolder() {
   const folderPath = path.join(DATA_DIR, "cityMessageTxt");
   try {
     await fs.mkdir(folderPath, { recursive: true });
-    console.log(`✅ Pasta cityMessageTxt criada/verificada: ${folderPath}`);
+    await debug(`✅ Pasta cityMessageTxt criada/verificada: ${folderPath}`);
     return folderPath;
   } catch (error) {
     console.error("Erro ao criar pasta cityMessageTxt:", error);
@@ -62,7 +62,7 @@ async function createJsonFileIfNotExists(filename, defaultContent) {
 
   try {
     await fs.access(filePath); // Verifica se já existe
-    console.log(`✅ Arquivo ${filename} já existe em ${DATA_DIR}`);
+    await debug(`✅ Arquivo ${filename} já existe em ${DATA_DIR}`);
     return filePath;
   } catch (err) {
     if (err.code === "ENOENT") {
@@ -71,7 +71,7 @@ async function createJsonFileIfNotExists(filename, defaultContent) {
         JSON.stringify(defaultContent, null, 2),
         "utf8"
       );
-      console.log(`✅ Arquivo ${filename} criado em ${DATA_DIR}`);
+      await debug(`✅ Arquivo ${filename} criado em ${DATA_DIR}`);
       return filePath;
     }
     throw err;
@@ -148,7 +148,7 @@ async function migrateIndicadoresIfNeeded() {
     const data = await readJsonFile("indicadoresData.json");
 
     if (data && !data.horariosEscolhidos) {
-      console.log("🔄 Migrando estrutura antiga de indicadores...");
+      await debug("🔄 Migrando estrutura antiga de indicadores...");
 
       data.horariosEscolhidos = {
         1: { horario: "10:00h (Manhã)", count: 0 },
@@ -182,7 +182,7 @@ async function migrateIndicadoresIfNeeded() {
       data.lastUpdated = new Date().toISOString();
 
       await saveJsonFile("indicadoresData.json", data);
-      console.log("✅ Migração de indicadores concluída com sucesso!");
+      await debug("✅ Migração de indicadores concluída com sucesso!");
     }
   } catch (error) {
     console.error("Erro durante migração de indicadores:", error);
@@ -195,7 +195,7 @@ async function migrateDevModeIfNeeded() {
     const data = await readJsonFile("devMode.json");
 
     if (data && !data.scoutConfig) {
-      console.log("🔄 Migrando configuração de devMode para incluir Scout...");
+      await debug("🔄 Migrando configuração de devMode para incluir Scout...");
 
       data.scoutConfig = {
         enabled: false,
@@ -210,7 +210,7 @@ async function migrateDevModeIfNeeded() {
       }
 
       await saveJsonFile("devMode.json", data);
-      console.log("✅ Migração de devMode concluída com sucesso!");
+      await debug("✅ Migração de devMode concluída com sucesso!");
     }
   } catch (error) {
     console.error("Erro durante migração de devMode:", error);
@@ -237,12 +237,12 @@ async function initializeAllConfigs() {
   const successCount = results.filter((r) => r.status === "fulfilled").length;
   const errorCount = results.filter((r) => r.status === "rejected").length;
 
-  console.log(
+  await debug(
     `✅ Inicialização concluída: ${successCount} sucesso(s), ${errorCount} erro(s)\n`
   );
 
   if (errorCount > 0) {
-    console.log("❌ Detalhes dos erros:");
+    await debug("❌ Detalhes dos erros:");
     results.forEach((r, i) => {
       if (r.status === "rejected") {
         const functionNames = [
@@ -257,7 +257,7 @@ async function initializeAllConfigs() {
         console.error(`   ${functionNames[i]}: ${r.reason.message}`);
       }
     });
-    console.log("");
+    await debug("");
   }
 
   return { success: successCount, errors: errorCount };
