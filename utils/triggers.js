@@ -1,5 +1,5 @@
 // triggers.js - Versão com novo sistema de debug e FAQ integrado + Correção de triggers indevidos
-const horarios = require("../horarios");
+const horarios = require("../aliases/horariosIdAliases.js");
 const aliases = require("../aliases/TimeAliases.js");
 const stringSimilarity = require("string-similarity");
 const groupService = require("../services/groupService");
