@@ -173,7 +173,7 @@ module.exports = async function messageHandler(msg) {
     }
 
     if (!selectedCityData) {
-      const fuzzyNomeCidade = identificarCidadeFuzzy(inputCidade);
+      const fuzzyNomeCidade = await identificarCidadeFuzzy(inputCidade);
       if (fuzzyNomeCidade) {
         selectedCityData = allGroups.find(
           (group) => group.name === fuzzyNomeCidade

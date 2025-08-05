@@ -65,79 +65,42 @@ function normalizarTextoCidade(texto) {
 }
 
 async function identificarCidadeFuzzy(texto) {
-  const input = normalizarTexto(texto || "");
+  const inputOriginal = texto || "";
+  const input = normalizarTextoBase(inputOriginal);
+  const aliasMap = require("../aliases/postalCodeAliases.js"); // Certifique-se de importar corretamente
 
-  debug("Fuzzy matching - Input original:", texto);
-  debug("Fuzzy matching - Input normalizado:", input);
+  const inputCidade = aliasMap[input] || input;
+  const inputNormalizado = normalizarTexto(inputCidade);
 
-  const allGroups = await groupService.getAllGroups(); // << CORREÇÃO AQUI
+  debug("Input original:", inputOriginal);
+  debug("Input após alias:", inputCidade);
+  debug("Input normalizado:", inputNormalizado);
+
+  const allGroups = await groupService.getAllGroups();
   debug("Grupos disponíveis:", allGroups.length);
-  debug("Estrutura dos grupos:", allGroups);
+  debug(
+    "Grupos carregados:",
+    allGroups.map((g) => g.name)
+  );
 
   if (!allGroups || allGroups.length === 0) {
     debug("Nenhum grupo disponível");
     return null;
   }
 
-  const cityMap = allGroups
-    .filter((group) => group?.name)
-    .map((group) => {
-      const normalizado = normalizarTexto(group.name);
-      const variações = [
-        group.name,
-        normalizado,
-        group.name.split(" ")[0],
-        normalizado.split(" ")[0],
-      ];
+  const cidadeAlvo = allGroups.find((g) =>
+    normalizarTexto(g.name).includes(inputNormalizado)
+  );
 
-      return {
-        original: group.name,
-        normalizado: normalizado,
-        variações: variações.filter((v) => v && v.length > 0),
-      };
-    });
-
-  debug("Cidades mapeadas com variações:", cityMap);
-
-  if (!input || input.length === 0) {
-    debug("Input vazio");
-    return null;
+  if (cidadeAlvo) {
+    debug("Cidade encontrada:", cidadeAlvo.name);
+    return cidadeAlvo.name;
   }
 
-  for (const city of cityMap) {
-    if (
-      city.variações.some((variacao) => normalizarTexto(variacao) === input)
-    ) {
-      debug("Match exato encontrado:", city.original);
-      return city.original;
-    }
-  }
-
-  for (const city of cityMap) {
-    if (
-      city.variações.some((variacao) => {
-        const varNorm = normalizarTexto(variacao);
-        return varNorm.includes(input) || input.includes(varNorm);
-      })
-    ) {
-      debug("Match por substring encontrado:", city.original);
-      return city.original;
-    }
-  }
-
-  const normalizados = cityMap.map((c) => c.normalizado);
-  const match = stringSimilarity.findBestMatch(input, normalizados);
-  debug("Melhor match fuzzy:", match.bestMatch);
-
-  if (match.bestMatch.rating > 0.3) {
-    const item = cityMap.find((c) => c.normalizado === match.bestMatch.target);
-    debug("Cidade encontrada via fuzzy:", item?.original);
-    return item?.original || null;
-  }
-
-  debug("Nenhuma cidade encontrada com similaridade suficiente");
+  debug("Nenhuma cidade encontrada");
   return null;
 }
+
 
 function buscarHorario(texto) {
   const normalizado = normalizarTexto(texto);
