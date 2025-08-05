@@ -1,10 +1,10 @@
 // triggers.js - Versão com novo sistema de debug e FAQ integrado + Correção de triggers indevidos
 const horarios = require("../horarios");
-const aliases = require("../aliases");
+const aliases = require("../aliases/TimeAliases.js");
 const stringSimilarity = require("string-similarity");
 const groupService = require("../services/groupService");
 const { debug } = require("../services/debugService");
-const FAQ_TRIGGERS = require("../faqAliases"); // Importa os triggers do FAQ
+const FAQ_TRIGGERS = require("../aliases/faqAliases.js"); // Importa os triggers do FAQ
 const faq = require("../utils/faq.js"); // Importa o FAQ
 
 const TRIGGERS = [
