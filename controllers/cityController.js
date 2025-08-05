@@ -15,295 +15,335 @@ const {
 const CityRepository = require('../services/cityServices');
 
 class CityController {
-    constructor() {
-        this.cityRepository = new CityRepository();
-    }
+  constructor() {
+    this.cityRepository = new CityRepository();
+  }
 
-    // Função para sanitizar texto preservando quebras de linha
-    sanitizeText(text, preserveLineBreaks = true) {
-        if (!text) return '';
-        
-        if (preserveLineBreaks) {
-            // Remove apenas espaços em branco no início e fim, mantendo quebras de linha
-            return text.replace(/^\s+|\s+$/g, '');
-        } else {
-            // Para nome e link, remove tudo incluindo quebras de linha
-            return text.trim();
+  // Função para sanitizar texto preservando quebras de linha
+  sanitizeText(text, preserveLineBreaks = true) {
+    if (!text) return "";
+
+    if (preserveLineBreaks) {
+      // Remove apenas espaços em branco no início e fim, mantendo quebras de linha
+      return text.replace(/^\s+|\s+$/g, "");
+    } else {
+      // Para nome e link, remove tudo incluindo quebras de linha
+      return text.trim();
+    }
+  }
+
+  // Função para validar e normalizar quebras de linha
+  normalizeLineBreaks(text) {
+    if (!text) return "";
+
+    // Normaliza diferentes tipos de quebras de linha para \n
+    return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  }
+
+  async handleCities(rl) {
+    let exit = false;
+
+    while (!exit) {
+      try {
+        const cities = await this.cityRepository.getAll();
+        const choice = await showCityManagementMenu(rl, cities);
+
+        switch (choice) {
+          case "1":
+            await this.addCity(rl);
+            break;
+          case "2":
+            await this.editCity(rl);
+            break;
+          case "3":
+            await this.setPrimaryCity(rl);
+            break;
+          case "4":
+            await this.viewCities(rl);
+            break;
+          case "5":
+            await this.deleteCity(rl);
+            break;
+          case "0":
+            exit = true;
+            break;
+          default:
+            console.log("\n❌ Opção inválida!");
         }
+      } catch (error) {
+        console.error("\n❌ Erro no menu de cidades:", error);
+        console.log("\nPressione qualquer tecla para continuar...");
+        await new Promise((resolve) => rl.question("", resolve));
+      }
     }
+  }
 
-    // Função para validar e normalizar quebras de linha
-    normalizeLineBreaks(text) {
-        if (!text) return '';
-        
-        // Normaliza diferentes tipos de quebras de linha para \n
-        return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  async addCity(rl) {
+    try {
+      console.log("\n=== Adicionar Nova Cidade ===");
+
+      const name = await promptForCityName(rl);
+      if (!name) {
+        console.log("\n⚠️ Nome da cidade é obrigatório!");
+        return;
+      }
+
+      // Verificar se já existe uma cidade com esse nome
+      const existingCities = await this.cityRepository.getAll();
+      const sanitizedName = this.sanitizeText(name, false);
+      const nameExists = existingCities.some(
+        (city) =>
+          this.sanitizeText(city.name, false).toLowerCase() ===
+          sanitizedName.toLowerCase()
+      );
+
+      if (nameExists) {
+        console.log("\n❌ Já existe uma cidade com esse nome!");
+        return;
+      }
+
+      const link = await promptForCityLink(rl);
+      const message = await promptForCityMessage(rl);
+      const date = await promptForCityDate(rl);
+
+      const newCity = {
+        id: generateSimpleId(),
+        name: this.sanitizeText(name, false),
+        link: this.sanitizeText(link || "", false),
+        message: this.normalizeLineBreaks(
+          this.sanitizeText(message || "", true)
+        ),
+        date: this.sanitizeText(date || "", false),
+        isPrimary: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await this.cityRepository.add(newCity);
+      console.log("\n✅ Cidade adicionada com sucesso!");
+    } catch (error) {
+      console.error("\n❌ Erro ao adicionar cidade:", error);
     }
+  }
 
-    async handleCities(rl) {
-        let exit = false;
-        
-        while (!exit) {
-            try {
-                const cities = await this.cityRepository.getAll();
-                const choice = await showCityManagementMenu(rl, cities);
-                
-                switch (choice) {
-                    case '1':
-                        await this.addCity(rl);
-                        break;
-                    case '2':
-                        await this.editCity(rl);
-                        break;
-                    case '3':
-                        await this.setPrimaryCity(rl);
-                        break;
-                    case '4':
-                        await this.viewCities(rl);
-                        break;
-                    case '5':
-                        await this.deleteCity(rl);
-                        break;
-                    case '0':
-                        exit = true;
-                        break;
-                    default:
-                        console.log('\n❌ Opção inválida!');
-                }
-            } catch (error) {
-                console.error('\n❌ Erro no menu de cidades:', error);
-                console.log('\nPressione qualquer tecla para continuar...');
-                await new Promise(resolve => rl.question('', resolve));
-            }
+  async editCity(rl) {
+    try {
+      console.log("\n=== Editar Cidade ===");
+      const cities = await this.cityRepository.getAll();
+
+      if (cities.length === 0) {
+        console.log("\n❌ Nenhuma cidade cadastrada para editar.");
+        return;
+      }
+
+      const index = await promptForCitySelection(rl, cities, "editar");
+      if (index === null) return;
+
+      const cityToEdit = cities[index];
+
+      console.log(`\n📝 Editando cidade: ${cityToEdit.name}`);
+      console.log("💡 Pressione Enter para manter o valor atual\n");
+
+      // Nome - passando isEditing = true
+      console.log(`Valor atual: "${cityToEdit.name}"`);
+      const nameInput = await promptForCityName(rl, cityToEdit.name, true);
+      const newName =
+        nameInput && nameInput.trim() !== "" ? nameInput : cityToEdit.name;
+
+      if (newName === cityToEdit.name) {
+        console.log(`   ↳ Mantendo nome atual`);
+      } else {
+        console.log(`   ↳ Novo nome: "${newName}"`);
+      }
+
+      // Verificar se o novo nome já existe (exceto para a cidade atual)
+      if (newName !== cityToEdit.name) {
+        const existingCities = await this.cityRepository.getAll();
+        const sanitizedNewName = this.sanitizeText(newName, false);
+        const nameExists = existingCities.some(
+          (city) =>
+            city.id !== cityToEdit.id &&
+            this.sanitizeText(city.name, false).toLowerCase() ===
+              sanitizedNewName.toLowerCase()
+        );
+
+        if (nameExists) {
+          console.log("\n❌ Já existe outra cidade com esse nome!");
+          return;
         }
+      }
+
+      // Link
+      console.log(
+        `\nValor atual do link: "${cityToEdit.link || "Não definido"}"`
+      );
+      const linkInput = await promptForCityLink(rl, cityToEdit.link || "");
+      const newLink =
+        linkInput !== undefined && linkInput.trim() !== ""
+          ? linkInput
+          : cityToEdit.link || "";
+
+      if (newLink === (cityToEdit.link || "")) {
+        console.log(`   ↳ Mantendo link atual`);
+      } else {
+        console.log(`   ↳ Novo link: "${newLink || "Não definido"}"`);
+      }
+
+      // Mensagem
+      const currentMessageStatus = cityToEdit.message
+        ? "Definida"
+        : "Não definida";
+      console.log(`\nValor atual da mensagem: ${currentMessageStatus}`);
+      if (cityToEdit.message) {
+        const messagePreview =
+          cityToEdit.message.length > 80
+            ? `${cityToEdit.message.substring(0, 80)}...`
+            : cityToEdit.message;
+        console.log(`Prévia: "${messagePreview}"`);
+      }
+
+      const messageInput = await promptForCityMessage(
+        rl,
+        cityToEdit.message || ""
+      );
+      const newMessage =
+        messageInput !== undefined && messageInput.trim() !== ""
+          ? messageInput
+          : cityToEdit.message || "";
+
+      if (newMessage === (cityToEdit.message || "")) {
+        console.log(`   ↳ Mantendo mensagem atual`);
+      } else {
+        const newPreview =
+          newMessage.length > 50
+            ? `${newMessage.substring(0, 50)}...`
+            : newMessage;
+        console.log(`   ↳ Nova mensagem: "${newPreview}"`);
+      }
+
+      // Data
+      console.log(
+        `\nValor atual da data: "${cityToEdit.date || "Não definida"}"`
+      );
+      const dateInput = await promptForCityDate(rl, cityToEdit.date || "");
+      const newDate =
+        dateInput !== undefined && dateInput.trim() !== ""
+          ? dateInput
+          : cityToEdit.date || "";
+
+      if (newDate === (cityToEdit.date || "")) {
+        console.log(`   ↳ Mantendo data atual`);
+      } else {
+        console.log(`   ↳ Nova data: "${newDate || "Não definida"}"`);
+      }
+
+      // Verificar se houve alterações
+      const hasChanges =
+        newName !== cityToEdit.name ||
+        newLink !== (cityToEdit.link || "") ||
+        newMessage !== (cityToEdit.message || "") ||
+        newDate !== (cityToEdit.date || "");
+
+      if (!hasChanges) {
+        console.log("\n⚠️ Nenhuma alteração foi feita.");
+        return;
+      }
+
+      // Construir objeto atualizado
+      const updatedCity = {
+        ...cityToEdit,
+        name: this.sanitizeText(newName, false),
+        link: this.sanitizeText(newLink, false),
+        message: this.normalizeLineBreaks(this.sanitizeText(newMessage, true)),
+        date: this.sanitizeText(newDate, false),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await this.cityRepository.update(updatedCity);
+      console.log("\n✅ Cidade atualizada com sucesso!");
+    } catch (error) {
+      console.error("\n❌ Erro ao editar cidade:", error);
     }
+  }
 
-    async addCity(rl) {
-        try {
-            console.log('\n=== Adicionar Nova Cidade ===');
-            
-            const name = await promptForCityName(rl);
-            if (!name) {
-                console.log('\n⚠️ Nome da cidade é obrigatório!');
-                return;
-            }
-            
-            // Verificar se já existe uma cidade com esse nome
-            const existingCities = await this.cityRepository.getAll();
-            const sanitizedName = this.sanitizeText(name, false);
-            const nameExists = existingCities.some(city => 
-                this.sanitizeText(city.name, false).toLowerCase() === sanitizedName.toLowerCase()
-            );
-            
-            if (nameExists) {
-                console.log('\n❌ Já existe uma cidade com esse nome!');
-                return;
-            }
-            
-            const link = await promptForCityLink(rl);
-            const message = await promptForCityMessage(rl);
-            const date = await promptForCityDate(rl);
-            
-            const newCity = {
-                id: generateSimpleId(),
-                name: this.sanitizeText(name, false),
-                link: this.sanitizeText(link || '', false),
-                message: this.normalizeLineBreaks(this.sanitizeText(message || '', true)),
-                date: this.sanitizeText(date || '', false),
-                isPrimary: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            
-            await this.cityRepository.add(newCity);
-            console.log('\n✅ Cidade adicionada com sucesso!');
-            
-        } catch (error) {
-            console.error('\n❌ Erro ao adicionar cidade:', error);
-        }
+  async viewCities(rl) {
+    try {
+      console.log("\n=== Visualizar Cidades ===");
+      const cities = await this.cityRepository.getAll();
+      showCityList(cities, true);
+
+      if (cities.length > 0) {
+        console.log("\n📋 Detalhes das mensagens:");
+        cities.forEach((city, index) => {
+          const messagePreview = city.message
+            ? city.message.length > 50
+              ? `${city.message.substring(0, 50)}...`
+              : city.message
+            : "Sem mensagem";
+          console.log(`   ${index + 1}. ${city.name}: "${messagePreview}"`);
+        });
+
+        await new Promise((resolve) => {
+          rl.question("\nPressione qualquer tecla para continuar...", resolve);
+        });
+      }
+    } catch (error) {
+      console.error("\n❌ Erro ao visualizar cidades:", error);
     }
+  }
 
-    async editCity(rl) {
-        try {
-            console.log('\n=== Editar Cidade ===');
-            const cities = await this.cityRepository.getAll();
+  async deleteCity(rl) {
+    try {
+      console.log("\n=== Excluir Cidade ===");
+      const cities = await this.cityRepository.getAll();
 
-            if (cities.length === 0) {
-                console.log('\n❌ Nenhuma cidade cadastrada para editar.');
-                return;
-            }
+      if (cities.length === 0) {
+        console.log("\n❌ Nenhuma cidade cadastrada para excluir.");
+        return;
+      }
 
-            const index = await promptForCitySelection(rl, cities, 'editar');
-            if (index === null) return;
+      const index = await promptForCitySelection(rl, cities, "excluir");
+      if (index === null) return;
 
-            const cityToEdit = cities[index];
+      const cityToDelete = cities[index];
 
-            console.log(`\n📝 Editando cidade: ${cityToEdit.name}`);
-            console.log('(Pressione Enter para manter o valor atual)\n');
+      if (cityToDelete.isPrimary) {
+        console.log("\n❌ Não é possível excluir a cidade primária!");
+        console.log("💡 Dica: Defina outra cidade como primária primeiro.");
+        return;
+      }
 
-            const newName = await promptForCityName(rl, cityToEdit.name);
-            if (!newName) {
-                console.log('\n⚠️ Operação cancelada - nome é obrigatório.');
-                return;
-            }
+      // Mostrar informações da cidade antes de excluir
+      console.log(`\n🗑️ Cidade a ser excluída:`);
+      console.log(`   Nome: ${cityToDelete.name}`);
+      console.log(`   Link: ${cityToDelete.link || "Não definido"}`);
+      console.log(
+        `   Mensagem: ${cityToDelete.message ? "Definida" : "Não definida"}`
+      );
+      console.log(`   Data: ${cityToDelete.date || "Não definida"}`);
 
-            // Verificar se o novo nome já existe (exceto para a cidade atual)
-            const existingCities = await this.cityRepository.getAll();
-            const sanitizedNewName = this.sanitizeText(newName, false);
-            const nameExists = existingCities.some(city => 
-                city.id !== cityToEdit.id && 
-                this.sanitizeText(city.name, false).toLowerCase() === sanitizedNewName.toLowerCase()
-            );
-            
-            if (nameExists) {
-                console.log('\n❌ Já existe outra cidade com esse nome!');
-                return;
-            }
+      const confirm = await confirmAction(
+        rl,
+        `excluir a cidade "${cityToDelete.name}"`
+      );
+      if (!confirm) return;
 
-            const newLink = await promptForCityLink(rl, cityToEdit.link);
-            const newMessage = await promptForCityMessage(rl, cityToEdit.message || '');
-            const newDate = await promptForCityDate(rl, cityToEdit.date || '');
-
-            const updatedCity = {
-                ...cityToEdit,
-                name: this.sanitizeText(newName, false),
-                link: newLink !== undefined ? this.sanitizeText(newLink, false) : cityToEdit.link,
-                message: newMessage !== undefined ? 
-                    this.normalizeLineBreaks(this.sanitizeText(newMessage, true)) : 
-                    (cityToEdit.message || ''),
-                date: newDate !== undefined ? this.sanitizeText(newDate, false) : (cityToEdit.date || ''),
-                updatedAt: new Date().toISOString()
-            };
-
-            await this.cityRepository.update(updatedCity);
-            console.log('\n✅ Cidade atualizada com sucesso!');
-
-        } catch (error) {
-            console.error('\n❌ Erro ao editar cidade:', error);
-        }
+      await this.cityRepository.delete(cityToDelete.id);
+      console.log("\n✅ Cidade excluída com sucesso!");
+    } catch (error) {
+      console.error("\n❌ Erro ao excluir cidade:", error);
     }
+  }
 
-    async setPrimaryCity(rl) {
-        try {
-            console.log('\n=== Definir Cidade Primária ===');
-            const cities = await this.cityRepository.getAll();
-            
-            if (cities.length === 0) {
-                console.log('\n❌ Nenhuma cidade cadastrada para definir como primária.');
-                return;
-            }
-            
-            const index = await promptForCitySelection(rl, cities, 'definir como primária');
-            if (index === null) return;
-            
-            const selectedCity = cities[index];
-            
-            if (selectedCity.isPrimary) {
-                console.log('\n⚠️ Esta cidade já é a primária!');
-                return;
-            }
-            
-            const confirm = await confirmAction(rl, `definir "${selectedCity.name}" como cidade primária`);
-            if (!confirm) return;
-            
-            // Remover status primário de todas as cidades
-            for (const city of cities) {
-                if (city.isPrimary) {
-                    city.isPrimary = false;
-                    city.updatedAt = new Date().toISOString();
-                    await this.cityRepository.update(city);
-                }
-            }
-            
-            // Definir nova cidade primária
-            const updatedCity = { 
-                ...selectedCity, 
-                isPrimary: true,
-                updatedAt: new Date().toISOString()
-            };
-            
-            await this.cityRepository.update(updatedCity);
-            console.log('\n✅ Cidade primária definida com sucesso!');
+  // Método utilitário para obter cidade primária
+  async getPrimaryCity() {
+    return await this.cityRepository.getPrimary();
+  }
 
-        } catch (error) {
-            console.error('\n❌ Erro ao definir cidade primária:', error);
-        }
-    }
-
-    async viewCities(rl) {
-        try {
-            console.log('\n=== Visualizar Cidades ===');
-            const cities = await this.cityRepository.getAll();
-            showCityList(cities, true);
-            
-            if (cities.length > 0) {
-                console.log('\n📋 Detalhes das mensagens:');
-                cities.forEach((city, index) => {
-                    const messagePreview = city.message 
-                        ? (city.message.length > 50 
-                            ? `${city.message.substring(0, 50)}...` 
-                            : city.message)
-                        : 'Sem mensagem';
-                    console.log(`   ${index + 1}. ${city.name}: "${messagePreview}"`);
-                });
-                
-                await new Promise(resolve => {
-                    rl.question('\nPressione qualquer tecla para continuar...', resolve);
-                });
-            }
-        } catch (error) {
-            console.error('\n❌ Erro ao visualizar cidades:', error);
-        }
-    }
-
-    async deleteCity(rl) {
-        try {
-            console.log('\n=== Excluir Cidade ===');
-            const cities = await this.cityRepository.getAll();
-            
-            if (cities.length === 0) {
-                console.log('\n❌ Nenhuma cidade cadastrada para excluir.');
-                return;
-            }
-            
-            const index = await promptForCitySelection(rl, cities, 'excluir');
-            if (index === null) return;
-            
-            const cityToDelete = cities[index];
-            
-            if (cityToDelete.isPrimary) {
-                console.log('\n❌ Não é possível excluir a cidade primária!');
-                console.log('💡 Dica: Defina outra cidade como primária primeiro.');
-                return;
-            }
-            
-            // Mostrar informações da cidade antes de excluir
-            console.log(`\n🗑️ Cidade a ser excluída:`);
-            console.log(`   Nome: ${cityToDelete.name}`);
-            console.log(`   Link: ${cityToDelete.link || 'Não definido'}`);
-            console.log(`   Mensagem: ${cityToDelete.message ? 'Definida' : 'Não definida'}`);
-            console.log(`   Data: ${cityToDelete.date || 'Não definida'}`);
-            
-            const confirm = await confirmAction(rl, `excluir a cidade "${cityToDelete.name}"`);
-            if (!confirm) return;
-            
-            await this.cityRepository.delete(cityToDelete.id);
-            console.log('\n✅ Cidade excluída com sucesso!');
-
-        } catch (error) {
-            console.error('\n❌ Erro ao excluir cidade:', error);
-        }
-    }
-
-    // Método utilitário para obter cidade primária
-    async getPrimaryCity() {
-        return await this.cityRepository.getPrimary();
-    }
-
-    // Método utilitário para buscar cidade por ID
-    async getCityById(id) {
-        return await this.cityRepository.findById(id);
-    }
+  // Método utilitário para buscar cidade por ID
+  async getCityById(id) {
+    return await this.cityRepository.findById(id);
+  }
 }
 
 module.exports = new CityController();

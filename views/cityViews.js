@@ -54,17 +54,28 @@ function showCityList(cities, showDetails = false) {
     });
 }
 
-async function promptForCityName(rl, currentName = '') {
-    const prompt = currentName 
-        ? `\nDigite o novo nome da cidade (atual: ${currentName}): `
-        : '\nDigite o nome da cidade: ';
-    
-    const name = await new Promise(resolve => rl.question(prompt, resolve));
-    if (!name) {
-        console.log('❌ Nome da cidade não pode ser vazio.');
-        return null;
-    }
-    return name;
+async function promptForCityName(rl, currentName = "", isEditing = false) {
+  const prompt =
+    currentName && isEditing
+      ? `\nDigite o novo nome da cidade (atual: ${currentName}, Enter para manter): `
+      : currentName
+      ? `\nDigite o novo nome da cidade (atual: ${currentName}): `
+      : "\nDigite o nome da cidade: ";
+
+  const name = await new Promise((resolve) => rl.question(prompt, resolve));
+
+  // Se estiver editando e o campo estiver vazio, retorna vazio (para manter o atual)
+  if (isEditing && !name.trim()) {
+    return "";
+  }
+
+  // Se não estiver editando e o campo estiver vazio, mostra erro
+  if (!isEditing && !name.trim()) {
+    console.log("❌ Nome da cidade não pode ser vazio.");
+    return null;
+  }
+
+  return name;
 }
 
 async function promptForCityLink(rl, currentLink = '') {
