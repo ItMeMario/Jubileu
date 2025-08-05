@@ -5,7 +5,7 @@ const {
   enviarMenuHorarios,
   chatContext,
 } = require("../handlers/menuMessage");
-const HORARIOS = require("../horarios");
+const HORARIOS = require("../aliases/horariosIdAliases");
 const {
   normalizarTexto,
   hasTriggerText,

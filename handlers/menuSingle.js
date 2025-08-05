@@ -33,7 +33,7 @@ async function enviarMensagemMenu(client, msg, chat) {
   const name = contact.pushname?.split(" ")[0] || "";
 
   // Lê a mensagem do arquivo de texto
-  const messageTemplate = messageReader.lerMensagemSaudacao();
+  const messageTemplate = await messageReader.lerMensagemSaudacao();
 
   // Processa a mensagem com o nome do contato
   const greetingMessage = `Olá ${name}! Tudo bem?\n\n${messageReader.processarMensagem(
