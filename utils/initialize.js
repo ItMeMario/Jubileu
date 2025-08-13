@@ -84,7 +84,6 @@ async function initializeDatabase() {
       }
 
       try {
-        // Verificar se as tabelas já existem
         const tablesExist = {
           cities: await checkTableExists(db, "cities"),
           indicators: await checkTableExists(db, "indicators"),
@@ -95,9 +94,7 @@ async function initializeDatabase() {
           `📊 Status das tabelas: cities=${tablesExist.cities}, indicators=${tablesExist.indicators}, messages=${tablesExist.messages}`
         );
 
-        // Criar tabelas se não existirem
         const queries = [
-          // Tabela cities
           `CREATE TABLE IF NOT EXISTS cities (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -105,7 +102,6 @@ async function initializeDatabase() {
             isPrimary BOOLEAN DEFAULT 0,
             message TEXT
           )`,
-          // Tabela indicators
           `CREATE TABLE IF NOT EXISTS indicators (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             clientes_atendidos INTEGER DEFAULT 0,
@@ -114,8 +110,6 @@ async function initializeDatabase() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
           )`,
-
-          // Tabela messages
           `CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             locale TEXT NOT NULL,
@@ -138,7 +132,6 @@ async function initializeDatabase() {
           }
         }
 
-        // Criar índices
         const indexes = [
           `CREATE INDEX IF NOT EXISTS idx_cities_isPrimary ON cities(isPrimary)`,
           `CREATE INDEX IF NOT EXISTS idx_messages_locale ON messages(locale)`,
@@ -157,7 +150,6 @@ async function initializeDatabase() {
 
         await debug("✅ Índices criados/verificados");
 
-        // Criar triggers
         const triggers = [
           `CREATE TRIGGER IF NOT EXISTS enforce_single_primary_city
            BEFORE UPDATE ON cities
@@ -188,7 +180,6 @@ async function initializeDatabase() {
 
         await debug("✅ Triggers criados/verificados");
 
-        // Verificação final
         const finalCheck = {
           cities: await checkTableExists(db, "cities"),
           indicators: await checkTableExists(db, "indicators"),
@@ -263,12 +254,11 @@ function getDatabaseConnection() {
   });
 }
 
-// Migração de dados dos JSONs para o banco (REMOVIDO indicadoresData.json)
+// Migração de dados dos JSONs para o banco
 async function migrateDataFromJsonToDatabase() {
   try {
     const db = await getDatabaseConnection();
 
-    // Migrar mensagens
     try {
       const messagesData = await readJsonFile("messages.json", []);
       if (messagesData && messagesData.length > 0) {
@@ -308,25 +298,13 @@ async function migrateDataFromJsonToDatabase() {
   }
 }
 
-// Utilidades para manipulação de arquivos JSON
+// Utilidades JSON
 async function ensureDataDirectory() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     await debug(`✅ Pasta data criada/verificada: ${DATA_DIR}`);
   } catch (error) {
     console.error("Erro ao criar diretório data:", error);
-    throw error;
-  }
-}
-
-async function ensureCityMessageTxtFolder() {
-  const folderPath = path.join(DATA_DIR, "cityMessageTxt");
-  try {
-    await fs.mkdir(folderPath, { recursive: true });
-    await debug(`✅ Pasta cityMessageTxt criada/verificada: ${folderPath}`);
-    return folderPath;
-  } catch (error) {
-    console.error("Erro ao criar pasta cityMessageTxt:", error);
     throw error;
   }
 }
@@ -382,7 +360,6 @@ async function createJsonFileIfNotExists(filename, defaultContent) {
   }
 }
 
-// Inicializadores de configs (REMOVIDO initializeIndicadoresConfig)
 async function initializeDevModeConfig() {
   const defaultConfig = {
     isDevMode: false,
@@ -399,11 +376,6 @@ async function initializeDevModeConfig() {
   return await createJsonFileIfNotExists("devMode.json", defaultConfig);
 }
 
-async function initializeGroupsConfig() {
-  const defaultGroups = { mode: "SINGLE", groups: [] };
-  return await createJsonFileIfNotExists("groups.json", defaultGroups);
-}
-
 async function initializeMessagesConfig() {
   const defaultMessages = [];
   return await createJsonFileIfNotExists("messages.json", defaultMessages);
@@ -418,7 +390,6 @@ async function initializeAntiSpamConfig() {
   return await createJsonFileIfNotExists("antiSpam.json", defaultAntiSpam);
 }
 
-// Migrações adicionais (REMOVIDO migrateIndicadoresIfNeeded)
 async function migrateDevModeIfNeeded() {
   try {
     const data = await readJsonFile("devMode.json");
@@ -445,7 +416,6 @@ async function migrateDevModeIfNeeded() {
   }
 }
 
-// Inicialização geral (ATUALIZADO para remover indicadores)
 async function initializeAllConfigs() {
   console.log(
     "🚀 Inicializando arquivos, pastas e banco de dados do sistema...\n"
@@ -461,7 +431,6 @@ async function initializeAllConfigs() {
 
   const results = await Promise.allSettled([
     initializeDevModeConfig(),
-    initializeGroupsConfig(),
     initializeMessagesConfig(),
     initializeAntiSpamConfig(),
   ]);
@@ -482,7 +451,6 @@ async function initializeAllConfigs() {
       if (r.status === "rejected") {
         const functionNames = [
           "initializeDevModeConfig",
-          "initializeGroupsConfig",
           "initializeMessagesConfig",
           "initializeAntiSpamConfig",
         ];
@@ -499,7 +467,6 @@ module.exports = {
   ensureDataDirectory,
   createJsonFileIfNotExists,
   initializeDevModeConfig,
-  initializeGroupsConfig,
   initializeMessagesConfig,
   initializeAntiSpamConfig,
   initializeAllConfigs,
