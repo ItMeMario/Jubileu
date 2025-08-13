@@ -31,16 +31,17 @@ async function handleIndicadoresMenu(rl) {
 }
 
 async function showCompleteStatistics() {
-    const stats = indicadoresService.getStatistics();
-    const processedStats = processCompleteStatistics(stats);
-    indicadoresView.showCompleteStatistics(processedStats);
+  const stats = await indicadoresService.getStatistics();
+  const processedStats = processCompleteStatistics(stats);
+  indicadoresView.showCompleteStatistics(processedStats);
 }
 
 async function showHourlyStatistics() {
-    const hourlyStats = indicadoresService.getHourlyStatistics();
-    const processedStats = processHourlyStatistics(hourlyStats);
-    indicadoresView.showHourlyStatistics(processedStats);
+  const hourlyStats = await indicadoresService.getHourlyStatistics();
+  const processedStats = processHourlyStatistics(hourlyStats);
+  indicadoresView.showHourlyStatistics(processedStats);
 }
+
 
 async function clearStatistics(rl) {
     const shouldProceed = await indicadoresView.showClearConfirmation(rl);
