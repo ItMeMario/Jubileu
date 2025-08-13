@@ -143,6 +143,8 @@ async function initializeDatabase() {
           `CREATE INDEX IF NOT EXISTS idx_cities_isPrimary ON cities(isPrimary)`,
           `CREATE INDEX IF NOT EXISTS idx_messages_locale ON messages(locale)`,
           `CREATE INDEX IF NOT EXISTS idx_messages_type ON messages(message_type)`,
+          `CREATE INDEX IF NOT EXISTS idx_indicators_horario ON indicators(horario_escolhido)`,
+          `CREATE INDEX IF NOT EXISTS idx_indicators_created_at ON indicators(created_at)`,
         ];
 
         for (const indexQuery of indexes) {
@@ -168,6 +170,11 @@ async function initializeDatabase() {
            WHEN NEW.isPrimary = 1
            BEGIN
              UPDATE cities SET isPrimary = 0 WHERE isPrimary = 1;
+           END`,
+          `CREATE TRIGGER IF NOT EXISTS update_indicators_timestamp
+           AFTER UPDATE ON indicators
+           BEGIN
+             UPDATE indicators SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
            END`,
         ];
 
@@ -256,63 +263,16 @@ function getDatabaseConnection() {
   });
 }
 
-// Migração de dados dos JSONs para o banco
+// Migração de dados dos JSONs para o banco (REMOVIDO indicadoresData.json)
 async function migrateDataFromJsonToDatabase() {
   try {
     const db = await getDatabaseConnection();
-
-    // Migrar indicadores
-    try {
-      const indicatorsData = await readJsonFile("indicadoresData.json", null);
-      if (indicatorsData) {
-        await debug("🔄 Migrando dados de indicadores para o banco...");
-
-        try {
-          await runQuery(
-            db,
-            `INSERT INTO indicators (clientes_atendidos, clientes_convidados) VALUES (?, ?)`,
-            [
-              indicatorsData.clientesAtendidos || 0,
-              indicatorsData.clientesConvidados || 0,
-            ]
-          );
-        } catch (err) {
-          console.error("⚠️ Erro ao migrar indicadores base:", err);
-        }
-
-        if (indicatorsData.horariosEscolhidos) {
-          for (const [horarioId, horarioData] of Object.entries(
-            indicatorsData.horariosEscolhidos
-          )) {
-            if (horarioData.count > 0) {
-              for (let i = 0; i < horarioData.count; i++) {
-                try {
-                  await runQuery(
-                    db,
-                    `INSERT INTO indicators (clientes_atendidos, clientes_convidados, horario_escolhido) VALUES (0, 0, ?)`,
-                    [parseInt(horarioId)]
-                  );
-                } catch (err) {
-                  console.error(`⚠️ Erro ao migrar horário ${horarioId}:`, err);
-                }
-              }
-            }
-          }
-        }
-
-        await debug("✅ Migração de indicadores concluída");
-      }
-    } catch (err) {
-      await debug(
-        "ℹ️ Nenhum dado de indicadores para migrar ou erro na migração"
-      );
-    }
 
     // Migrar mensagens
     try {
       const messagesData = await readJsonFile("messages.json", []);
       if (messagesData && messagesData.length > 0) {
-        await debug("🔄 Migrando dados de mensagens para o banco...");
+        await debug("📄 Migrando dados de mensagens para o banco...");
 
         for (const message of messagesData) {
           try {
@@ -422,7 +382,7 @@ async function createJsonFileIfNotExists(filename, defaultContent) {
   }
 }
 
-// Inicializadores de configs
+// Inicializadores de configs (REMOVIDO initializeIndicadoresConfig)
 async function initializeDevModeConfig() {
   const defaultConfig = {
     isDevMode: false,
@@ -458,77 +418,13 @@ async function initializeAntiSpamConfig() {
   return await createJsonFileIfNotExists("antiSpam.json", defaultAntiSpam);
 }
 
-async function initializeIndicadoresConfig() {
-  const defaultIndicadores = {
-    clientesAtendidos: 0,
-    clientesConvidados: 0,
-    horariosEscolhidos: {
-      1: { horario: "10:00h (Manhã)", count: 0 },
-      2: { horario: "12:00h (Meio-dia)", count: 0 },
-      3: { horario: "14:00h (Depois do almoço)", count: 0 },
-      4: { horario: "15:30h (Tarde)", count: 0 },
-      5: { horario: "17:30h (Final da tarde)", count: 0 },
-      6: { horario: "19:30h (Noite)", count: 0 },
-    },
-    lastUpdated: new Date().toISOString(),
-  };
-  return await createJsonFileIfNotExists(
-    "indicadoresData.json",
-    defaultIndicadores
-  );
-}
-
-// Migrações adicionais
-async function migrateIndicadoresIfNeeded() {
-  try {
-    const data = await readJsonFile("indicadoresData.json");
-
-    if (data && !data.horariosEscolhidos) {
-      await debug("🔄 Migrando estrutura antiga de indicadores...");
-
-      data.horariosEscolhidos = {
-        1: { horario: "10:00h (Manhã)", count: 0 },
-        2: { horario: "12:00h (Meio-dia)", count: 0 },
-        3: { horario: "14:00h (Depois do almoço)", count: 0 },
-        4: { horario: "15:30h (Tarde)", count: 0 },
-        5: { horario: "17:30h (Final da tarde)", count: 0 },
-        6: { horario: "19:30h (Noite)", count: 0 },
-      };
-
-      if (data.atendidos !== undefined) {
-        data.clientesAtendidos = data.atendidos || 0;
-        delete data.atendidos;
-      }
-      if (data.interessados !== undefined) {
-        delete data.interessados;
-      }
-      if (data.conversoes !== undefined) {
-        delete data.conversoes;
-      }
-      if (data.lastReset !== undefined) {
-        delete data.lastReset;
-      }
-
-      if (data.clientesConvidados === undefined) {
-        data.clientesConvidados = 0;
-      }
-
-      data.lastUpdated = new Date().toISOString();
-
-      await saveJsonFile("indicadoresData.json", data);
-      await debug("✅ Migração de indicadores concluída com sucesso!");
-    }
-  } catch (error) {
-    console.error("Erro durante migração de indicadores:", error);
-  }
-}
-
+// Migrações adicionais (REMOVIDO migrateIndicadoresIfNeeded)
 async function migrateDevModeIfNeeded() {
   try {
     const data = await readJsonFile("devMode.json");
 
     if (data && !data.scoutConfig) {
-      await debug("🔄 Migrando configuração de devMode para incluir Scout...");
+      await debug("📄 Migrando configuração de devMode para incluir Scout...");
 
       data.scoutConfig = {
         enabled: false,
@@ -549,7 +445,7 @@ async function migrateDevModeIfNeeded() {
   }
 }
 
-// Inicialização geral
+// Inicialização geral (ATUALIZADO para remover indicadores)
 async function initializeAllConfigs() {
   console.log(
     "🚀 Inicializando arquivos, pastas e banco de dados do sistema...\n"
@@ -567,12 +463,9 @@ async function initializeAllConfigs() {
     initializeDevModeConfig(),
     initializeGroupsConfig(),
     initializeMessagesConfig(),
-    initializeIndicadoresConfig(),
     initializeAntiSpamConfig(),
-
   ]);
 
-  await migrateIndicadoresIfNeeded();
   await migrateDevModeIfNeeded();
   await migrateDataFromJsonToDatabase();
 
@@ -591,9 +484,7 @@ async function initializeAllConfigs() {
           "initializeDevModeConfig",
           "initializeGroupsConfig",
           "initializeMessagesConfig",
-          "initializeIndicadoresConfig",
           "initializeAntiSpamConfig",
-
         ];
         console.error(`   ${functionNames[i]}: ${r.reason.message}`);
       }
@@ -610,10 +501,8 @@ module.exports = {
   initializeDevModeConfig,
   initializeGroupsConfig,
   initializeMessagesConfig,
-  initializeIndicadoresConfig,
   initializeAntiSpamConfig,
   initializeAllConfigs,
-  migrateIndicadoresIfNeeded,
   migrateDevModeIfNeeded,
   DATA_DIR,
   DATABASE_DIR,
@@ -627,5 +516,4 @@ module.exports = {
   databaseExists,
   checkTableExists,
   runQuery,
-
 };
