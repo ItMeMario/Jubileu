@@ -74,3 +74,44 @@ Corrigido bug nas triggers que fazia com que o termo "tarde" acionasse o horári
 Corrigido problema que causava reinício do sistema caso o cliente digitasse uma trigger enquanto informava o próprio nome.
 
 📅 Data de Lançamento: [28/07/2025]
+
+📌 Patch Notes - Versão 0.0.4
+✨ Novidades
+
+Adicionado um sistema antiSpam.
+
+Adicionada lista de palavras “excluídas” para evitar reinício de fluxo por engano.
+
+Adicionada tratativa para mensagens em formatos não suportados (vídeo, arquivos, figurinhas, áudio, etc.).
+
+Adicionada trava para o bot não enviar mensagens em grupos.
+
+Adicionada função para verificar se o usuário já está no grupo e agir de acordo.
+
+Criado um folder dedicado para aliases.
+
+Adicionados novos aliases para siglas de cidades.
+
+🛠️ Melhorias
+
+Refatorado o arquivo messageViews para messageUtils e movido para o local correto.
+
+Refatorado o arquivo indicadoresController, separando responsabilidades e criando indicadoresView.
+
+Formatada a mensagem final do link para atender às novas exigências.
+
+Movida a função de trocar de modo single e multi para o menu do modo dev.
+
+Substituídos console.log dos handlers e utils para utilizar o modo debug do sistema.
+
+Atualizado CRUD de cidades para permitir edição parcial em vez de total.
+
+🐛 Correções
+
+Corrigido bug no CRUD de grupos.
+
+Corrigido bug na função de trocar de modo do programa.
+
+Corrigido bug na troca de modo single e multi.
+
+📅 Data de Lançamento: 13/08/2025
