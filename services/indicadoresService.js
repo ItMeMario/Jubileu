@@ -135,7 +135,7 @@ async function exportToTxt() {
     // Adiciona informações adicionais
     content += `\n=== INFORMAÇÕES ADICIONAIS ===\n`;
     content += `Gerado em: ${new Date().toLocaleString()}\n`;
-    content += `Sistema: Bot de Atendimento\n`;
+    content += `Sistema: Jubileu\n`;
     content += `Fonte: Banco de dados SQLite\n`;
 
     fs.writeFileSync(filePath, content);
