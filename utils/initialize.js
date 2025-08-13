@@ -569,7 +569,7 @@ async function initializeAllConfigs() {
     initializeMessagesConfig(),
     initializeIndicadoresConfig(),
     initializeAntiSpamConfig(),
-    ensureCityMessageTxtFolder(),
+
   ]);
 
   await migrateIndicadoresIfNeeded();
@@ -593,7 +593,7 @@ async function initializeAllConfigs() {
           "initializeMessagesConfig",
           "initializeIndicadoresConfig",
           "initializeAntiSpamConfig",
-          "ensureCityMessageTxtFolder",
+
         ];
         console.error(`   ${functionNames[i]}: ${r.reason.message}`);
       }
@@ -613,7 +613,6 @@ module.exports = {
   initializeIndicadoresConfig,
   initializeAntiSpamConfig,
   initializeAllConfigs,
-  ensureCityMessageTxtFolder,
   migrateIndicadoresIfNeeded,
   migrateDevModeIfNeeded,
   DATA_DIR,
@@ -628,4 +627,5 @@ module.exports = {
   databaseExists,
   checkTableExists,
   runQuery,
+
 };
