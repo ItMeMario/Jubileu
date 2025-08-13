@@ -53,7 +53,7 @@ async function exportToTxt() {
   try {
     const stats = await getStatistics();
     const desktopPath = path.join(os.homedir(), "Desktop");
-    const filePath = path.join(desktopPath, "indicadores_bot.txt");
+    const filePath = path.join(desktopPath, "indicadores_Jubileu.txt");
 
     let content = `Estatísticas do Bot - ${new Date().toLocaleString()}\n\n`;
     content += `Clientes Atendidos: ${stats.clientesAtendidos}\n`;
