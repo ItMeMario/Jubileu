@@ -152,7 +152,6 @@ async function initializeDatabase() {
             await runQuery(db, indexQuery);
           } catch (err) {
             console.error("⚠️ Erro ao criar índice:", err);
-            // Continua mesmo se houver erro nos índices
           }
         }
 
@@ -180,13 +179,12 @@ async function initializeDatabase() {
             await runQuery(db, triggerQuery);
           } catch (err) {
             console.error("⚠️ Erro ao criar trigger:", err);
-            // Continua mesmo se houver erro nos triggers
           }
         }
 
         await debug("✅ Triggers criados/verificados");
 
-        // Verificar novamente se as tabelas foram criadas
+        // Verificação final das tabelas
         const finalCheck = {
           cities: await checkTableExists(db, "cities"),
           indicators: await checkTableExists(db, "indicators"),
@@ -244,10 +242,9 @@ function getDatabaseConnection() {
         console.error("❌ Erro ao conectar com o banco:", err);
         reject(err);
       } else {
-        // Testar a conexão fazendo uma query simples
         db.get(
           "SELECT name FROM sqlite_master WHERE type='table' LIMIT 1",
-          (err, row) => {
+          (err) => {
             if (err) {
               console.error("❌ Erro ao testar conexão do banco:", err);
               db.close();
@@ -266,35 +263,6 @@ function getDatabaseConnection() {
 async function migrateDataFromJsonToDatabase() {
   try {
     const db = await getDatabaseConnection();
-
-    // Migrar cidades
-    try {
-      const citiesData = await readJsonFile("cities.json", []);
-      if (citiesData && citiesData.length > 0) {
-        await debug("🔄 Migrando dados de cidades para o banco...");
-
-        for (const city of citiesData) {
-          try {
-            await runQuery(
-              db,
-              `INSERT OR IGNORE INTO cities (name, link, isPrimary, message) VALUES (?, ?, ?, ?)`,
-              [
-                city.name || "",
-                city.link || "",
-                city.isPrimary || false,
-                city.message || "",
-              ]
-            );
-          } catch (err) {
-            console.error(`⚠️ Erro ao migrar cidade ${city.name}:`, err);
-          }
-        }
-
-        await debug("✅ Migração de cidades concluída");
-      }
-    } catch (err) {
-      await debug("ℹ️ Nenhum dado de cidades para migrar ou erro na migração");
-    }
 
     // Migrar indicadores
     try {
@@ -315,7 +283,6 @@ async function migrateDataFromJsonToDatabase() {
           console.error("⚠️ Erro ao migrar indicadores base:", err);
         }
 
-        // Migrar horários escolhidos se existirem
         if (indicatorsData.horariosEscolhidos) {
           for (const [horarioId, horarioData] of Object.entries(
             indicatorsData.horariosEscolhidos
@@ -416,7 +383,6 @@ async function readJsonFile(filename, defaultValue = null) {
     return JSON.parse(data);
   } catch (error) {
     if (error.code === "ENOENT") {
-      // Arquivo não existe, retorna valor padrão
       return defaultValue;
     }
     console.error(`Erro ao ler ${filename}:`, error);
@@ -442,7 +408,7 @@ async function createJsonFileIfNotExists(filename, defaultContent) {
   const filePath = path.join(DATA_DIR, filename);
 
   try {
-    await fs.access(filePath); // Verifica se já existe
+    await fs.access(filePath);
     await debug(`✅ Arquivo ${filename} já existe em ${DATA_DIR}`);
     return filePath;
   } catch (err) {
@@ -467,17 +433,12 @@ async function initializeDevModeConfig() {
     lastDebugChanged: null,
     scoutConfig: {
       enabled: false,
-      timeSeconds: 300, // 5 minutos padrão
+      timeSeconds: 300,
       timeFormatted: "00:05:00",
       lastChanged: null,
     },
   };
   return await createJsonFileIfNotExists("devMode.json", defaultConfig);
-}
-
-async function initializeCitiesConfig() {
-  const defaultCities = [];
-  return await createJsonFileIfNotExists("cities.json", defaultCities);
 }
 
 async function initializeGroupsConfig() {
@@ -490,7 +451,6 @@ async function initializeMessagesConfig() {
   return await createJsonFileIfNotExists("messages.json", defaultMessages);
 }
 
-// 🆕 NOVA FUNÇÃO: Inicializa arquivo de controle anti-spam
 async function initializeAntiSpamConfig() {
   const defaultAntiSpam = {
     userAttempts: {},
@@ -500,7 +460,6 @@ async function initializeAntiSpamConfig() {
   return await createJsonFileIfNotExists("antiSpam.json", defaultAntiSpam);
 }
 
-// FUNÇÃO ATUALIZADA: Nova estrutura de indicadores com horários
 async function initializeIndicadoresConfig() {
   const defaultIndicadores = {
     clientesAtendidos: 0,
@@ -521,10 +480,7 @@ async function initializeIndicadoresConfig() {
   );
 }
 
-// NOVA FUNÇÃO: Para migrar dados antigos se necessário
 async function migrateIndicadoresIfNeeded() {
-  const filePath = path.join(DATA_DIR, "indicadoresData.json");
-
   try {
     const data = await readJsonFile("indicadoresData.json");
 
@@ -540,7 +496,6 @@ async function migrateIndicadoresIfNeeded() {
         6: { horario: "19:30h (Noite)", count: 0 },
       };
 
-      // Remove campos antigos se existirem
       if (data.atendidos !== undefined) {
         data.clientesAtendidos = data.atendidos || 0;
         delete data.atendidos;
@@ -555,7 +510,6 @@ async function migrateIndicadoresIfNeeded() {
         delete data.lastReset;
       }
 
-      // Garante que existe clientesConvidados
       if (data.clientesConvidados === undefined) {
         data.clientesConvidados = 0;
       }
@@ -570,7 +524,6 @@ async function migrateIndicadoresIfNeeded() {
   }
 }
 
-// NOVA FUNÇÃO: Para migrar configuração do devMode e adicionar Scout
 async function migrateDevModeIfNeeded() {
   try {
     const data = await readJsonFile("devMode.json");
@@ -580,12 +533,11 @@ async function migrateDevModeIfNeeded() {
 
       data.scoutConfig = {
         enabled: false,
-        timeSeconds: 300, // 5 minutos padrão
+        timeSeconds: 300,
         timeFormatted: "00:05:00",
         lastChanged: null,
       };
 
-      // Garante que debugEnabled existe
       if (data.debugEnabled === undefined) {
         data.debugEnabled = false;
       }
@@ -603,7 +555,6 @@ async function initializeAllConfigs() {
     "🚀 Inicializando arquivos, pastas e banco de dados do sistema...\n"
   );
 
-  // Primeiro inicializa o banco de dados
   try {
     const dbPath = await initializeDatabase();
     console.log(`✅ Banco de dados inicializado: ${dbPath}`);
@@ -614,7 +565,6 @@ async function initializeAllConfigs() {
 
   const results = await Promise.allSettled([
     initializeDevModeConfig(),
-    initializeCitiesConfig(),
     initializeGroupsConfig(),
     initializeMessagesConfig(),
     initializeIndicadoresConfig(),
@@ -622,11 +572,9 @@ async function initializeAllConfigs() {
     ensureCityMessageTxtFolder(),
   ]);
 
-  // Executa migrações após inicialização
   await migrateIndicadoresIfNeeded();
   await migrateDevModeIfNeeded();
 
-  // Migra dados dos JSONs para o banco (apenas na primeira execução)
   await migrateDataFromJsonToDatabase();
 
   const successCount = results.filter((r) => r.status === "fulfilled").length;
@@ -642,7 +590,6 @@ async function initializeAllConfigs() {
       if (r.status === "rejected") {
         const functionNames = [
           "initializeDevModeConfig",
-          "initializeCitiesConfig",
           "initializeGroupsConfig",
           "initializeMessagesConfig",
           "initializeIndicadoresConfig",
@@ -662,7 +609,6 @@ module.exports = {
   ensureDataDirectory,
   createJsonFileIfNotExists,
   initializeDevModeConfig,
-  initializeCitiesConfig,
   initializeGroupsConfig,
   initializeMessagesConfig,
   initializeIndicadoresConfig,
@@ -676,7 +622,6 @@ module.exports = {
   DATABASE_PATH,
   readJsonFile,
   saveJsonFile,
-  // Novas funções do banco
   ensureDatabaseDirectory,
   initializeDatabase,
   getDatabaseConnection,
