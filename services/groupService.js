@@ -7,7 +7,7 @@ const DATA_DIR = path.join(__dirname, "../data");
 const CITIES_FILE = path.join(DATA_DIR, "cities.json");
 const CITIES_MESSAGE_DIR = path.join(DATA_DIR, "citiesMessageTxt");
 const CONFIG_FILE = path.join(DATA_DIR, "config.json");
-const DEFAULT_MODE = "SINGLE";
+const DEFAULT_MODE = "MULTI";
 
 class GroupService {
   constructor() {
