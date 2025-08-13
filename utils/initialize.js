@@ -105,7 +105,6 @@ async function initializeDatabase() {
             isPrimary BOOLEAN DEFAULT 0,
             message TEXT
           )`,
-
           // Tabela indicators
           `CREATE TABLE IF NOT EXISTS indicators (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -126,7 +125,6 @@ async function initializeDatabase() {
           )`,
         ];
 
-        // Executar queries de criação de tabelas
         for (let i = 0; i < queries.length; i++) {
           try {
             await runQuery(db, queries[i]);
@@ -140,7 +138,7 @@ async function initializeDatabase() {
           }
         }
 
-        // Criar índices para otimização
+        // Criar índices
         const indexes = [
           `CREATE INDEX IF NOT EXISTS idx_cities_isPrimary ON cities(isPrimary)`,
           `CREATE INDEX IF NOT EXISTS idx_messages_locale ON messages(locale)`,
@@ -157,7 +155,7 @@ async function initializeDatabase() {
 
         await debug("✅ Índices criados/verificados");
 
-        // Criar triggers para garantir que apenas uma cidade seja primária
+        // Criar triggers
         const triggers = [
           `CREATE TRIGGER IF NOT EXISTS enforce_single_primary_city
            BEFORE UPDATE ON cities
@@ -165,7 +163,6 @@ async function initializeDatabase() {
            BEGIN
              UPDATE cities SET isPrimary = 0 WHERE isPrimary = 1 AND id != NEW.id;
            END`,
-
           `CREATE TRIGGER IF NOT EXISTS enforce_single_primary_city_insert
            BEFORE INSERT ON cities
            WHEN NEW.isPrimary = 1
@@ -184,7 +181,7 @@ async function initializeDatabase() {
 
         await debug("✅ Triggers criados/verificados");
 
-        // Verificação final das tabelas
+        // Verificação final
         const finalCheck = {
           cities: await checkTableExists(db, "cities"),
           indicators: await checkTableExists(db, "indicators"),
@@ -259,7 +256,7 @@ function getDatabaseConnection() {
   });
 }
 
-// Função para migrar dados existentes dos arquivos JSON para o banco
+// Migração de dados dos JSONs para o banco
 async function migrateDataFromJsonToDatabase() {
   try {
     const db = await getDatabaseConnection();
@@ -351,6 +348,7 @@ async function migrateDataFromJsonToDatabase() {
   }
 }
 
+// Utilidades para manipulação de arquivos JSON
 async function ensureDataDirectory() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
@@ -373,7 +371,6 @@ async function ensureCityMessageTxtFolder() {
   }
 }
 
-// Funções adicionadas para corrigir o erro do messageService
 async function readJsonFile(filename, defaultValue = null) {
   await ensureDataDirectory();
   const filePath = path.join(DATA_DIR, filename);
@@ -425,6 +422,7 @@ async function createJsonFileIfNotExists(filename, defaultContent) {
   }
 }
 
+// Inicializadores de configs
 async function initializeDevModeConfig() {
   const defaultConfig = {
     isDevMode: false,
@@ -480,6 +478,7 @@ async function initializeIndicadoresConfig() {
   );
 }
 
+// Migrações adicionais
 async function migrateIndicadoresIfNeeded() {
   try {
     const data = await readJsonFile("indicadoresData.json");
@@ -550,6 +549,7 @@ async function migrateDevModeIfNeeded() {
   }
 }
 
+// Inicialização geral
 async function initializeAllConfigs() {
   console.log(
     "🚀 Inicializando arquivos, pastas e banco de dados do sistema...\n"
@@ -574,7 +574,6 @@ async function initializeAllConfigs() {
 
   await migrateIndicadoresIfNeeded();
   await migrateDevModeIfNeeded();
-
   await migrateDataFromJsonToDatabase();
 
   const successCount = results.filter((r) => r.status === "fulfilled").length;
