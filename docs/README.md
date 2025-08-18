@@ -16,10 +16,13 @@ Ele funciona de forma autônoma, simulando atendimento humano e operando inclusi
 - Funciona 24/7 (mesmo fora do expediente)
 - Modularidade para expansão de fluxos
 - Logging básico para depuração
-- Suporte a atualizações remotas via GitHub/TeamViewer
+- Suporte a atualizações remotas via GitHub/Rust Desk
+- Sistema de debug personalizado
+- Indicadores de desempenho com possibilidade de exportação de dados
 
 ## 🛠️ Tecnologias e Dependências
   - `nodejs`
   - `whatsapp-web.js`
   - `json`
+  -  `sqlite3`
 
