@@ -1,100 +1,114 @@
-const messageService = require('../services/messageService');
-const { 
-    showMessageList, 
-    showLastMessage,
-    promptForMessageContent,
-    promptForMessageId
-} = require('../utils/messageUtils');
+const messageService = require("../services/messageService");
 
 async function handleAddMessage(rl) {
-    const content = await promptForMessageContent(rl);
-    if (!content) return;
+  const messageTypes = messageService.getAvailableMessageTypes();
+  const locales = messageService.getAvailableLocales();
 
-    const newMessage = await messageService.addMessage(content);
-    console.log('\nMensagem adicionada com sucesso!');
-    console.log(`ID: ${newMessage.id}`);
-    console.log('\nConteúdo:');
-    console.log(newMessage.content);
+  console.log("\n=== ADICIONAR NOVA MENSAGEM ===");
+
+  // Escolher o tipo
+  console.log("Tipos de mensagem disponíveis:");
+  messageTypes.forEach((t, i) => console.log(`${i + 1}. ${t}`));
+  const typeIndex = await new Promise((resolve) =>
+    rl.question("Escolha o tipo (número): ", resolve)
+  );
+  const message_type = messageTypes[parseInt(typeIndex) - 1];
+
+  // Escolher o locale
+  console.log("\nLocales disponíveis:");
+  locales.forEach((l, i) => console.log(`${i + 1}. ${l}`));
+  const localeIndex = await new Promise((resolve) =>
+    rl.question("Escolha o locale (número): ", resolve)
+  );
+  const locale = locales[parseInt(localeIndex) - 1];
+
+  // Conteúdo da mensagem
+  const message_content = await new Promise((resolve) =>
+    rl.question("\nDigite o conteúdo da mensagem: ", resolve)
+  );
+
+  if (!message_type || !locale || !message_content) {
+    console.log("❌ Dados inválidos. Operação cancelada.");
+    return;
+  }
+
+  const result = await messageService.addMessage({
+    locale,
+    message_type,
+    message_content,
+  });
+
+  console.log("✅ Mensagem adicionada com sucesso:", result);
 }
 
 async function handleListMessages() {
-    const metas = await messageService.getMessages();
-
-    if (!Array.isArray(metas)) {
-        console.error('Erro: getMessages() não retornou um array. Valor:', metas);
-        return;
-    }
-
-    const messagesWithContent = await Promise.all(
-        metas.map(async (meta) => {
-            const full = await messageService.getMessageById(meta.id);
-            return {
-                id: full.id,
-                createdAt: full.createdAt,
-                preview: full.content ? full.content.slice(0, 50).replace(/\n/g, ' ') + (full.content.length > 50 ? '...' : '') : '[sem conteúdo]'
-            };
-        })
-    );
-
-    for (const msg of messagesWithContent) {
-        console.log(`ID: ${msg.id}`);
-        console.log(`Criada em: ${msg.createdAt}`);
-        console.log(`Conteúdo: ${msg.preview}\n`);
-    }
+  const messages = await messageService.getMessages();
+  console.log("\n=== LISTA DE MENSAGENS ===");
+  messages.forEach((msg) =>
+    console.log(
+      `[${msg.id}] (${msg.locale} - ${msg.message_type}) => ${msg.message_content}`
+    )
+  );
 }
 
-
 async function handleEditMessage(rl) {
-    const messages = await messageService.getMessages();
-    if (!Array.isArray(messages) || messages.length === 0) {
-        console.log('Nenhuma mensagem para editar.');
-        return;
-    }
+  const messages = await messageService.getMessages();
+  if (!messages.length) {
+    console.log("Nenhuma mensagem cadastrada.");
+    return;
+  }
 
-    showMessageList(messages);
-    const idToEdit = await promptForMessageId(rl, 'editar');
-    const messageToEdit = await messageService.getMessageById(idToEdit);
-    if (!messageToEdit) return;
+  console.log("\nMensagens:");
+  messages.forEach((msg) =>
+    console.log(`[${msg.id}] (${msg.locale}/${msg.message_type})`)
+  );
 
-    const newContent = await promptForMessageContent(rl, messageToEdit.content);
-    const result = await messageService.updateMessage(idToEdit, newContent);
+  const id = await new Promise((resolve) =>
+    rl.question("Digite o ID da mensagem que deseja editar: ", resolve)
+  );
 
-    if (result.success) {
-        console.log('\nMensagem atualizada com sucesso!');
-        console.log('Novo conteúdo:');
-        console.log(newContent);
-    } else {
-        console.log('Falha ao atualizar a mensagem.');
-    }
+  const existing = await messageService.getMessageById(id);
+  if (!existing) {
+    console.log("Mensagem não encontrada.");
+    return;
+  }
+
+  const newContent = await new Promise((resolve) =>
+    rl.question("Novo conteúdo da mensagem: ", resolve)
+  );
+
+  const success = await messageService.updateMessage(id, {
+    locale: existing.locale,
+    message_type: existing.message_type,
+    message_content: newContent,
+  });
+
+  console.log(success ? "✅ Mensagem atualizada!" : "❌ Erro ao atualizar.");
 }
 
 async function handleDeleteMessage(rl) {
-    const messages = await messageService.getMessages();
-    if (!Array.isArray(messages) || messages.length === 0) {
-        console.log('Nenhuma mensagem para deletar.');
-        return;
-    }
-
-    showMessageList(messages);
-    const idToDelete = await promptForMessageId(rl, 'deletar');
-    const deleted = await messageService.deleteMessage(idToDelete);
-
-    if (deleted) {
-        console.log('Mensagem deletada com sucesso!');
-    } else {
-        console.log('Mensagem não encontrada.');
-    }
+  const id = await new Promise((resolve) =>
+    rl.question("Digite o ID da mensagem a excluir: ", resolve)
+  );
+  const success = await messageService.deleteMessage(id);
+  console.log(success ? "✅ Mensagem excluída." : "❌ Erro ao excluir.");
 }
 
 async function handleShowLastMessage() {
-    const lastMessage = await messageService.getLastMessage();
-    showLastMessage(lastMessage);
+  const last = await messageService.getLastMessage();
+  if (!last) {
+    console.log("Nenhuma mensagem encontrada.");
+    return;
+  }
+  console.log(
+    `Última mensagem (#${last.id} - ${last.locale}/${last.message_type}):\n${last.message_content}`
+  );
 }
 
 module.exports = {
-    handleAddMessage,
-    handleListMessages,
-    handleEditMessage,
-    handleDeleteMessage,
-    handleShowLastMessage
+  handleAddMessage,
+  handleListMessages,
+  handleEditMessage,
+  handleDeleteMessage,
+  handleShowLastMessage,
 };
