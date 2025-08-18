@@ -63,7 +63,7 @@ async function enviarMensagemMenu(client, msg, chat) {
   const contact = await msg.getContact();
   const name = contact.pushname?.split(" ")[0] || "";
 
-  const messageTemplate = await messageReader.lerMensagemSaudacao();
+   const messageTemplate = await messageReader.getWelcomeMessage();
 
   const greetingMessage = `Olá ${name}! Tudo bem?\n\n${messageReader.processarMensagem(
     messageTemplate,
