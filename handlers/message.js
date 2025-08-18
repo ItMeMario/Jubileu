@@ -217,7 +217,7 @@ module.exports = async function messageHandler(msg) {
         // Mensagem normal de erro
         let errorMessage =
           "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
-        errorMessage += "📍 *Cidades disponíveis:*\n";
+        errorMessage += "🔍 *Cidades disponíveis:*\n";
 
         allGroups.forEach((group, index) => {
           errorMessage += `${index + 1}. ${group.name}\n`;
@@ -247,7 +247,13 @@ module.exports = async function messageHandler(msg) {
       // 🆕 Reset contador anti-spam quando usuário acerta o horário
       await antiSpamManager.resetUserAttempts(userNumber);
 
-      indicadores.incrementarHorario(opcao.id);
+      // 🔧 CORREÇÃO: Agora usa await para função assíncrona
+      try {
+        await indicadores.incrementarHorario(opcao.id);
+        await debug(`✅ Horário ${opcao.id} incrementado no banco`);
+      } catch (error) {
+        console.error("Erro ao incrementar horário:", error);
+      }
 
       userStates[userNumber] = {
         ...userStates[userNumber],
@@ -336,10 +342,10 @@ module.exports = async function messageHandler(msg) {
           const dataEvento = primaryGroup.date
             ? `\n📅 Dia: ${primaryGroup.date}`
             : "";
-          messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!${dataEvento}\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\n*Clique no link para participar!*`;
+          messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!${dataEvento}\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😍\n\n*Clique no link para participar!*`;
         } else {
           const primaryLink = await groupService.getPrimaryGroupLink();
-          messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\n*Clique no link para participar!*`;
+          messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😍\n\n*Clique no link para participar!*`;
         }
       } else {
         // 🆕 VERIFICAÇÃO PARA MODO MÚLTIPLOS GRUPOS
@@ -381,7 +387,7 @@ module.exports = async function messageHandler(msg) {
           const dataEvento = selectedCityData.date
             ? `\n📅 Dia: ${selectedCityData.date}`
             : "";
-          messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!${dataEvento}\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nAqui está o acesso para o grupo de ${selectedCityData.name}:\n*Clique no link para participar!*`;
+          messageText = `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!${dataEvento}\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😍\n\nAqui está o acesso para o grupo de ${selectedCityData.name}:\n*Clique no link para participar!*`;
         } else {
           // Modo todos os grupos - verifica participação em múltiplos grupos
           await debug("🔍 Verificando participação em múltiplos grupos...");
@@ -429,9 +435,9 @@ module.exports = async function messageHandler(msg) {
             // Usuário não está em nenhum grupo ou todos os grupos estão disponíveis
             messageText = `✅ Parabéns, *${nomeCompleto}*! Aqui está o acesso para os grupos disponíveis:\n\n`;
             messageText += availableGroups
-              .map((group) => `📍 *${group.name}*\n${group.link}`)
+              .map((group) => `🔗 *${group.name}*\n${group.link}`)
               .join("\n\n");
-            messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😁\n\nEscolha o grupo que preferir!`;
+            messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😍\n\nEscolha o grupo que preferir!`;
           }
         }
       }
@@ -439,7 +445,14 @@ module.exports = async function messageHandler(msg) {
       // Delay antes da mensagem final com links
       await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
       await client.sendMessage(msg.from, messageText);
-      indicadores.incrementarConvidados();
+
+      // 🔧 CORREÇÃO: Agora usa await para função assíncrona
+      try {
+        await indicadores.incrementarConvidados();
+        await debug("✅ Cliente convidado incrementado no banco");
+      } catch (error) {
+        console.error("Erro ao incrementar convidados:", error);
+      }
 
       // 🆕 Reset contador anti-spam após sucesso completo
       await antiSpamManager.resetUserAttempts(userNumber);

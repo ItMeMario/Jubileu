@@ -1,18 +1,18 @@
 function generateSimpleId() {
-    return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
 }
 
-const { 
-    showCityManagementMenu,
-    showCityList,
-    promptForCityName,
-    promptForCityLink,
-    promptForCityMessage,
-    promptForCityDate,
-    promptForCitySelection,
-    confirmAction
-} = require('../views/cityViews');
-const CityRepository = require('../services/cityServices');
+const {
+  showCityManagementMenu,
+  showCityList,
+  promptForCityName,
+  promptForCityLink,
+  promptForCityMessage,
+  promptForCityDate,
+  promptForCitySelection,
+  confirmAction,
+} = require("../views/cityViews");
+const CityRepository = require("../services/cityServices");
 
 class CityController {
   constructor() {
@@ -107,16 +107,15 @@ class CityController {
       const date = await promptForCityDate(rl);
 
       const newCity = {
-        id: generateSimpleId(),
+        // Remover o generateSimpleId() já que o SQLite auto-incrementa o ID
         name: this.sanitizeText(name, false),
         link: this.sanitizeText(link || "", false),
         message: this.normalizeLineBreaks(
           this.sanitizeText(message || "", true)
         ),
-        date: this.sanitizeText(date || "", false),
+        date: this.sanitizeText(date || "", false), // Mantém o campo date mesmo não estando no banco
         isPrimary: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        // Remover createdAt e updatedAt
       };
 
       await this.cityRepository.add(newCity);
@@ -221,7 +220,7 @@ class CityController {
         console.log(`   ↳ Nova mensagem: "${newPreview}"`);
       }
 
-      // Data
+      // Data (mantém o campo mesmo não estando no banco para compatibilidade)
       console.log(
         `\nValor atual da data: "${cityToEdit.date || "Não definida"}"`
       );
@@ -237,32 +236,76 @@ class CityController {
         console.log(`   ↳ Nova data: "${newDate || "Não definida"}"`);
       }
 
-      // Verificar se houve alterações
+      // Verificar se houve alterações (excluindo o campo date da verificação principal)
       const hasChanges =
         newName !== cityToEdit.name ||
         newLink !== (cityToEdit.link || "") ||
-        newMessage !== (cityToEdit.message || "") ||
-        newDate !== (cityToEdit.date || "");
+        newMessage !== (cityToEdit.message || "");
 
       if (!hasChanges) {
         console.log("\n⚠️ Nenhuma alteração foi feita.");
         return;
       }
 
-      // Construir objeto atualizado
+      // Construir objeto atualizado (sem createdAt e updatedAt)
       const updatedCity = {
         ...cityToEdit,
         name: this.sanitizeText(newName, false),
         link: this.sanitizeText(newLink, false),
         message: this.normalizeLineBreaks(this.sanitizeText(newMessage, true)),
-        date: this.sanitizeText(newDate, false),
-        updatedAt: new Date().toISOString(),
+        date: this.sanitizeText(newDate, false), // Mantém para compatibilidade
       };
 
       await this.cityRepository.update(updatedCity);
       console.log("\n✅ Cidade atualizada com sucesso!");
     } catch (error) {
       console.error("\n❌ Erro ao editar cidade:", error);
+    }
+  }
+
+  async setPrimaryCity(rl) {
+    try {
+      console.log("\n=== Definir Cidade Primária ===");
+      const cities = await this.cityRepository.getAll();
+
+      if (cities.length === 0) {
+        console.log("\n❌ Nenhuma cidade cadastrada.");
+        return;
+      }
+
+      // Mostrar cidade primária atual
+      const currentPrimary = cities.find((city) => city.isPrimary);
+      if (currentPrimary) {
+        console.log(`\n🏆 Cidade primária atual: ${currentPrimary.name}`);
+      } else {
+        console.log("\n⚠️ Nenhuma cidade está definida como primária.");
+      }
+
+      const index = await promptForCitySelection(
+        rl,
+        cities,
+        "definir como primária"
+      );
+      if (index === null) return;
+
+      const cityToSetPrimary = cities[index];
+
+      if (cityToSetPrimary.isPrimary) {
+        console.log("\n⚠️ Esta cidade já é a primária!");
+        return;
+      }
+
+      const confirm = await confirmAction(
+        rl,
+        `definir "${cityToSetPrimary.name}" como cidade primária`
+      );
+      if (!confirm) return;
+
+      // Usar o método setPrimary do repository
+      await this.cityRepository.setPrimary(cityToSetPrimary.id);
+      console.log("\n✅ Cidade primária definida com sucesso!");
+    } catch (error) {
+      console.error("\n❌ Erro ao definir cidade primária:", error);
     }
   }
 

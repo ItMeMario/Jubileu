@@ -24,7 +24,6 @@ _Horarios disponíveis_
 }
 
 async function enviarMensagemMenu(client, msg, chat) {
-  //await modoDevService.testDelay();
   await delay.smartDelay();
   await chat.sendStateTyping();
   indicadores.incrementarAtendidos();
@@ -32,10 +31,9 @@ async function enviarMensagemMenu(client, msg, chat) {
   const contact = await msg.getContact();
   const name = contact.pushname?.split(" ")[0] || "";
 
-  // Lê a mensagem do arquivo de texto
-  const messageTemplate = await messageReader.lerMensagemSaudacao();
+  // Agora lê a mensagem de boas-vindas do banco
+   const messageTemplate = await messageReader.getWelcomeMessage();
 
-  // Processa a mensagem com o nome do contato
   const greetingMessage = `Olá ${name}! Tudo bem?\n\n${messageReader.processarMensagem(
     messageTemplate,
     name

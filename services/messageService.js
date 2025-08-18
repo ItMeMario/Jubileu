@@ -1,213 +1,93 @@
-const fs = require('fs');
-const path = require('path');
-const { ensureDataDirectory, readJsonFile, saveJsonFile } = require('../utils/initialize');
+// services/messageService.js
+// Agora usando SQLite em vez de JSON/TXT
+const path = require("path");
+const db = require("../config/db");
 
-// Configurações de caminhos
-const baseDir = path.join(__dirname, '../data');
-const messagesDir = path.join(baseDir, 'messagesTxt');
-const storagePath = path.join(baseDir, 'messages.json');
-
-// Verifica e cria diretório messagesTxt se necessário
-function ensureMessagesTxtDirectory() {
-  if (fs.existsSync(messagesDir) && !fs.lstatSync(messagesDir).isDirectory()) {
-    throw new Error(`'${messagesDir}' deve ser um diretório, não um arquivo`);
-  }
-
-  if (!fs.existsSync(messagesDir)) {
-    fs.mkdirSync(messagesDir, { recursive: true });
-  }
+// Helpers para carregar dinamicamente enums TS
+function getEnumValues(modulePath) {
+  const mod = require(modulePath);
+  return Object.values(mod);
 }
 
-// Inicializa o armazenamento usando o sistema do initialize
-async function initializeStorage() {
-  await ensureDataDirectory();
-  ensureMessagesTxtDirectory();
-
-  try {
-    return await readJsonFile('messages.json', []);
-  } catch (error) {
-    console.error('Erro ao inicializar storage de mensagens:', error);
-    return [];
-  }
+function getAvailableMessageTypes() {
+  return getEnumValues(path.join(__dirname, "../config/messageType.js"));
 }
 
-// Funções principais
-async function saveIndex(messages) {
-  try {
-    const success = await saveJsonFile('messages.json', messages);
-    if (!success) {
-      throw new Error('Falha ao salvar índice');
-    }
-  } catch (error) {
-    console.error('Erro ao salvar índice de mensagens:', error);
-    throw error;
-  }
+function getAvailableLocales() {
+  return getEnumValues(path.join(__dirname, "../config/locale.js"));
 }
 
-async function addMessage(rawContent) {
-  if (!rawContent || typeof rawContent !== 'string') {
-    throw new Error('Conteúdo da mensagem inválido');
-  }
 
-  const id = Date.now().toString();
-  const filename = `${id}.txt`;
-  const filePath = path.join(messagesDir, filename);
-
-  try {
-    ensureMessagesTxtDirectory();
-    fs.writeFileSync(filePath, rawContent, 'utf8');
-    
-    const messages = await initializeStorage();
-    const newMeta = {
-      id,
-      filename,
-      createdAt: new Date().toISOString(),
-      updatedAt: null
-    };
-    
-    messages.push(newMeta);
-    await saveIndex(messages);
-    
-    return newMeta;
-  } catch (error) {
-    console.error('Erro ao adicionar mensagem:', error);
-    throw error;
-  }
+// CRUD
+async function addMessage({ locale, message_type, message_content }) {
+  return new Promise((resolve, reject) => {
+    const sql = `INSERT INTO messages (locale, message_type, message_content) 
+                 VALUES (?, ?, ?)`;
+    db.run(sql, [locale, message_type, message_content], function (err) {
+      if (err) return reject(err);
+      resolve({ id: this.lastID, locale, message_type, message_content });
+    });
+  });
 }
 
 async function getMessages() {
-  return await initializeStorage();
+  return new Promise((resolve, reject) => {
+    db.all("SELECT * FROM messages ORDER BY created_at DESC", (err, rows) => {
+      if (err) return reject(err);
+      resolve(rows);
+    });
+  });
 }
 
 async function getMessageById(id) {
-  if (!id) return null;
-
-  const messages = await getMessages();
-  const meta = messages.find((msg) => msg.id === id);
-  if (!meta) return null;
-
-  try {
-    const filePath = path.join(messagesDir, meta.filename);
-    if (!fs.existsSync(filePath)) return null;
-
-    const content = fs.readFileSync(filePath, 'utf8');
-    return { ...meta, content };
-  } catch (error) {
-    console.error(`Erro ao ler mensagem com ID ${id}:`, error);
-    return null;
-  }
+  return new Promise((resolve, reject) => {
+    db.get("SELECT * FROM messages WHERE id = ?", [id], (err, row) => {
+      if (err) return reject(err);
+      resolve(row || null);
+    });
+  });
 }
 
-async function getLatestValidMessage() {
-  try {
-    const messages = await getMessages();
-    
-    if (!messages || messages.length === 0) return null;
-
-    // Ordena por data (mais recente primeiro)
-    const sortedMessages = [...messages].sort((a, b) => 
-      new Date(b.createdAt) - new Date(a.createdAt)
-    );
-
-    // Encontra a primeira mensagem com conteúdo válido
-    for (const msg of sortedMessages) {
-      const messageWithContent = await getMessageById(msg.id);
-      if (messageWithContent && messageWithContent.content && messageWithContent.content.trim().length > 20) {
-        return messageWithContent.content;
-      }
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Erro ao carregar mensagens:', error);
-    return null;
-  }
-}
-
-async function getLastMessage() {
-  const messages = await getMessages();
-  if (messages.length === 0) return null;
-  return await getMessageById(messages.at(-1).id);
-}
-
-async function updateMessage(id, newContent) {
-  if (!id || !newContent) {
-    return { success: false, message: 'ID e conteúdo são obrigatórios' };
-  }
-
-  try {
-    const messages = await getMessages();
-    const index = messages.findIndex((msg) => msg.id === id);
-    
-    if (index === -1) {
-      return { success: false, message: 'Mensagem não encontrada' };
-    }
-
-    const filePath = path.join(messagesDir, messages[index].filename);
-    fs.writeFileSync(filePath, newContent, 'utf8');
-
-    messages[index].updatedAt = new Date().toISOString();
-    await saveIndex(messages);
-
-    return { success: true, updatedMessage: await getMessageById(id) };
-  } catch (error) {
-    console.error(`Erro ao atualizar mensagem ${id}:`, error);
-    return { success: false, message: 'Erro ao atualizar mensagem' };
-  }
+async function updateMessage(id, { locale, message_type, message_content }) {
+  return new Promise((resolve, reject) => {
+    const sql = `UPDATE messages 
+                 SET locale = ?, message_type = ?, message_content = ? 
+                 WHERE id = ?`;
+    db.run(sql, [locale, message_type, message_content, id], function (err) {
+      if (err) return reject(err);
+      resolve(this.changes > 0);
+    });
+  });
 }
 
 async function deleteMessage(id) {
-  if (!id) return false;
-
-  try {
-    const messages = await getMessages();
-    const index = messages.findIndex((msg) => msg.id === id);
-    
-    if (index === -1) return false;
-
-    const filePath = path.join(messagesDir, messages[index].filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-
-    messages.splice(index, 1);
-    await saveIndex(messages);
-    
-    return true;
-  } catch (error) {
-    console.error(`Erro ao deletar mensagem ${id}:`, error);
-    return false;
-  }
+  return new Promise((resolve, reject) => {
+    db.run("DELETE FROM messages WHERE id = ?", [id], function (err) {
+      if (err) return reject(err);
+      resolve(this.changes > 0);
+    });
+  });
 }
 
-async function searchMessages(term) {
-  if (!term || typeof term !== 'string') return [];
-
-  try {
-    const messages = await getMessages();
-    const results = [];
-    
-    for (const meta of messages) {
-      const messageWithContent = await getMessageById(meta.id);
-      if (messageWithContent && messageWithContent.content.toLowerCase().includes(term.toLowerCase())) {
-        results.push(messageWithContent);
+async function getLastMessage() {
+  return new Promise((resolve, reject) => {
+    db.get(
+      "SELECT * FROM messages ORDER BY created_at DESC LIMIT 1",
+      (err, row) => {
+        if (err) return reject(err);
+        resolve(row || null);
       }
-    }
-    
-    return results;
-  } catch (error) {
-    console.error('Erro na busca de mensagens:', error);
-    return [];
-  }
+    );
+  });
 }
 
 module.exports = {
   addMessage,
   getMessages,
   getMessageById,
-  getLatestValidMessage,
-  getLastMessage,
   updateMessage,
   deleteMessage,
-  searchMessages
+  getLastMessage,
+  getAvailableMessageTypes,
+  getAvailableLocales,
 };

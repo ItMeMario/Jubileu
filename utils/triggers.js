@@ -1,11 +1,12 @@
-// triggers.js - Versão com novo sistema de debug e FAQ integrado + Correção de triggers indevidos
+// triggers.js - Versão com novo sistema de debug, FAQ integrado, correção de triggers indevidos e integração com banco de dados
 const horarios = require("../aliases/horariosIdAliases.js");
 const aliases = require("../aliases/TimeAliases.js");
 const stringSimilarity = require("string-similarity");
 const groupService = require("../services/groupService");
 const { debug } = require("../services/debugService");
-const FAQ_TRIGGERS = require("../aliases/faqAliases.js"); // Importa os triggers do FAQ
-const faq = require("../utils/faq.js"); // Importa o FAQ
+const FAQ_TRIGGERS = require("../aliases/faqAliases.js");
+const faq = require("../utils/faq.js");
+const db = require("../config/db"); // 🆕 Importa a conexão com o banco
 
 const TRIGGERS = [
   "menu",
@@ -64,18 +65,18 @@ function normalizarTextoCidade(texto) {
   return normalizarTextoBase(texto);
 }
 
+// 🆕 Versão atualizada que usa o banco de dados
 async function identificarCidadeFuzzy(texto) {
   const inputOriginal = texto || "";
   const input = normalizarTextoBase(inputOriginal);
-  const aliasMap = require("../aliases/postalCodeAliases.js"); // Certifique-se de importar corretamente
 
-  const inputCidade = aliasMap[input] || input;
+  const inputCidade = input;
   const inputNormalizado = normalizarTexto(inputCidade);
 
   debug("Input original:", inputOriginal);
-  debug("Input após alias:", inputCidade);
   debug("Input normalizado:", inputNormalizado);
 
+  // 🆕 Busca grupos diretamente do banco via groupService
   const allGroups = await groupService.getAllGroups();
   debug("Grupos disponíveis:", allGroups.length);
   debug(
@@ -88,6 +89,7 @@ async function identificarCidadeFuzzy(texto) {
     return null;
   }
 
+  // 🆕 Busca cidade usando normalização nos dados do banco
   const cidadeAlvo = allGroups.find((g) =>
     normalizarTexto(g.name).includes(inputNormalizado)
   );
@@ -97,14 +99,43 @@ async function identificarCidadeFuzzy(texto) {
     return cidadeAlvo.name;
   }
 
+  // 🆕 Se não encontrou por inclusão, tenta match exato
+  const cidadeExata = allGroups.find(
+    (g) => normalizarTexto(g.name) === inputNormalizado
+  );
+
+  if (cidadeExata) {
+    debug("Cidade encontrada (match exato):", cidadeExata.name);
+    return cidadeExata.name;
+  }
+
+  // 🆕 Se ainda não encontrou, tenta fuzzy matching
+  const nomesCidades = allGroups.map((g) => normalizarTexto(g.name));
+  const match = stringSimilarity.findBestMatch(inputNormalizado, nomesCidades);
+
+  if (match.bestMatch.rating > 0.6) {
+    // Threshold para fuzzy matching
+    const cidadeFuzzy = allGroups.find(
+      (g) => normalizarTexto(g.name) === match.bestMatch.target
+    );
+    if (cidadeFuzzy) {
+      debug(
+        "Cidade encontrada (fuzzy match):",
+        cidadeFuzzy.name,
+        "rating:",
+        match.bestMatch.rating
+      );
+      return cidadeFuzzy.name;
+    }
+  }
+
   debug("Nenhuma cidade encontrada");
   return null;
 }
 
-
 function buscarHorario(texto) {
   const normalizado = normalizarTexto(texto);
-  return horarios[normalizado] || null; // Alterado de "Não entendi" para null
+  return horarios[normalizado] || null;
 }
 
 // 🆕 FUNÇÃO MODIFICADA PARA EVITAR TRIGGERS INDEVIDOS
@@ -116,7 +147,7 @@ function hasTriggerText(texto, userState = null) {
     "noite",
     "dia",
     "tarde",
-    "manhã",
+    "manha",
     "depois",
     "1",
     "2",
@@ -199,7 +230,7 @@ function hasTriggerText(texto, userState = null) {
   return isFuzzyMatch;
 }
 
-// 🔍 Nova função para verificar se é comando FAQ/AJUDA
+// 📋 Nova função para verificar se é comando FAQ/AJUDA
 function isRequestingHelp(texto) {
   const textoNormalizado = normalizarTexto(texto || "");
   const faqTriggersNormalizados = FAQ_TRIGGERS.map((trigger) =>
@@ -261,9 +292,9 @@ module.exports = {
   normalizarTextoBase,
   normalizarTextoHorario,
   normalizarTextoCidade,
-  hasTriggerText, // 🆕 Versão modificada
+  hasTriggerText,
   buscarHorario,
-  identificarCidadeFuzzy,
+  identificarCidadeFuzzy, // 🆕 Versão atualizada para banco de dados
   isRequestingHelp,
   enviarFAQ,
 };

@@ -1,140 +1,218 @@
-const fs = require('fs');
-const path = require('path');
-const { saveCityMessage, loadCityMessage, deleteCityMessage } = require('../utils/cityMessageUtils');
+const { getDatabaseConnection } = require("../utils/initialize");
+const { debug } = require("./debugService");
 
 class CityRepository {
-    constructor() {
-        this.dataDir = path.join(__dirname, '../data');
-        this.filePath = path.join(this.dataDir, 'cities.json');
-        this.ensureDataFileExists();
-    }
+  constructor() {}
 
-    ensureDataFileExists() {
-        if (!fs.existsSync(this.dataDir)) {
-            fs.mkdirSync(this.dataDir, { recursive: true });
-        }
-        
-        if (!fs.existsSync(this.filePath)) {
-            fs.writeFileSync(this.filePath, '[]', 'utf8');
-        }
+  async closeDB(db) {
+    if (db && typeof db.close === "function") {
+      db.close();
     }
+  }
 
-    async getAll() {
-        try {
-            const data = await fs.promises.readFile(this.filePath, 'utf8');
-            const cities = JSON.parse(data);
-            
-            // Carregar mensagens dos arquivos .txt para cada cidade
-            for (const city of cities) {
-                city.message = await loadCityMessage(city.id);
+  async getAll() {
+    let db;
+    try {
+      db = await getDatabaseConnection();
+      const rows = await new Promise((resolve, reject) => {
+        db.all(
+          `SELECT id, name, link, isPrimary, message FROM cities ORDER BY name`,
+          [],
+          (err, result) => (err ? reject(err) : resolve(result))
+        );
+      });
+      return rows || [];
+    } catch (error) {
+      await debug(`❌ Erro ao buscar todas as cidades: ${error.message}`);
+      return [];
+    } finally {
+      this.closeDB(db);
+    }
+  }
+
+  async add(city) {
+    let db;
+    try {
+      db = await getDatabaseConnection();
+      const id = await new Promise((resolve, reject) => {
+        db.run(
+          `INSERT INTO cities (name, link, isPrimary, message) VALUES (?, ?, ?, ?)`,
+          [city.name, city.link || "", city.isPrimary || false, city.message],
+          function (err) {
+            if (err) return reject(err);
+            resolve(city.id || this.lastID);
+          }
+        );
+      });
+
+      await debug(`✅ Cidade "${city.name}" adicionada no banco com ID: ${id}`);
+      return { ...city, id };
+    } catch (error) {
+      await debug(`❌ Erro ao adicionar cidade: ${error.message}`);
+      throw error;
+    } finally {
+      this.closeDB(db);
+    }
+  }
+
+  async update(updatedCity) {
+    let db;
+    try {
+      db = await getDatabaseConnection();
+      const changes = await new Promise((resolve, reject) => {
+        db.run(
+          `UPDATE cities SET name = ?, link = ?, isPrimary = ?, message = ? WHERE id = ?`,
+          [
+            updatedCity.name,
+            updatedCity.link || "",
+            updatedCity.isPrimary || false,
+            updatedCity.message,
+            updatedCity.id,
+          ],
+          function (err) {
+            if (err) return reject(err);
+            resolve(this.changes);
+          }
+        );
+      });
+
+      if (changes === 0) {
+        await debug(
+          `⚠️ Nenhuma cidade encontrada com ID ${updatedCity.id} para atualizar`
+        );
+        return null;
+      }
+
+      await debug(`✅ Cidade "${updatedCity.name}" atualizada no banco`);
+      return updatedCity;
+    } catch (error) {
+      await debug(`❌ Erro ao atualizar cidade: ${error.message}`);
+      throw error;
+    } finally {
+      this.closeDB(db);
+    }
+  }
+
+  async delete(id) {
+    let db;
+    try {
+      db = await getDatabaseConnection();
+      const cityToDelete = await new Promise((resolve, reject) => {
+        db.get(`SELECT name FROM cities WHERE id = ?`, [id], (err, row) =>
+          err ? reject(err) : resolve(row)
+        );
+      });
+
+      if (!cityToDelete) {
+        await debug(`⚠️ Cidade com ID ${id} não encontrada para exclusão`);
+        return null;
+      }
+
+      const changes = await new Promise((resolve, reject) => {
+        db.run(`DELETE FROM cities WHERE id = ?`, [id], function (err) {
+          if (err) return reject(err);
+          resolve(this.changes);
+        });
+      });
+
+      if (changes === 0) {
+        await debug(`⚠️ Nenhuma cidade deletada com ID ${id}`);
+        return null;
+      }
+
+      await debug(`✅ Cidade "${cityToDelete.name}" removida do banco`);
+      return id;
+    } catch (error) {
+      await debug(`❌ Erro ao deletar cidade: ${error.message}`);
+      throw error;
+    } finally {
+      this.closeDB(db);
+    }
+  }
+
+  async findById(id) {
+    let db;
+    try {
+      db = await getDatabaseConnection();
+      const row = await new Promise((resolve, reject) => {
+        db.get(
+          `SELECT id, name, link, isPrimary, message FROM cities WHERE id = ?`,
+          [id],
+          (err, result) => (err ? reject(err) : resolve(result))
+        );
+      });
+      return row || null;
+    } catch (error) {
+      await debug(`❌ Erro ao buscar cidade por ID: ${error.message}`);
+      return null;
+    } finally {
+      this.closeDB(db);
+    }
+  }
+
+  async getPrimary() {
+    let db;
+    try {
+      db = await getDatabaseConnection();
+      const row = await new Promise((resolve, reject) => {
+        db.get(
+          `SELECT id, name, link, isPrimary, message FROM cities WHERE isPrimary = 1 LIMIT 1`,
+          [],
+          (err, result) => (err ? reject(err) : resolve(result))
+        );
+      });
+      return row || null;
+    } catch (error) {
+      await debug(`❌ Erro ao buscar cidade primária: ${error.message}`);
+      return null;
+    } finally {
+      this.closeDB(db);
+    }
+  }
+
+  async setPrimary(id) {
+    let db;
+    try {
+      db = await getDatabaseConnection();
+      await new Promise((resolve, reject) => {
+        db.serialize(() => {
+          db.run("BEGIN TRANSACTION");
+
+          db.run(
+            `UPDATE cities SET isPrimary = 0 WHERE isPrimary = 1`,
+            [],
+            function (err) {
+              if (err) return reject(err);
             }
-            
-            return cities;
-        } catch (error) {
-            console.error('❌ Erro ao ler arquivo de cidades:', error);
-            return [];
-        }
-    }
+          );
 
-    async saveAll(cities) {
-        try {
-            // Criar uma cópia das cidades sem o campo message para salvar no JSON
-            const citiesToSave = cities.map(city => {
-                const { message, ...cityWithoutMessage } = city;
-                return cityWithoutMessage;
-            });
-            
-            await fs.promises.writeFile(this.filePath, JSON.stringify(citiesToSave, null, 2), 'utf8');
-            
-            // Salvar mensagens em arquivos separados
-            for (const city of cities) {
-                if (city.message !== undefined) {
-                    await saveCityMessage(city.id, city.message);
-                }
+          db.run(
+            `UPDATE cities SET isPrimary = 1 WHERE id = ?`,
+            [id],
+            function (err) {
+              if (err) return reject(err);
+              if (this.changes === 0) {
+                db.run("ROLLBACK");
+                return resolve(false);
+              }
+              db.run("COMMIT", (err) => {
+                if (err) return reject(err);
+                resolve(true);
+              });
             }
-        } catch (error) {
-            console.error('❌ Erro ao salvar arquivo de cidades:', error);
-            throw error;
-        }
-    }
+          );
+        });
+      });
 
-    async add(city) {
-        try {
-            const cities = await this.getAll();
-            cities.push(city);
-            await this.saveAll(cities);
-            console.log(`✅ Cidade "${city.name}" adicionada com sucesso!`);
-            return city;
-        } catch (error) {
-            console.error('❌ Erro ao adicionar cidade:', error);
-            throw error;
-        }
+      await debug(`✅ Cidade com ID ${id} definida como primária`);
+      return true;
+    } catch (error) {
+      await debug(`❌ Erro ao definir cidade primária: ${error.message}`);
+      throw error;
+    } finally {
+      this.closeDB(db);
     }
-
-    async update(updatedCity) {
-        try {
-            const cities = await this.getAll();
-            const index = cities.findIndex(c => c.id === updatedCity.id);
-            
-            if (index !== -1) {
-                cities[index] = updatedCity;
-                await this.saveAll(cities);
-                console.log(`✅ Cidade "${updatedCity.name}" atualizada com sucesso!`);
-                return updatedCity;
-            }
-            
-            console.log(`⚠️ Cidade com ID ${updatedCity.id} não encontrada.`);
-            return null;
-        } catch (error) {
-            console.error('❌ Erro ao atualizar cidade:', error);
-            throw error;
-        }
-    }
-
-    async delete(id) {
-        try {
-            const cities = await this.getAll();
-            const cityToDelete = cities.find(c => c.id === id);
-            
-            if (!cityToDelete) {
-                console.log(`⚠️ Cidade com ID ${id} não encontrada.`);
-                return null;
-            }
-            
-            // Remover cidade do array
-            const filteredCities = cities.filter(c => c.id !== id);
-            await this.saveAll(filteredCities);
-            
-            // Deletar arquivo de mensagem
-            await deleteCityMessage(id);
-            
-            console.log(`✅ Cidade "${cityToDelete.name}" removida com sucesso!`);
-            return id;
-        } catch (error) {
-            console.error('❌ Erro ao deletar cidade:', error);
-            throw error;
-        }
-    }
-
-    async findById(id) {
-        try {
-            const cities = await this.getAll();
-            return cities.find(c => c.id === id) || null;
-        } catch (error) {
-            console.error('❌ Erro ao buscar cidade por ID:', error);
-            return null;
-        }
-    }
-
-    async getPrimary() {
-        try {
-            const cities = await this.getAll();
-            return cities.find(c => c.isPrimary === true) || null;
-        } catch (error) {
-            console.error('❌ Erro ao buscar cidade primária:', error);
-            return null;
-        }
-    }
+  }
 }
 
 module.exports = CityRepository;
