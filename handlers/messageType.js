@@ -27,7 +27,32 @@ const UNSUPPORTED_MESSAGE_CONFIG = {
     incrementSpam: false, // Stickers são mais casuais, não conta como spam
     logMessage: "Usuário enviou sticker",
   },
+  emoji: {
+    message:
+      "😄 Emoji legal! Mas preciso que você digite sua resposta em texto para que eu possa te ajudar. 📝",
+    incrementSpam: false, // Emojis são casuais, não contam como spam
+    logMessage: "Usuário enviou apenas emoji",
+  },
 };
+
+// --- Helper robusto para detectar "apenas emoji" ---
+function isEmojiOnly(body) {
+  if (!body) return false;
+  const s = body.trim();
+  if (!s) return false;
+
+  // Se houver QUALQUER letra ou número (de qualquer idioma), não é "apenas emoji".
+  // Isso evita classificar 2️⃣, 3️⃣ etc. como emoji, pois contêm um dígito.
+  if (/[\p{L}\p{N}]/u.test(s)) return false;
+
+  // Remove ZWJ (ligaduras), VS16 (variação emoji) e espaços
+  const stripped = s.replace(/[\u200D\uFE0F\s]/g, "");
+
+  // Se depois disso restar apenas pictogramas, consideramos "apenas emoji"
+  return (
+    stripped.length > 0 && /^[\p{Extended_Pictographic}]+$/u.test(stripped)
+  );
+}
 
 class MessageTypeHandler {
   /**
@@ -54,6 +79,15 @@ class MessageTypeHandler {
     // Verifica se é sticker
     if (msg.type === "sticker") {
       return "sticker";
+    }
+
+    // ✅ Novo: Detecta mensagens compostas APENAS por emoji (com salvaguardas)
+    if (
+      msg.type === "chat" &&
+      typeof msg.body === "string" &&
+      isEmojiOnly(msg.body)
+    ) {
+      return "emoji";
     }
 
     return null;
