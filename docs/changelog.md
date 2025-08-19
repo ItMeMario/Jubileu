@@ -115,3 +115,29 @@ Corrigido bug na função de trocar de modo do programa.
 Corrigido bug na troca de modo single e multi.
 
 📅 Data de Lançamento: 13/08/2025
+
+📌 Patch Notes - Versão 0.0.5
+
+✨ Novidades
+
+Criado banco de dados em SQLite3 para gerenciamento centralizado de dados.
+
+Adicionado suporte a locale para mensagens, preparando o sistema para futura implementação de múltiplos idiomas.
+
+Criada pasta dedicada para arquivos de configuração, organizando melhor a estrutura do projeto.
+
+🛠️ Melhorias
+
+Substituída a lógica do CRUD de cidades para utilizar o banco de dados.
+
+Substituída a lógica do CRUD de indicadores para utilizar o banco de dados.
+
+Substituída a lógica do CRUD de mensagens para utilizar o banco de dados.
+
+Adicionado tratamento para recusar emojis, garantindo consistência no conteúdo armazenado e exibido.
+
+🐛 Correções
+
+[Nenhuma correção registrada nesta versão.]
+
+📅 Data de Lançamento: 19/08/2025
