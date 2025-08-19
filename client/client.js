@@ -1,8 +1,7 @@
+// client.js
 const { Client } = require('whatsapp-web.js');
-const startScout = require('../utils/scout')
+const startScout = require('../utils/scout');
 
 const client = new Client();
 
-module.exports = client;
-
-startScout(client);
+module.exports = { client, startScout };
