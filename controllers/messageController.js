@@ -1,5 +1,23 @@
 const messageService = require("../services/messageService");
 
+// Função para entrada de mensagem multilinha (similar ao promptForCityMessage)
+async function promptForMessageContent(rl, currentContent = "") {
+  console.log(
+    "\nDigite o conteúdo da mensagem. Você pode colar várias linhas."
+  );
+  console.log('Digite "/end" em uma nova linha para finalizar.\n');
+
+  const messageLines = [];
+
+  while (true) {
+    const line = await new Promise((resolve) => rl.question("> ", resolve));
+    if (line.trim() === "/end") break;
+    messageLines.push(line);
+  }
+
+  return messageLines.join("\n");
+}
+
 async function handleAddMessage(rl) {
   const messageTypes = messageService.getAvailableMessageTypes();
   const locales = messageService.getAvailableLocales();
@@ -22,13 +40,11 @@ async function handleAddMessage(rl) {
   );
   const locale = locales[parseInt(localeIndex) - 1];
 
-  // Conteúdo da mensagem
-  const message_content = await new Promise((resolve) =>
-    rl.question("\nDigite o conteúdo da mensagem: ", resolve)
-  );
+  // Conteúdo da mensagem usando entrada multilinha
+  const message_content = await promptForMessageContent(rl);
 
   if (!message_type || !locale || !message_content) {
-    console.log("❌ Dados inválidos. Operação cancelada.");
+    console.log("⚠ Dados inválidos. Operação cancelada.");
     return;
   }
 
@@ -73,8 +89,12 @@ async function handleEditMessage(rl) {
     return;
   }
 
-  const newContent = await new Promise((resolve) =>
-    rl.question("Novo conteúdo da mensagem: ", resolve)
+  // Usando entrada multilinha para edição também
+  console.log(`\nConteúdo atual da mensagem:`);
+  console.log(`"${existing.message_content}"`);
+  const newContent = await promptForMessageContent(
+    rl,
+    existing.message_content
   );
 
   const success = await messageService.updateMessage(id, {
@@ -83,7 +103,7 @@ async function handleEditMessage(rl) {
     message_content: newContent,
   });
 
-  console.log(success ? "✅ Mensagem atualizada!" : "❌ Erro ao atualizar.");
+  console.log(success ? "✅ Mensagem atualizada!" : "⚠ Erro ao atualizar.");
 }
 
 async function handleDeleteMessage(rl) {
@@ -91,7 +111,7 @@ async function handleDeleteMessage(rl) {
     rl.question("Digite o ID da mensagem a excluir: ", resolve)
   );
   const success = await messageService.deleteMessage(id);
-  console.log(success ? "✅ Mensagem excluída." : "❌ Erro ao excluir.");
+  console.log(success ? "✅ Mensagem excluída." : "⚠ Erro ao excluir.");
 }
 
 async function handleShowLastMessage() {
