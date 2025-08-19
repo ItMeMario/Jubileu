@@ -1,5 +1,5 @@
 // message.js - Versão Corrigida para Novo Fluxo MULTI com FAQ modular + Correção triggers indevidos + Anti-Spam + Tratamento de Áudio + InviteManager + FILTRO DE GRUPOS
-const client = require("../client/client");
+const { client } = require("../client/client");
 const {
   enviarMensagemMenu,
   enviarMenuHorarios,
