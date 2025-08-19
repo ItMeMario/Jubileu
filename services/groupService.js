@@ -43,7 +43,7 @@ class GroupService {
   // 🔄 Busca todas as cidades do banco
   async getAllGroups() {
     return new Promise((resolve, reject) => {
-      const sql = `SELECT id, name, link, isPrimary, message FROM cities ORDER BY name`;
+      const sql = `SELECT id, name, link, isPrimary, message FROM cities ORDER BY id`;
 
       db.all(sql, [], (err, rows) => {
         if (err) {
