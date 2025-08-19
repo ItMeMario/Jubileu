@@ -361,16 +361,17 @@ async function createJsonFileIfNotExists(filename, defaultContent) {
 }
 
 async function initializeDevModeConfig() {
+  // Default alinhado com a estrutura fornecida
   const defaultConfig = {
-    isDevMode: false,
+    isDevMode: true,
+    lastChanged: "2025-07-24T15:20:28.466Z",
     debugEnabled: false,
-    lastChanged: null,
-    lastDebugChanged: null,
+    lastDebugChanged: "2025-08-04T14:45:32.140Z",
     scoutConfig: {
-      enabled: false,
-      timeSeconds: 300,
-      timeFormatted: "00:05:00",
-      lastChanged: null,
+      enabled: true,
+      timeSeconds: 3600,
+      timeFormatted: "01:00:00",
+      lastChanged: "2025-07-25T13:22:28.015Z",
     },
   };
   return await createJsonFileIfNotExists("devMode.json", defaultConfig);
@@ -394,23 +395,38 @@ async function migrateDevModeIfNeeded() {
   try {
     const data = await readJsonFile("devMode.json");
 
-    if (data && !data.scoutConfig) {
-      await debug("📄 Migrando configuração de devMode para incluir Scout...");
+    if (!data) return;
 
+    // Se não houver scoutConfig, cria com padrão alinhado à estrutura pedida
+    if (!data.scoutConfig) {
+      await debug("📄 Migrando configuração de devMode para incluir Scout...");
       data.scoutConfig = {
-        enabled: false,
-        timeSeconds: 300,
-        timeFormatted: "00:05:00",
+        enabled: true,
+        timeSeconds: 3600,
+        timeFormatted: "01:00:00",
         lastChanged: null,
       };
-
-      if (data.debugEnabled === undefined) {
-        data.debugEnabled = false;
-      }
-
-      await saveJsonFile("devMode.json", data);
-      await debug("✅ Migração de devMode concluída com sucesso!");
+    } else {
+      // Completa campos que possam faltar
+      if (typeof data.scoutConfig.enabled === "undefined")
+        data.scoutConfig.enabled = true;
+      if (typeof data.scoutConfig.timeSeconds === "undefined")
+        data.scoutConfig.timeSeconds = 3600;
+      if (typeof data.scoutConfig.timeFormatted === "undefined")
+        data.scoutConfig.timeFormatted = "01:00:00";
+      if (typeof data.scoutConfig.lastChanged === "undefined")
+        data.scoutConfig.lastChanged = null;
     }
+
+    if (typeof data.debugEnabled === "undefined") {
+      data.debugEnabled = false;
+    }
+    if (typeof data.lastDebugChanged === "undefined") {
+      data.lastDebugChanged = null;
+    }
+
+    await saveJsonFile("devMode.json", data);
+    await debug("✅ Migração de devMode concluída com sucesso!");
   } catch (error) {
     console.error("Erro durante migração de devMode:", error);
   }
