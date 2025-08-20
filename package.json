@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "clipboardy": "^4.0.0",
+    "electron": "^37.3.1",
     "enquirer": "^2.4.1",
     "puppeteer": "^24.15.0",
     "qrcode-terminal": "^0.12.0",
