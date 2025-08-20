@@ -1,7 +1,15 @@
 {
+  "name": "whatsapp-bot-electron",
+  "version": "1.0.0",
+  "description": "Bot de WhatsApp com interface Electron",
+  "author": "Seu Nome",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
   "dependencies": {
     "clipboardy": "^4.0.0",
-    "electron": "^37.3.1",
     "enquirer": "^2.4.1",
     "puppeteer": "^24.15.0",
     "qrcode": "^1.5.4",
@@ -9,5 +17,19 @@
     "sqlite3": "^5.1.7",
     "string-similarity": "^4.0.4",
     "whatsapp-web.js": "^1.31.0"
+  },
+  "devDependencies": {
+    "electron": "^37.3.1",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.seuapp.whatsappbot",
+    "productName": "WhatsApp Bot",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    }
   }
 }
