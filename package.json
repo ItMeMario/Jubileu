@@ -4,6 +4,7 @@
     "electron": "^37.3.1",
     "enquirer": "^2.4.1",
     "puppeteer": "^24.15.0",
+    "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
     "sqlite3": "^5.1.7",
     "string-similarity": "^4.0.4",
