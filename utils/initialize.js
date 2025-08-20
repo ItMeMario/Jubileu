@@ -3,8 +3,33 @@ const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
 const { debug } = require("../services/debugService");
 
-const DATA_DIR = path.join(__dirname, "../data");
-const DATABASE_DIR = path.join(DATA_DIR, "database");
+// Função para detectar se está empacotado e obter caminhos corretos
+function getAppPaths() {
+  const { app } = require("electron");
+
+  if (app && app.isPackaged) {
+    // Quando empacotado, usar userData para dados persistentes
+    const userDataPath = app.getPath("userData");
+    return {
+      DATA_DIR: path.join(userDataPath, "data"),
+      DATABASE_DIR: path.join(userDataPath, "data", "database"),
+      isPackaged: true,
+    };
+  } else {
+    // Durante desenvolvimento, usar caminhos relativos como antes
+    const DATA_DIR = path.join(__dirname, "../data");
+    return {
+      DATA_DIR,
+      DATABASE_DIR: path.join(DATA_DIR, "database"),
+      isPackaged: false,
+    };
+  }
+}
+
+// Obter caminhos corretos
+const paths = getAppPaths();
+const DATA_DIR = paths.DATA_DIR;
+const DATABASE_DIR = paths.DATABASE_DIR;
 const DATABASE_PATH = path.join(DATABASE_DIR, "system.db");
 
 // Função para garantir que o diretório do banco existe

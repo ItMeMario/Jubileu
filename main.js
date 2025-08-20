@@ -1,12 +1,32 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
-const { client, startScout } = require("./client/client");
-const messageHandler = require("./handlers/message");
-const { initializeAllConfigs } = require("./utils/initialize");
-const { initializeApp } = require("./controllers/configController");
-const QRCode = require("qrcode");
+const pathHelper = require("./utils/pathHelper");
 
 let mainWindow;
+let client;
+let startScout;
+let messageHandler;
+let initializeAllConfigs;
+let initializeApp;
+
+// Carrega os módulos após o app estar pronto
+function loadModules() {
+  try {
+    const clientModule = require("./client/client");
+    client = clientModule.client;
+    startScout = clientModule.startScout;
+
+    messageHandler = require("./handlers/message");
+    const { initializeAllConfigs: initConfigs } = require("./utils/initialize");
+    initializeAllConfigs = initConfigs;
+    const {
+      initializeApp: initApp,
+    } = require("./controllers/configController");
+    initializeApp = initApp;
+  } catch (error) {
+    console.error("Erro ao carregar módulos:", error);
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -17,15 +37,35 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
+    icon: path.join(__dirname, "assets/icon.png"), // Adicione um ícone se tiver
   });
 
-  mainWindow.loadFile("renderer/index.html");
+  // Caminho correto para o HTML
+  const htmlPath = pathHelper.isPackaged
+    ? path.join(__dirname, "renderer/index.html")
+    : path.join(__dirname, "renderer/index.html");
 
-  // Abre o DevTools em desenvolvimento (opcional)
-  // mainWindow.webContents.openDevTools();
+  mainWindow.loadFile(htmlPath);
+
+  // Remove menu bar em produção
+  if (pathHelper.isPackaged) {
+    mainWindow.setMenuBarVisibility(false);
+  }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Carrega os módulos após o app estar pronto
+  loadModules();
+
+  // Inicializa as configurações de caminhos
+  try {
+    if (initializeAllConfigs) {
+      await initializeAllConfigs();
+    }
+  } catch (error) {
+    console.error("Erro na inicialização:", error);
+  }
+
   createWindow();
 
   app.on("activate", () => {
@@ -37,6 +77,14 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
+    // Cleanup do cliente antes de sair
+    if (client) {
+      try {
+        client.destroy();
+      } catch (error) {
+        console.error("Erro ao destruir cliente:", error);
+      }
+    }
     app.quit();
   }
 });
@@ -44,21 +92,21 @@ app.on("window-all-closed", () => {
 // Eventos IPC do frontend
 ipcMain.handle("start-whatsapp", async () => {
   try {
-    // Inicializa configurações
-    await initializeAllConfigs();
+    if (!client || !startScout || !messageHandler) {
+      throw new Error("Módulos não carregados corretamente");
+    }
 
-    // Configura os eventos do cliente WhatsApp
-    client.removeAllListeners(); // Remove listeners antigos para evitar duplicação
+    // Remove listeners antigos para evitar duplicação
+    client.removeAllListeners();
 
     client.on("qr", async (qr) => {
       try {
-        // Gera o QR code como imagem base64
+        const QRCode = require("qrcode");
         const qrImage = await QRCode.toDataURL(qr, {
           width: 300,
           margin: 2,
         });
 
-        // Envia para o frontend
         mainWindow.webContents.send("qr-generated", {
           qrImage: qrImage,
           qrText: qr,
@@ -99,7 +147,7 @@ ipcMain.handle("start-whatsapp", async () => {
 
     // Inicia o scout e inicializa o cliente
     startScout(client);
-    client.initialize();
+    await client.initialize();
 
     return { success: true, message: "WhatsApp inicializado" };
   } catch (error) {
@@ -113,8 +161,6 @@ ipcMain.handle("start-whatsapp", async () => {
 
 ipcMain.handle("open-config", async () => {
   try {
-    // Aqui você pode abrir uma nova janela para configurações
-    // ou processar as configurações de outra forma
     console.log("Abrindo configurações...");
     return { success: true, message: "Configurações abertas no console" };
   } catch (error) {
