@@ -49,7 +49,9 @@ _Horários disponíveis_
 3️⃣ - 14:00h (Depois do almoço)
 4️⃣ - 15:30h (Tarde)
 5️⃣ - 17:30h (Final da tarde)
-6️⃣ - 19:30h (Noite)`;
+6️⃣ - 19:30h (Noite)
+
+*Por favor me informe o horário que você escolheu…*`;
 
   await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
   await client.sendMessage(chatId, timeMenu);

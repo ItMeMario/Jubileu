@@ -1,5 +1,6 @@
 node_modules/
 .wwebjs_cache
 data/
-
+dist/
+.wwebjs_auth/
 
