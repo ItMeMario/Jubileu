@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - Jubileu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px 0;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar h2 {
+            color: #25d366;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .menu-item {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .menu-item.active {
+            background-color: #25d366;
+            color: white;
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            background: white;
+            overflow-y: auto;
+        }
+
+        .content-header {
+            margin-bottom: 30px;
+        }
+
+        .content-header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .content-header p {
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #25d366;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #128c7e;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .messages-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .message-item {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .message-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .message-item.selected {
+            background-color: #e3f2fd;
+            border-left: 4px solid #25d366;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .message-meta {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .message-content {
+            color: #333;
+            font-size: 14px;
+            line-height: 1.4;
+            max-height: 60px;
+            overflow: hidden;
+            white-space: pre-wrap;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .status-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+            font-style: italic;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #25d366;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 5px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>🤖 Jubileu</h2>
+        <button class="menu-item active" data-section="messages">
+            📝 Gerenciar Mensagens
+        </button>
+        <button class="menu-item" data-section="cities">
+            🏙️ Gerenciar Cidades
+        </button>
+        <button class="menu-item" data-section="indicators">
+            📊 Indicadores
+        </button>
+        <button class="menu-item" data-section="dev-mode">
+            🔧 Modo Dev
+        </button>
+        <button class="menu-item" data-section="database">
+            🗄️ Banco de Dados
+        </button>
+    </div>
+
+    <div class="content">
+        <div id="status" class="status-message"></div>
+
+        <!-- Seção de Mensagens -->
+        <div id="messages-section" class="section active">
+            <div class="content-header">
+                <h1>Gerenciar Mensagens</h1>
+                <p>Adicione, edite e gerencie as mensagens do bot</p>
+            </div>
+
+            <!-- Lista de Mensagens -->
+            <div class="messages-list" id="messages-list">
+                <div class="empty-state">Carregando mensagens...</div>
+            </div>
+
+            <!-- Formulário de Mensagem -->
+            <div class="form-group">
+                <label for="message-locale">Idioma/Locale:</label>
+                <select id="message-locale">
+                    <option value="">Carregando...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="message-type">Tipo de Mensagem:</label>
+                <select id="message-type">
+                    <option value="">Carregando...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="message-content">Conteúdo da Mensagem:</label>
+                <textarea id="message-content" placeholder="Digite o conteúdo da mensagem aqui..." rows="6"></textarea>
+            </div>
+
+            <div class="button-group">
+                <button id="btn-save-message" class="btn btn-primary">Salvar Mensagem</button>
+                <button id="btn-clear-form" class="btn btn-secondary">Limpar</button>
+                <button id="btn-delete-message" class="btn btn-danger" style="display: none;">Excluir</button>
+            </div>
+        </div>
+
+        <!-- Outras seções (placeholder) -->
+        <div id="cities-section" class="section">
+            <div class="content-header">
+                <h1>Gerenciar Cidades</h1>
+                <p>Em desenvolvimento...</p>
+            </div>
+        </div>
+
+        <div id="indicators-section" class="section">
+            <div class="content-header">
+                <h1>Indicadores</h1>
+                <p>Em desenvolvimento...</p>
+            </div>
+        </div>
+
+        <div id="dev-mode-section" class="section">
+            <div class="content-header">
+                <h1>Modo Dev</h1>
+                <p>Em desenvolvimento...</p>
+            </div>
+        </div>
+
+        <div id="database-section" class="section">
+            <div class="content-header">
+                <h1>Banco de Dados</h1>
+                <p>Em desenvolvimento...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="configRenderer.js"></script>
+</body>
+
+</html>

@@ -2,6 +2,13 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const pathHelper = require("./utils/pathHelper");
 
+// Importar funções da janela de config
+const {
+  createConfigWindow,
+  closeConfigWindow,
+  getConfigWindow,
+} = require("./renderer/configWindow");
+
 let mainWindow;
 let client;
 let startScout;
@@ -75,21 +82,27 @@ app.whenReady().then(async () => {
   });
 });
 
-app.on("window-all-closed", () => {
+app.on("window-all-closed", async () => {
   if (process.platform !== "darwin") {
     // Cleanup do cliente antes de sair
     if (client) {
       try {
-        client.destroy();
+        if (client.pupPage) {
+          await client.destroy();
+        }
       } catch (error) {
-        console.error("Erro ao destruir cliente:", error);
+        console.error("Erro ao destruir cliente:", error.message);
       }
     }
     app.quit();
   }
 });
 
+// =========================
 // Eventos IPC do frontend
+// =========================
+
+// --- WhatsApp ---
 ipcMain.handle("start-whatsapp", async () => {
   try {
     if (!client || !startScout || !messageHandler) {
@@ -159,19 +172,6 @@ ipcMain.handle("start-whatsapp", async () => {
   }
 });
 
-ipcMain.handle("open-config", async () => {
-  try {
-    console.log("Abrindo configurações...");
-    return { success: true, message: "Configurações abertas no console" };
-  } catch (error) {
-    console.error("Erro ao abrir configurações:", error);
-    return {
-      success: false,
-      message: "Erro ao abrir configurações: " + error.message,
-    };
-  }
-});
-
 ipcMain.handle("stop-whatsapp", async () => {
   try {
     if (client) {
@@ -184,5 +184,93 @@ ipcMain.handle("stop-whatsapp", async () => {
       success: false,
       message: "Erro ao parar WhatsApp: " + error.message,
     };
+  }
+});
+
+// --- Configurações ---
+ipcMain.handle("open-config", async () => {
+  try {
+    console.log("Abrindo configurações...");
+    let win = getConfigWindow();
+    if (!win) {
+      win = createConfigWindow();
+    } else {
+      win.focus();
+    }
+    return { success: true, message: "Janela de configurações aberta" };
+  } catch (error) {
+    console.error("Erro ao abrir configurações:", error);
+    return {
+      success: false,
+      message: "Erro ao abrir configurações: " + error.message,
+    };
+  }
+});
+
+ipcMain.handle("config-close-window", async () => {
+  try {
+    closeConfigWindow();
+    return { success: true, message: "Janela de configurações fechada" };
+  } catch (error) {
+    console.error("Erro ao fechar configurações:", error);
+    return {
+      success: false,
+      message: "Erro ao fechar configurações: " + error.message,
+    };
+  }
+});
+
+// =========================
+// Handlers de Mensagens (CRUD)
+// =========================
+ipcMain.handle("config-get-messages", async () => {
+  try {
+    const { handleListMessages } = require("./controllers/messageController");
+    return await handleListMessages();
+  } catch (error) {
+    console.error("Erro em config-get-messages:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("config-add-message", async (_, messageData) => {
+  try {
+    const { handleAddMessage } = require("./controllers/messageController");
+    return await handleAddMessage(messageData);
+  } catch (error) {
+    console.error("Erro em config-add-message:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("config-update-message", async (_, id, messageData) => {
+  try {
+    const { handleEditMessage } = require("./controllers/messageController");
+    return await handleEditMessage(id, messageData);
+  } catch (error) {
+    console.error("Erro em config-update-message:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("config-delete-message", async (_, id) => {
+  try {
+    const { handleDeleteMessage } = require("./controllers/messageController");
+    return await handleDeleteMessage(id);
+  } catch (error) {
+    console.error("Erro em config-delete-message:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("config-get-last-message", async () => {
+  try {
+    const {
+      handleShowLastMessage,
+    } = require("./controllers/messageController");
+    return await handleShowLastMessage();
+  } catch (error) {
+    console.error("Erro em config-get-last-message:", error);
+    throw error;
   }
 });
