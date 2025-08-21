@@ -61,8 +61,7 @@ class ConfigManager {
 
   async loadInitialData() {
     try {
-      await this.loadMessageTypes();
-      await this.loadLocales();
+      await this.loadAvailableOptions();
       await this.loadMessages();
     } catch (error) {
       this.showStatus("Erro ao carregar dados iniciais", "error");
@@ -70,23 +69,21 @@ class ConfigManager {
     }
   }
 
-  async loadMessageTypes() {
+  async loadAvailableOptions() {
     try {
-      this.messageTypes = await window.configAPI.getMessageTypes();
-      this.populateSelect(this.messageTypeSelect, this.messageTypes);
-    } catch (error) {
-      console.error("Error loading message types:", error);
-      this.showStatus("Erro ao carregar tipos de mensagem", "error");
-    }
-  }
+      const result = await window.configAPI.getAvailableOptions();
 
-  async loadLocales() {
-    try {
-      this.locales = await window.configAPI.getLocales();
-      this.populateSelect(this.messageLocaleSelect, this.locales);
+      if (result.success) {
+        this.messageTypes = result.data.messageTypes;
+        this.locales = result.data.locales;
+        this.populateSelect(this.messageTypeSelect, this.messageTypes);
+        this.populateSelect(this.messageLocaleSelect, this.locales);
+      } else {
+        throw new Error(result.error || "Erro ao carregar opções");
+      }
     } catch (error) {
-      console.error("Error loading locales:", error);
-      this.showStatus("Erro ao carregar locales", "error");
+      console.error("Error loading available options:", error);
+      this.showStatus("Erro ao carregar tipos de mensagem e locales", "error");
     }
   }
 
@@ -103,8 +100,14 @@ class ConfigManager {
   async loadMessages() {
     try {
       this.showLoading(this.messagesList);
-      this.messages = await window.configAPI.getMessages();
-      this.renderMessages();
+      const result = await window.configAPI.getMessages();
+
+      if (result.success) {
+        this.messages = result.data || [];
+        this.renderMessages();
+      } else {
+        throw new Error(result.error || "Erro ao carregar mensagens");
+      }
     } catch (error) {
       console.error("Error loading messages:", error);
       this.showStatus("Erro ao carregar mensagens", "error");
@@ -206,21 +209,25 @@ class ConfigManager {
     try {
       this.showButtonLoading(this.btnSaveMessage);
 
+      let result;
       if (this.currentMessage) {
         // Update existing message
-        await window.configAPI.updateMessage(
+        result = await window.configAPI.updateMessage(
           this.currentMessage.id,
           messageData
         );
-        this.showStatus("Mensagem atualizada com sucesso", "success");
       } else {
         // Add new message
-        await window.configAPI.addMessage(messageData);
-        this.showStatus("Mensagem adicionada com sucesso", "success");
+        result = await window.configAPI.addMessage(messageData);
       }
 
-      await this.loadMessages();
-      this.clearForm();
+      if (result.success) {
+        this.showStatus(result.message, "success");
+        await this.loadMessages();
+        this.clearForm();
+      } else {
+        this.showStatus(result.error || "Erro ao salvar mensagem", "error");
+      }
     } catch (error) {
       console.error("Error saving message:", error);
       this.showStatus("Erro ao salvar mensagem", "error");
@@ -242,10 +249,17 @@ class ConfigManager {
 
     try {
       this.showButtonLoading(this.btnDeleteMessage);
-      await window.configAPI.deleteMessage(this.currentMessage.id);
-      this.showStatus("Mensagem excluída com sucesso", "success");
-      await this.loadMessages();
-      this.clearForm();
+      const result = await window.configAPI.deleteMessage(
+        this.currentMessage.id
+      );
+
+      if (result.success) {
+        this.showStatus(result.message, "success");
+        await this.loadMessages();
+        this.clearForm();
+      } else {
+        this.showStatus(result.error || "Erro ao excluir mensagem", "error");
+      }
     } catch (error) {
       console.error("Error deleting message:", error);
       this.showStatus("Erro ao excluir mensagem", "error");

@@ -221,56 +221,83 @@ ipcMain.handle("config-close-window", async () => {
 });
 
 // =========================
-// Handlers de Mensagens (CRUD)
+// Handlers de Mensagens (CRUD) - VERSÃO CORRIGIDA
 // =========================
 ipcMain.handle("config-get-messages", async () => {
   try {
-    const { handleListMessages } = require("./controllers/messageController");
-    return await handleListMessages();
+    const { handleListMessagesGUI } = require("./controllers/messageController");
+    return await handleListMessagesGUI();
   } catch (error) {
     console.error("Erro em config-get-messages:", error);
-    throw error;
+    return {
+      success: false,
+      error: error.message
+    };
   }
 });
 
 ipcMain.handle("config-add-message", async (_, messageData) => {
   try {
-    const { handleAddMessage } = require("./controllers/messageController");
-    return await handleAddMessage(messageData);
+    const { handleAddMessageGUI } = require("./controllers/messageController");
+    return await handleAddMessageGUI(messageData);
   } catch (error) {
     console.error("Erro em config-add-message:", error);
-    throw error;
+    return {
+      success: false,
+      error: error.message
+    };
   }
 });
 
 ipcMain.handle("config-update-message", async (_, id, messageData) => {
   try {
-    const { handleEditMessage } = require("./controllers/messageController");
-    return await handleEditMessage(id, messageData);
+    const { handleEditMessageGUI } = require("./controllers/messageController");
+    return await handleEditMessageGUI(id, messageData);
   } catch (error) {
     console.error("Erro em config-update-message:", error);
-    throw error;
+    return {
+      success: false,
+      error: error.message
+    };
   }
 });
 
 ipcMain.handle("config-delete-message", async (_, id) => {
   try {
-    const { handleDeleteMessage } = require("./controllers/messageController");
-    return await handleDeleteMessage(id);
+    const { handleDeleteMessageGUI } = require("./controllers/messageController");
+    return await handleDeleteMessageGUI(id);
   } catch (error) {
     console.error("Erro em config-delete-message:", error);
-    throw error;
+    return {
+      success: false,
+      error: error.message
+    };
   }
 });
 
 ipcMain.handle("config-get-last-message", async () => {
   try {
-    const {
-      handleShowLastMessage,
-    } = require("./controllers/messageController");
-    return await handleShowLastMessage();
+    const { handleShowLastMessageGUI } = require("./controllers/messageController");
+    return await handleShowLastMessageGUI();
   } catch (error) {
     console.error("Erro em config-get-last-message:", error);
-    throw error;
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
+// Handler para obter tipos de mensagem e locales disponíveis
+ipcMain.handle("config-get-available-options", async () => {
+  try {
+    const { getAvailableOptionsGUI } = require("./controllers/messageController");
+    return await getAvailableOptionsGUI();
+  } catch (error) {
+    console.error("Erro em config-get-available-options:", error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 });

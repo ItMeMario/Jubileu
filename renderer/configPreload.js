@@ -11,8 +11,9 @@ contextBridge.exposeInMainWorld("configAPI", {
     ipcRenderer.invoke("config-update-message", id, messageData),
   deleteMessage: (id) => ipcRenderer.invoke("config-delete-message", id),
   getLastMessage: () => ipcRenderer.invoke("config-get-last-message"),
-  getMessageTypes: () => ipcRenderer.invoke("config-get-message-types"),
-  getLocales: () => ipcRenderer.invoke("config-get-locales"),
+
+  // Opções disponíveis (tipos e locales)
+  getAvailableOptions: () => ipcRenderer.invoke("config-get-available-options"),
 
   // Navegação
   closeWindow: () => ipcRenderer.invoke("config-close-window"),
