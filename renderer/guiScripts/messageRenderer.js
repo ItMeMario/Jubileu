@@ -1,4 +1,4 @@
-// renderer/guiScripts/messagesRenderer.js
+// renderer/guiScripts/messageRenderer.js
 class MessagesManager {
   constructor() {
     this.currentMessage = null;
