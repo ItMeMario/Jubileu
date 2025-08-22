@@ -2,7 +2,7 @@ const {
   createConfigWindow,
   closeConfigWindow,
   getConfigWindow,
-} = require("../../renderer/configWindow");
+} = require("../../renderer/guiConfig/configWindow");
 
 class ConfigHandlers {
   constructor() {

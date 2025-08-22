@@ -5,7 +5,8 @@ const {
   createConfigWindow,
   closeConfigWindow,
   getConfigWindow,
-} = require("../renderer/configWindow");
+} = require("../renderer/guiConfig/configWindow");
+
 
 class WindowManager {
   constructor() {
@@ -17,17 +18,18 @@ class WindowManager {
       width: 800,
       height: 600,
       webPreferences: {
-        preload: path.join(__dirname, "../renderer/preload.js"),
+        preload: path.join(__dirname, "../renderer/preload/preload.js"),
         nodeIntegration: false,
         contextIsolation: true,
       },
+
       icon: path.join(__dirname, "../assets/icon.png"),
     });
 
     // Caminho para o HTML
     const htmlPath = pathHelper.isPackaged
-      ? path.join(__dirname, "../renderer/index.html")
-      : path.join(__dirname, "../renderer/index.html");
+      ? path.join(__dirname, "../renderer/html/index.html")
+      : path.join(__dirname, "../renderer/html/index.html");
 
     this.mainWindow.loadFile(htmlPath);
 
