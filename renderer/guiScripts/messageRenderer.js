@@ -40,15 +40,28 @@ class MessagesManager {
 
   async loadAvailableOptions() {
     try {
-      const result = await window.configAPI.getAvailableOptions();
+      // Carrega tipos de mensagem e locales separadamente para maior flexibilidade
+      const [typesResult, localesResult] = await Promise.all([
+        window.messageAPI.getMessageTypes(),
+        window.messageAPI.getMessageLocales(),
+      ]);
 
-      if (result.success) {
-        this.messageTypes = result.data.messageTypes;
-        this.locales = result.data.locales;
+      if (typesResult.success && localesResult.success) {
+        this.messageTypes = typesResult.data || [];
+        this.locales = localesResult.data || [];
         this.populateSelect(this.messageTypeSelect, this.messageTypes);
         this.populateSelect(this.messageLocaleSelect, this.locales);
       } else {
-        throw new Error(result.error || "Erro ao carregar opções");
+        // Fallback para o método antigo se os novos não existirem ainda
+        const result = await window.messageAPI.getAvailableOptions();
+        if (result.success) {
+          this.messageTypes = result.data.messageTypes || [];
+          this.locales = result.data.locales || [];
+          this.populateSelect(this.messageTypeSelect, this.messageTypes);
+          this.populateSelect(this.messageLocaleSelect, this.locales);
+        } else {
+          throw new Error(result.error || "Erro ao carregar opções");
+        }
       }
     } catch (error) {
       console.error("Error loading available options:", error);
@@ -60,8 +73,14 @@ class MessagesManager {
     selectElement.innerHTML = '<option value="">Selecione uma opção</option>';
     options.forEach((option) => {
       const optionElement = document.createElement("option");
-      optionElement.value = option;
-      optionElement.textContent = option;
+      // Suporta tanto strings simples quanto objetos {id, name}
+      if (typeof option === "object") {
+        optionElement.value = option.id || option.value || option;
+        optionElement.textContent = option.name || option.label || option;
+      } else {
+        optionElement.value = option;
+        optionElement.textContent = option;
+      }
       selectElement.appendChild(optionElement);
     });
   }
@@ -69,7 +88,7 @@ class MessagesManager {
   async loadMessages() {
     try {
       this.showLoading(this.messagesList);
-      const result = await window.configAPI.getMessages();
+      const result = await window.messageAPI.getMessages();
 
       if (result.success) {
         this.messages = result.data || [];
@@ -175,12 +194,12 @@ class MessagesManager {
 
       let result;
       if (this.currentMessage) {
-        result = await window.configAPI.updateMessage(
+        result = await window.messageAPI.updateMessage(
           this.currentMessage.id,
           messageData
         );
       } else {
-        result = await window.configAPI.addMessage(messageData);
+        result = await window.messageAPI.addMessage(messageData);
       }
 
       if (result.success) {
@@ -211,7 +230,7 @@ class MessagesManager {
 
     try {
       this.showButtonLoading(this.btnDeleteMessage);
-      const result = await window.configAPI.deleteMessage(
+      const result = await window.messageAPI.deleteMessage(
         this.currentMessage.id
       );
 

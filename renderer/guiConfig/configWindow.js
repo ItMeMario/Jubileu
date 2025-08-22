@@ -1,4 +1,4 @@
-// renderer/configWindow.js
+// renderer/guiConfig/configWindow.js
 const { BrowserWindow } = require("electron");
 const path = require("path");
 
@@ -16,6 +16,7 @@ function createConfigWindow() {
     parent: require("electron").BrowserWindow.getFocusedWindow(),
     modal: true,
     webPreferences: {
+      // CORREÇÃO: Caminho correto para renderer/preload/configPreload.js
       preload: path.join(__dirname, "../preload/configPreload.js"),
       nodeIntegration: false,
       contextIsolation: true,
@@ -26,9 +27,8 @@ function createConfigWindow() {
     maximizable: true,
   });
 
-const htmlPath = path.join(__dirname, "../html/config.html");
-configWindow.loadFile(htmlPath);
-
+  const htmlPath = path.join(__dirname, "../html/config.html");
+  configWindow.loadFile(htmlPath);
 
   configWindow.on("closed", () => {
     configWindow = null;

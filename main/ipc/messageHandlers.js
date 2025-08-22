@@ -17,7 +17,7 @@ class MessageHandlers {
       const { handleListMessagesGUI } = this.getMessageController();
       return await handleListMessagesGUI();
     } catch (error) {
-      console.error("Erro em config-get-messages:", error);
+      console.error("Erro em message-get-messages:", error);
       return {
         success: false,
         error: error.message,
@@ -30,7 +30,7 @@ class MessageHandlers {
       const { handleAddMessageGUI } = this.getMessageController();
       return await handleAddMessageGUI(messageData);
     } catch (error) {
-      console.error("Erro em config-add-message:", error);
+      console.error("Erro em message-add-message:", error);
       return {
         success: false,
         error: error.message,
@@ -43,7 +43,7 @@ class MessageHandlers {
       const { handleEditMessageGUI } = this.getMessageController();
       return await handleEditMessageGUI(id, messageData);
     } catch (error) {
-      console.error("Erro em config-update-message:", error);
+      console.error("Erro em message-update-message:", error);
       return {
         success: false,
         error: error.message,
@@ -56,7 +56,7 @@ class MessageHandlers {
       const { handleDeleteMessageGUI } = this.getMessageController();
       return await handleDeleteMessageGUI(id);
     } catch (error) {
-      console.error("Erro em config-delete-message:", error);
+      console.error("Erro em message-delete-message:", error);
       return {
         success: false,
         error: error.message,
@@ -69,7 +69,7 @@ class MessageHandlers {
       const { handleShowLastMessageGUI } = this.getMessageController();
       return await handleShowLastMessageGUI();
     } catch (error) {
-      console.error("Erro em config-get-last-message:", error);
+      console.error("Erro em message-get-last-message:", error);
       return {
         success: false,
         error: error.message,
@@ -77,12 +77,76 @@ class MessageHandlers {
     }
   }
 
+  // Método original mantido para compatibilidade
   async getAvailableOptions() {
     try {
       const { getAvailableOptionsGUI } = this.getMessageController();
       return await getAvailableOptionsGUI();
     } catch (error) {
-      console.error("Erro em config-get-available-options:", error);
+      console.error("Erro em message-get-available-options:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  // Novos métodos específicos (com fallback se não existirem no controller)
+  async getMessageTypes() {
+    try {
+      const controller = this.getMessageController();
+
+      // Tenta usar método específico se existir
+      if (controller.getMessageTypesGUI) {
+        return await controller.getMessageTypesGUI();
+      }
+
+      // Fallback para getAvailableOptions
+      const result = await this.getAvailableOptions();
+      if (result.success && result.data.messageTypes) {
+        return {
+          success: true,
+          data: result.data.messageTypes,
+        };
+      }
+
+      return {
+        success: false,
+        error: "Tipos de mensagem não encontrados",
+      };
+    } catch (error) {
+      console.error("Erro em message-get-types:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  async getMessageLocales() {
+    try {
+      const controller = this.getMessageController();
+
+      // Tenta usar método específico se existir
+      if (controller.getMessageLocalesGUI) {
+        return await controller.getMessageLocalesGUI();
+      }
+
+      // Fallback para getAvailableOptions
+      const result = await this.getAvailableOptions();
+      if (result.success && result.data.locales) {
+        return {
+          success: true,
+          data: result.data.locales,
+        };
+      }
+
+      return {
+        success: false,
+        error: "Locales não encontrados",
+      };
+    } catch (error) {
+      console.error("Erro em message-get-locales:", error);
       return {
         success: false,
         error: error.message,
