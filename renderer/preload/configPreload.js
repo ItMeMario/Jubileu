@@ -3,10 +3,14 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 // ✅ ADICIONADO: APIs de cidade (a correção principal)
 contextBridge.exposeInMainWorld("cityAPI", {
-  getCities: () => ipcRenderer.invoke("get-cities"),
-  addCity: (cityData) => ipcRenderer.invoke("add-city", cityData),
-  updateCity: (id, cityData) => ipcRenderer.invoke("update-city", id, cityData),
-  deleteCity: (id) => ipcRenderer.invoke("delete-city", id),
+  getCities: () => ipcRenderer.invoke("city-get-cities"),
+  addCity: (cityData) => ipcRenderer.invoke("city-add-city", cityData),
+  updateCity: (id, cityData) =>
+    ipcRenderer.invoke("city-update-city", id, cityData),
+  deleteCity: (id) => ipcRenderer.invoke("city-delete-city", id),
+  setPrimaryCity: (id) => ipcRenderer.invoke("city-set-primary", id),
+  getPrimaryCity: () => ipcRenderer.invoke("city-get-primary"),
+  getCityById: (id) => ipcRenderer.invoke("city-get-by-id", id),
 });
 
 // ✅ MANTIDO: APIs de configuração existentes
