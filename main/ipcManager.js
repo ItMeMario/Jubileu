@@ -2,6 +2,7 @@ const { ipcMain } = require("electron");
 const WhatsAppHandlers = require("./ipc/whatsAppHandlers");
 const ConfigHandlers = require("./ipc/configHandlers");
 const MessageHandlers = require("./ipc/messageHandlers");
+const CityHandlers = require("./ipc/cityHandlers");
 
 class IPCManager {
   constructor() {
@@ -9,6 +10,7 @@ class IPCManager {
       whatsapp: null,
       config: null,
       message: null,
+      city: null,
     };
   }
 
@@ -18,6 +20,7 @@ class IPCManager {
       this.handlers.whatsapp = new WhatsAppHandlers(modules);
       this.handlers.config = new ConfigHandlers();
       this.handlers.message = new MessageHandlers();
+      this.handlers.city = new CityHandlers();
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -27,6 +30,9 @@ class IPCManager {
 
       // Registra handlers de mensagens
       this.registerMessageHandlers();
+
+      // Registra handlers de cidades
+      this.registerCityHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -149,6 +155,40 @@ class IPCManager {
     }
   }
 
+  registerCityHandlers() {
+    // Handlers básicos de cidades
+    ipcMain.handle(
+      "city-get-cities",
+      this.handlers.city.getCities.bind(this.handlers.city)
+    );
+    ipcMain.handle(
+      "city-add-city",
+      this.handlers.city.addCity.bind(this.handlers.city)
+    );
+    ipcMain.handle(
+      "city-update-city",
+      this.handlers.city.updateCity.bind(this.handlers.city)
+    );
+    ipcMain.handle(
+      "city-delete-city",
+      this.handlers.city.deleteCity.bind(this.handlers.city)
+    );
+    ipcMain.handle(
+      "city-set-primary",
+      this.handlers.city.setPrimaryCity.bind(this.handlers.city)
+    );
+    ipcMain.handle(
+      "city-get-primary",
+      this.handlers.city.getPrimaryCity.bind(this.handlers.city)
+    );
+    ipcMain.handle(
+      "city-get-by-id",
+      this.handlers.city.getCityById.bind(this.handlers.city)
+    );
+
+    console.log("Handlers de cidade registrados");
+  }
+
   // Método para limpar todos os handlers (útil para testes ou reinicialização)
   removeAllHandlers() {
     const events = [
@@ -176,6 +216,15 @@ class IPCManager {
       "message-get-types",
       "message-get-locales",
       "message-get-available-options",
+
+      // City events
+      "city-get-cities",
+      "city-add-city",
+      "city-update-city",
+      "city-delete-city",
+      "city-set-primary",
+      "city-get-primary",
+      "city-get-by-id",
     ];
 
     events.forEach((event) => {

@@ -1,0 +1,213 @@
+/* renderer/css/city.css */
+
+/* Lista de cidades */
+.cities-list {
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+}
+
+.city-item {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.city-item:hover {
+    background-color: #f8f9fa;
+}
+
+.city-item:last-child {
+    border-bottom: none;
+}
+
+.city-item.selected {
+    background-color: #e3f2fd;
+    border-left: 4px solid #25d366;
+}
+
+.city-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.city-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+}
+
+.city-meta {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.city-content {
+    color: #555;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.city-link {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.city-link:hover {
+    text-decoration: underline;
+}
+
+.primary-badge {
+    background-color: #ffc107;
+    color: #000;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+/* Formulário de cidade */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #25d366;
+    box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-group .hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* Estados vazios */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.empty-state.loading {
+    color: #25d366;
+}
+
+/* Informações da cidade selecionada */
+.city-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-left: 4px solid #25d366;
+}
+
+.city-info h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.city-info .info-row {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.city-info .info-label {
+    font-weight: 600;
+    color: #555;
+}
+
+.city-info .info-value {
+    color: #333;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .button-group {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .city-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .primary-badge {
+        margin-left: 0;
+        margin-top: 5px;
+    }
+}
+
+/* Estados especiais */
+.city-item.primary {
+    background-color: #fff8e1;
+    border-left-color: #ffc107;
+}
+
+.city-item.primary:hover {
+    background-color: #fff3c4;
+}
+
+.city-item.primary.selected {
+    background-color: #e8f5e8;
+    border-left-color: #25d366;
+}
+
+/* Animações */
+.city-item {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

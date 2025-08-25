@@ -7,6 +7,7 @@
     <title>Configurações - Jubileu</title>
     <link rel="stylesheet" href="../css/globalCss.css">
     <link rel="stylesheet" href="../css/config.css">
+    <link rel="stylesheet" href="../css/city.css">
 </head>
 
 
@@ -72,11 +73,48 @@
             </div>
         </div>
 
-        <!-- Outras seções (placeholder) -->
+        <!-- Seção de Cidades -->
         <div id="cities-section" class="section">
             <div class="content-header">
                 <h1>Gerenciar Cidades</h1>
-                <p>Em desenvolvimento...</p>
+                <p>Adicione, edite e gerencie as cidades do sistema</p>
+            </div>
+
+            <!-- Lista de Cidades -->
+            <div class="cities-list" id="cities-list">
+                <div class="empty-state">Carregando cidades...</div>
+            </div>
+
+            <!-- Formulário de Cidade -->
+            <div class="form-group">
+                <label for="city-name">Nome da Cidade *:</label>
+                <input type="text" id="city-name" placeholder="Digite o nome da cidade..." maxlength="100">
+            </div>
+
+            <div class="form-group">
+                <label for="city-link">Link (opcional):</label>
+                <input type="url" id="city-link" placeholder="https://exemplo.com">
+                <div class="hint">Link relacionado à cidade (opcional)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="city-message">Mensagem (opcional):</label>
+                <textarea id="city-message" placeholder="Digite uma mensagem sobre a cidade..." rows="4"></textarea>
+                <div class="hint">Informações adicionais sobre a cidade</div>
+            </div>
+
+            <div class="form-group">
+                <label for="city-date">Data (opcional):</label>
+                <input type="text" id="city-date" placeholder="Ex: 2024-01-15">
+                <div class="hint">Data relacionada à cidade ou evento</div>
+            </div>
+
+            <div class="button-group">
+                <button id="btn-save-city" class="btn btn-primary">Salvar Cidade</button>
+                <button id="btn-clear-form" class="btn btn-secondary">Limpar</button>
+                <button id="btn-set-primary" class="btn btn-primary" style="display: none;">Definir como
+                    Primária</button>
+                <button id="btn-delete-city" class="btn btn-danger" style="display: none;">Excluir</button>
             </div>
         </div>
 
@@ -104,6 +142,7 @@
 
     <script src="../guiConfig/configRenderer.js"></script>
     <script src="../guiScripts/messageRenderer.js"></script>
+    <script src="../guiScripts/cityRenderer.js"></script>
 
 </body>
 
