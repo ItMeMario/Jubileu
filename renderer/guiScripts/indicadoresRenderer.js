@@ -38,11 +38,18 @@ class IndicadoresRenderer {
       } else if (e.target.id === "btn-export-txt") {
         this.exportToTxt();
       } else if (e.target.id === "btn-clear-stats") {
-        this.confirmClearStatistics();
+        this.showClearConfirmationModal();
       } else if (e.target.id === "btn-view-hourly") {
         this.toggleView("hourly");
       } else if (e.target.id === "btn-view-complete") {
         this.toggleView("complete");
+      } else if (e.target.id === "modal-confirm-clear") {
+        this.handleFinalConfirmation();
+      } else if (
+        e.target.id === "modal-cancel-clear" ||
+        e.target.classList.contains("modal-overlay")
+      ) {
+        this.closeClearModal();
       }
     });
   }
@@ -138,37 +145,76 @@ class IndicadoresRenderer {
     }
   }
 
-  async confirmClearStatistics() {
+  // Nova implementação do modal de confirmação
+  showClearConfirmationModal() {
     if (this.isLoading) return;
 
-    const confirmed = confirm(
-      "Tem certeza que deseja limpar todas as estatísticas?\n\n" +
-        "Esta ação não pode ser desfeita!"
-    );
+    const modal = document.createElement("div");
+    modal.id = "clear-confirmation-modal";
+    modal.className = "modal-overlay";
 
-    if (confirmed) {
-      const doubleConfirmed = confirm(
-        "CONFIRMAÇÃO FINAL:\n\n" +
-          'Digite "CONFIRMAR" na próxima tela para prosseguir.\n' +
-          "Deseja continuar?"
-      );
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>⚠️ Confirmação de Limpeza</h3>
+        </div>
+        <div class="modal-body">
+          <p><strong>Tem certeza que deseja limpar todas as estatísticas?</strong></p>
+          <p>Esta ação não pode ser desfeita!</p>
+          <br>
+          <p>Para confirmar, digite <strong>"CONFIRMAR"</strong> (em maiúsculas) no campo abaixo:</p>
+          <input type="text" id="confirmation-input" placeholder="Digite CONFIRMAR" maxlength="9">
+          <div id="confirmation-error" class="error-message" style="display: none;">
+            Você deve digitar exatamente "CONFIRMAR" para prosseguir.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="modal-cancel-clear" class="btn btn-secondary">Cancelar</button>
+          <button id="modal-confirm-clear" class="btn btn-danger">Confirmar Limpeza</button>
+        </div>
+      </div>
+    `;
 
-      if (doubleConfirmed) {
-        const finalConfirmation = prompt(
-          'Digite "CONFIRMAR" (em maiúsculas) para limpar as estatísticas:'
-        );
+    document.body.appendChild(modal);
 
-        if (finalConfirmation === "CONFIRMAR") {
-          await this.clearStatistics();
-        } else {
-          this.showStatus(
-            "Operação cancelada - confirmação incorreta",
-            "warning"
-          );
-        }
-      } else {
-        this.showStatus("Operação cancelada pelo usuário", "warning");
+    // Foca no input
+    setTimeout(() => {
+      const input = document.getElementById("confirmation-input");
+      if (input) {
+        input.focus();
+        // Permite confirmar com Enter
+        input.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            this.handleFinalConfirmation();
+          }
+        });
       }
+    }, 100);
+  }
+
+  handleFinalConfirmation() {
+    const input = document.getElementById("confirmation-input");
+    const errorDiv = document.getElementById("confirmation-error");
+
+    if (!input) return;
+
+    const value = input.value.trim();
+
+    if (value === "CONFIRMAR") {
+      this.closeClearModal();
+      this.clearStatistics();
+    } else {
+      errorDiv.style.display = "block";
+      input.style.borderColor = "#dc3545";
+      input.focus();
+      input.select();
+    }
+  }
+
+  closeClearModal() {
+    const modal = document.getElementById("clear-confirmation-modal");
+    if (modal) {
+      modal.remove();
     }
   }
 
