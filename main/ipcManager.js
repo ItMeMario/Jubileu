@@ -3,6 +3,7 @@ const WhatsAppHandlers = require("./ipc/whatsAppHandlers");
 const ConfigHandlers = require("./ipc/configHandlers");
 const MessageHandlers = require("./ipc/messageHandlers");
 const CityHandlers = require("./ipc/cityHandlers");
+const IndicadoresHandlers = require("./ipc/indicadoresHandlers");
 
 class IPCManager {
   constructor() {
@@ -11,6 +12,7 @@ class IPCManager {
       config: null,
       message: null,
       city: null,
+      indicadores: null,
     };
   }
 
@@ -21,6 +23,7 @@ class IPCManager {
       this.handlers.config = new ConfigHandlers();
       this.handlers.message = new MessageHandlers();
       this.handlers.city = new CityHandlers();
+      this.handlers.indicadores = new IndicadoresHandlers();
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -33,6 +36,9 @@ class IPCManager {
 
       // Registra handlers de cidades
       this.registerCityHandlers();
+
+      // Registra handlers de indicadores
+      this.registerIndicadoresHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -189,6 +195,36 @@ class IPCManager {
     console.log("Handlers de cidade registrados");
   }
 
+  registerIndicadoresHandlers() {
+    // Handlers de indicadores
+    ipcMain.handle(
+      "indicadores-get-statistics",
+      this.handlers.indicadores.getStatistics.bind(this.handlers.indicadores)
+    );
+    ipcMain.handle(
+      "indicadores-get-hourly-statistics",
+      this.handlers.indicadores.getHourlyStatistics.bind(
+        this.handlers.indicadores
+      )
+    );
+    ipcMain.handle(
+      "indicadores-get-summary-statistics",
+      this.handlers.indicadores.getSummaryStatistics.bind(
+        this.handlers.indicadores
+      )
+    );
+    ipcMain.handle(
+      "indicadores-clear-statistics",
+      this.handlers.indicadores.clearStatistics.bind(this.handlers.indicadores)
+    );
+    ipcMain.handle(
+      "indicadores-export-to-txt",
+      this.handlers.indicadores.exportToTxt.bind(this.handlers.indicadores)
+    );
+
+    console.log("Handlers de indicadores registrados");
+  }
+
   // Método para limpar todos os handlers (útil para testes ou reinicialização)
   removeAllHandlers() {
     const events = [
@@ -225,6 +261,13 @@ class IPCManager {
       "city-set-primary",
       "city-get-primary",
       "city-get-by-id",
+
+      // Indicadores events
+      "indicadores-get-statistics",
+      "indicadores-get-hourly-statistics",
+      "indicadores-get-summary-statistics",
+      "indicadores-clear-statistics",
+      "indicadores-export-to-txt",
     ];
 
     events.forEach((event) => {
