@@ -60,12 +60,5 @@ contextBridge.exposeInMainWorld("modoDevAPI", {
     }
   },
 
-  getDetailedStatus: async () => {
-    try {
-      return await ipcRenderer.invoke("modo-dev-get-detailed-status");
-    } catch (error) {
-      console.error("Erro ao obter status detalhado:", error);
-      return { success: false, error: error.message };
-    }
-  },
+  // REMOVIDO: getDetailedStatus - não será mais usado
 });

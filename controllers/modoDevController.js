@@ -161,7 +161,6 @@ async function toggleGroupMode(rl) {
 
   await modoDevView.waitForEnter(rl);
 }
-
 // ========== MÉTODOS PARA GUI ==========
 
 async function toggleDevMode() {
@@ -214,15 +213,6 @@ async function getCurrentMode() {
   }
 }
 
-async function getDetailedStatus() {
-  try {
-    const status = await modoDevService.getDetailedStatus();
-    return { success: true, data: status };
-  } catch (error) {
-    console.error("Erro ao obter status detalhado:", error);
-    return { success: false, error: error.message };
-  }
-}
 
 async function toggleGroupMode() {
   try {
@@ -230,8 +220,10 @@ async function toggleGroupMode() {
     const currentMode = groupService.getCurrentMode();
     const newMode = currentMode === "SINGLE" ? "MULTI" : "SINGLE";
 
+    // Realizar a alteração
     await groupService.setMode(newMode);
 
+    // Se mudou para SINGLE e não há grupo primário, definir o primeiro como primário
     if (newMode === "SINGLE") {
       const groups = await groupService.getAllGroups();
       if (groups.length > 0 && !groups.some((g) => g.isPrimary)) {
@@ -255,12 +247,11 @@ async function toggleGroupMode() {
 
 module.exports = {
   handleModoDevMenu,
-  // Métodos GUI
+  // Métodos GUI - ATUALIZADO: removido getDetailedStatus
   toggleDevMode,
   toggleDebugMode,
   setScoutTime,
   getScoutConfig,
   getCurrentMode,
-  getDetailedStatus,
   toggleGroupMode,
 };

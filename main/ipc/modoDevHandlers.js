@@ -27,11 +27,19 @@ class ModoDevHandlers {
     }
   }
 
-  // Configurar tempo do Scout
+  // Configurar tempo do Scout - CORRIGIDO: removido parâmetro event desnecessário
   async setScoutTime(event, timeInput) {
     try {
       console.log("Configurando tempo do Scout:", timeInput);
-      return await modoDevController.setScoutTime(timeInput);
+      // Validação básica antes de enviar para o controller
+      if (
+        !timeInput ||
+        typeof timeInput !== "string" ||
+        timeInput.trim() === ""
+      ) {
+        return { success: false, error: "Tempo é obrigatório" };
+      }
+      return await modoDevController.setScoutTime(timeInput.trim());
     } catch (error) {
       console.error("Erro ao configurar Scout:", error);
       return { success: false, error: error.message };
@@ -59,23 +67,28 @@ class ModoDevHandlers {
       return { success: false, error: error.message };
     }
   }
-
-  // Obter status detalhado
-  async getDetailedStatus() {
-    try {
-      console.log("Obtendo status detalhado...");
-      return await modoDevController.getDetailedStatus();
-    } catch (error) {
-      console.error("Erro ao obter status detalhado:", error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  // Alternar modo de grupo (SINGLE/MULTI)
+  // Alternar modo de grupo (SINGLE/MULTI) - CORRIGIDO: melhor tratamento de erros
   async toggleGroupMode() {
     try {
       console.log("Alternando modo de grupo...");
-      return await modoDevController.toggleGroupMode();
+      const result = await modoDevController.toggleGroupMode();
+
+      // Garantir que sempre retornamos uma estrutura consistente
+      if (result && result.success) {
+        return {
+          success: true,
+          data: {
+            previousMode: result.data.previousMode,
+            currentMode: result.data.currentMode,
+            message: result.data.message,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          error: result?.error || "Erro desconhecido ao alternar modo de grupo",
+        };
+      }
     } catch (error) {
       console.error("Erro ao alternar modo de grupo:", error);
       return { success: false, error: error.message };

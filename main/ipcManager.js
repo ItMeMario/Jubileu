@@ -253,10 +253,7 @@ class IPCManager {
       "modo-dev-get-current-mode",
       this.handlers.modoDev.getCurrentMode.bind(this.handlers.modoDev)
     );
-    ipcMain.handle(
-      "modo-dev-get-detailed-status",
-      this.handlers.modoDev.getDetailedStatus.bind(this.handlers.modoDev)
-    );
+    // REMOVIDO: modo-dev-get-detailed-status - não será mais usado
     ipcMain.handle(
       "modo-dev-toggle-group-mode",
       this.handlers.modoDev.toggleGroupMode.bind(this.handlers.modoDev)
@@ -265,7 +262,8 @@ class IPCManager {
     console.log("Handlers de modo dev registrados");
   }
 
-  // MÃ©todo para limpar todos os handlers (Ãºtil para testes ou reinicializaÃ§Ã£o)
+  
+  // Método para limpar todos os handlers (útil para testes ou reinicialização)
   removeAllHandlers() {
     const events = [
       // WhatsApp events
@@ -309,13 +307,13 @@ class IPCManager {
       "indicadores-clear-statistics",
       "indicadores-export-to-txt",
 
-      // Modo Dev events
+      // Modo Dev events - ATUALIZADO: removido evento detailed-status
       "modo-dev-toggle-dev-mode",
       "modo-dev-toggle-debug-mode",
       "modo-dev-set-scout-time",
       "modo-dev-get-scout-config",
       "modo-dev-get-current-mode",
-      "modo-dev-get-detailed-status",
+      // REMOVIDO: "modo-dev-get-detailed-status",
       "modo-dev-toggle-group-mode",
     ];
 

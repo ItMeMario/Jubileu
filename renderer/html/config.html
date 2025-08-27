@@ -132,19 +132,19 @@
             </div>
         </div>
 
-        <!-- Seção de Modo Dev -->
+        <!-- Seção de Modo Dev - LIMPA -->
         <div id="dev-mode-section" class="section">
             <div class="content-header">
                 <h1>🔧 Modo Dev</h1>
                 <p>Configure e monitore o ambiente de desenvolvimento</p>
             </div>
-
+        
             <!-- Loading indicator -->
             <div id="modo-dev-loading" class="loading-state" style="display: none;">
                 <div class="spinner"></div>
                 <p>Carregando...</p>
             </div>
-
+        
             <!-- Status Overview -->
             <div class="dev-status-overview">
                 <h3>📊 Status Atual</h3>
@@ -161,7 +161,7 @@
                             </button>
                         </div>
                     </div>
-
+        
                     <div class="status-card">
                         <div class="status-header">
                             <span class="status-icon">🐛</span>
@@ -174,7 +174,7 @@
                             </button>
                         </div>
                     </div>
-
+        
                     <div class="status-card">
                         <div class="status-header">
                             <span class="status-icon">👥</span>
@@ -182,14 +182,14 @@
                         </div>
                         <div class="status-info">
                             <button id="btn-toggle-group-mode" class="btn btn-toggle">
-                                Alternar Modo de Grupo
+                                Carregando...
                             </button>
                             <div class="hint">SINGLE = só grupo primário | MULTI = todos os grupos</div>
                         </div>
                     </div>
                 </div>
             </div>
-
+        
             <!-- Scout Configuration -->
             <div class="dev-scout-config">
                 <h3>⏱️ Configuração do Scout</h3>
@@ -212,54 +212,7 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Detailed Status -->
-            <div class="dev-detailed-status">
-                <h3>📋 Informações Detalhadas</h3>
-                <div class="detailed-status-card">
-                    <div class="detailed-header">
-                        <span>Status do Sistema</span>
-                        <button id="btn-refresh-status" class="btn btn-secondary btn-small">
-                            🔄 Atualizar
-                        </button>
-                    </div>
-                    <div id="detailed-status-info" class="status-content">
-                        <div class="loading-placeholder">Carregando informações...</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="dev-quick-actions">
-                <h3>⚡ Ações Rápidas</h3>
-                <div class="quick-actions-grid">
-                    <div class="action-card">
-                        <div class="action-icon">🔄</div>
-                        <div class="action-content">
-                            <h4>Reiniciar Configurações</h4>
-                            <p>Recarrega todas as configurações do modo dev</p>
-                            <button onclick="window.modoDevRenderer?.loadInitialData()"
-                                class="btn btn-secondary btn-small">
-                                Recarregar
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="action-card">
-                        <div class="action-icon">📊</div>
-                        <div class="action-content">
-                            <h4>Ver Status Completo</h4>
-                            <p>Exibe informações detalhadas do sistema</p>
-                            <button onclick="window.modoDevRenderer?.loadCurrentStatus()"
-                                class="btn btn-secondary btn-small">
-                                Verificar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
-
         <!-- Seção de Banco de Dados -->
         <div id="database-section" class="section">
             <div class="content-header">

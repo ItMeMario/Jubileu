@@ -21,7 +21,6 @@ class ModoDevRenderer {
 
     // Scout configuration
     const scoutForm = document.getElementById("scout-form");
-    const refreshStatusBtn = document.getElementById("btn-refresh-status");
 
     if (toggleDevBtn) {
       toggleDevBtn.addEventListener("click", () => this.handleToggleDevMode());
@@ -45,11 +44,7 @@ class ModoDevRenderer {
       );
     }
 
-    if (refreshStatusBtn) {
-      refreshStatusBtn.addEventListener("click", () =>
-        this.loadCurrentStatus()
-      );
-    }
+    // REMOVIDO: refreshStatusBtn - não será mais usado
   }
 
   async loadInitialData() {
@@ -70,19 +65,14 @@ class ModoDevRenderer {
         throw new Error("modoDevAPI não está disponível");
       }
 
-      const [statusResult, modeResult] = await Promise.all([
-        window.modoDevAPI.getDetailedStatus(),
-        window.modoDevAPI.getCurrentMode(),
-      ]);
+      // CORRIGIDO: Removido getDetailedStatus, usando apenas getCurrentMode
+      const modeResult = await window.modoDevAPI.getCurrentMode();
 
-      if (statusResult.success && modeResult.success) {
-        this.currentStatus = {
-          ...statusResult.data,
-          ...modeResult.data,
-        };
+      if (modeResult.success) {
+        this.currentStatus = modeResult.data;
         this.updateStatusDisplay();
       } else {
-        throw new Error(statusResult.error || modeResult.error);
+        throw new Error(modeResult.error);
       }
     } catch (error) {
       console.error("Erro ao carregar status:", error);
@@ -130,8 +120,7 @@ class ModoDevRenderer {
       this.currentStatus.debugEnabled ? "Debug: ATIVO" : "Debug: INATIVO"
     );
 
-    // Atualizar informações detalhadas
-    this.updateDetailedInfo();
+    // REMOVIDO: updateDetailedInfo - não será mais usado
   }
 
   updateStatusIndicator(elementId, isActive) {
@@ -154,29 +143,6 @@ class ModoDevRenderer {
         text.includes("DESENVOLVIMENTO") || text.includes("ATIVO")
       );
     }
-  }
-
-  updateDetailedInfo() {
-    const detailedInfoDiv = document.getElementById("detailed-status-info");
-    if (!detailedInfoDiv || !this.currentStatus) return;
-
-    const info = [
-      `<strong>Modo:</strong> ${
-        this.currentStatus.isDevMode ? "Desenvolvimento" : "Produção"
-      }`,
-      `<strong>Debug:</strong> ${
-        this.currentStatus.debugEnabled ? "Ativo" : "Inativo"
-      }`,
-    ];
-
-    // Adicionar informações do grupo se disponível
-    if (this.currentStatus.groupMode) {
-      info.push(
-        `<strong>Modo de Grupo:</strong> ${this.currentStatus.groupMode}`
-      );
-    }
-
-    detailedInfoDiv.innerHTML = info.join("<br>");
   }
 
   updateScoutConfigDisplay(scoutConfig) {
@@ -264,14 +230,8 @@ class ModoDevRenderer {
   async handleToggleGroupMode() {
     if (this.isLoading) return;
 
-    const confirmMsg =
-      "Tem certeza que deseja alterar o modo de grupo?\n\n" +
-      "SINGLE: Usará apenas o grupo primário\n" +
-      "MULTI: Usará todos os grupos cadastrados";
-
-    if (!confirm(confirmMsg)) {
-      return;
-    }
+    // CORRIGIDO: Substituído confirm() por um modal customizado ou removido a confirmação
+    // O confirm() causa problemas no Electron por bloquear o thread principal
 
     try {
       this.isLoading = true;
@@ -285,6 +245,12 @@ class ModoDevRenderer {
           `Modo alterado de ${previousMode} para ${currentMode}`
         );
         await this.loadCurrentStatus();
+
+        // Atualizar o texto do botão para mostrar o modo atual
+        const groupBtn = document.getElementById("btn-toggle-group-mode");
+        if (groupBtn) {
+          groupBtn.textContent = `Modo: ${currentMode}`;
+        }
       } else {
         this.showError(result.error || "Erro ao alternar modo de grupo");
       }
@@ -345,7 +311,7 @@ class ModoDevRenderer {
     const loadingDiv = document.getElementById("modo-dev-loading");
     if (loadingDiv) {
       if (show) {
-        loadingDiv.innerHTML = `<div class="loading"></div> ${message}`;
+        loadingDiv.innerHTML = `<div class="spinner"></div><p>${message}</p>`;
         loadingDiv.style.display = "block";
       } else {
         loadingDiv.style.display = "none";
@@ -378,6 +344,8 @@ class ModoDevRenderer {
   getCurrentStatus() {
     return this.currentStatus;
   }
+
+  // REMOVIDO: Métodos das ações rápidas que não serão mais usados
 }
 
 // Inicializar quando o DOM estiver pronto
