@@ -4,6 +4,7 @@ const ConfigHandlers = require("./ipc/configHandlers");
 const MessageHandlers = require("./ipc/messageHandlers");
 const CityHandlers = require("./ipc/cityHandlers");
 const IndicadoresHandlers = require("./ipc/indicadoresHandlers");
+const ModoDevHandlers = require("./ipc/modoDevHandlers");
 
 class IPCManager {
   constructor() {
@@ -13,22 +14,24 @@ class IPCManager {
       message: null,
       city: null,
       indicadores: null,
+      modoDev: null,
     };
   }
 
   registerAllHandlers(modules) {
     try {
-      // Cria instâncias dos handlers com os módulos necessários
+      // Cria instÃ¢ncias dos handlers com os mÃ³dulos necessÃ¡rios
       this.handlers.whatsapp = new WhatsAppHandlers(modules);
       this.handlers.config = new ConfigHandlers();
       this.handlers.message = new MessageHandlers();
       this.handlers.city = new CityHandlers();
       this.handlers.indicadores = new IndicadoresHandlers();
+      this.handlers.modoDev = new ModoDevHandlers();
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
 
-      // Registra handlers de configuração
+      // Registra handlers de configuraÃ§Ã£o
       this.registerConfigHandlers();
 
       // Registra handlers de mensagens
@@ -39,6 +42,9 @@ class IPCManager {
 
       // Registra handlers de indicadores
       this.registerIndicadoresHandlers();
+
+      // Registra handlers de modo dev
+      this.registerModoDevHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -59,7 +65,7 @@ class IPCManager {
   }
 
   registerConfigHandlers() {
-    // Handlers básicos que já existem
+    // Handlers bÃ¡sicos que jÃ¡ existem
     ipcMain.handle(
       "open-config",
       this.handlers.config.openConfig.bind(this.handlers.config)
@@ -69,7 +75,7 @@ class IPCManager {
       this.handlers.config.closeWindow.bind(this.handlers.config)
     );
 
-    // Registra apenas métodos que existem no ConfigHandlers
+    // Registra apenas mÃ©todos que existem no ConfigHandlers
     this.registerConfigMethodIfExists(
       "getSystemConfig",
       "config-get-system-config"
@@ -108,12 +114,12 @@ class IPCManager {
       );
       console.log(`Registrado: ${ipcChannel}`);
     } else {
-      console.warn(`Método ${methodName} não encontrado em ConfigHandlers`);
+      console.warn(`MÃ©todo ${methodName} nÃ£o encontrado em ConfigHandlers`);
     }
   }
 
   registerMessageHandlers() {
-    // Handlers básicos de mensagens (que já existem)
+    // Handlers bÃ¡sicos de mensagens (que jÃ¡ existem)
     ipcMain.handle(
       "message-get-messages",
       this.handlers.message.getMessages.bind(this.handlers.message)
@@ -135,14 +141,14 @@ class IPCManager {
       this.handlers.message.getLastMessage.bind(this.handlers.message)
     );
 
-    // Registra métodos novos com verificação
+    // Registra mÃ©todos novos com verificaÃ§Ã£o
     this.registerMessageMethodIfExists("getMessageTypes", "message-get-types");
     this.registerMessageMethodIfExists(
       "getMessageLocales",
       "message-get-locales"
     );
 
-    // Mantém compatibilidade com método antigo
+    // MantÃ©m compatibilidade com mÃ©todo antigo
     this.registerMessageMethodIfExists(
       "getAvailableOptions",
       "message-get-available-options"
@@ -157,12 +163,12 @@ class IPCManager {
       );
       console.log(`Registrado: ${ipcChannel}`);
     } else {
-      console.warn(`Método ${methodName} não encontrado em MessageHandlers`);
+      console.warn(`MÃ©todo ${methodName} nÃ£o encontrado em MessageHandlers`);
     }
   }
 
   registerCityHandlers() {
-    // Handlers básicos de cidades
+    // Handlers bÃ¡sicos de cidades
     ipcMain.handle(
       "city-get-cities",
       this.handlers.city.getCities.bind(this.handlers.city)
@@ -225,7 +231,41 @@ class IPCManager {
     console.log("Handlers de indicadores registrados");
   }
 
-  // Método para limpar todos os handlers (útil para testes ou reinicialização)
+  registerModoDevHandlers() {
+    // Handlers de modo dev
+    ipcMain.handle(
+      "modo-dev-toggle-dev-mode",
+      this.handlers.modoDev.toggleDevMode.bind(this.handlers.modoDev)
+    );
+    ipcMain.handle(
+      "modo-dev-toggle-debug-mode",
+      this.handlers.modoDev.toggleDebugMode.bind(this.handlers.modoDev)
+    );
+    ipcMain.handle(
+      "modo-dev-set-scout-time",
+      this.handlers.modoDev.setScoutTime.bind(this.handlers.modoDev)
+    );
+    ipcMain.handle(
+      "modo-dev-get-scout-config",
+      this.handlers.modoDev.getScoutConfig.bind(this.handlers.modoDev)
+    );
+    ipcMain.handle(
+      "modo-dev-get-current-mode",
+      this.handlers.modoDev.getCurrentMode.bind(this.handlers.modoDev)
+    );
+    ipcMain.handle(
+      "modo-dev-get-detailed-status",
+      this.handlers.modoDev.getDetailedStatus.bind(this.handlers.modoDev)
+    );
+    ipcMain.handle(
+      "modo-dev-toggle-group-mode",
+      this.handlers.modoDev.toggleGroupMode.bind(this.handlers.modoDev)
+    );
+
+    console.log("Handlers de modo dev registrados");
+  }
+
+  // MÃ©todo para limpar todos os handlers (Ãºtil para testes ou reinicializaÃ§Ã£o)
   removeAllHandlers() {
     const events = [
       // WhatsApp events
@@ -268,6 +308,15 @@ class IPCManager {
       "indicadores-get-summary-statistics",
       "indicadores-clear-statistics",
       "indicadores-export-to-txt",
+
+      // Modo Dev events
+      "modo-dev-toggle-dev-mode",
+      "modo-dev-toggle-debug-mode",
+      "modo-dev-set-scout-time",
+      "modo-dev-get-scout-config",
+      "modo-dev-get-current-mode",
+      "modo-dev-get-detailed-status",
+      "modo-dev-toggle-group-mode",
     ];
 
     events.forEach((event) => {
@@ -275,7 +324,7 @@ class IPCManager {
     });
   }
 
-  // Método para obter handler específico (útil para debug)
+  // MÃ©todo para obter handler especÃ­fico (Ãºtil para debug)
   getHandler(type) {
     return this.handlers[type];
   }

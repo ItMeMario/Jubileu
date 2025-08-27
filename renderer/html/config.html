@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="../css/config.css">
     <link rel="stylesheet" href="../css/city.css">
     <link rel="stylesheet" href="../css/indicadores.css">
+    <link rel="stylesheet" href="../css/modoDev.css">
 </head>
 
 
@@ -131,13 +132,135 @@
             </div>
         </div>
 
+        <!-- Seção de Modo Dev -->
         <div id="dev-mode-section" class="section">
             <div class="content-header">
-                <h1>Modo Dev</h1>
-                <p>Em desenvolvimento...</p>
+                <h1>🔧 Modo Dev</h1>
+                <p>Configure e monitore o ambiente de desenvolvimento</p>
+            </div>
+
+            <!-- Loading indicator -->
+            <div id="modo-dev-loading" class="loading-state" style="display: none;">
+                <div class="spinner"></div>
+                <p>Carregando...</p>
+            </div>
+
+            <!-- Status Overview -->
+            <div class="dev-status-overview">
+                <h3>📊 Status Atual</h3>
+                <div class="status-grid">
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-icon">🚀</span>
+                            <h4>Modo de Execução</h4>
+                            <span id="dev-mode-indicator" class="status-indicator">○</span>
+                        </div>
+                        <div class="status-info">
+                            <button id="btn-toggle-dev-mode" class="btn btn-toggle">
+                                Modo: Carregando...
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-icon">🐛</span>
+                            <h4>Debug</h4>
+                            <span id="debug-mode-indicator" class="status-indicator">○</span>
+                        </div>
+                        <div class="status-info">
+                            <button id="btn-toggle-debug-mode" class="btn btn-toggle">
+                                Debug: Carregando...
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-icon">👥</span>
+                            <h4>Modo de Grupo</h4>
+                        </div>
+                        <div class="status-info">
+                            <button id="btn-toggle-group-mode" class="btn btn-toggle">
+                                Alternar Modo de Grupo
+                            </button>
+                            <div class="hint">SINGLE = só grupo primário | MULTI = todos os grupos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scout Configuration -->
+            <div class="dev-scout-config">
+                <h3>⏱️ Configuração do Scout</h3>
+                <div class="scout-config-card">
+                    <form id="scout-form" class="scout-form">
+                        <div class="form-group">
+                            <label for="scout-time-input">Tempo do Scout:</label>
+                            <input type="text" id="scout-time-input" placeholder="HH:MM:SS (ex: 01:30:45)"
+                                pattern="^([01]?[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$" title="Formato: HH:MM:SS">
+                            <div class="hint">Formato: Horas:Minutos:Segundos</div>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">
+                                💾 Salvar Configuração
+                            </button>
+                        </div>
+                    </form>
+                    <div id="current-scout-info" class="current-config">
+                        Tempo atual: Carregando...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Status -->
+            <div class="dev-detailed-status">
+                <h3>📋 Informações Detalhadas</h3>
+                <div class="detailed-status-card">
+                    <div class="detailed-header">
+                        <span>Status do Sistema</span>
+                        <button id="btn-refresh-status" class="btn btn-secondary btn-small">
+                            🔄 Atualizar
+                        </button>
+                    </div>
+                    <div id="detailed-status-info" class="status-content">
+                        <div class="loading-placeholder">Carregando informações...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="dev-quick-actions">
+                <h3>⚡ Ações Rápidas</h3>
+                <div class="quick-actions-grid">
+                    <div class="action-card">
+                        <div class="action-icon">🔄</div>
+                        <div class="action-content">
+                            <h4>Reiniciar Configurações</h4>
+                            <p>Recarrega todas as configurações do modo dev</p>
+                            <button onclick="window.modoDevRenderer?.loadInitialData()"
+                                class="btn btn-secondary btn-small">
+                                Recarregar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-card">
+                        <div class="action-icon">📊</div>
+                        <div class="action-content">
+                            <h4>Ver Status Completo</h4>
+                            <p>Exibe informações detalhadas do sistema</p>
+                            <button onclick="window.modoDevRenderer?.loadCurrentStatus()"
+                                class="btn btn-secondary btn-small">
+                                Verificar
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
+        <!-- Seção de Banco de Dados -->
         <div id="database-section" class="section">
             <div class="content-header">
                 <h1>Banco de Dados</h1>
@@ -150,6 +273,7 @@
     <script src="../guiScripts/messageRenderer.js"></script>
     <script src="../guiScripts/cityRenderer.js"></script>
     <script src="../guiScripts/indicadoresRenderer.js"></script>
+    <script src="../guiScripts/modoDevRenderer.js"></script>
 
 </body>
 

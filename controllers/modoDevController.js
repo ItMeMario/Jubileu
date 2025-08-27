@@ -162,6 +162,105 @@ async function toggleGroupMode(rl) {
   await modoDevView.waitForEnter(rl);
 }
 
+// ========== MÉTODOS PARA GUI ==========
+
+async function toggleDevMode() {
+  try {
+    return await modoDevService.toggleDevMode();
+  } catch (error) {
+    console.error("Erro ao alternar modo Dev:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function toggleDebugMode() {
+  try {
+    return await modoDevService.toggleDebugMode();
+  } catch (error) {
+    console.error("Erro ao alternar modo debug:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function setScoutTime(timeInput) {
+  try {
+    if (!timeInput || timeInput.trim() === "") {
+      return { success: false, error: "Tempo é obrigatório" };
+    }
+    return await modoDevService.setScoutTime(timeInput);
+  } catch (error) {
+    console.error("Erro ao configurar Scout:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function getScoutConfig() {
+  try {
+    const config = await modoDevService.getScoutConfig();
+    return { success: true, data: config };
+  } catch (error) {
+    console.error("Erro ao obter configuração do Scout:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function getCurrentMode() {
+  try {
+    const mode = await modoDevService.getCurrentMode();
+    return { success: true, data: mode };
+  } catch (error) {
+    console.error("Erro ao obter modo atual:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function getDetailedStatus() {
+  try {
+    const status = await modoDevService.getDetailedStatus();
+    return { success: true, data: status };
+  } catch (error) {
+    console.error("Erro ao obter status detalhado:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function toggleGroupMode() {
+  try {
+    const groupService = require("../services/groupService");
+    const currentMode = groupService.getCurrentMode();
+    const newMode = currentMode === "SINGLE" ? "MULTI" : "SINGLE";
+
+    await groupService.setMode(newMode);
+
+    if (newMode === "SINGLE") {
+      const groups = await groupService.getAllGroups();
+      if (groups.length > 0 && !groups.some((g) => g.isPrimary)) {
+        await groupService.setPrimaryGroup(groups[0].id);
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        previousMode: currentMode,
+        currentMode: newMode,
+        message: `Modo alterado para ${newMode}`,
+      },
+    };
+  } catch (error) {
+    console.error("Erro ao alternar modo de grupo:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   handleModoDevMenu,
+  // Métodos GUI
+  toggleDevMode,
+  toggleDebugMode,
+  setScoutTime,
+  getScoutConfig,
+  getCurrentMode,
+  getDetailedStatus,
+  toggleGroupMode,
 };
