@@ -51,9 +51,17 @@ class ModoDevRenderer {
     try {
       this.showLoading(true);
       await Promise.all([this.loadCurrentStatus(), this.loadScoutConfig()]);
+
+      // ADICIONADO: Fallback para garantir que o modo de grupo seja carregado
+      if (!this.currentStatus?.groupMode) {
+        await this.loadGroupModeOnly();
+      }
     } catch (error) {
       console.error("Erro ao carregar dados iniciais:", error);
       this.showError("Erro ao carregar configurações do modo dev");
+
+      // Tentar carregar pelo menos o modo de grupo como fallback
+      await this.loadGroupModeOnly();
     } finally {
       this.showLoading(false);
     }
@@ -96,10 +104,37 @@ class ModoDevRenderer {
     }
   }
 
+  
+  async loadGroupModeOnly() {
+    try {
+      // Como não temos um método específico, vamos fazer um toggle e voltar
+      // para descobrir o modo atual - isso é um hack, mas funciona
+      const result = await window.modoDevAPI.getCurrentMode();
+      if (result.success && result.data.groupMode) {
+        if (!this.currentStatus) {
+          this.currentStatus = {};
+        }
+        this.currentStatus.groupMode = result.data.groupMode;
+
+        const groupBtn = document.getElementById("btn-toggle-group-mode");
+        if (groupBtn) {
+          groupBtn.textContent = `Modo: ${result.data.groupMode}`;
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar modo de grupo:", error);
+      // Se falhar, definir um valor padrão
+      const groupBtn = document.getElementById("btn-toggle-group-mode");
+      if (groupBtn) {
+        groupBtn.textContent = "Alternar Modo de Grupo";
+      }
+    }
+  }
+
   updateStatusDisplay() {
     if (!this.currentStatus) return;
 
-    // Atualizar indicadores de status
+   
     this.updateStatusIndicator(
       "dev-mode-indicator",
       this.currentStatus.isDevMode
@@ -109,7 +144,7 @@ class ModoDevRenderer {
       this.currentStatus.debugEnabled
     );
 
-    // Atualizar textos dos botões
+   
     this.updateToggleButtonText(
       "btn-toggle-dev-mode",
       this.currentStatus.isDevMode ? "Modo: DESENVOLVIMENTO" : "Modo: PRODUÇÃO"
@@ -120,7 +155,13 @@ class ModoDevRenderer {
       this.currentStatus.debugEnabled ? "Debug: ATIVO" : "Debug: INATIVO"
     );
 
-    // REMOVIDO: updateDetailedInfo - não será mais usado
+    
+    if (this.currentStatus.groupMode) {
+      this.updateToggleButtonText(
+        "btn-toggle-group-mode",
+        `Modo: ${this.currentStatus.groupMode}`
+      );
+    }
   }
 
   updateStatusIndicator(elementId, isActive) {
@@ -230,9 +271,6 @@ class ModoDevRenderer {
   async handleToggleGroupMode() {
     if (this.isLoading) return;
 
-    // CORRIGIDO: Substituído confirm() por um modal customizado ou removido a confirmação
-    // O confirm() causa problemas no Electron por bloquear o thread principal
-
     try {
       this.isLoading = true;
       this.showLoading(true, "Alternando modo de grupo...");
@@ -246,7 +284,7 @@ class ModoDevRenderer {
         );
         await this.loadCurrentStatus();
 
-        // Atualizar o texto do botão para mostrar o modo atual
+       
         const groupBtn = document.getElementById("btn-toggle-group-mode");
         if (groupBtn) {
           groupBtn.textContent = `Modo: ${currentMode}`;
@@ -345,7 +383,7 @@ class ModoDevRenderer {
     return this.currentStatus;
   }
 
-  // REMOVIDO: Métodos das ações rápidas que não serão mais usados
+
 }
 
 // Inicializar quando o DOM estiver pronto

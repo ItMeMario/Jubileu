@@ -206,12 +206,24 @@ async function getScoutConfig() {
 async function getCurrentMode() {
   try {
     const mode = await modoDevService.getCurrentMode();
-    return { success: true, data: mode };
+    
+   
+    const groupService = require("../services/groupService");
+    const groupMode = groupService.getCurrentMode();
+    
+    return { 
+      success: true, 
+      data: {
+        ...mode,
+        groupMode: groupMode
+      }
+    };
   } catch (error) {
     console.error("Erro ao obter modo atual:", error);
     return { success: false, error: error.message };
   }
 }
+
 
 
 async function toggleGroupMode() {
@@ -220,7 +232,7 @@ async function toggleGroupMode() {
     const currentMode = groupService.getCurrentMode();
     const newMode = currentMode === "SINGLE" ? "MULTI" : "SINGLE";
 
-    // Realizar a alteração
+
     await groupService.setMode(newMode);
 
     // Se mudou para SINGLE e não há grupo primário, definir o primeiro como primário
@@ -247,7 +259,7 @@ async function toggleGroupMode() {
 
 module.exports = {
   handleModoDevMenu,
-  // Métodos GUI - ATUALIZADO: removido getDetailedStatus
+
   toggleDevMode,
   toggleDebugMode,
   setScoutTime,
