@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="../css/city.css">
     <link rel="stylesheet" href="../css/indicadores.css">
     <link rel="stylesheet" href="../css/modoDev.css">
+    <link rel="stylesheet" href="../css/dataBase.css">
 </head>
-
 
 <body>
     <div class="sidebar">
@@ -138,13 +138,13 @@
                 <h1>🔧 Modo Dev</h1>
                 <p>Configure e monitore o ambiente de desenvolvimento</p>
             </div>
-        
+
             <!-- Loading indicator -->
             <div id="modo-dev-loading" class="loading-state" style="display: none;">
                 <div class="spinner"></div>
                 <p>Carregando...</p>
             </div>
-        
+
             <!-- Status Overview -->
             <div class="dev-status-overview">
                 <h3>📊 Status Atual</h3>
@@ -161,10 +161,10 @@
                             </button>
                         </div>
                     </div>
-        
+
                     <div class="status-card">
                         <div class="status-header">
-                            <span class="status-icon">🐛</span>
+                            <span class="status-icon">🛞</span>
                             <h4>Debug</h4>
                             <span id="debug-mode-indicator" class="status-indicator">○</span>
                         </div>
@@ -174,7 +174,7 @@
                             </button>
                         </div>
                     </div>
-        
+
                     <div class="status-card">
                         <div class="status-header">
                             <span class="status-icon">👥</span>
@@ -189,7 +189,7 @@
                     </div>
                 </div>
             </div>
-        
+
             <!-- Scout Configuration -->
             <div class="dev-scout-config">
                 <h3>⏱️ Configuração do Scout</h3>
@@ -213,12 +213,10 @@
                 </div>
             </div>
         </div>
+
         <!-- Seção de Banco de Dados -->
         <div id="database-section" class="section">
-            <div class="content-header">
-                <h1>Banco de Dados</h1>
-                <p>Em desenvolvimento...</p>
-            </div>
+            <!-- O conteúdo será gerado dinamicamente pelo dataBaseRenderer.js -->
         </div>
     </div>
 
@@ -227,6 +225,7 @@
     <script src="../guiScripts/cityRenderer.js"></script>
     <script src="../guiScripts/indicadoresRenderer.js"></script>
     <script src="../guiScripts/modoDevRenderer.js"></script>
+    <script src="../guiScripts/dataBaseRenderer.js"></script>
 
 </body>
 

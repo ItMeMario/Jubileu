@@ -135,6 +135,69 @@ contextBridge.exposeInMainWorld("modoDevAPI", {
   },
 });
 
+// ✅ NOVO: APIs de banco de dados
+contextBridge.exposeInMainWorld("databaseAPI", {
+  // Obter todas as tabelas do banco
+  getAllTables: async () => {
+    try {
+      return await ipcRenderer.invoke("database-get-all-tables");
+    } catch (error) {
+      console.error("Erro ao obter tabelas:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Obter informações de uma tabela específica
+  getTableInfo: async (tableName) => {
+    try {
+      return await ipcRenderer.invoke("database-get-table-info", tableName);
+    } catch (error) {
+      console.error("Erro ao obter informações da tabela:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Obter contagem de registros de todas as tabelas
+  getTableCounts: async () => {
+    try {
+      return await ipcRenderer.invoke("database-get-table-counts");
+    } catch (error) {
+      console.error("Erro ao obter contagens:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Obter informações gerais do banco
+  getDatabaseInfo: async () => {
+    try {
+      return await ipcRenderer.invoke("database-get-database-info");
+    } catch (error) {
+      console.error("Erro ao obter informações do banco:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Obter cidade primária
+  getPrimaryCity: async () => {
+    try {
+      return await ipcRenderer.invoke("database-get-primary-city");
+    } catch (error) {
+      console.error("Erro ao obter cidade primária:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Obter visão geral do banco (combinando várias informações)
+  getDatabaseOverview: async () => {
+    try {
+      return await ipcRenderer.invoke("database-get-overview");
+    } catch (error) {
+      console.error("Erro ao obter visão geral:", error);
+      return { success: false, error: error.message };
+    }
+  },
+});
+
 // ✅ MANTIDO: APIs de configuração existentes
 contextBridge.exposeInMainWorld("configAPI", {
   // Configurações gerais do sistema
@@ -186,7 +249,8 @@ contextBridge.exposeInMainWorld("debugAPI", {
     console.log("- window.configAPI:", typeof window.configAPI);
     console.log("- window.messageAPI:", typeof window.messageAPI);
     console.log("- window.indicadoresAPI:", typeof window.indicadoresAPI);
-    console.log("- window.modoDevAPI:", typeof window.modoDevAPI); // ADICIONADO
+    console.log("- window.modoDevAPI:", typeof window.modoDevAPI);
+    console.log("- window.databaseAPI:", typeof window.databaseAPI); // ADICIONADO
 
     if (window.cityAPI) {
       console.log("🏙️ Métodos cityAPI:", Object.keys(window.cityAPI));
@@ -198,7 +262,10 @@ contextBridge.exposeInMainWorld("debugAPI", {
       );
     }
     if (window.modoDevAPI) {
-      console.log("🔧 Métodos modoDevAPI:", Object.keys(window.modoDevAPI)); // ADICIONADO
+      console.log("🔧 Métodos modoDevAPI:", Object.keys(window.modoDevAPI));
+    }
+    if (window.databaseAPI) {
+      console.log("🗄️ Métodos databaseAPI:", Object.keys(window.databaseAPI)); // ADICIONADO
     }
   },
 });

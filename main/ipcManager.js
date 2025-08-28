@@ -5,6 +5,7 @@ const MessageHandlers = require("./ipc/messageHandlers");
 const CityHandlers = require("./ipc/cityHandlers");
 const IndicadoresHandlers = require("./ipc/indicadoresHandlers");
 const ModoDevHandlers = require("./ipc/modoDevHandlers");
+const DataBaseHandlers = require("./ipc/dataBaseHandlers");
 
 class IPCManager {
   constructor() {
@@ -15,23 +16,25 @@ class IPCManager {
       city: null,
       indicadores: null,
       modoDev: null,
+      dataBase: null,
     };
   }
 
   registerAllHandlers(modules) {
     try {
-      // Cria instÃ¢ncias dos handlers com os mÃ³dulos necessÃ¡rios
+      // Cria instâncias dos handlers com os módulos necessários
       this.handlers.whatsapp = new WhatsAppHandlers(modules);
       this.handlers.config = new ConfigHandlers();
       this.handlers.message = new MessageHandlers();
       this.handlers.city = new CityHandlers();
       this.handlers.indicadores = new IndicadoresHandlers();
       this.handlers.modoDev = new ModoDevHandlers();
+      this.handlers.dataBase = new DataBaseHandlers();
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
 
-      // Registra handlers de configuraÃ§Ã£o
+      // Registra handlers de configuração
       this.registerConfigHandlers();
 
       // Registra handlers de mensagens
@@ -45,6 +48,9 @@ class IPCManager {
 
       // Registra handlers de modo dev
       this.registerModoDevHandlers();
+
+      // Registra handlers de banco de dados
+      this.registerDataBaseHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -65,7 +71,7 @@ class IPCManager {
   }
 
   registerConfigHandlers() {
-    // Handlers bÃ¡sicos que jÃ¡ existem
+    // Handlers básicos que já existem
     ipcMain.handle(
       "open-config",
       this.handlers.config.openConfig.bind(this.handlers.config)
@@ -75,7 +81,7 @@ class IPCManager {
       this.handlers.config.closeWindow.bind(this.handlers.config)
     );
 
-    // Registra apenas mÃ©todos que existem no ConfigHandlers
+    // Registra apenas métodos que existem no ConfigHandlers
     this.registerConfigMethodIfExists(
       "getSystemConfig",
       "config-get-system-config"
@@ -114,12 +120,12 @@ class IPCManager {
       );
       console.log(`Registrado: ${ipcChannel}`);
     } else {
-      console.warn(`MÃ©todo ${methodName} nÃ£o encontrado em ConfigHandlers`);
+      console.warn(`Método ${methodName} não encontrado em ConfigHandlers`);
     }
   }
 
   registerMessageHandlers() {
-    // Handlers bÃ¡sicos de mensagens (que jÃ¡ existem)
+    // Handlers básicos de mensagens (que já existem)
     ipcMain.handle(
       "message-get-messages",
       this.handlers.message.getMessages.bind(this.handlers.message)
@@ -141,14 +147,14 @@ class IPCManager {
       this.handlers.message.getLastMessage.bind(this.handlers.message)
     );
 
-    // Registra mÃ©todos novos com verificaÃ§Ã£o
+    // Registra métodos novos com verificação
     this.registerMessageMethodIfExists("getMessageTypes", "message-get-types");
     this.registerMessageMethodIfExists(
       "getMessageLocales",
       "message-get-locales"
     );
 
-    // MantÃ©m compatibilidade com mÃ©todo antigo
+    // Mantém compatibilidade com método antigo
     this.registerMessageMethodIfExists(
       "getAvailableOptions",
       "message-get-available-options"
@@ -163,12 +169,12 @@ class IPCManager {
       );
       console.log(`Registrado: ${ipcChannel}`);
     } else {
-      console.warn(`MÃ©todo ${methodName} nÃ£o encontrado em MessageHandlers`);
+      console.warn(`Método ${methodName} não encontrado em MessageHandlers`);
     }
   }
 
   registerCityHandlers() {
-    // Handlers bÃ¡sicos de cidades
+    // Handlers básicos de cidades
     ipcMain.handle(
       "city-get-cities",
       this.handlers.city.getCities.bind(this.handlers.city)
@@ -262,7 +268,36 @@ class IPCManager {
     console.log("Handlers de modo dev registrados");
   }
 
-  
+  registerDataBaseHandlers() {
+    // Handlers de banco de dados
+    ipcMain.handle(
+      "database-get-all-tables",
+      this.handlers.dataBase.getAllTables.bind(this.handlers.dataBase)
+    );
+    ipcMain.handle(
+      "database-get-table-info",
+      this.handlers.dataBase.getTableInfo.bind(this.handlers.dataBase)
+    );
+    ipcMain.handle(
+      "database-get-table-counts",
+      this.handlers.dataBase.getTableCounts.bind(this.handlers.dataBase)
+    );
+    ipcMain.handle(
+      "database-get-database-info",
+      this.handlers.dataBase.getDatabaseInfo.bind(this.handlers.dataBase)
+    );
+    ipcMain.handle(
+      "database-get-primary-city",
+      this.handlers.dataBase.getPrimaryCity.bind(this.handlers.dataBase)
+    );
+    ipcMain.handle(
+      "database-get-overview",
+      this.handlers.dataBase.getDatabaseOverview.bind(this.handlers.dataBase)
+    );
+
+    console.log("Handlers de banco de dados registrados");
+  }
+
   // Método para limpar todos os handlers (útil para testes ou reinicialização)
   removeAllHandlers() {
     const events = [
@@ -315,6 +350,14 @@ class IPCManager {
       "modo-dev-get-current-mode",
       // REMOVIDO: "modo-dev-get-detailed-status",
       "modo-dev-toggle-group-mode",
+
+      // Database events
+      "database-get-all-tables",
+      "database-get-table-info",
+      "database-get-table-counts",
+      "database-get-database-info",
+      "database-get-primary-city",
+      "database-get-overview",
     ];
 
     events.forEach((event) => {
@@ -322,7 +365,7 @@ class IPCManager {
     });
   }
 
-  // MÃ©todo para obter handler especÃ­fico (Ãºtil para debug)
+  // Método para obter handler específico (útil para debug)
   getHandler(type) {
     return this.handlers[type];
   }
