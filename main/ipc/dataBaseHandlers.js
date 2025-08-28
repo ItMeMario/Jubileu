@@ -1,4 +1,4 @@
-const DatabaseController = require("../../controllers/dataBaseController");
+const DatabaseService = require("../../services/dataBaseService");
 
 class DataBaseHandlers {
   constructor() {
@@ -9,7 +9,7 @@ class DataBaseHandlers {
   async getAllTables() {
     try {
       console.log("Obtendo lista de tabelas...");
-      const tables = await DatabaseController.getAllTables();
+      const tables = await DatabaseService.getAllTables();
 
       return {
         success: true,
@@ -33,7 +33,7 @@ class DataBaseHandlers {
         throw new Error("Nome da tabela é obrigatório");
       }
 
-      const tableInfo = await DatabaseController.getTableInfo(tableName);
+      const tableInfo = await DatabaseService.getTableInfo(tableName);
 
       return {
         success: true,
@@ -55,7 +55,7 @@ class DataBaseHandlers {
   async getTableCounts() {
     try {
       console.log("Obtendo contagem de registros...");
-      const counts = await DatabaseController.getTableCounts();
+      const counts = await DatabaseService.getTableCounts();
 
       return {
         success: true,
@@ -79,8 +79,8 @@ class DataBaseHandlers {
       const fs = require("fs").promises;
 
       const stats = await fs.stat(DATABASE_PATH);
-      const tables = await DatabaseController.getAllTables();
-      const counts = await DatabaseController.getTableCounts();
+      const tables = await DatabaseService.getAllTables();
+      const counts = await DatabaseService.getTableCounts();
 
       // Calcular total de registros
       const totalRecords = Object.values(counts).reduce((total, count) => {
@@ -116,7 +116,7 @@ class DataBaseHandlers {
   async getPrimaryCity() {
     try {
       console.log("Obtendo cidade primária...");
-      const primaryCity = await DatabaseController.getPrimaryCity();
+      const primaryCity = await DatabaseService.getPrimaryCity();
 
       return {
         success: true,
@@ -136,34 +136,43 @@ class DataBaseHandlers {
     try {
       console.log("Obtendo visão geral do banco...");
 
-      const [tables, counts, dbInfo, primaryCity] = await Promise.all([
-        this.getAllTables(),
-        this.getTableCounts(),
-        this.getDatabaseInfo(),
-        this.getPrimaryCity(),
+      // 🔧 CORREÇÃO: Chamando os serviços diretamente, não os métodos do handler
+      const [tablesData, countsData, primaryCityData] = await Promise.all([
+        DatabaseService.getAllTables(),
+        DatabaseService.getTableCounts(),
+        DatabaseService.getPrimaryCity(),
       ]);
 
-      // Verificar se todas as operações foram bem-sucedidas
-      if (
-        !tables.success ||
-        !counts.success ||
-        !dbInfo.success ||
-        !primaryCity.success
-      ) {
-        throw new Error("Erro ao obter algumas informações do banco");
-      }
+      // 🔧 CORREÇÃO: Obtendo informações do banco separadamente
+      const { DATABASE_PATH } = require("../../utils/initialize");
+      const fs = require("fs").promises;
+
+      const stats = await fs.stat(DATABASE_PATH);
+      const totalRecords = Object.values(countsData).reduce((total, count) => {
+        return total + (typeof count === "number" ? count : 0);
+      }, 0);
+
+      const databaseInfo = {
+        path: DATABASE_PATH,
+        size: Math.round((stats.size / 1024) * 100) / 100,
+        sizeFormatted: `${Math.round((stats.size / 1024) * 100) / 100} KB`,
+        created: stats.birthtime.toLocaleString("pt-BR"),
+        modified: stats.mtime.toLocaleString("pt-BR"),
+        totalTables: tablesData.length,
+        totalRecords: totalRecords,
+        type: "SQLite Database",
+        version: "3.x",
+      };
 
       const overview = {
-        database: dbInfo.data,
-        tables: tables.data,
-        tableCounts: counts.data,
-        primaryCity: primaryCity.data,
+        database: databaseInfo,
+        tables: tablesData,
+        tableCounts: countsData,
+        primaryCity: primaryCityData,
         summary: {
-          totalTables: tables.data.length,
-          totalRecords: Object.values(counts.data).reduce((total, count) => {
-            return total + (typeof count === "number" ? count : 0);
-          }, 0),
-          hasPrimaryCity: !!primaryCity.data,
+          totalTables: tablesData.length,
+          totalRecords: totalRecords,
+          hasPrimaryCity: !!primaryCityData,
         },
       };
 
