@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const { debug } = require("../services/debugService");
 
 // Função para executar queries com Promise
 function runQuery(query, params = []) {
@@ -172,7 +173,7 @@ async function getIndicadores() {
 async function clearAllData() {
   try {
     await runQuery(`DELETE FROM indicators`);
-    console.log("✅ Todos os dados de indicadores foram limpos do banco");
+    debug("✅ Todos os dados de indicadores foram limpos do banco");
     return true;
   } catch (error) {
     console.error("Erro ao limpar dados dos indicadores:", error);

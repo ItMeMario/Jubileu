@@ -459,13 +459,13 @@ async function migrateDevModeIfNeeded() {
 }
 
 async function initializeAllConfigs() {
-  console.log(
+  debug(
     "🚀 Inicializando arquivos, pastas e banco de dados do sistema...\n"
   );
 
   try {
     const dbPath = await initializeDatabase();
-    console.log(`✅ Banco de dados inicializado: ${dbPath}`);
+    debug(`✅ Banco de dados inicializado: ${dbPath}`);
   } catch (error) {
     console.error("❌ Erro crítico ao inicializar banco de dados:", error);
     throw error;
