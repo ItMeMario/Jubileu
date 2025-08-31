@@ -1,0 +1,85 @@
+version: 2
+updates:
+  # Configuração principal para dependências npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 5
+    
+    # Configurações específicas por tipo de dependência
+    groups:
+      # Agrupa atualizações menores em um PR só
+      minor-patches:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "whatsapp-web.js"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      # WhatsApp lib separada para facilitar identificação
+      whatsapp-updates:
+        patterns:
+          - "whatsapp-web.js"
+        update-types:
+          - "minor"
+          - "patch"
+          - "major"
+    
+    # Labels para organizar os PRs
+    labels:
+      - "dependencies"
+      - "bot-maintenance"
+    
+    # Mensagem de commit personalizada
+    commit-message:
+      prefix: "🤖 lib do wpp atualizada:"
+      prefix-development: "🔧 dev-deps:"
+      include: "scope"
+    
+    # Permite todos os tipos de update
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    
+    # Configurações de reviewer (opcional)
+    reviewers:
+      - "ItMeMario"  # substitua pelo seu usuário
+    
+    # Auto-merge para patches e minor updates
+    enable-beta-ecosystems: true
+    
+  # Configuração adicional para auto-merge
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
+    
+    # Auto-merge configurações
+    pull-request-branch-name:
+      separator: "/"
+    
+    # Auto-merge apenas para whatsapp-web.js
+    allow:
+      - dependency-name: "whatsapp-web.js"
+        dependency-type: "direct"
+    
+    # Aprovação automática para patches e minor
+    automerged-updates:
+      - match:
+          dependency-name: "whatsapp-web.js"
+          update-type: "semver:patch"
+      - match:
+          dependency-name: "whatsapp-web.js"
+          update-type: "semver:minor"
+    
+    labels:
+      - "dependencies"
+      - "auto-merge"
+      - "whatsapp-bot"
