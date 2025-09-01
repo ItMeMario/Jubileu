@@ -8,7 +8,7 @@ const MessageType = {
   SUSPENDED: "suspended",
 
   // Fluxo
-  FAQ: "faq",
+  SEND_FAQ: "send_faq",
   WELCOME: "welcome",
   GROUP_INVITE: "group_invite",
   ALREADY_IN_GROUP: "already_in_group",
