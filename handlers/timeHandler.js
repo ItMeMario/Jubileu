@@ -92,4 +92,22 @@ class timeHandler {
   }
 }
 
-module.exports = timeHandler;
+// Função movida dos menus para cá
+async function enviarMenuHorarios(client, chatId, chat) {
+  await chat.sendStateTyping();
+
+  const timeMenu = `⚠*IMPORTANTE: Escolha seu horário:*
+_Horarios disponíveis_
+1️⃣ - 10:00h (Manhã)
+2️⃣ - 12:00h (Meio-dia)
+3️⃣ - 14:00h (Depois do almoço)
+4️⃣ - 15:30h (Tarde)
+5️⃣ - 17:30h (Final da tarde)
+6️⃣ - 19:30h (Noite)`;
+
+  // Delay antes do menu de horários
+  await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
+  await client.sendMessage(chatId, timeMenu);
+}
+
+module.exports = { timeHandler, enviarMenuHorarios };
