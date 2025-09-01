@@ -162,29 +162,19 @@ class AntiSpamManager {
     try {
       switch (action) {
         case "send_faq":
-          // Primeiro envia o FAQ
           await enviarFAQ(client, msg);
-
-          // Depois envia a mensagem dinâmica usando o tipo correto "send_faq"
-          const faqMessage = await getMessage("send_faq", {
-            // Adicione aqui variáveis se necessário no futuro
-          });
-          await client.sendMessage(userNumber, faqMessage);
           break;
 
         case "suspend":
           const suspendMessage = await getMessage("suspend", {
             suspendDurationMinutes: extraData.suspendDurationMinutes || 60,
-            // Adicione outras variáveis se necessário
           });
           await client.sendMessage(userNumber, suspendMessage);
           break;
 
         case "suspended":
-          // Usuário já suspenso tentando enviar mensagem
           const suspendedMessage = await getMessage("suspended", {
             remainingMinutes: extraData.remainingMinutes || 0,
-            // Adicione outras variáveis se necessário
           });
           await client.sendMessage(userNumber, suspendedMessage);
           break;
@@ -213,7 +203,7 @@ class AntiSpamManager {
         case "send_faq":
           await client.sendMessage(
             userNumber,
-            "🤔 Percebi que você está com algumas dúvidas! Enviei acima nossa lista de perguntas frequentes que pode te ajudar. 😊"
+            "🤔 Percebi que você está com algumas dúvidas! digite *FAQ* ou *AJUDA* nossa lista de perguntas frequentes que pode te ajudar. 😊"
           );
           break;
 
@@ -239,7 +229,6 @@ class AntiSpamManager {
     }
   }
 
-  // Método para obter estatísticas (útil para debugging)
   getStats() {
     return {
       activeAttempts: Object.keys(this.userAttempts).length,
@@ -249,7 +238,6 @@ class AntiSpamManager {
   }
 }
 
-// Instância singleton
 const antiSpamManager = new AntiSpamManager();
 
 module.exports = {
