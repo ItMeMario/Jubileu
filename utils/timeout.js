@@ -2,8 +2,8 @@
 const { getMessage } = require("../utils/messageReader");
 const MessageType = require("../config/messageType");
 
-// Tempo de timeout em milissegundos (30 minutos)(1800000) (5s 5000)
-const TIMEOUT_DURATION = 5000;
+// Tempo de timeout em milissegundos (30 minutos)(1800000)
+const TIMEOUT_DURATION = 1800000;
 
 // Armazena os timeouts ativos
 const activeTimeouts = new Map();
