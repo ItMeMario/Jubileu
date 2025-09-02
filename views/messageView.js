@@ -32,7 +32,7 @@ async function handleMessageMenu(rl) {
         await messageController.handleShowLastMessage();
         break;
       case "6":
-        await messageController.handleCheckMessageCompleteness();
+        await messageController.handleCheckMessageCompleteness(rl);
         break;
       case "0":
         return;

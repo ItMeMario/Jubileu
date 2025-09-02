@@ -126,54 +126,111 @@ async function handleShowLastMessage() {
 }
 
 // Nova função para verificar completude das mensagens (CLI)
-async function handleCheckMessageCompleteness() {
+async function handleCheckMessageCompleteness(rl) {
   try {
-    console.log("\n📊 Verificando completude das mensagens...\n");
+    console.log("\n📊 === VERIFICAÇÃO DE COMPLETUDE ===");
+    console.log("1. Ver completude de todos os locales");
+    console.log("2. Ver completude de um locale específico");
+
+    const option = await new Promise((resolve) => {
+      rl.question("Escolha uma opção (1 ou 2): ", resolve);
+    });
 
     const report = await messageService.checkMessageCompleteness();
 
-    // Exibir resumo geral
-    console.log("=== RESUMO GERAL ===");
-    console.log(`📁 Total de locales: ${report.summary.totalLocales}`);
-    console.log(
-      `📝 Total de tipos de mensagem: ${report.summary.totalMessageTypes}`
-    );
-    console.log(
-      `📊 Mensagens esperadas: ${report.summary.totalExpectedMessages}`
-    );
-    console.log(
-      `✅ Mensagens cadastradas: ${report.summary.totalExistingMessages}`
-    );
-    console.log(
-      `📈 Completude geral: ${report.summary.completionPercentage.toFixed(1)}%`
-    );
+    if (option === "1") {
+      // Mostrar todos os locales
+      console.log("\n📊 Verificando completude de todos os locales...\n");
 
-    // Exibir detalhes por locale
-    console.log("\n=== DETALHES POR LOCALE ===");
-    Object.entries(report.byLocale).forEach(([locale, data]) => {
-      const status = data.percentage === 100 ? "✅" : "⚠️";
+      // Exibir resumo geral
+      console.log("=== RESUMO GERAL ===");
+      console.log(`📁 Total de locales: ${report.summary.totalLocales}`);
       console.log(
-        `${status} ${locale}: ${data.existing}/${
-          data.total
-        } (${data.percentage.toFixed(1)}%)`
+        `📝 Total de tipos de mensagem: ${report.summary.totalMessageTypes}`
+      );
+      console.log(
+        `📊 Mensagens esperadas: ${report.summary.totalExpectedMessages}`
+      );
+      console.log(
+        `✅ Mensagens cadastradas: ${report.summary.totalExistingMessages}`
+      );
+      console.log(
+        `📈 Completude geral: ${report.summary.completionPercentage.toFixed(
+          1
+        )}%`
       );
 
-      if (data.missing.length > 0) {
-        console.log(`   Faltando: ${data.missing.join(", ")}`);
-      }
-    });
+      // Exibir detalhes por locale
+      console.log("\n=== DETALHES POR LOCALE ===");
+      Object.entries(report.byLocale).forEach(([locale, data]) => {
+        const status = data.percentage === 100 ? "✅" : "⚠️";
+        console.log(
+          `${status} ${locale}: ${data.existing}/${
+            data.total
+          } (${data.percentage.toFixed(1)}%)`
+        );
 
-    // Exibir lista completa de faltantes se houver
-    if (report.missing.length > 0) {
-      console.log("\n=== MENSAGENS FALTANTES ===");
-      report.missing.forEach(({ locale, messageType }) => {
-        console.log(`❌ ${locale} -> ${messageType}`);
+        if (data.missing.length > 0) {
+          console.log(`   Faltando: ${data.missing.join(", ")}`);
+        }
       });
-      console.log(`\nTotal de mensagens faltantes: ${report.missing.length}`);
+
+      // Exibir lista completa de faltantes se houver
+      if (report.missing.length > 0) {
+        console.log("\n=== MENSAGENS FALTANTES ===");
+        report.missing.forEach(({ locale, messageType }) => {
+          console.log(`❌ ${locale} -> ${messageType}`);
+        });
+        console.log(`\nTotal de mensagens faltantes: ${report.missing.length}`);
+      } else {
+        console.log(
+          "\n🎉 Todas as mensagens estão cadastradas para todos os locales!"
+        );
+      }
+    } else if (option === "2") {
+      // Mostrar locale específico
+      const locales = messageService.getAvailableLocales();
+
+      console.log("\nLocales disponíveis:");
+      locales.forEach((locale, index) => {
+        console.log(`${index + 1}. ${locale}`);
+      });
+
+      const localeIndex = await new Promise((resolve) => {
+        rl.question("Escolha o locale (número): ", resolve);
+      });
+
+      const selectedLocale = locales[parseInt(localeIndex) - 1];
+
+      if (!selectedLocale) {
+        console.log("❌ Opção inválida.");
+        return;
+      }
+
+      const localeData = report.byLocale[selectedLocale];
+
+      console.log(`\n📊 Verificando completude do locale: ${selectedLocale}\n`);
+
+      // Estatísticas do locale
+      console.log("=== ESTATÍSTICAS ===");
+      console.log(`📝 Total de tipos de mensagem: ${localeData.total}`);
+      console.log(`✅ Mensagens cadastradas: ${localeData.existing}`);
+      console.log(`❌ Mensagens faltantes: ${localeData.missing.length}`);
+      console.log(`📈 Completude: ${localeData.percentage.toFixed(1)}%`);
+
+      // Lista detalhada dos faltantes
+      if (localeData.missing.length > 0) {
+        console.log("\n=== TIPOS DE MENSAGEM FALTANTES ===");
+        localeData.missing.forEach((messageType) => {
+          console.log(`❌ ${messageType}`);
+        });
+      } else {
+        console.log(
+          `\n🎉 Todas as mensagens estão cadastradas para o locale ${selectedLocale}!`
+        );
+      }
     } else {
-      console.log(
-        "\n🎉 Todas as mensagens estão cadastradas para todos os locales!"
-      );
+      console.log("❌ Opção inválida.");
     }
   } catch (error) {
     console.error("❌ Erro ao verificar completude das mensagens:", error);
