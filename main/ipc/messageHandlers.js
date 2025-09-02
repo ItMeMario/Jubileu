@@ -154,6 +154,20 @@ class MessageHandlers {
     }
   }
 
+  // Nova função para verificar completude das mensagens
+  async checkMessageCompleteness(_, specificLocale = null) {
+    try {
+      const { handleCheckMessageCompletenessGUI } = this.getMessageController();
+      return await handleCheckMessageCompletenessGUI(specificLocale);
+    } catch (error) {
+      console.error("Erro em message-check-completeness:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
   // Método para limpar cache do controller (útil para desenvolvimento)
   clearControllerCache() {
     delete this.controllers.message;

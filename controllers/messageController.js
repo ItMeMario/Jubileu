@@ -403,6 +403,50 @@ async function getAvailableOptionsGUI() {
   }
 }
 
+// Nova função para verificar completude das mensagens (GUI)
+async function handleCheckMessageCompletenessGUI(specificLocale = null) {
+  try {
+    const report = await messageService.checkMessageCompleteness();
+
+    if (specificLocale) {
+      // Retorna dados de um locale específico
+      if (!report.byLocale[specificLocale]) {
+        return {
+          success: false,
+          error: `Locale '${specificLocale}' não encontrado`,
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          locale: specificLocale,
+          stats: report.byLocale[specificLocale],
+          messageTypes: messageService.getAvailableMessageTypes(),
+        },
+      };
+    } else {
+      // Retorna relatório completo
+      return {
+        success: true,
+        data: {
+          summary: report.summary,
+          byLocale: report.byLocale,
+          missing: report.missing,
+          locales: messageService.getAvailableLocales(),
+          messageTypes: messageService.getAvailableMessageTypes(),
+        },
+      };
+    }
+  } catch (error) {
+    console.error("Erro ao verificar completude das mensagens:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
 module.exports = {
   // Versões CLI (originais)
   handleAddMessage,
@@ -419,4 +463,5 @@ module.exports = {
   handleDeleteMessageGUI,
   handleShowLastMessageGUI,
   getAvailableOptionsGUI,
+  handleCheckMessageCompletenessGUI, // Nova função GUI
 };

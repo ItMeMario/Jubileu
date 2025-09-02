@@ -153,6 +153,10 @@ class IPCManager {
       "getMessageLocales",
       "message-get-locales"
     );
+    this.registerMessageMethodIfExists(
+      "checkMessageCompleteness",
+      "message-check-completeness"
+    );
 
     // Mantém compatibilidade com método antigo
     this.registerMessageMethodIfExists(
@@ -325,6 +329,7 @@ class IPCManager {
       "message-get-types",
       "message-get-locales",
       "message-get-available-options",
+      "message-check-completeness",
 
       // City events
       "city-get-cities",

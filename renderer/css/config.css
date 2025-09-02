@@ -148,3 +148,188 @@ body {
     padding: 40px;
     font-style: italic;
 }
+
+/* ✅ NOVO: Estilos para Verificação de Completude de Mensagens */
+.message-completeness-section {
+    margin-top: 40px;
+    padding: 25px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #25d366;
+}
+
+.completeness-header {
+    margin-bottom: 20px;
+}
+
+.completeness-header h3 {
+    color: #333;
+    margin-bottom: 5px;
+    font-size: 18px;
+}
+
+.completeness-header p {
+    color: #666;
+    font-size: 14px;
+}
+
+.completeness-controls {
+    background: white;
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+}
+
+.completeness-results {
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+}
+
+.results-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.results-header h4 {
+    color: #333;
+    margin: 0;
+    font-size: 16px;
+}
+
+.results-content {
+    padding: 20px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* Estilos para os resultados da verificação */
+.completeness-summary {
+    background: #e8f5e8;
+    border: 1px solid #c3e6cb;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.completeness-summary.incomplete {
+    background: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.completeness-summary.error {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 12px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.stat-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #25d366;
+    display: block;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+}
+
+.missing-messages {
+    margin-top: 20px;
+}
+
+.missing-messages h5 {
+    color: #dc3545;
+    margin-bottom: 15px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.missing-item {
+    background: white;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-left: 4px solid #dc3545;
+}
+
+.missing-item strong {
+    color: #721c24;
+}
+
+.locale-section {
+    margin-bottom: 25px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.locale-header {
+    background: #f8f9fa;
+    padding: 12px 15px;
+    border-bottom: 1px solid #e0e0e0;
+    font-weight: 600;
+    color: #333;
+}
+
+.locale-content {
+    padding: 15px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 10px;
+}
+
+.status-badge.complete {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.incomplete {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-badge.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .summary-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .message-completeness-section {
+        margin: 20px -20px;
+        padding: 20px;
+        border-radius: 0;
+    }
+}

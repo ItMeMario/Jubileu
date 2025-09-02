@@ -19,6 +19,9 @@ class MessagesManager {
     this.btnSaveMessage = document.getElementById("btn-save-message");
     this.btnClearForm = document.getElementById("btn-clear-form");
     this.btnDeleteMessage = document.getElementById("btn-delete-message");
+    this.btnCheckCompleteness = document.getElementById(
+      "btn-check-completeness"
+    );
     this.statusDiv = document.getElementById("status");
   }
 
@@ -26,6 +29,13 @@ class MessagesManager {
     this.btnSaveMessage.addEventListener("click", () => this.saveMessage());
     this.btnClearForm.addEventListener("click", () => this.clearForm());
     this.btnDeleteMessage.addEventListener("click", () => this.deleteMessage());
+
+    // Novo event listener para verificação de completude
+    if (this.btnCheckCompleteness) {
+      this.btnCheckCompleteness.addEventListener("click", () =>
+        this.showCompletenessDialog()
+      );
+    }
   }
 
   async loadInitialData() {
@@ -247,6 +257,237 @@ class MessagesManager {
     } finally {
       this.hideButtonLoading(this.btnDeleteMessage);
     }
+  }
+
+  // Nova função para mostrar dialog de verificação de completude
+  async showCompletenessDialog() {
+    const modal = this.createCompletenessModal();
+    document.body.appendChild(modal);
+
+    // Event listeners do modal
+    const btnAllLocales = modal.querySelector("#btn-check-all-locales");
+    const btnSpecificLocale = modal.querySelector("#btn-check-specific-locale");
+    const btnCloseModal = modal.querySelector("#btn-close-modal");
+
+    btnAllLocales.addEventListener("click", () => this.checkAllLocales(modal));
+    btnSpecificLocale.addEventListener("click", () =>
+      this.checkSpecificLocale(modal)
+    );
+    btnCloseModal.addEventListener("click", () => this.closeModal(modal));
+
+    // Fechar modal ao clicar fora
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) this.closeModal(modal);
+    });
+  }
+
+  createCompletenessModal() {
+    const modal = document.createElement("div");
+    modal.className = "modal-overlay";
+    modal.innerHTML = `
+      <div class="modal-content">
+        <h3>Verificar Completude das Mensagens</h3>
+        <p>Escolha como deseja verificar a completude:</p>
+        
+        <div class="modal-buttons">
+          <button id="btn-check-all-locales" class="btn btn-primary">
+            Todos os Locales
+          </button>
+          <button id="btn-check-specific-locale" class="btn btn-secondary">
+            Locale Específico
+          </button>
+        </div>
+        
+        <div id="locale-selector" class="locale-selector hidden">
+          <label for="modal-locale-select">Escolha o locale:</label>
+          <select id="modal-locale-select">
+            ${this.locales
+              .map((locale) => `<option value="${locale}">${locale}</option>`)
+              .join("")}
+          </select>
+          <button id="btn-check-selected-locale" class="btn btn-primary">
+            Verificar
+          </button>
+        </div>
+        
+        <div id="completeness-results" class="completeness-results hidden"></div>
+        
+        <button id="btn-close-modal" class="btn btn-close">Fechar</button>
+      </div>
+    `;
+    return modal;
+  }
+
+  async checkAllLocales(modal) {
+    const resultsDiv = modal.querySelector("#completeness-results");
+    resultsDiv.innerHTML = '<div class="loading">Carregando...</div>';
+    resultsDiv.classList.remove("hidden");
+
+    try {
+      const result = await window.messageAPI.checkMessageCompleteness();
+
+      if (result.success) {
+        this.renderAllLocalesResults(resultsDiv, result.data);
+      } else {
+        resultsDiv.innerHTML = `<div class="error">Erro: ${result.error}</div>`;
+      }
+    } catch (error) {
+      console.error("Error checking completeness:", error);
+      resultsDiv.innerHTML = `<div class="error">Erro ao verificar completude</div>`;
+    }
+  }
+
+  async checkSpecificLocale(modal) {
+    const localeSelector = modal.querySelector("#locale-selector");
+    localeSelector.classList.remove("hidden");
+
+    const btnCheckSelected = modal.querySelector("#btn-check-selected-locale");
+    btnCheckSelected.addEventListener("click", async () => {
+      const selectedLocale = modal.querySelector("#modal-locale-select").value;
+      const resultsDiv = modal.querySelector("#completeness-results");
+
+      resultsDiv.innerHTML = '<div class="loading">Carregando...</div>';
+      resultsDiv.classList.remove("hidden");
+
+      try {
+        const result = await window.messageAPI.checkMessageCompleteness(
+          selectedLocale
+        );
+
+        if (result.success) {
+          this.renderSpecificLocaleResults(
+            resultsDiv,
+            result.data,
+            selectedLocale
+          );
+        } else {
+          resultsDiv.innerHTML = `<div class="error">Erro: ${result.error}</div>`;
+        }
+      } catch (error) {
+        console.error("Error checking specific locale:", error);
+        resultsDiv.innerHTML = `<div class="error">Erro ao verificar completude</div>`;
+      }
+    });
+  }
+
+  renderAllLocalesResults(container, data) {
+    const { summary, byLocale, missing } = data;
+
+    container.innerHTML = `
+      <div class="completeness-summary">
+        <h4>Resumo Geral</h4>
+        <div class="summary-stats">
+          <div class="stat">
+            <span class="stat-label">Completude Geral:</span>
+            <span class="stat-value">${summary.completionPercentage.toFixed(
+              1
+            )}%</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Mensagens:</span>
+            <span class="stat-value">${summary.totalExistingMessages}/${
+      summary.totalExpectedMessages
+    }</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="locales-breakdown">
+        <h4>Por Locale</h4>
+        ${Object.entries(byLocale)
+          .map(
+            ([locale, stats]) => `
+          <div class="locale-item ${
+            stats.percentage === 100 ? "complete" : "incomplete"
+          }">
+            <div class="locale-header">
+              <span class="locale-name">${locale}</span>
+              <span class="locale-percentage">${stats.percentage.toFixed(
+                1
+              )}%</span>
+            </div>
+            ${
+              stats.missing.length > 0
+                ? `
+              <div class="missing-types">
+                Faltando: ${stats.missing.join(", ")}
+              </div>
+            `
+                : '<div class="complete-badge">✓ Completo</div>'
+            }
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+      
+      ${
+        missing.length > 0
+          ? `
+        <div class="missing-messages">
+          <h4>Mensagens Faltantes (${missing.length})</h4>
+          <div class="missing-list">
+            ${missing
+              .map(
+                (item) => `
+              <div class="missing-item">${item.locale} → ${item.messageType}</div>
+            `
+              )
+              .join("")}
+          </div>
+        </div>
+      `
+          : '<div class="all-complete">🎉 Todas as mensagens estão completas!</div>'
+      }
+    `;
+  }
+
+  renderSpecificLocaleResults(container, data, locale) {
+    const { stats } = data;
+
+    container.innerHTML = `
+      <div class="specific-locale-results">
+        <h4>Completude do Locale: ${locale}</h4>
+        
+        <div class="locale-stats">
+          <div class="stat">
+            <span class="stat-label">Completude:</span>
+            <span class="stat-value">${stats.percentage.toFixed(1)}%</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Cadastradas:</span>
+            <span class="stat-value">${stats.existing}/${stats.total}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Faltantes:</span>
+            <span class="stat-value">${stats.missing.length}</span>
+          </div>
+        </div>
+        
+        ${
+          stats.missing.length > 0
+            ? `
+          <div class="missing-types-detail">
+            <h5>Tipos de Mensagem Faltantes:</h5>
+            <div class="missing-types-list">
+              ${stats.missing
+                .map(
+                  (type) => `
+                <div class="missing-type-item">❌ ${type}</div>
+              `
+                )
+                .join("")}
+            </div>
+          </div>
+        `
+            : '<div class="complete-badge">🎉 Todas as mensagens estão cadastradas para este locale!</div>'
+        }
+      </div>
+    `;
+  }
+
+  closeModal(modal) {
+    document.body.removeChild(modal);
   }
 
   showLoading(element) {

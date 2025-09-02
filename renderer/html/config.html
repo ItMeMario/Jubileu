@@ -73,6 +73,39 @@
                 <button id="btn-clear-form" class="btn btn-secondary">Limpar</button>
                 <button id="btn-delete-message" class="btn btn-danger" style="display: none;">Excluir</button>
             </div>
+
+            <!-- ✅ NOVA SEÇÃO: Verificação de Completude de Mensagens -->
+            <div class="message-completeness-section">
+                <div class="completeness-header">
+                    <h3>🔍 Verificação de Completude</h3>
+                    <p>Verifique se todas as mensagens necessárias estão configuradas</p>
+                </div>
+
+                <div class="completeness-controls">
+                    <div class="form-group">
+                        <label for="completeness-locale">Verificar Locale Específico (opcional):</label>
+                        <select id="completeness-locale">
+                            <option value="">Todos os locales</option>
+                        </select>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="btn-check-completeness" class="btn btn-primary">
+                            🔍 Verificar Completude
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Área de Resultados -->
+                <div id="completeness-results" class="completeness-results" style="display: none;">
+                    <div class="results-header">
+                        <h4>📊 Resultados da Verificação</h4>
+                    </div>
+                    <div id="completeness-content" class="results-content">
+                        <!-- Conteúdo será preenchido dinamicamente -->
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Seção de Cidades -->
@@ -153,7 +186,7 @@
                         <div class="status-header">
                             <span class="status-icon">🚀</span>
                             <h4>Modo de Execução</h4>
-                            <span id="dev-mode-indicator" class="status-indicator">○</span>
+                            <span id="dev-mode-indicator" class="status-indicator">◯</span>
                         </div>
                         <div class="status-info">
                             <button id="btn-toggle-dev-mode" class="btn btn-toggle">
@@ -164,9 +197,9 @@
 
                     <div class="status-card">
                         <div class="status-header">
-                            <span class="status-icon">🛞</span>
+                            <span class="status-icon">🛠</span>
                             <h4>Debug</h4>
-                            <span id="debug-mode-indicator" class="status-indicator">○</span>
+                            <span id="debug-mode-indicator" class="status-indicator">◯</span>
                         </div>
                         <div class="status-info">
                             <button id="btn-toggle-debug-mode" class="btn btn-toggle">

@@ -222,7 +222,7 @@ contextBridge.exposeInMainWorld("configAPI", {
     ipcRenderer.invoke("config-import-settings", settingsData),
 });
 
-// ✅ MANTIDO: APIs de mensagem existentes
+// ✅ MANTIDO: APIs de mensagem existentes + NOVA FUNÇÃO ADICIONADA
 contextBridge.exposeInMainWorld("messageAPI", {
   // Operações CRUD de mensagens
   getMessages: () => ipcRenderer.invoke("message-get-messages"),
@@ -232,6 +232,10 @@ contextBridge.exposeInMainWorld("messageAPI", {
     ipcRenderer.invoke("message-update-message", id, messageData),
   deleteMessage: (id) => ipcRenderer.invoke("message-delete-message", id),
   getLastMessage: () => ipcRenderer.invoke("message-get-last-message"),
+
+  // ✅ MOVIDO DO preload.js: Verificação de completude de mensagens
+  checkMessageCompleteness: (specificLocale) =>
+    ipcRenderer.invoke("message-check-completeness", specificLocale),
 
   // Opções específicas para mensagens
   getMessageTypes: () => ipcRenderer.invoke("message-get-types"),
@@ -244,13 +248,13 @@ contextBridge.exposeInMainWorld("messageAPI", {
 contextBridge.exposeInMainWorld("debugAPI", {
   log: (message) => console.log("[ConfigPreload]", message),
   checkAPIs: () => {
-    console.log("📋 APIs disponíveis na janela de configurações:");
+    console.log("🔋 APIs disponíveis na janela de configurações:");
     console.log("- window.cityAPI:", typeof window.cityAPI);
     console.log("- window.configAPI:", typeof window.configAPI);
     console.log("- window.messageAPI:", typeof window.messageAPI);
     console.log("- window.indicadoresAPI:", typeof window.indicadoresAPI);
     console.log("- window.modoDevAPI:", typeof window.modoDevAPI);
-    console.log("- window.databaseAPI:", typeof window.databaseAPI); // ADICIONADO
+    console.log("- window.databaseAPI:", typeof window.databaseAPI);
 
     if (window.cityAPI) {
       console.log("🏙️ Métodos cityAPI:", Object.keys(window.cityAPI));
@@ -265,7 +269,10 @@ contextBridge.exposeInMainWorld("debugAPI", {
       console.log("🔧 Métodos modoDevAPI:", Object.keys(window.modoDevAPI));
     }
     if (window.databaseAPI) {
-      console.log("🗄️ Métodos databaseAPI:", Object.keys(window.databaseAPI)); // ADICIONADO
+      console.log("🗄️ Métodos databaseAPI:", Object.keys(window.databaseAPI));
+    }
+    if (window.messageAPI) {
+      console.log("💬 Métodos messageAPI:", Object.keys(window.messageAPI));
     }
   },
 });

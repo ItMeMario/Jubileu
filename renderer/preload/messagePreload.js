@@ -15,4 +15,12 @@ contextBridge.exposeInMainWorld("messageAPI", {
   // Opções específicas para mensagens (se houver)
   getMessageTypes: () => ipcRenderer.invoke("message-get-types"),
   getMessageLocales: () => ipcRenderer.invoke("message-get-locales"),
+
+  // Nova função: verificar completude das mensagens
+  checkMessageCompleteness: (specificLocale = null) =>
+    ipcRenderer.invoke("message-check-completeness", specificLocale),
+
+  // Método de compatibilidade (fallback)
+  getAvailableOptions: () =>
+    ipcRenderer.invoke("message-get-available-options"),
 });
