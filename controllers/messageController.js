@@ -125,6 +125,61 @@ async function handleShowLastMessage() {
   );
 }
 
+// Nova função para verificar completude das mensagens (CLI)
+async function handleCheckMessageCompleteness() {
+  try {
+    console.log("\n📊 Verificando completude das mensagens...\n");
+
+    const report = await messageService.checkMessageCompleteness();
+
+    // Exibir resumo geral
+    console.log("=== RESUMO GERAL ===");
+    console.log(`📁 Total de locales: ${report.summary.totalLocales}`);
+    console.log(
+      `📝 Total de tipos de mensagem: ${report.summary.totalMessageTypes}`
+    );
+    console.log(
+      `📊 Mensagens esperadas: ${report.summary.totalExpectedMessages}`
+    );
+    console.log(
+      `✅ Mensagens cadastradas: ${report.summary.totalExistingMessages}`
+    );
+    console.log(
+      `📈 Completude geral: ${report.summary.completionPercentage.toFixed(1)}%`
+    );
+
+    // Exibir detalhes por locale
+    console.log("\n=== DETALHES POR LOCALE ===");
+    Object.entries(report.byLocale).forEach(([locale, data]) => {
+      const status = data.percentage === 100 ? "✅" : "⚠️";
+      console.log(
+        `${status} ${locale}: ${data.existing}/${
+          data.total
+        } (${data.percentage.toFixed(1)}%)`
+      );
+
+      if (data.missing.length > 0) {
+        console.log(`   Faltando: ${data.missing.join(", ")}`);
+      }
+    });
+
+    // Exibir lista completa de faltantes se houver
+    if (report.missing.length > 0) {
+      console.log("\n=== MENSAGENS FALTANTES ===");
+      report.missing.forEach(({ locale, messageType }) => {
+        console.log(`❌ ${locale} -> ${messageType}`);
+      });
+      console.log(`\nTotal de mensagens faltantes: ${report.missing.length}`);
+    } else {
+      console.log(
+        "\n🎉 Todas as mensagens estão cadastradas para todos os locales!"
+      );
+    }
+  } catch (error) {
+    console.error("❌ Erro ao verificar completude das mensagens:", error);
+  }
+}
+
 // =========================
 // VERSÕES ADAPTADAS PARA GUI
 // =========================
@@ -298,6 +353,7 @@ module.exports = {
   handleEditMessage,
   handleDeleteMessage,
   handleShowLastMessage,
+  handleCheckMessageCompleteness, // Nova função CLI
 
   // Versões GUI (novas)
   handleListMessagesGUI,
