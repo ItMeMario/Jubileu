@@ -403,41 +403,51 @@ async function getAvailableOptionsGUI() {
   }
 }
 
-// Nova função para verificar completude das mensagens (GUI)
 async function handleCheckMessageCompletenessGUI(specificLocale = null) {
   try {
     const report = await messageService.checkMessageCompleteness();
 
-    if (specificLocale) {
-      // Retorna dados de um locale específico
-      if (!report.byLocale[specificLocale]) {
+    // Melhorar validação do specificLocale
+    if (specificLocale && typeof specificLocale === "string") {
+      const cleanLocale = specificLocale.trim();
+
+      if (!cleanLocale) {
         return {
           success: false,
-          error: `Locale '${specificLocale}' não encontrado`,
+          error: "Locale não pode estar vazio",
+        };
+      }
+
+      if (!report.byLocale[cleanLocale]) {
+        return {
+          success: false,
+          error: `Locale '${cleanLocale}' não encontrado. Locales disponíveis: ${Object.keys(
+            report.byLocale
+          ).join(", ")}`,
         };
       }
 
       return {
         success: true,
         data: {
-          locale: specificLocale,
-          stats: report.byLocale[specificLocale],
-          messageTypes: messageService.getAvailableMessageTypes(),
-        },
-      };
-    } else {
-      // Retorna relatório completo
-      return {
-        success: true,
-        data: {
-          summary: report.summary,
-          byLocale: report.byLocale,
-          missing: report.missing,
-          locales: messageService.getAvailableLocales(),
+          locale: cleanLocale,
+          stats: report.byLocale[cleanLocale],
           messageTypes: messageService.getAvailableMessageTypes(),
         },
       };
     }
+
+    // Retorna relatório completo se specificLocale for null/undefined
+    return {
+      success: true,
+      data: {
+        summary: report.summary,
+        byLocale: report.byLocale,
+        missing: report.missing,
+        locales: messageService.getAvailableLocales(),
+        messageTypes: messageService.getAvailableMessageTypes(),
+      },
+    };
   } catch (error) {
     console.error("Erro ao verificar completude das mensagens:", error);
     return {

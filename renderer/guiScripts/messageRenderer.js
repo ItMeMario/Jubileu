@@ -5,6 +5,7 @@ class MessagesManager {
     this.messages = [];
     this.messageTypes = [];
     this.locales = [];
+    this.currentCompletenessMode = "all"; // 'all' ou 'specific'
 
     this.initializeElements();
     this.setupEventListeners();
@@ -23,17 +24,53 @@ class MessagesManager {
       "btn-check-completeness"
     );
     this.statusDiv = document.getElementById("status");
+
+    // Elementos da nova interface de completude
+    this.btnModeAll = document.getElementById("btn-mode-all");
+    this.btnModeSpecific = document.getElementById("btn-mode-specific");
+    this.specificLocaleSection = document.getElementById(
+      "specific-locale-section"
+    );
+    this.completenessLocaleSelect = document.getElementById(
+      "completeness-locale"
+    );
+    this.completenessResults = document.getElementById("completeness-results");
+    this.completenessContent = document.getElementById("completeness-content");
+    this.currentModeIndicator = document.getElementById(
+      "current-mode-indicator"
+    );
+    this.btnText = document.getElementById("btn-text");
+    this.resultsModeInfo = document.getElementById("results-mode-info");
   }
 
   setupEventListeners() {
+    // Listeners originais
     this.btnSaveMessage.addEventListener("click", () => this.saveMessage());
     this.btnClearForm.addEventListener("click", () => this.clearForm());
     this.btnDeleteMessage.addEventListener("click", () => this.deleteMessage());
 
-    // Novo event listener para verificação de completude
+    // Novos listeners para verificação de completude
+    if (this.btnModeAll) {
+      this.btnModeAll.addEventListener("click", () =>
+        this.setCompletenessMode("all")
+      );
+    }
+
+    if (this.btnModeSpecific) {
+      this.btnModeSpecific.addEventListener("click", () =>
+        this.setCompletenessMode("specific")
+      );
+    }
+
     if (this.btnCheckCompleteness) {
       this.btnCheckCompleteness.addEventListener("click", () =>
-        this.showCompletenessDialog()
+        this.checkCompleteness()
+      );
+    }
+
+    if (this.completenessLocaleSelect) {
+      this.completenessLocaleSelect.addEventListener("change", () =>
+        this.updateCompletenessButtonText()
       );
     }
   }
@@ -42,6 +79,7 @@ class MessagesManager {
     try {
       await this.loadAvailableOptions();
       await this.loadMessages();
+      this.populateCompletenessLocaleSelect();
     } catch (error) {
       this.showStatus("Erro ao carregar dados iniciais", "error");
       console.error("Error loading initial data:", error);
@@ -93,6 +131,291 @@ class MessagesManager {
       }
       selectElement.appendChild(optionElement);
     });
+  }
+
+  populateCompletenessLocaleSelect() {
+    if (!this.completenessLocaleSelect || !this.locales) return;
+
+    this.completenessLocaleSelect.innerHTML =
+      '<option value="">Selecione um locale...</option>';
+    this.locales.forEach((locale) => {
+      const option = document.createElement("option");
+      option.value = locale;
+      option.textContent = locale;
+      this.completenessLocaleSelect.appendChild(option);
+    });
+  }
+
+  setCompletenessMode(mode) {
+    this.currentCompletenessMode = mode;
+
+    // Atualiza botões de modo
+    if (this.btnModeAll && this.btnModeSpecific) {
+      this.btnModeAll.classList.remove("active");
+      this.btnModeSpecific.classList.remove("active");
+
+      if (mode === "all") {
+        this.btnModeAll.classList.add("active");
+      } else {
+        this.btnModeSpecific.classList.add("active");
+      }
+    }
+
+    // Mostra/esconde seção de locale específico
+    if (this.specificLocaleSection) {
+      if (mode === "specific") {
+        this.specificLocaleSection.style.display = "block";
+      } else {
+        this.specificLocaleSection.style.display = "none";
+      }
+    }
+
+    this.updateModeIndicator();
+    this.updateCompletenessButtonText();
+  }
+
+  updateModeIndicator() {
+    if (!this.currentModeIndicator) return;
+
+    const badge = this.currentModeIndicator.querySelector(".mode-badge");
+    if (badge) {
+      badge.classList.remove("active", "specific");
+
+      if (this.currentCompletenessMode === "all") {
+        badge.classList.add("active");
+        badge.innerHTML = "🌐 Modo: Todos os Locales";
+      } else {
+        badge.classList.add("specific");
+        badge.innerHTML = "🎯 Modo: Locale Específico";
+      }
+    }
+  }
+
+  updateCompletenessButtonText() {
+    if (!this.btnCheckCompleteness || !this.btnText) return;
+
+    if (this.currentCompletenessMode === "all") {
+      this.btnText.textContent = "Verificar Todos os Locales";
+      this.btnCheckCompleteness.disabled = false;
+    } else {
+      const selectedLocale = this.completenessLocaleSelect?.value;
+      if (selectedLocale) {
+        this.btnText.textContent = `Verificar ${selectedLocale}`;
+        this.btnCheckCompleteness.disabled = false;
+      } else {
+        this.btnText.textContent = "Selecione um Locale";
+        this.btnCheckCompleteness.disabled = true;
+      }
+    }
+  }
+
+  async checkCompleteness() {
+    if (
+      !this.btnCheckCompleteness ||
+      !this.completenessResults ||
+      !this.completenessContent
+    )
+      return;
+
+    try {
+      // Estado de loading
+      this.btnCheckCompleteness.disabled = true;
+      this.btnCheckCompleteness.innerHTML =
+        '<div class="loading"></div> Verificando...';
+
+      // Determina qual locale verificar
+      let specificLocale = null;
+      if (this.currentCompletenessMode === "specific") {
+        specificLocale = this.completenessLocaleSelect?.value;
+        if (!specificLocale) {
+          throw new Error("Selecione um locale para verificação específica");
+        }
+      }
+
+      // Chama o backend
+      const result = await window.messageAPI.checkMessageCompleteness(
+        specificLocale
+      );
+
+      if (result.success) {
+        // Atualiza info do modo
+        if (this.resultsModeInfo) {
+          if (specificLocale) {
+            this.resultsModeInfo.textContent = `Verificação específica: ${specificLocale}`;
+          } else {
+            this.resultsModeInfo.textContent =
+              "Verificação completa de todos os locales";
+          }
+        }
+
+        // Renderiza os resultados
+        this.renderCompletenessResults(result.data, specificLocale);
+
+        // Mostra a área de resultados
+        this.completenessResults.style.display = "block";
+        this.completenessResults.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      } else {
+        throw new Error(result.error || "Erro desconhecido");
+      }
+    } catch (error) {
+      console.error("Erro ao verificar completude:", error);
+
+      if (this.completenessContent) {
+        this.completenessContent.innerHTML = `
+          <div class="completeness-summary error">
+            <h4>❌ Erro na Verificação</h4>
+            <p>${error.message}</p>
+          </div>
+        `;
+        this.completenessResults.style.display = "block";
+      }
+    } finally {
+      // Restaura o botão
+      this.btnCheckCompleteness.disabled = false;
+      this.updateCompletenessButtonText();
+      const iconSpan = '<span class="icon">🔍</span>';
+      const textSpan = `<span id="btn-text">${
+        this.btnText?.textContent || "Verificar"
+      }</span>`;
+      this.btnCheckCompleteness.innerHTML = iconSpan + textSpan;
+    }
+  }
+
+  renderCompletenessResults(data, specificLocale) {
+    if (!this.completenessContent) return;
+
+    let html = "";
+
+    if (specificLocale) {
+      // Renderizar resultado específico
+      html = this.renderSpecificLocaleResult(data);
+    } else {
+      // Renderizar resultado completo
+      html = this.renderCompleteResult(data);
+    }
+
+    this.completenessContent.innerHTML = html;
+  }
+
+  renderSpecificLocaleResult(data) {
+    const { locale, stats, messageTypes } = data;
+    const isComplete = stats.percentage === 100;
+
+    return `
+      <div class="completeness-summary ${isComplete ? "" : "incomplete"}">
+        <h4>${isComplete ? "✅" : "⚠️"} Completude do Locale: ${locale}</h4>
+        <p>${
+          isComplete
+            ? "Todas as mensagens estão configuradas!"
+            : "Algumas mensagens ainda precisam ser configuradas."
+        }</p>
+
+        <div class="summary-stats">
+          <div class="stat-item">
+            <span class="stat-number">${stats.existing}</span>
+            <span class="stat-label">Configuradas</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">${stats.total}</span>
+            <span class="stat-label">Total Necessárias</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">${stats.percentage.toFixed(1)}%</span>
+            <span class="stat-label">Completude</span>
+          </div>
+        </div>
+
+        ${
+          stats.missing.length > 0
+            ? `
+          <div class="missing-messages">
+            <h5>❌ Tipos de Mensagem Faltantes (${stats.missing.length}):</h5>
+            ${stats.missing
+              .map(
+                (type) => `
+              <div class="missing-item">
+                <strong>${type}</strong>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        `
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  renderCompleteResult(data) {
+    const { summary, byLocale, missing } = data;
+    const isComplete = summary.completionPercentage === 100;
+
+    let html = `
+      <div class="completeness-summary ${isComplete ? "" : "incomplete"}">
+        <h4>${isComplete ? "🎉" : "📊"} Resumo Geral</h4>
+        <p>${
+          isComplete
+            ? "Todas as mensagens estão configuradas para todos os locales!"
+            : "Algumas mensagens ainda precisam ser configuradas."
+        }</p>
+
+        <div class="summary-stats">
+          <div class="stat-item">
+            <span class="stat-number">${summary.totalLocales}</span>
+            <span class="stat-label">Locales</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">${summary.totalMessageTypes}</span>
+            <span class="stat-label">Tipos de Mensagem</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">${summary.totalExistingMessages}</span>
+            <span class="stat-label">Configuradas</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">${summary.completionPercentage.toFixed(
+              1
+            )}%</span>
+            <span class="stat-label">Completude Geral</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Adiciona detalhes por locale
+    Object.entries(byLocale).forEach(([locale, stats]) => {
+      const localeComplete = stats.percentage === 100;
+      html += `
+        <div class="locale-section">
+          <div class="locale-header">
+            ${localeComplete ? "✅" : "⚠️"} ${locale}
+            <span class="status-badge ${
+              localeComplete ? "complete" : "incomplete"
+            }">
+              ${stats.percentage.toFixed(1)}%
+            </span>
+          </div>
+          <div class="locale-content">
+            <p><strong>Progresso:</strong> ${stats.existing}/${
+        stats.total
+      } mensagens</p>
+            ${
+              stats.missing.length > 0
+                ? `
+              <p><strong>Faltando:</strong> ${stats.missing.join(", ")}</p>
+            `
+                : "<p><strong>Status:</strong> Completo! ✅</p>"
+            }
+          </div>
+        </div>
+      `;
+    });
+
+    return html;
   }
 
   async loadMessages() {
@@ -259,7 +582,7 @@ class MessagesManager {
     }
   }
 
-  // Nova função para mostrar dialog de verificação de completude
+  // Métodos antigos do modal mantidos para compatibilidade
   async showCompletenessDialog() {
     const modal = this.createCompletenessModal();
     document.body.appendChild(modal);
@@ -473,7 +796,7 @@ class MessagesManager {
               ${stats.missing
                 .map(
                   (type) => `
-                <div class="missing-type-item">❌ ${type}</div>
+                <div class="missing-type-item">⚠ ${type}</div>
               `
                 )
                 .join("")}
