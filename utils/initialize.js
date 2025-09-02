@@ -280,50 +280,6 @@ function getDatabaseConnection() {
   });
 }
 
-// Migração de dados dos JSONs para o banco
-async function migrateDataFromJsonToDatabase() {
-  try {
-    const db = await getDatabaseConnection();
-
-    try {
-      const messagesData = await readJsonFile("messages.json", []);
-      if (messagesData && messagesData.length > 0) {
-        await debug("📄 Migrando dados de mensagens para o banco...");
-
-        for (const message of messagesData) {
-          try {
-            await runQuery(
-              db,
-              `INSERT OR IGNORE INTO messages (locale, message_type, message_content) VALUES (?, ?, ?)`,
-              [
-                message.locale || "",
-                message.message_type || "",
-                message.message_content || "",
-              ]
-            );
-          } catch (err) {
-            console.error(
-              `⚠️ Erro ao migrar mensagem ${message.message_type}:`,
-              err
-            );
-          }
-        }
-
-        await debug("✅ Migração de mensagens concluída");
-      }
-    } catch (err) {
-      await debug(
-        "ℹ️ Nenhum dado de mensagens para migrar ou erro na migração"
-      );
-    }
-
-    db.close();
-    await debug("🎉 Migração de dados concluída com sucesso!");
-  } catch (error) {
-    console.error("❌ Erro durante migração de dados:", error);
-  }
-}
-
 // Utilidades JSON
 async function ensureDataDirectory() {
   try {
@@ -459,9 +415,7 @@ async function migrateDevModeIfNeeded() {
 }
 
 async function initializeAllConfigs() {
-  debug(
-    "🚀 Inicializando arquivos, pastas e banco de dados do sistema...\n"
-  );
+  debug("🚀 Inicializando arquivos, pastas e banco de dados do sistema...\n");
 
   try {
     const dbPath = await initializeDatabase();
@@ -478,7 +432,6 @@ async function initializeAllConfigs() {
   ]);
 
   await migrateDevModeIfNeeded();
-  await migrateDataFromJsonToDatabase();
 
   const successCount = results.filter((r) => r.status === "fulfilled").length;
   const errorCount = results.filter((r) => r.status === "rejected").length;
@@ -521,7 +474,6 @@ module.exports = {
   ensureDatabaseDirectory,
   initializeDatabase,
   getDatabaseConnection,
-  migrateDataFromJsonToDatabase,
   databaseExists,
   checkTableExists,
   runQuery,
