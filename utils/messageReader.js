@@ -176,28 +176,6 @@ async function getMessage(messageType, variables = {}, customLocale = null) {
 }
 
 /**
- * Método legado mantido para compatibilidade
- * @deprecated Use getMessage(MessageType.WELCOME, { name }) em vez disso
- */
-async function getWelcomeMessage() {
-  console.warn(
-    "getWelcomeMessage() está deprecated. Use getMessage(MessageType.WELCOME) em vez disso."
-  );
-  return getMessage(MessageType.WELCOME);
-}
-
-/**
- * Método legado mantido para compatibilidade
- * @deprecated Use processVariables() em vez disso
- */
-function processarMensagem(template, name) {
-  console.warn(
-    "processarMensagem() está deprecated. Use processVariables() em vez disso."
-  );
-  return processVariables(template, { name });
-}
-
-/**
  * Limpa o cache de mensagens (útil para testes ou recarregar configurações)
  */
 function clearCache() {
@@ -230,8 +208,4 @@ module.exports = {
   clearCache,
   messageExists,
   getConfigLocale,
-
-  // Métodos legados (deprecated)
-  getWelcomeMessage,
-  processarMensagem,
 };

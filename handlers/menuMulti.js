@@ -13,7 +13,7 @@ const chatContext = {};
 const FALLBACK_MESSAGES = {
   [MessageType.CITY_MENU]:
     "Estamos com seleções abertas em {{cityCount}} cidades neste momento: 🏙\n\n{{cityList}}\n\n✨ Em qual dessas cidades você gostaria de estar participando?",
-  [MessageType.WELCOME]: "{{name}}", // Fallback simples para welcome
+  [MessageType.WELCOME]: "Bem-vindo! Está aqui para seleção de modelos?", // Fallback simples para welcome
 };
 
 // Função para buscar cidades do banco
@@ -45,52 +45,59 @@ function buildCityList(cities) {
  * @param {Array} cities - Array de cidades
  * @returns {Promise<string>} - Mensagem processada
  */
+/**
+ * Obtém a mensagem dinâmica do menu de cidades
+ */
 async function getCityMenuMessage(cities) {
   try {
     const cityCount = cities.length;
     const cityList = buildCityList(cities);
 
-    // Tenta buscar mensagem dinâmica do banco
     const dynamicMessage = await messageReader.getMessage(
       MessageType.CITY_MENU,
-      {
-        cityCount: cityCount,
-        cityList: cityList,
-      }
+      { cityCount, cityList }
     );
 
-    // Se não contém erro, usa a mensagem dinâmica
     if (!dynamicMessage.includes("[ERRO:")) {
       return dynamicMessage;
     }
 
-    // Senão, usa fallback processado
-    return messageReader.processVariables(
-      FALLBACK_MESSAGES[MessageType.CITY_MENU],
-      {
-        cityCount: cityCount,
-        cityList: cityList,
-      }
-    );
+    // Usa FALLBACK_MESSAGES
+    return FALLBACK_MESSAGES[MessageType.CITY_MENU]
+      .replace("{{cityCount}}", cityCount)
+      .replace("{{cityList}}", cityList);
   } catch (error) {
-    console.warn(
-      `⚠️ Erro ao buscar mensagem dinâmica para CITY_MENU, usando fallback:`,
-      error
-    );
-
-    // Fallback manual em caso de erro total
+    console.warn(`⚠️ Erro ao buscar CITY_MENU, usando fallback:`, error);
     const cityCount = cities.length;
     const cityList = buildCityList(cities);
-
-    return messageReader.processVariables(
-      FALLBACK_MESSAGES[MessageType.CITY_MENU],
-      {
-        cityCount: cityCount,
-        cityList: cityList,
-      }
-    );
+    return FALLBACK_MESSAGES[MessageType.CITY_MENU]
+      .replace("{{cityCount}}", cityCount)
+      .replace("{{cityList}}", cityList);
   }
 }
+
+/**
+ * Obtém a mensagem de boas-vindas dinâmica
+ */
+async function getWelcomeMessage(name) {
+  try {
+    const dynamicMessage = await messageReader.getMessage(
+      MessageType.WELCOME,
+      { name }
+    );
+
+    if (!dynamicMessage.includes("[ERRO:")) {
+      return dynamicMessage;
+    }
+
+    // Usa FALLBACK_MESSAGES
+    return FALLBACK_MESSAGES[MessageType.WELCOME];
+  } catch (error) {
+    console.warn(`⚠️ Erro ao buscar WELCOME, usando fallback:`, error);
+    return FALLBACK_MESSAGES[MessageType.WELCOME];
+  }
+}
+
 
 /**
  * Obtém a mensagem de boas-vindas dinâmica
@@ -142,11 +149,10 @@ async function enviarMensagemMenu(client, msg, chat) {
   const contact = await msg.getContact();
   const name = contact.pushname?.split(" ")[0] || "";
 
-  // Usa o novo sistema dinâmico para welcome
+  // Usa o novo sistema dinâmico para welcome (já inclui saudação)
   const welcomeMessage = await getWelcomeMessage(name);
-  const greetingMessage = `Olá ${name}! Tudo bem?\n\n${welcomeMessage}`;
 
-  await client.sendMessage(msg.from, greetingMessage);
+  await client.sendMessage(msg.from, welcomeMessage);
   await enviarMenuCidades(client, msg.from, chat);
 }
 
