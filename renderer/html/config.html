@@ -7,6 +7,7 @@
     <title>Configurações - Jubileu</title>
     <link rel="stylesheet" href="../css/globalCss.css">
     <link rel="stylesheet" href="../css/config.css">
+    <link rel="stylesheet" href="../css/messages.css"><!-- ✅ novo -->
     <link rel="stylesheet" href="../css/city.css">
     <link rel="stylesheet" href="../css/indicadores.css">
     <link rel="stylesheet" href="../css/modoDev.css">
@@ -74,70 +75,57 @@
                 <button id="btn-delete-message" class="btn btn-danger" style="display: none;">Excluir</button>
             </div>
 
-    <!-- ✅ SEÇÃO MELHORADA: Verificação de Completude de Mensagens -->
-    <div class="message-completeness-section">
-        <div class="completeness-header">
-            <h3>🔍 Verificação de Completude</h3>
-            <p>Verifique se todas as mensagens necessárias estão configuradas</p>
-        </div>
-    
-        <div class="completeness-controls">
-            <!-- Modo de Verificação -->
-            <div class="verification-mode">
-                <h4>📊 Modo de Verificação</h4>
-                <div class="mode-selector">
-                    <button id="btn-mode-all" class="btn-mode active" data-mode="all">
-                        🌐 Todos os Locales
-                    </button>
-                    <button id="btn-mode-specific" class="btn-mode" data-mode="specific">
-                        🎯 Locale Específico
-                    </button>
+            <!-- ✅ SEÇÃO MELHORADA: Verificação de Completude de Mensagens -->
+            <div class="message-completeness-section">
+                <div class="completeness-header">
+                    <h3>🔍 Verificação de Completude</h3>
+                    <p>Verifique se todas as mensagens necessárias estão configuradas</p>
                 </div>
-            </div>
-    
-            <!-- Seleção de Locale (só aparece quando modo específico está ativo) -->
-            <div id="specific-locale-section" class="form-group" style="display: none;">
-                <label for="completeness-locale">
-                    <span class="icon">🌍</span>
-                    Selecione o Locale:
-                </label>
-                <select id="completeness-locale">
-                    <option value="">Carregando locales...</option>
-                </select>
-                <div class="hint">Escolha o locale que deseja verificar individualmente</div>
-            </div>
-    
-            <div class="button-group">
-                <button id="btn-check-completeness" class="btn btn-primary">
-                    <span class="icon">🔍</span>
-                    <span id="btn-text">Verificar Todos os Locales</span>
-                </button>
-            </div>
-    
-            <!-- Indicador de modo atual -->
-            <div id="current-mode-indicator" class="mode-indicator">
-                <span class="mode-badge active">🌐 Modo: Todos os Locales</span>
-            </div>
-        </div>
-    
-        <!-- Área de Resultados -->
-        <div id="completeness-results" class="completeness-results" style="display: none;">
-            <div class="results-header">
-                <h4>📊 Resultados da Verificação</h4>
-                <div id="results-mode-info" class="results-mode-info">
-                    <!-- Info sobre o modo atual será inserida aqui -->
+
+                <div class="completeness-controls">
+                    <!-- Modo de Verificação -->
+                    <div class="verification-mode">
+                        <h4>📊 Modo de Verificação</h4>
+                        <div class="mode-selector">
+                            <button id="btn-mode-all" class="btn-mode active" data-mode="all">
+                                🌐 Todos os Locales
+                            </button>
+                            <button id="btn-mode-specific" class="btn-mode" data-mode="specific">
+                                🎯 Locale Específico
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Seleção de Locale (só aparece quando modo específico está ativo) -->
+                    <div id="specific-locale-section" class="form-group" style="display: none;">
+                        <label for="completeness-locale">
+                            <span class="icon">🌍</span>
+                            Selecione o Locale:
+                        </label>
+                        <select id="completeness-locale">
+                            <option value="">Carregando locales...</option>
+                        </select>
+                        <div class="hint">Escolha o locale que deseja verificar individualmente</div>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="btn-check-completeness" class="btn btn-primary">
+                            <span class="icon">🔍</span>
+                            <span id="btn-text">Verificar Todos os Locales</span>
+                        </button>
+                    </div>
+
+                    <!-- Indicador de modo atual -->
+                    <div id="current-mode-indicator" class="mode-indicator">
+                        <span class="mode-badge active">🌐 Modo: Todos os Locales</span>
+                    </div>
                 </div>
-            </div>
-            <div id="completeness-content" class="results-content">
-                <!-- Conteúdo será preenchido dinamicamente -->
-            </div>
-        </div>
-    </div>
 
                 <!-- Área de Resultados -->
                 <div id="completeness-results" class="completeness-results" style="display: none;">
                     <div class="results-header">
                         <h4>📊 Resultados da Verificação</h4>
+                        <div id="results-mode-info" class="results-mode-info"></div>
                     </div>
                     <div id="completeness-content" class="results-content">
                         <!-- Conteúdo será preenchido dinamicamente -->
@@ -203,20 +191,18 @@
             </div>
         </div>
 
-        <!-- Seção de Modo Dev - LIMPA -->
+        <!-- Seção de Modo Dev -->
         <div id="dev-mode-section" class="section">
             <div class="content-header">
                 <h1>🔧 Modo Dev</h1>
                 <p>Configure e monitore o ambiente de desenvolvimento</p>
             </div>
 
-            <!-- Loading indicator -->
             <div id="modo-dev-loading" class="loading-state" style="display: none;">
                 <div class="spinner"></div>
                 <p>Carregando...</p>
             </div>
 
-            <!-- Status Overview -->
             <div class="dev-status-overview">
                 <h3>📊 Status Atual</h3>
                 <div class="status-grid">
@@ -261,7 +247,6 @@
                 </div>
             </div>
 
-            <!-- Scout Configuration -->
             <div class="dev-scout-config">
                 <h3>⏱️ Configuração do Scout</h3>
                 <div class="scout-config-card">
@@ -287,7 +272,7 @@
 
         <!-- Seção de Banco de Dados -->
         <div id="database-section" class="section">
-            <!-- O conteúdo será gerado dinamicamente pelo dataBaseRenderer.js -->
+            <!-- O conteúdo será gerado dinamicamente -->
         </div>
     </div>
 
