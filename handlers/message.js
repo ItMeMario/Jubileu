@@ -6,7 +6,7 @@ const {
   logChatStats,
 } = require("../utils/groupFilter");
 const { antiSpamManager } = require("../utils/antiSpam");
-const { messageTypeHandler } = require("../handlers/messageType");
+const { messageTypeHandler } = require("../handlers/unsuportedMessage");
 const { debug } = require("../services/debugService");
 const timeout = require("../utils/timeout");
 

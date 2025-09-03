@@ -5,7 +5,7 @@ const delay = require("../utils/delay");
 const indicadores = require("../utils/indicadores");
 const { debug } = require("../services/debugService");
 
-class timeHandler {
+class TimeHandler {
   async process(client, msg, userStates, userNumber, antiSpamManager) {
     const inputUsuario = msg.body?.trim() || "";
     const opcao = this.encontrarHorario(inputUsuario);
@@ -110,4 +110,6 @@ _Horarios disponíveis_
   await client.sendMessage(chatId, timeMenu);
 }
 
-module.exports = { timeHandler, enviarMenuHorarios };
+// 👉 Exporta a classe direto (padrão) e a função separada
+TimeHandler.enviarMenuHorarios = enviarMenuHorarios;
+module.exports = TimeHandler;
