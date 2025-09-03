@@ -45,7 +45,38 @@
     white-space: pre-wrap;
 }
 
-/* ✅ Estilos para verificação de completude */
+
+@media (max-width: 768px) {
+    .summary-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .message-completeness-section {
+        margin: 20px -20px;
+        padding: 20px;
+        border-radius: 0;
+    }
+
+    .mode-selector {
+        flex-direction: column;
+    }
+
+    .btn-mode {
+        justify-content: center;
+        text-align: center;
+    }
+
+    #btn-check-completeness {
+        width: 100%;
+    }
+
+    .modal-content {
+        margin: 10px;
+        padding: 20px;
+    }
+}
+
+/* ✅ ESTILOS PARA VERIFICAÇÃO DE COMPLETUDE DE MENSAGENS */
 .message-completeness-section {
     margin-top: 40px;
     padding: 25px;
@@ -278,7 +309,7 @@
     overflow-y: auto;
 }
 
-/* Resultados da verificação */
+/* Estilos para os resultados da verificação */
 .completeness-summary {
     background: #e8f5e8;
     border: 1px solid #c3e6cb;
@@ -393,7 +424,7 @@
     color: #721c24;
 }
 
-/* Loading */
+/* Estados de loading específicos */
 .btn-mode:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -417,28 +448,60 @@
     z-index: 1;
 }
 
-/* Responsividade */
-@media (max-width: 768px) {
-    .summary-stats {
-        grid-template-columns: 1fr;
-    }
-
-    .message-completeness-section {
-        margin: 20px -20px;
-        padding: 20px;
-        border-radius: 0;
-    }
-
-    .mode-selector {
-        flex-direction: column;
-    }
-
-    .btn-mode {
-        justify-content: center;
-        text-align: center;
-    }
-
-    #btn-check-completeness {
-        width: 100%;
-    }
+/* Estilos para modal (mantendo compatibilidade com sistema existente) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
 }
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    margin: 20px;
+}
+
+.modal-content h3 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.locale-selector {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.locale-selector.hidden {
+    display: none;
+}
+
+.completeness-results.hidden {
+    display: none;
+}
+
+.btn-close {
+    background: #6c757d;
+    color: white;
+    margin-top: 20px;
+}
+
+/* Responsividade */
