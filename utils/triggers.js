@@ -103,24 +103,32 @@ async function identificarCidadeFuzzy(texto) {
     debug("Cidade encontrada (match exato):", cidadeExata.name);
     return cidadeExata.name;
   }
+const nomesCidades = allGroups.map((g) => normalizarTexto(g.name));
+const match = stringSimilarity.findBestMatch(inputNormalizado, nomesCidades);
 
-  const nomesCidades = allGroups.map((g) => normalizarTexto(g.name));
-  const match = stringSimilarity.findBestMatch(inputNormalizado, nomesCidades);
+// 🆕 cálculo de nota mínima dinâmica
+let minRating = 0.6;
+if (inputNormalizado.length <= 3) {
+  minRating = 0.95; // palavras muito curtas precisam ser quase iguais
+} else if (inputNormalizado.length <= 6) {
+  minRating = 0.8;
+}
 
-  if (match.bestMatch.rating > 0.6) {
-    const cidadeFuzzy = allGroups.find(
-      (g) => normalizarTexto(g.name) === match.bestMatch.target
+if (match.bestMatch.rating >= minRating) {
+  const cidadeFuzzy = allGroups.find(
+    (g) => normalizarTexto(g.name) === match.bestMatch.target
+  );
+  if (cidadeFuzzy) {
+    debug(
+      "Cidade encontrada (fuzzy match):",
+      cidadeFuzzy.name,
+      "rating:",
+      match.bestMatch.rating
     );
-    if (cidadeFuzzy) {
-      debug(
-        "Cidade encontrada (fuzzy match):",
-        cidadeFuzzy.name,
-        "rating:",
-        match.bestMatch.rating
-      );
-      return cidadeFuzzy.name;
-    }
+    return cidadeFuzzy.name;
   }
+}
+
 
   debug("Nenhuma cidade encontrada");
   return null;
