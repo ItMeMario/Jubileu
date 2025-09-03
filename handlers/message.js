@@ -20,6 +20,31 @@ const FaqHandler = require("../handlers/faqHandler");
 // Estado global dos usuários
 const userStates = {};
 
+// 🔎 Identifica erros esperados (com fallback) para não acionar o handler geral
+function isExpectedFallbackError(err) {
+  try {
+    const code = err?.code || "";
+    const message = (err?.message || String(err || "")).toString();
+
+    // Padrões que representam "erro esperado" vindo do messageReader ou templates
+    const fallbackPatterns = [
+      /\[ERRO:/, // seu sistema antigo que marca erros de template com [ERRO:
+      /Mensagem do tipo .*n(?:ã|a)o encontrada/i, // "Mensagem do tipo '...' não encontrada ..." (pt-BR)
+      /n.?o encontrada.*fallback/i, // versão com possível quebra/encoding: "n├úo encontrada ... fallback"
+      /MESSAGE(_| )?NOT(_| )?FOUND/i,
+      /NO(_| )?TEMPLATE/i,
+      /NO(_| )?MESSAGE/i,
+      /mensagem (não|nao) cadastrada/i,
+    ];
+
+    return (
+      err?.isFallback === true || fallbackPatterns.some((p) => p.test(message))
+    );
+  } catch {
+    return false;
+  }
+}
+
 // Inicializa o anti-spam manager
 (async () => {
   await antiSpamManager.initialize();
@@ -48,6 +73,14 @@ module.exports = async function messageHandler(msg) {
     // 🎯 Roteamento baseado no estado do usuário
     await routeByUserState(msg);
   } catch (error) {
+    // ⛑️ Não notifica usuário nem limpa estado em erros com fallback esperado
+    if (isExpectedFallbackError(error)) {
+      await debug(
+        "ℹ️ Erro esperado com fallback aplicado; não notificar usuário."
+      );
+      return;
+    }
+
     console.error("Erro no messageHandler:", error);
     await handleError(msg, error);
   }
@@ -242,6 +275,12 @@ async function getBasicMessageInfo(msg) {
  */
 async function handleError(msg, error) {
   const userNumber = msg.from;
+
+  // 🚧 Não tratar como erro fatal se for de fallback esperado
+  if (isExpectedFallbackError(error)) {
+    await debug("⚠️ handleError ignorado: erro com fallback reconhecido.");
+    return;
+  }
 
   try {
     await msg.reply(
