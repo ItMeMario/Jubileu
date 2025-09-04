@@ -14,6 +14,7 @@ const MessageType = {
   ALREADY_IN_GROUP: "already_in_group",
   TIME_MENU: "time_menu",
   CITY_MENU: "city_menu",
+  NAME_MENU: "name_menu",
 
   // Erros
   CITY_ERROR: "city_error",
