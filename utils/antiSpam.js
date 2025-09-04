@@ -210,14 +210,14 @@ class AntiSpamManager {
         case "suspend":
           await client.sendMessage(
             userNumber,
-            `Oi, Léo aqui! 😊 Poderia me explicar, por gentileza, com detalhes por escrito a sua questão? Assim que possível, te respondo. Obrigado! 🙏`
+            `Oi! 😊 Poderia me explicar, por gentileza, com detalhes por escrito a sua questão? Assim que possível, te respondo. Obrigado! 🙏`
           );
           break;
 
         case "suspended":
           await client.sendMessage(
             userNumber,
-            `Por favor, aguarde. Responderei assim que possível. ⏳\nAtenciosamente,\nLeonardo Rieper 👍🏻`
+            `Por favor, aguarde. Responderei assim que possível. ⏳\nAtenciosamente`
           );
           break;
       }
