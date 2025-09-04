@@ -129,12 +129,14 @@ async function getMessage(messageType, variables = {}, customLocale = null) {
         messageTemplate = await fetchMessageFromDB(messageType, Locale.PT_BR);
       }
 
-      // Se ainda não encontrou, apenas log informativo
+      // Se ainda não encontrou, lança exceção para permitir fallback no código chamador
       if (!messageTemplate) {
         await debug(
-          `⚠️ Mensagem '${messageType}' não encontrada em nenhum locale (nem fallback).`
+          `⚠️ Mensagem '${messageType}' não encontrada em nenhum locale (nem fallback). Sistema usará fallback hardcoded.`
         );
-        return `[ERRO: Mensagem '${messageType}' não configurada]`;
+        throw new Error(
+          `Mensagem '${messageType}' não encontrada no banco de dados`
+        );
       }
 
       messageCache.set(cacheKey, messageTemplate);
@@ -142,8 +144,11 @@ async function getMessage(messageType, variables = {}, customLocale = null) {
 
     return processVariables(messageTemplate, variables);
   } catch (error) {
-    console.error(`❌ Erro ao obter mensagem '${messageType}':`, error);
-    return `[ERRO: Mensagem '${messageType}' não configurada]`;
+    // Log do erro no terminal
+    await debug(`❌ Erro ao obter mensagem '${messageType}': ${error.message}`);
+
+    // Re-lança a exceção para permitir fallback no código chamador
+    throw error;
   }
 }
 

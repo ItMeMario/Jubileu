@@ -52,7 +52,7 @@ class TimeHandler {
       await indicadores.incrementarHorario(opcao.id);
       await debug(`✅ Horário ${opcao.id} incrementado no banco`);
     } catch (error) {
-      console.error("Erro ao incrementar horário:", error);
+      await debug("Erro ao incrementar horário:", error.message);
     }
 
     userStates[userNumber] = {
@@ -75,9 +75,9 @@ class TimeHandler {
 
       await client.sendMessage(msg.from, nameMenuMessage);
     } catch (error) {
-      console.error(
+      await debug(
         "Erro ao obter mensagem NAME_MENU, usando fallback:",
-        error
+        error.message
       );
       // Fallback - mensagem hardcoded original
       await client.sendMessage(
@@ -107,9 +107,9 @@ class TimeHandler {
       const timeErrorMessage = await getMessage(MessageType.TIME_ERROR);
       await client.sendMessage(msg.from, timeErrorMessage);
     } catch (error) {
-      console.error(
+      await debug(
         "Erro ao obter mensagem TIME_ERROR, usando fallback:",
-        error
+        error.message
       );
       // Fallback - mensagem hardcoded original
       await client.sendMessage(
@@ -132,7 +132,10 @@ async function enviarMenuHorarios(client, chatId, chat) {
     await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
     await client.sendMessage(chatId, timeMenuMessage);
   } catch (error) {
-    console.error("Erro ao obter mensagem TIME_MENU, usando fallback:", error);
+    await debug(
+      "Erro ao obter mensagem TIME_MENU, usando fallback:",
+      error.message
+    );
 
     // Fallback - mensagem hardcoded original
     const timeMenu = `⚠ *IMPORTANTE: Escolha seu horário:*

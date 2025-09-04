@@ -13,7 +13,7 @@ const FALLBACK_WELCOME_MESSAGE =
   "Bem-vindo! Está aqui para seleção de modelos?";
 
 /**
- * Obtém a mensagem de boas-vindas dinâmica com fallback
+* Obtém a mensagem de boas-vindas dinâmica com fallback
  * @param {string} name - Nome do usuário
  * @returns {Promise<string>} - Mensagem processada
  */
@@ -23,16 +23,11 @@ async function getWelcomeMessage(name) {
       name,
     });
 
-    if (!dynamicMessage.includes("[ERRO:")) {
-      return dynamicMessage;
-    }
-
-    await debug("ℹ️ Mensagem WELCOME não cadastrada, usando fallback.");
-  } catch {
-    await debug("ℹ️ Erro ao buscar WELCOME, usando fallback.");
+    return dynamicMessage;
+  } catch (error) {
+    await debug("ℹ️ Erro ao buscar WELCOME, usando fallback:", error.message);
+    return messageReader.processVariables(FALLBACK_WELCOME_MESSAGE, { name });
   }
-
-  return messageReader.processVariables(FALLBACK_WELCOME_MESSAGE, { name });
 }
 
 async function enviarMensagemMenu(client, msg, chat) {
