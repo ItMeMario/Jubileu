@@ -1,10 +1,11 @@
 // utils/messageReader.js
-const fs = require("fs");
-const path = require("path");
 const db = require("../config/db");
 const MessageType = require("../config/messageType");
 const Locale = require("../config/locale");
-const { debug } = require("../services/debugService"); // ✅ usar debug
+const { debug } = require("../services/debugService");
+const path = require("path");
+const fs = require("fs");
+const { DATA_DIR } = require("../utils/initialize"); // Pega caminho da pasta data
 
 // Cache com TTL (Time To Live)
 class MessageCache {
@@ -46,17 +47,22 @@ class MessageCache {
 const messageCache = new MessageCache();
 
 /**
- * Obtém a configuração de locale do sistema
+ * Busca o locale do sistema no config.json
  * @returns {string} Locale configurado ou 'pt-BR'
  */
 function getConfigLocale() {
   try {
-    const configPath = path.join(__dirname, "../data/config.json");
-    const configRaw = fs.readFileSync(configPath, "utf-8");
-    const config = JSON.parse(configRaw);
+    const configPath = path.join(DATA_DIR, "config.json");
+    if (!fs.existsSync(configPath)) {
+      console.warn("⚠️ config.json não encontrado, usando locale padrão pt-BR");
+      return Locale.PT_BR;
+    }
+
+    const rawData = fs.readFileSync(configPath, "utf-8");
+    const config = JSON.parse(rawData);
     return config.locale || Locale.PT_BR;
   } catch (error) {
-    console.error("Erro ao ler configuração de locale:", error);
+    console.error("Erro ao ler locale do config.json:", error);
     return Locale.PT_BR;
   }
 }
@@ -114,7 +120,6 @@ async function getMessage(messageType, variables = {}, customLocale = null) {
   const cacheKey = `${messageType}_${locale}`;
 
   try {
-    // Cache
     let messageTemplate = messageCache.get(cacheKey);
 
     if (!messageTemplate) {
@@ -129,7 +134,6 @@ async function getMessage(messageType, variables = {}, customLocale = null) {
         messageTemplate = await fetchMessageFromDB(messageType, Locale.PT_BR);
       }
 
-      // Se ainda não encontrou, lança exceção para permitir fallback no código chamador
       if (!messageTemplate) {
         await debug(
           `⚠️ Mensagem '${messageType}' não encontrada em nenhum locale (nem fallback). Sistema usará fallback hardcoded.`
@@ -144,10 +148,7 @@ async function getMessage(messageType, variables = {}, customLocale = null) {
 
     return processVariables(messageTemplate, variables);
   } catch (error) {
-    // Log do erro no terminal
     await debug(`❌ Erro ao obter mensagem '${messageType}': ${error.message}`);
-
-    // Re-lança a exceção para permitir fallback no código chamador
     throw error;
   }
 }

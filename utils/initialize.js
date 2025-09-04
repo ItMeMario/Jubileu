@@ -8,7 +8,6 @@ function getAppPaths() {
   const { app } = require("electron");
 
   if (app && app.isPackaged) {
-    // Quando empacotado, usar userData para dados persistentes
     const userDataPath = app.getPath("userData");
     return {
       DATA_DIR: path.join(userDataPath, "data"),
@@ -16,7 +15,6 @@ function getAppPaths() {
       isPackaged: true,
     };
   } else {
-    // Durante desenvolvimento, usar caminhos relativos como antes
     const DATA_DIR = path.join(__dirname, "../data");
     return {
       DATA_DIR,
@@ -26,13 +24,14 @@ function getAppPaths() {
   }
 }
 
-// Obter caminhos corretos
 const paths = getAppPaths();
 const DATA_DIR = paths.DATA_DIR;
 const DATABASE_DIR = paths.DATABASE_DIR;
 const DATABASE_PATH = path.join(DATABASE_DIR, "system.db");
 
-// Função para garantir que o diretório do banco existe
+// =====================
+// Funções de diretório
+// =====================
 async function ensureDatabaseDirectory() {
   try {
     await fs.mkdir(DATABASE_DIR, { recursive: true });
@@ -43,7 +42,114 @@ async function ensureDatabaseDirectory() {
   }
 }
 
-// Função para verificar se o arquivo do banco existe
+async function ensureDataDirectory() {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await debug(`✅ Pasta data criada/verificada: ${DATA_DIR}`);
+  } catch (error) {
+    console.error("Erro ao criar diretório data:", error);
+    throw error;
+  }
+}
+
+// =====================
+// Funções JSON helpers
+// =====================
+async function readJsonFile(filename, defaultValue = null) {
+  await ensureDataDirectory();
+  const filePath = path.join(DATA_DIR, filename);
+
+  try {
+    const data = await fs.readFile(filePath, "utf8");
+    return JSON.parse(data);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return defaultValue;
+    }
+    console.error(`Erro ao ler ${filename}:`, error);
+    throw error;
+  }
+}
+
+async function saveJsonFile(filename, data) {
+  await ensureDataDirectory();
+  const filePath = path.join(DATA_DIR, filename);
+
+  try {
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
+    return true;
+  } catch (error) {
+    console.error(`Erro ao salvar ${filename}:`, error);
+    return false;
+  }
+}
+
+async function createJsonFileIfNotExists(filename, defaultContent) {
+  await ensureDataDirectory();
+  const filePath = path.join(DATA_DIR, filename);
+
+  try {
+    await fs.access(filePath);
+    await debug(`✅ Arquivo ${filename} já existe em ${DATA_DIR}`);
+    return filePath;
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      await fs.writeFile(
+        filePath,
+        JSON.stringify(defaultContent, null, 2),
+        "utf8"
+      );
+      await debug(`✅ Arquivo ${filename} criado em ${DATA_DIR}`);
+      return filePath;
+    }
+    throw err;
+  }
+}
+
+// =====================
+// Inicializações JSON
+// =====================
+async function initializeConfigJson() {
+  const defaultConfig = {
+    mode: "SINGLE",
+    locale: "pt-BR",
+  };
+  return await createJsonFileIfNotExists("config.json", defaultConfig);
+}
+
+async function initializeDevModeConfig() {
+  const defaultConfig = {
+    isDevMode: true,
+    lastChanged: "2025-07-24T15:20:28.466Z",
+    debugEnabled: false,
+    lastDebugChanged: "2025-08-04T14:45:32.140Z",
+    scoutConfig: {
+      enabled: true,
+      timeSeconds: 3600,
+      timeFormatted: "01:00:00",
+      lastChanged: "2025-07-25T13:22:28.015Z",
+    },
+  };
+  return await createJsonFileIfNotExists("devMode.json", defaultConfig);
+}
+
+async function initializeMessagesConfig() {
+  const defaultMessages = [];
+  return await createJsonFileIfNotExists("messages.json", defaultMessages);
+}
+
+async function initializeAntiSpamConfig() {
+  const defaultAntiSpam = {
+    userAttempts: {},
+    suspendedUsers: {},
+    lastCleanup: new Date().toISOString(),
+  };
+  return await createJsonFileIfNotExists("antiSpam.json", defaultAntiSpam);
+}
+
+// =====================
+// Funções do Banco
+// =====================
 async function databaseExists() {
   try {
     await fs.access(DATABASE_PATH);
@@ -53,37 +159,28 @@ async function databaseExists() {
   }
 }
 
-// Função para verificar se uma tabela existe
 function checkTableExists(db, tableName) {
   return new Promise((resolve, reject) => {
     db.get(
       `SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
       [tableName],
       (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(!!row);
-        }
+        if (err) reject(err);
+        else resolve(!!row);
       }
     );
   });
 }
 
-// Função para executar uma query com Promise
 function runQuery(db, query, params = []) {
   return new Promise((resolve, reject) => {
     db.run(query, params, function (err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(this);
-      }
+      if (err) reject(err);
+      else resolve(this);
     });
   });
 }
 
-// Função para inicializar o banco de dados
 async function initializeDatabase() {
   await ensureDatabaseDirectory();
 
@@ -121,13 +218,13 @@ async function initializeDatabase() {
 
         const queries = [
           `CREATE TABLE IF NOT EXISTS cities (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    link TEXT,
-    isPrimary BOOLEAN DEFAULT 0,
-    message TEXT,
-    date DATE NOT NULL
-  )`,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            link TEXT,
+            isPrimary BOOLEAN DEFAULT 0,
+            message TEXT,
+            date DATE NOT NULL
+          )`,
           `CREATE TABLE IF NOT EXISTS indicators (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             clientes_atendidos INTEGER DEFAULT 0,
@@ -255,7 +352,6 @@ async function initializeDatabase() {
   });
 }
 
-// Função para obter conexão com o banco
 function getDatabaseConnection() {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(DATABASE_PATH, (err) => {
@@ -280,106 +376,15 @@ function getDatabaseConnection() {
   });
 }
 
-// Utilidades JSON
-async function ensureDataDirectory() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await debug(`✅ Pasta data criada/verificada: ${DATA_DIR}`);
-  } catch (error) {
-    console.error("Erro ao criar diretório data:", error);
-    throw error;
-  }
-}
-
-async function readJsonFile(filename, defaultValue = null) {
-  await ensureDataDirectory();
-  const filePath = path.join(DATA_DIR, filename);
-
-  try {
-    const data = await fs.readFile(filePath, "utf8");
-    return JSON.parse(data);
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      return defaultValue;
-    }
-    console.error(`Erro ao ler ${filename}:`, error);
-    throw error;
-  }
-}
-
-async function saveJsonFile(filename, data) {
-  await ensureDataDirectory();
-  const filePath = path.join(DATA_DIR, filename);
-
-  try {
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
-    return true;
-  } catch (error) {
-    console.error(`Erro ao salvar ${filename}:`, error);
-    return false;
-  }
-}
-
-async function createJsonFileIfNotExists(filename, defaultContent) {
-  await ensureDataDirectory();
-  const filePath = path.join(DATA_DIR, filename);
-
-  try {
-    await fs.access(filePath);
-    await debug(`✅ Arquivo ${filename} já existe em ${DATA_DIR}`);
-    return filePath;
-  } catch (err) {
-    if (err.code === "ENOENT") {
-      await fs.writeFile(
-        filePath,
-        JSON.stringify(defaultContent, null, 2),
-        "utf8"
-      );
-      await debug(`✅ Arquivo ${filename} criado em ${DATA_DIR}`);
-      return filePath;
-    }
-    throw err;
-  }
-}
-
-async function initializeDevModeConfig() {
-  // Default alinhado com a estrutura fornecida
-  const defaultConfig = {
-    isDevMode: true,
-    lastChanged: "2025-07-24T15:20:28.466Z",
-    debugEnabled: false,
-    lastDebugChanged: "2025-08-04T14:45:32.140Z",
-    scoutConfig: {
-      enabled: true,
-      timeSeconds: 3600,
-      timeFormatted: "01:00:00",
-      lastChanged: "2025-07-25T13:22:28.015Z",
-    },
-  };
-  return await createJsonFileIfNotExists("devMode.json", defaultConfig);
-}
-
-async function initializeMessagesConfig() {
-  const defaultMessages = [];
-  return await createJsonFileIfNotExists("messages.json", defaultMessages);
-}
-
-async function initializeAntiSpamConfig() {
-  const defaultAntiSpam = {
-    userAttempts: {},
-    suspendedUsers: {},
-    lastCleanup: new Date().toISOString(),
-  };
-  return await createJsonFileIfNotExists("antiSpam.json", defaultAntiSpam);
-}
-
+// =====================
+// Migrações e Inicialização
+// =====================
 async function migrateDevModeIfNeeded() {
   try {
     const data = await readJsonFile("devMode.json");
 
     if (!data) return;
 
-    // Se não houver scoutConfig, cria com padrão alinhado à estrutura pedida
     if (!data.scoutConfig) {
       await debug("📄 Migrando configuração de devMode para incluir Scout...");
       data.scoutConfig = {
@@ -389,7 +394,6 @@ async function migrateDevModeIfNeeded() {
         lastChanged: null,
       };
     } else {
-      // Completa campos que possam faltar
       if (typeof data.scoutConfig.enabled === "undefined")
         data.scoutConfig.enabled = true;
       if (typeof data.scoutConfig.timeSeconds === "undefined")
@@ -426,6 +430,7 @@ async function initializeAllConfigs() {
   }
 
   const results = await Promise.allSettled([
+    initializeConfigJson(),
     initializeDevModeConfig(),
     initializeMessagesConfig(),
     initializeAntiSpamConfig(),
@@ -445,6 +450,7 @@ async function initializeAllConfigs() {
     results.forEach((r, i) => {
       if (r.status === "rejected") {
         const functionNames = [
+          "initializeConfigJson",
           "initializeDevModeConfig",
           "initializeMessagesConfig",
           "initializeAntiSpamConfig",
@@ -461,6 +467,7 @@ async function initializeAllConfigs() {
 module.exports = {
   ensureDataDirectory,
   createJsonFileIfNotExists,
+  initializeConfigJson,
   initializeDevModeConfig,
   initializeMessagesConfig,
   initializeAntiSpamConfig,

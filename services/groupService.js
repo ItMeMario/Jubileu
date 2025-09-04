@@ -6,29 +6,25 @@ const { debug } = require("./debugService");
 
 const DATA_DIR = path.join(__dirname, "../data");
 const CONFIG_FILE = path.join(DATA_DIR, "config.json");
-const DEFAULT_MODE = "SINGLE";
 
 class GroupService {
   constructor() {
-    this.config = { mode: DEFAULT_MODE };
-    this._ensureDataDirExists();
-    this._loadConfig();
-  }
-
-  _ensureDataDirExists() {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    this.config = this._loadConfig();
   }
 
   _loadConfig() {
     try {
       if (fs.existsSync(CONFIG_FILE)) {
-        this.config = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
+        return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
       } else {
-        this._saveConfig();
+        console.warn(
+          `⚠️ Arquivo ${CONFIG_FILE} não encontrado. Verifique inicialização.`
+        );
+        return { mode: "SINGLE", locale: "pt-BR" }; // fallback mínimo
       }
     } catch (e) {
-      this.config = { mode: DEFAULT_MODE };
-      this._saveConfig();
+      console.error("Erro ao carregar config.json:", e);
+      return { mode: "SINGLE", locale: "pt-BR" }; // fallback mínimo
     }
   }
 
@@ -36,7 +32,7 @@ class GroupService {
     try {
       fs.writeFileSync(CONFIG_FILE, JSON.stringify(this.config, null, 2));
     } catch (e) {
-      console.error("Erro ao salvar config:", e);
+      console.error("Erro ao salvar config.json:", e);
     }
   }
 
@@ -49,7 +45,7 @@ class GroupService {
         if (err) {
           console.error("Erro ao buscar grupos:", err);
           debug("Erro ao buscar grupos do banco:", err);
-          resolve([]); // Retorna array vazio em caso de erro
+          resolve([]);
         } else {
           const groups = rows.map((row) => ({
             id: row.id,
@@ -57,10 +53,10 @@ class GroupService {
             link: row.link,
             isPrimary: Boolean(row.isPrimary),
             message: row.message || `Bem vindo a ${row.name}`,
-            descricao: row.name.toLowerCase(), // Para compatibilidade
-            date: null, // Removido pois não existe mais na estrutura do banco
-            createdAt: null, // Removido pois não existe mais na estrutura do banco
-            updatedAt: null, // Removido pois não existe mais na estrutura do banco
+            descricao: row.name.toLowerCase(),
+            date: null,
+            createdAt: null,
+            updatedAt: null,
           }));
 
           debug(`Grupos carregados do banco: ${groups.length} encontrados`);
@@ -105,7 +101,7 @@ class GroupService {
     return primaryGroup?.link || "";
   }
 
-  // ⚙️ Busca uma cidade específica por nome (para o sistema de matching)
+  // ⚙️ Busca uma cidade específica por nome
   async getGroupByName(cityName) {
     return new Promise((resolve, reject) => {
       const sql = `SELECT id, name, link, isPrimary, message FROM cities WHERE LOWER(name) = LOWER(?) LIMIT 1`;
@@ -132,7 +128,7 @@ class GroupService {
     });
   }
 
-  // 🔍 Busca cidades que contenham o termo (para busca fuzzy)
+  // 🔍 Busca cidades que contenham o termo
   async searchGroupsByName(searchTerm) {
     return new Promise((resolve, reject) => {
       const sql = `SELECT id, name, link, isPrimary, message FROM cities WHERE LOWER(name) LIKE LOWER(?) ORDER BY name`;
@@ -173,7 +169,7 @@ class GroupService {
     });
   }
 
-  // 🛠️ Métodos para configuração (mantidos)
+  // 🛠️ Métodos para configuração
   getCurrentMode() {
     return this.config.mode;
   }
@@ -183,13 +179,12 @@ class GroupService {
     this._saveConfig();
   }
 
-  // 🔧 Método para garantir que existe pelo menos um grupo primário no modo SINGLE
+  // 🔧 Garante que existe um grupo primário
   async ensurePrimaryGroupExists() {
     if (this.getCurrentMode() === "SINGLE") {
       const primaryGroup = await this.getPrimaryGroup();
 
       if (!primaryGroup) {
-        // Se não há grupo primário, define o primeiro como primário
         const allGroups = await this.getAllGroups();
         if (allGroups.length > 0) {
           await this.setPrimaryGroup(allGroups[0].id);
@@ -199,11 +194,10 @@ class GroupService {
     }
   }
 
-  // 🏆 Define um grupo como primário
+  // 🏆 Define grupo como primário
   async setPrimaryGroup(groupId) {
     return new Promise((resolve, reject) => {
       db.serialize(() => {
-        // Remove o status primário de todos os grupos
         db.run(`UPDATE cities SET isPrimary = 0`, (err) => {
           if (err) {
             console.error("Erro ao remover status primário:", err);
@@ -211,7 +205,6 @@ class GroupService {
             return;
           }
 
-          // Define o novo grupo primário
           db.run(
             `UPDATE cities SET isPrimary = 1 WHERE id = ?`,
             [groupId],
