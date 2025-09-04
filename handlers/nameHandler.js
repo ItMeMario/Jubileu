@@ -4,7 +4,24 @@ const inviteManager = require("../utils/inviteManager");
 const indicadores = require("../utils/indicadores");
 const delay = require("../utils/delay");
 const timeout = require("../utils/timeout");
+const messageReader = require("../utils/messageReader");
+const MessageType = require("../config/messageType");
 const { debug } = require("../services/debugService");
+
+// Mensagens de fallback
+const FALLBACK_MESSAGES = {
+  [MessageType.GROUP_SINGLE_INVITE]:
+    "✅ Parabéns, *{{nomeCompleto}}*! A sua presença está confirmada!{{dataEvento}}\n\n{{groupLink}}\n\n⏰ Seu horário: *{{horarioSelecionado}}* 😄\n\n*Clique no link para participar!*",
+
+  [MessageType.GROUP_MULTI_INVITE]:
+    "✅ Parabéns, *{{nomeCompleto}}*! A sua presença está confirmada!{{dataEvento}}\n\n{{groupLink}}\n\n⏰ Seu horário: *{{horarioSelecionado}}* 😄\n\nAqui está o acesso para o grupo de {{cityName}}:\n*Clique no link para participar!*",
+
+  [MessageType.ALREADY_IN_GROUP]:
+    "ℹ️ Olá *{{nomeCompleto}}*! Você já está participando do grupo {{cityName}}. Não é necessário entrar novamente! 😊",
+
+  [MessageType.GROUP_ERROR]:
+    "⚠️ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde.",
+};
 
 class NameHandler {
   async process(client, msg, userStates, userNumber, antiSpamManager) {
@@ -47,6 +64,113 @@ class NameHandler {
     }
   }
 
+  // 🔹 Obter mensagem dinâmica de GROUP_SINGLE_INVITE com fallback
+  async getSingleInviteMessage(
+    nomeCompleto,
+    horarioSelecionado,
+    groupLink,
+    dataEvento = ""
+  ) {
+    try {
+      const dynamicMessage = await messageReader.getMessage(
+        MessageType.GROUP_SINGLE_INVITE,
+        { nomeCompleto, horarioSelecionado, groupLink, dataEvento }
+      );
+
+      if (!dynamicMessage.includes("[ERRO:")) {
+        return dynamicMessage;
+      }
+
+      await debug(
+        "ℹ️ Mensagem GROUP_SINGLE_INVITE não cadastrada, usando fallback."
+      );
+    } catch {
+      await debug("ℹ️ Erro ao buscar GROUP_SINGLE_INVITE, usando fallback.");
+    }
+
+    return FALLBACK_MESSAGES[MessageType.GROUP_SINGLE_INVITE]
+      .replace("{{nomeCompleto}}", nomeCompleto)
+      .replace("{{horarioSelecionado}}", horarioSelecionado)
+      .replace("{{groupLink}}", groupLink)
+      .replace("{{dataEvento}}", dataEvento);
+  }
+
+  // 🔹 Obter mensagem dinâmica de GROUP_MULTI_INVITE com fallback
+  async getMultiInviteMessage(
+    nomeCompleto,
+    horarioSelecionado,
+    groupLink,
+    cityName,
+    dataEvento = ""
+  ) {
+    try {
+      const dynamicMessage = await messageReader.getMessage(
+        MessageType.GROUP_MULTI_INVITE,
+        { nomeCompleto, horarioSelecionado, groupLink, cityName, dataEvento }
+      );
+
+      if (!dynamicMessage.includes("[ERRO:")) {
+        return dynamicMessage;
+      }
+
+      await debug(
+        "ℹ️ Mensagem GROUP_MULTI_INVITE não cadastrada, usando fallback."
+      );
+    } catch {
+      await debug("ℹ️ Erro ao buscar GROUP_MULTI_INVITE, usando fallback.");
+    }
+
+    return FALLBACK_MESSAGES[MessageType.GROUP_MULTI_INVITE]
+      .replace("{{nomeCompleto}}", nomeCompleto)
+      .replace("{{horarioSelecionado}}", horarioSelecionado)
+      .replace("{{groupLink}}", groupLink)
+      .replace("{{cityName}}", cityName)
+      .replace("{{dataEvento}}", dataEvento);
+  }
+
+  // 🔹 Obter mensagem dinâmica de ALREADY_IN_GROUP com fallback
+  async getAlreadyInGroupMessage(nomeCompleto, cityName = "") {
+    try {
+      const dynamicMessage = await messageReader.getMessage(
+        MessageType.ALREADY_IN_GROUP,
+        { nomeCompleto, cityName }
+      );
+
+      if (!dynamicMessage.includes("[ERRO:")) {
+        return dynamicMessage;
+      }
+
+      await debug(
+        "ℹ️ Mensagem ALREADY_IN_GROUP não cadastrada, usando fallback."
+      );
+    } catch {
+      await debug("ℹ️ Erro ao buscar ALREADY_IN_GROUP, usando fallback.");
+    }
+
+    return FALLBACK_MESSAGES[MessageType.ALREADY_IN_GROUP]
+      .replace("{{nomeCompleto}}", nomeCompleto)
+      .replace("{{cityName}}", cityName);
+  }
+
+  // 🔹 Obter mensagem dinâmica de GROUP_ERROR com fallback
+  async getGroupErrorMessage() {
+    try {
+      const dynamicMessage = await messageReader.getMessage(
+        MessageType.GROUP_ERROR
+      );
+
+      if (!dynamicMessage.includes("[ERRO:")) {
+        return dynamicMessage;
+      }
+
+      await debug("ℹ️ Mensagem GROUP_ERROR não cadastrada, usando fallback.");
+    } catch {
+      await debug("ℹ️ Erro ao buscar GROUP_ERROR, usando fallback.");
+    }
+
+    return FALLBACK_MESSAGES[MessageType.GROUP_ERROR];
+  }
+
   async generateInviteMessage(
     client,
     userNumber,
@@ -74,8 +198,7 @@ class NameHandler {
         client,
         userNumber,
         nomeCompleto,
-        horarioSelecionado,
-        allGroups
+        horarioSelecionado
       );
     }
   }
@@ -91,7 +214,13 @@ class NameHandler {
 
     if (!primaryGroup) {
       const primaryLink = await groupService.getPrimaryGroupLink();
-      return `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!\n\n${primaryLink}\n\n⏰ Seu horário: *${horarioSelecionado}* 😄\n\n*Clique no link para participar!*`;
+      const dataEvento = "";
+      return await this.getSingleInviteMessage(
+        nomeCompleto,
+        horarioSelecionado,
+        primaryLink,
+        dataEvento
+      );
     }
 
     // Verifica se usuário já está no grupo
@@ -103,7 +232,7 @@ class NameHandler {
       );
 
       if (checkResult.isInGroup) {
-        const alreadyInMessage = inviteManager.generateAlreadyInGroupMessage(
+        const alreadyInMessage = await this.getAlreadyInGroupMessage(
           nomeCompleto,
           primaryGroup.name
         );
@@ -116,16 +245,15 @@ class NameHandler {
     const dataEvento = primaryGroup.date
       ? `\n📅 Dia: ${primaryGroup.date}`
       : "";
-    return `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!${dataEvento}\n\n${primaryGroup.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😄\n\n*Clique no link para participar!*`;
+    return await this.getSingleInviteMessage(
+      nomeCompleto,
+      horarioSelecionado,
+      primaryGroup.link,
+      dataEvento
+    );
   }
 
-  async handleMultiMode(
-    client,
-    userNumber,
-    nomeCompleto,
-    horarioSelecionado,
-    allGroups
-  ) {
+  async handleMultiMode(client, userNumber, nomeCompleto, horarioSelecionado) {
     const selectedCityData = chatContext[userNumber]?.selectedCityData;
 
     if (selectedCityData) {
@@ -137,13 +265,7 @@ class NameHandler {
         selectedCityData
       );
     } else {
-      return await this.handleAllGroups(
-        client,
-        userNumber,
-        nomeCompleto,
-        horarioSelecionado,
-        allGroups
-      );
+      throw new Error("Nenhuma cidade selecionada no modo multi");
     }
   }
 
@@ -162,7 +284,7 @@ class NameHandler {
       );
 
       if (checkResult.isInGroup) {
-        const alreadyInMessage = inviteManager.generateAlreadyInGroupMessage(
+        const alreadyInMessage = await this.getAlreadyInGroupMessage(
           nomeCompleto,
           selectedCityData.name
         );
@@ -175,45 +297,13 @@ class NameHandler {
     const dataEvento = selectedCityData.date
       ? `\n📅 Dia: ${selectedCityData.date}`
       : "";
-    return `✅ Parabéns, *${nomeCompleto}*! A sua presença está confirmada!${dataEvento}\n\n${selectedCityData.link}\n\n⏰ Seu horário: *${horarioSelecionado}* 😄\n\nAqui está o acesso para o grupo de ${selectedCityData.name}:\n*Clique no link para participar!*`;
-  }
-
-  async handleAllGroups(
-    client,
-    userNumber,
-    nomeCompleto,
-    horarioSelecionado,
-    allGroups
-  ) {
-    const { availableGroups, userInAnyGroup } =
-      await inviteManager.getAvailableGroups(client, userNumber, allGroups);
-
-    if (availableGroups.length === 0 && userInAnyGroup) {
-      const alreadyInMessage =
-        inviteManager.generateAlreadyInGroupMessage(nomeCompleto);
-      await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
-      await client.sendMessage(userNumber, alreadyInMessage);
-      return null;
-    }
-
-    if (availableGroups.length < allGroups.length && userInAnyGroup) {
-      const partialMessage = inviteManager.generatePartialGroupMessage(
-        nomeCompleto,
-        availableGroups,
-        horarioSelecionado
-      );
-      await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
-      await client.sendMessage(userNumber, partialMessage);
-      return null;
-    }
-
-    let messageText = `✅ Parabéns, *${nomeCompleto}*! Aqui está o acesso para os grupos disponíveis:\n\n`;
-    messageText += availableGroups
-      .map((group) => `🔗 *${group.name}*\n${group.link}`)
-      .join("\n\n");
-    messageText += `\n\n⏰ Seu horário: *${horarioSelecionado}* 😄\n\nEscolha o grupo que preferir!`;
-
-    return messageText;
+    return await this.getMultiInviteMessage(
+      nomeCompleto,
+      horarioSelecionado,
+      selectedCityData.link,
+      selectedCityData.name,
+      dataEvento
+    );
   }
 
   async updateCounters() {
@@ -228,9 +318,8 @@ class NameHandler {
   async handleError(msg, userNumber, error, userStates) {
     console.error("Erro ao enviar mensagem:", error);
 
-    await msg.reply(
-      "⚠️ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde."
-    );
+    const errorMessage = await this.getGroupErrorMessage();
+    await msg.reply(errorMessage);
 
     timeout.cancelTimeout(userNumber);
     delete userStates[userNumber];
