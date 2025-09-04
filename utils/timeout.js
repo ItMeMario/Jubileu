@@ -32,11 +32,14 @@ async function startTimeout(client, userNumber, chat, name = "") {
     } catch (error) {
       console.error("Erro ao enviar mensagem de timeout:", error);
 
-      // Fallback em caso de erro - mensagem básica
+      // Fallback em caso de erro - mensagem básica padronizada
       try {
-        const fallbackMessage = `Oi *${
-          name || "usuário"
-        }*, eu percebi seu interesse em participar da seleção... Digite *MENU* para fazer a sua inscrição e garantir a sua vaga.`;
+        const fallbackMessage =
+          `Oi *{{name}}*, eu percebi seu interesse em participar da seleção... Digite *MENU* para fazer a sua inscrição e garantir a sua vaga.`.replace(
+            "{{name}}",
+            name || "usuário"
+          );
+
         await client.sendMessage(userNumber, fallbackMessage);
         activeTimeouts.delete(userNumber);
       } catch (fallbackError) {
