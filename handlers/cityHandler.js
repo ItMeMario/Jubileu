@@ -7,6 +7,15 @@ const { chatContext } = require("./menuMessage");
 const { enviarMenuHorarios } = require("./timeHandler");
 const groupService = require("../services/groupService");
 const delay = require("../utils/delay");
+const messageReader = require("../utils/messageReader");
+const MessageType = require("../config/messageType");
+const { debug } = require("../services/debugService");
+
+// Mensagem de fallback
+const FALLBACK_MESSAGES = {
+  [MessageType.CITY_ERROR]:
+    "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n🏠 *Cidades disponíveis:*\n{{cityList}}\n\n💡 Você pode digitar:\n• O *número* da cidade (1, 2, 3...)\n• O *nome completo* (São Paulo, Joinville...)\n• Parte do nome (São, Join...)\n\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.\n\nTente novamente! 😊",
+};
 
 class cityHandler {
   async process(client, msg, userStates, userNumber, antiSpamManager) {
@@ -111,25 +120,44 @@ class cityHandler {
     await this.sendCityErrorMessage(client, msg);
   }
 
+  // Monta lista de cidades formatada
+  buildCityList(cities) {
+    return cities
+      .map((city, index) => {
+        const numberEmoji = index + 1 + "\uFE0F\u20E3";
+        return `${numberEmoji} ${city.name}`;
+      })
+      .join("\n");
+  }
+
+  // 🔹 Obter mensagem dinâmica de CITY_ERROR com fallback
+  async getCityErrorMessage(cities) {
+    const cityCount = cities.length;
+    const cityList = this.buildCityList(cities);
+
+    try {
+      const dynamicMessage = await messageReader.getMessage(
+        MessageType.CITY_ERROR,
+        { cityCount, cityList }
+      );
+
+      if (!dynamicMessage.includes("[ERRO:")) {
+        return dynamicMessage;
+      }
+
+      await debug("ℹ️ Mensagem CITY_ERROR não cadastrada, usando fallback.");
+    } catch {
+      await debug("ℹ️ Erro ao buscar CITY_ERROR, usando fallback.");
+    }
+
+    return FALLBACK_MESSAGES[MessageType.CITY_ERROR]
+      .replace("{{cityCount}}", cityCount)
+      .replace("{{cityList}}", cityList);
+  }
+
   async sendCityErrorMessage(client, msg) {
     const allGroups = await groupService.getAllGroups();
-
-    let errorMessage =
-      "🤔 Ops, cidade não encontrada! Parece que essa cidade não está na nossa lista ou houve um errinho de digitação.\n\n";
-    errorMessage += "🏠 *Cidades disponíveis:*\n";
-
-    allGroups.forEach((group, index) => {
-      errorMessage += `${index + 1}. ${group.name}\n`;
-    });
-
-    errorMessage += "\n💡 Você pode digitar:\n";
-    errorMessage += "• O *número* da cidade (1, 2, 3...)\n";
-    errorMessage += "• O *nome completo* (São Paulo, Joinville...)\n";
-    errorMessage += "• Parte do nome (São, Join...)\n";
-    errorMessage +=
-      "\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.\n";
-    errorMessage += "\nTente novamente! 😊";
-
+    const errorMessage = await this.getCityErrorMessage(allGroups);
     await client.sendMessage(msg.from, errorMessage);
   }
 }
