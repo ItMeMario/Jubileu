@@ -276,18 +276,15 @@ async function enviarFAQ(client, msg) {
     // Fallback genérico
     await client.sendMessage(
       msg.from,
-      "📋 *FAQ - Perguntas Frequentes*\n\nPara mais informações, digite 'menu' para começar novamente."
+      "📋 *Estou atualizando meu guia de informações. Tente novamente outra hora."
     );
   } catch (error) {
     console.error("Erro ao enviar FAQ:", error);
     debug("Erro ao enviar FAQ:", error);
 
-    await client.sendMessage(
-      msg.from,
-      "📋 *FAQ - Perguntas Frequentes*\n\nPara mais informações, digite 'menu' para começar novamente."
-    );
   }
 }
+
 
 module.exports = {
   normalizarTexto,
