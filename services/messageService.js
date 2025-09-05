@@ -17,7 +17,6 @@ function getAvailableLocales() {
   return getEnumValues(path.join(__dirname, "../config/locale.js"));
 }
 
-
 // CRUD
 async function addMessage({ locale, message_type, message_content }) {
   return new Promise((resolve, reject) => {
@@ -81,6 +80,75 @@ async function getLastMessage() {
   });
 }
 
+// Nova função para verificar completude das mensagens
+async function checkMessageCompleteness() {
+  return new Promise((resolve, reject) => {
+    try {
+      // Obter todos os tipos e locales disponíveis
+      const messageTypes = getAvailableMessageTypes();
+      const locales = getAvailableLocales();
+
+      // Buscar todas as mensagens existentes
+      db.all("SELECT locale, message_type FROM messages", (err, rows) => {
+        if (err) return reject(err);
+
+        // Criar set das combinações existentes para busca rápida
+        const existingCombinations = new Set(
+          rows.map((row) => `${row.locale}:${row.message_type}`)
+        );
+
+        const report = {
+          summary: {
+            totalLocales: locales.length,
+            totalMessageTypes: messageTypes.length,
+            totalExpectedMessages: locales.length * messageTypes.length,
+            totalExistingMessages: existingCombinations.size,
+            completionPercentage: 0,
+          },
+          byLocale: {},
+          missing: [],
+        };
+
+        // Verificar cada combinação locale + message type
+        locales.forEach((locale) => {
+          report.byLocale[locale] = {
+            total: messageTypes.length,
+            existing: 0,
+            missing: [],
+            percentage: 0,
+          };
+
+          messageTypes.forEach((messageType) => {
+            const combination = `${locale}:${messageType}`;
+
+            if (existingCombinations.has(combination)) {
+              report.byLocale[locale].existing++;
+            } else {
+              report.byLocale[locale].missing.push(messageType);
+              report.missing.push({ locale, messageType });
+            }
+          });
+
+          // Calcular percentual para este locale
+          report.byLocale[locale].percentage =
+            (report.byLocale[locale].existing / report.byLocale[locale].total) *
+            100;
+        });
+
+        // Calcular percentual geral
+        report.summary.completionPercentage =
+          (report.summary.totalExistingMessages /
+            report.summary.totalExpectedMessages) *
+          100;
+
+        resolve(report);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 module.exports = {
   addMessage,
   getMessages,
@@ -90,4 +158,5 @@ module.exports = {
   getLastMessage,
   getAvailableMessageTypes,
   getAvailableLocales,
+  checkMessageCompleteness, // Nova função exportada
 };

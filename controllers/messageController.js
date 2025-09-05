@@ -1,6 +1,6 @@
 const messageService = require("../services/messageService");
 
-// Função para entrada de mensagem multilinha (similar ao promptForCityMessage)
+// Versões originais para CLI (mantidas)
 async function promptForMessageContent(rl, currentContent = "") {
   console.log(
     "\nDigite o conteúdo da mensagem. Você pode colar várias linhas."
@@ -125,10 +125,353 @@ async function handleShowLastMessage() {
   );
 }
 
+// Nova função para verificar completude das mensagens (CLI)
+async function handleCheckMessageCompleteness(rl) {
+  try {
+    console.log("\n📊 === VERIFICAÇÃO DE COMPLETUDE ===");
+    console.log("1. Ver completude de todos os locales");
+    console.log("2. Ver completude de um locale específico");
+
+    const option = await new Promise((resolve) => {
+      rl.question("Escolha uma opção (1 ou 2): ", resolve);
+    });
+
+    const report = await messageService.checkMessageCompleteness();
+
+    if (option === "1") {
+      // Mostrar todos os locales
+      console.log("\n📊 Verificando completude de todos os locales...\n");
+
+      // Exibir resumo geral
+      console.log("=== RESUMO GERAL ===");
+      console.log(`📁 Total de locales: ${report.summary.totalLocales}`);
+      console.log(
+        `📝 Total de tipos de mensagem: ${report.summary.totalMessageTypes}`
+      );
+      console.log(
+        `📊 Mensagens esperadas: ${report.summary.totalExpectedMessages}`
+      );
+      console.log(
+        `✅ Mensagens cadastradas: ${report.summary.totalExistingMessages}`
+      );
+      console.log(
+        `📈 Completude geral: ${report.summary.completionPercentage.toFixed(
+          1
+        )}%`
+      );
+
+      // Exibir detalhes por locale
+      console.log("\n=== DETALHES POR LOCALE ===");
+      Object.entries(report.byLocale).forEach(([locale, data]) => {
+        const status = data.percentage === 100 ? "✅" : "⚠️";
+        console.log(
+          `${status} ${locale}: ${data.existing}/${
+            data.total
+          } (${data.percentage.toFixed(1)}%)`
+        );
+
+        if (data.missing.length > 0) {
+          console.log(`   Faltando: ${data.missing.join(", ")}`);
+        }
+      });
+
+      // Exibir lista completa de faltantes se houver
+      if (report.missing.length > 0) {
+        console.log("\n=== MENSAGENS FALTANTES ===");
+        report.missing.forEach(({ locale, messageType }) => {
+          console.log(`❌ ${locale} -> ${messageType}`);
+        });
+        console.log(`\nTotal de mensagens faltantes: ${report.missing.length}`);
+      } else {
+        console.log(
+          "\n🎉 Todas as mensagens estão cadastradas para todos os locales!"
+        );
+      }
+    } else if (option === "2") {
+      // Mostrar locale específico
+      const locales = messageService.getAvailableLocales();
+
+      console.log("\nLocales disponíveis:");
+      locales.forEach((locale, index) => {
+        console.log(`${index + 1}. ${locale}`);
+      });
+
+      const localeIndex = await new Promise((resolve) => {
+        rl.question("Escolha o locale (número): ", resolve);
+      });
+
+      const selectedLocale = locales[parseInt(localeIndex) - 1];
+
+      if (!selectedLocale) {
+        console.log("❌ Opção inválida.");
+        return;
+      }
+
+      const localeData = report.byLocale[selectedLocale];
+
+      console.log(`\n📊 Verificando completude do locale: ${selectedLocale}\n`);
+
+      // Estatísticas do locale
+      console.log("=== ESTATÍSTICAS ===");
+      console.log(`📝 Total de tipos de mensagem: ${localeData.total}`);
+      console.log(`✅ Mensagens cadastradas: ${localeData.existing}`);
+      console.log(`❌ Mensagens faltantes: ${localeData.missing.length}`);
+      console.log(`📈 Completude: ${localeData.percentage.toFixed(1)}%`);
+
+      // Lista detalhada dos faltantes
+      if (localeData.missing.length > 0) {
+        console.log("\n=== TIPOS DE MENSAGEM FALTANTES ===");
+        localeData.missing.forEach((messageType) => {
+          console.log(`❌ ${messageType}`);
+        });
+      } else {
+        console.log(
+          `\n🎉 Todas as mensagens estão cadastradas para o locale ${selectedLocale}!`
+        );
+      }
+    } else {
+      console.log("❌ Opção inválida.");
+    }
+  } catch (error) {
+    console.error("❌ Erro ao verificar completude das mensagens:", error);
+  }
+}
+
+// =========================
+// VERSÕES ADAPTADAS PARA GUI
+// =========================
+
+async function handleListMessagesGUI() {
+  try {
+    const messages = await messageService.getMessages();
+    return {
+      success: true,
+      data: messages,
+    };
+  } catch (error) {
+    console.error("Erro ao listar mensagens:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+async function handleAddMessageGUI(messageData) {
+  try {
+    const { locale, message_type, message_content } = messageData;
+
+    if (!locale || !message_type || !message_content) {
+      return {
+        success: false,
+        error: "Todos os campos são obrigatórios",
+      };
+    }
+
+    const result = await messageService.addMessage({
+      locale,
+      message_type,
+      message_content,
+    });
+
+    return {
+      success: true,
+      data: result,
+      message: "Mensagem adicionada com sucesso",
+    };
+  } catch (error) {
+    console.error("Erro ao adicionar mensagem:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+async function handleEditMessageGUI(id, messageData) {
+  try {
+    const { locale, message_type, message_content } = messageData;
+
+    if (!locale || !message_type || !message_content) {
+      return {
+        success: false,
+        error: "Todos os campos são obrigatórios",
+      };
+    }
+
+    const existing = await messageService.getMessageById(id);
+    if (!existing) {
+      return {
+        success: false,
+        error: "Mensagem não encontrada",
+      };
+    }
+
+    const success = await messageService.updateMessage(id, {
+      locale,
+      message_type,
+      message_content,
+    });
+
+    if (success) {
+      return {
+        success: true,
+        message: "Mensagem atualizada com sucesso",
+      };
+    } else {
+      return {
+        success: false,
+        error: "Erro ao atualizar mensagem",
+      };
+    }
+  } catch (error) {
+    console.error("Erro ao editar mensagem:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+async function handleDeleteMessageGUI(id) {
+  try {
+    const success = await messageService.deleteMessage(id);
+
+    if (success) {
+      return {
+        success: true,
+        message: "Mensagem excluída com sucesso",
+      };
+    } else {
+      return {
+        success: false,
+        error: "Mensagem não encontrada ou erro ao excluir",
+      };
+    }
+  } catch (error) {
+    console.error("Erro ao excluir mensagem:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+async function handleShowLastMessageGUI() {
+  try {
+    const last = await messageService.getLastMessage();
+
+    if (!last) {
+      return {
+        success: false,
+        error: "Nenhuma mensagem encontrada",
+      };
+    }
+
+    return {
+      success: true,
+      data: last,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar última mensagem:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+// Função para obter tipos de mensagem e locales disponíveis
+async function getAvailableOptionsGUI() {
+  try {
+    const messageTypes = messageService.getAvailableMessageTypes();
+    const locales = messageService.getAvailableLocales();
+
+    return {
+      success: true,
+      data: {
+        messageTypes,
+        locales,
+      },
+    };
+  } catch (error) {
+    console.error("Erro ao obter opções disponíveis:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+async function handleCheckMessageCompletenessGUI(specificLocale = null) {
+  try {
+    const report = await messageService.checkMessageCompleteness();
+
+    // Melhorar validação do specificLocale
+    if (specificLocale && typeof specificLocale === "string") {
+      const cleanLocale = specificLocale.trim();
+
+      if (!cleanLocale) {
+        return {
+          success: false,
+          error: "Locale não pode estar vazio",
+        };
+      }
+
+      if (!report.byLocale[cleanLocale]) {
+        return {
+          success: false,
+          error: `Locale '${cleanLocale}' não encontrado. Locales disponíveis: ${Object.keys(
+            report.byLocale
+          ).join(", ")}`,
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          locale: cleanLocale,
+          stats: report.byLocale[cleanLocale],
+          messageTypes: messageService.getAvailableMessageTypes(),
+        },
+      };
+    }
+
+    // Retorna relatório completo se specificLocale for null/undefined
+    return {
+      success: true,
+      data: {
+        summary: report.summary,
+        byLocale: report.byLocale,
+        missing: report.missing,
+        locales: messageService.getAvailableLocales(),
+        messageTypes: messageService.getAvailableMessageTypes(),
+      },
+    };
+  } catch (error) {
+    console.error("Erro ao verificar completude das mensagens:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
 module.exports = {
+  // Versões CLI (originais)
   handleAddMessage,
   handleListMessages,
   handleEditMessage,
   handleDeleteMessage,
   handleShowLastMessage,
+  handleCheckMessageCompleteness, // Nova função CLI
+
+  // Versões GUI (novas)
+  handleListMessagesGUI,
+  handleAddMessageGUI,
+  handleEditMessageGUI,
+  handleDeleteMessageGUI,
+  handleShowLastMessageGUI,
+  getAvailableOptionsGUI,
+  handleCheckMessageCompletenessGUI, // Nova função GUI
 };

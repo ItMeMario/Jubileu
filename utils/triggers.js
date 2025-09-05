@@ -5,8 +5,8 @@ const stringSimilarity = require("string-similarity");
 const groupService = require("../services/groupService");
 const { debug } = require("../services/debugService");
 const FAQ_TRIGGERS = require("../aliases/faqAliases.js");
-const faq = require("../utils/faq.js");
-const db = require("../config/db"); // 🆕 Importa a conexão com o banco
+const db = require("../config/db");
+const { getMessage } = require("../utils/messageReader"); // Para mensagens dinâmicas
 
 const TRIGGERS = [
   "menu",
@@ -20,19 +20,19 @@ const TRIGGERS = [
   "boa noite",
   "Hello! Can i get more info on this?",
   "¡Hola! Me gustaría conseguir más información sobre esto.",
+  "¡Hola! Podías darme más información de...",
 ];
 
 function normalizarTextoBase(texto) {
   return (texto || "")
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove acentos
-    .replace(/[^\w\s:]/g, "") // remove pontuação, exceto :
-    .replace(/\s+/g, " ") // colapsa espaços
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s:]/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
-// Função principal de normalização - agora exportada corretamente
 function normalizarTexto(texto) {
   return normalizarTextoBase(texto);
 }
@@ -65,18 +65,15 @@ function normalizarTextoCidade(texto) {
   return normalizarTextoBase(texto);
 }
 
-// 🆕 Versão atualizada que usa o banco de dados
 async function identificarCidadeFuzzy(texto) {
   const inputOriginal = texto || "";
   const input = normalizarTextoBase(inputOriginal);
-
   const inputCidade = input;
   const inputNormalizado = normalizarTexto(inputCidade);
 
   debug("Input original:", inputOriginal);
   debug("Input normalizado:", inputNormalizado);
 
-  // 🆕 Busca grupos diretamente do banco via groupService
   const allGroups = await groupService.getAllGroups();
   debug("Grupos disponíveis:", allGroups.length);
   debug(
@@ -89,7 +86,6 @@ async function identificarCidadeFuzzy(texto) {
     return null;
   }
 
-  // 🆕 Busca cidade usando normalização nos dados do banco
   const cidadeAlvo = allGroups.find((g) =>
     normalizarTexto(g.name).includes(inputNormalizado)
   );
@@ -99,7 +95,6 @@ async function identificarCidadeFuzzy(texto) {
     return cidadeAlvo.name;
   }
 
-  // 🆕 Se não encontrou por inclusão, tenta match exato
   const cidadeExata = allGroups.find(
     (g) => normalizarTexto(g.name) === inputNormalizado
   );
@@ -108,26 +103,32 @@ async function identificarCidadeFuzzy(texto) {
     debug("Cidade encontrada (match exato):", cidadeExata.name);
     return cidadeExata.name;
   }
+const nomesCidades = allGroups.map((g) => normalizarTexto(g.name));
+const match = stringSimilarity.findBestMatch(inputNormalizado, nomesCidades);
 
-  // 🆕 Se ainda não encontrou, tenta fuzzy matching
-  const nomesCidades = allGroups.map((g) => normalizarTexto(g.name));
-  const match = stringSimilarity.findBestMatch(inputNormalizado, nomesCidades);
+// 🆕 cálculo de nota mínima dinâmica
+let minRating = 0.6;
+if (inputNormalizado.length <= 3) {
+  minRating = 0.95; // palavras muito curtas precisam ser quase iguais
+} else if (inputNormalizado.length <= 6) {
+  minRating = 0.8;
+}
 
-  if (match.bestMatch.rating > 0.6) {
-    // Threshold para fuzzy matching
-    const cidadeFuzzy = allGroups.find(
-      (g) => normalizarTexto(g.name) === match.bestMatch.target
+if (match.bestMatch.rating >= minRating) {
+  const cidadeFuzzy = allGroups.find(
+    (g) => normalizarTexto(g.name) === match.bestMatch.target
+  );
+  if (cidadeFuzzy) {
+    debug(
+      "Cidade encontrada (fuzzy match):",
+      cidadeFuzzy.name,
+      "rating:",
+      match.bestMatch.rating
     );
-    if (cidadeFuzzy) {
-      debug(
-        "Cidade encontrada (fuzzy match):",
-        cidadeFuzzy.name,
-        "rating:",
-        match.bestMatch.rating
-      );
-      return cidadeFuzzy.name;
-    }
+    return cidadeFuzzy.name;
   }
+}
+
 
   debug("Nenhuma cidade encontrada");
   return null;
@@ -138,11 +139,9 @@ function buscarHorario(texto) {
   return horarios[normalizado] || null;
 }
 
-// 🆕 FUNÇÃO MODIFICADA PARA EVITAR TRIGGERS INDEVIDOS
 function hasTriggerText(texto, userState = null) {
   const inputNormalizado = normalizarTexto(texto || "");
 
-  // Lista de palavras que nunca devem triggar o sistema
   const PALAVRAS_EXCLUIDAS = [
     "noite",
     "dia",
@@ -157,13 +156,11 @@ function hasTriggerText(texto, userState = null) {
     "6",
   ];
 
-  // Se é uma palavra excluída, nunca deve triggar
   if (PALAVRAS_EXCLUIDAS.includes(inputNormalizado)) {
     debug("Palavra excluída detectada:", inputNormalizado);
     return false;
   }
 
-  // Se usuário está em fluxo ativo, só aceita comandos específicos de reset
   if (userState && userState.step && userState.step !== "initial") {
     const resetCommands = [
       "menu",
@@ -183,14 +180,11 @@ function hasTriggerText(texto, userState = null) {
     normalizarTexto(trigger)
   );
 
-  // Verificação direta (frase completa) - match exato
   if (gatilhosNormalizados.includes(inputNormalizado)) {
     debug("Trigger encontrado (match exato):", inputNormalizado);
     return true;
   }
 
-  // Substring apenas para frases completas (2+ palavras)
-  // Isso evita que "noite" match com "boa noite"
   const frasesCompletas = TRIGGERS.filter((trigger) => trigger.includes(" "));
   const frasesNormalizadas = frasesCompletas.map((frase) =>
     normalizarTexto(frase)
@@ -204,7 +198,6 @@ function hasTriggerText(texto, userState = null) {
     return true;
   }
 
-  // Fuzzy matching muito restritivo (aumentado de 0.75 para 0.9)
   const match = stringSimilarity.findBestMatch(
     inputNormalizado,
     gatilhosNormalizados
@@ -230,20 +223,17 @@ function hasTriggerText(texto, userState = null) {
   return isFuzzyMatch;
 }
 
-// 📋 Nova função para verificar se é comando FAQ/AJUDA
 function isRequestingHelp(texto) {
   const textoNormalizado = normalizarTexto(texto || "");
   const faqTriggersNormalizados = FAQ_TRIGGERS.map((trigger) =>
     normalizarTexto(trigger)
   );
 
-  // Verificação direta (frase completa)
   if (faqTriggersNormalizados.includes(textoNormalizado)) {
     debug("FAQ trigger encontrado (match exato):", texto);
     return true;
   }
 
-  // Verificação por substring (gatilho contido no texto)
   if (
     faqTriggersNormalizados.some((trigger) =>
       textoNormalizado.includes(trigger)
@@ -253,7 +243,6 @@ function isRequestingHelp(texto) {
     return true;
   }
 
-  // Fuzzy matching para FAQ triggers (mais tolerante)
   const match = stringSimilarity.findBestMatch(
     textoNormalizado,
     faqTriggersNormalizados
@@ -272,20 +261,30 @@ function isRequestingHelp(texto) {
   return false;
 }
 
-// 📋 Função para enviar FAQ - movida para cá para manter modularidade
+// 📋 Função para enviar FAQ - sem dependência de faq.js
 async function enviarFAQ(client, msg) {
   try {
-    debug("Enviando FAQ para:", msg.from);
-    await faq.enviarFAQ(client, msg);
+    debug("Enviando FAQ (dinâmico) para:", msg.from);
+
+    // Tenta buscar mensagem no banco
+    const faqMessage = await getMessage("send_faq");
+    if (faqMessage) {
+      await client.sendMessage(msg.from, faqMessage);
+      return;
+    }
+
+    // Fallback genérico
+    await client.sendMessage(
+      msg.from,
+      "📋 *Estou atualizando meu guia de informações. Tente novamente outra hora."
+    );
   } catch (error) {
     console.error("Erro ao enviar FAQ:", error);
     debug("Erro ao enviar FAQ:", error);
-    await client.sendMessage(
-      msg.from,
-      "📋 *FAQ - Perguntas Frequentes*\n\nPara mais informações, digite 'menu' para começar novamente."
-    );
+
   }
 }
+
 
 module.exports = {
   normalizarTexto,
@@ -294,7 +293,7 @@ module.exports = {
   normalizarTextoCidade,
   hasTriggerText,
   buscarHorario,
-  identificarCidadeFuzzy, // 🆕 Versão atualizada para banco de dados
+  identificarCidadeFuzzy,
   isRequestingHelp,
   enviarFAQ,
 };

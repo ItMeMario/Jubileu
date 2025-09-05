@@ -25,4 +25,25 @@ Ele funciona de forma autônoma, simulando atendimento humano e operando inclusi
   - `whatsapp-web.js`
   - `json`
   -  `sqlite3`
+  -  `Electron`
+  -  `Google Chrome`
+
+## ⚡ Como Executar
+Para executar o projeto:
+
+Abra o terminal na pasta do projeto
+
+Instale as dependências: npm install
+
+Escolha uma das opções:
+
+Executar via terminal: node app
+
+Executar com interface: npm start
+
+Criar executável: npm run dist → Acesse a pasta dist criada e use o executável
+
+Crie um atalho do executável na área de trabalho para acesso rápido.
+
+
 

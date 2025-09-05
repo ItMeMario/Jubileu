@@ -8,6 +8,7 @@ async function handleMessageMenu(rl) {
     console.log("3. Editar mensagem");
     console.log("4. Excluir mensagem");
     console.log("5. Ver última mensagem");
+    console.log("6. Verificar completude das mensagens");
     console.log("0. Voltar ao menu principal");
 
     const choice = await new Promise((resolve) => {
@@ -29,6 +30,9 @@ async function handleMessageMenu(rl) {
         break;
       case "5":
         await messageController.handleShowLastMessage();
+        break;
+      case "6":
+        await messageController.handleCheckMessageCompleteness(rl);
         break;
       case "0":
         return;

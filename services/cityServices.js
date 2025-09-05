@@ -16,7 +16,7 @@ class CityRepository {
       db = await getDatabaseConnection();
       const rows = await new Promise((resolve, reject) => {
         db.all(
-          `SELECT id, name, link, isPrimary, message FROM cities ORDER BY name`,
+          `SELECT id, name, link, isPrimary, message, date FROM cities ORDER BY name`,
           [],
           (err, result) => (err ? reject(err) : resolve(result))
         );
@@ -35,9 +35,24 @@ class CityRepository {
     try {
       db = await getDatabaseConnection();
       const id = await new Promise((resolve, reject) => {
+        // garante formato YYYY-MM-DD
+        const formattedDate = /^\d{4}-\d{2}-\d{2}$/.test(city.date)
+          ? city.date
+          : null;
+
+        if (!formattedDate) {
+          return reject(new Error("Data inválida. Use o formato YYYY-MM-DD."));
+        }
+
         db.run(
-          `INSERT INTO cities (name, link, isPrimary, message) VALUES (?, ?, ?, ?)`,
-          [city.name, city.link || "", city.isPrimary || false, city.message],
+          `INSERT INTO cities (name, link, isPrimary, message, date) VALUES (?, ?, ?, ?, ?)`,
+          [
+            city.name,
+            city.link || "",
+            city.isPrimary || false,
+            city.message,
+            formattedDate,
+          ],
           function (err) {
             if (err) return reject(err);
             resolve(city.id || this.lastID);
@@ -60,13 +75,25 @@ class CityRepository {
     try {
       db = await getDatabaseConnection();
       const changes = await new Promise((resolve, reject) => {
+        // garante formato YYYY-MM-DD
+        const formattedDate = /^\d{4}-\d{2}-\d{2}$/.test(updatedCity.date)
+          ? updatedCity.date
+          : null;
+
+        if (!formattedDate) {
+          return reject(new Error("Data inválida. Use o formato YYYY-MM-DD."));
+        }
+
         db.run(
-          `UPDATE cities SET name = ?, link = ?, isPrimary = ?, message = ? WHERE id = ?`,
+          `UPDATE cities 
+         SET name = ?, link = ?, isPrimary = ?, message = ?, date = ? 
+         WHERE id = ?`,
           [
             updatedCity.name,
             updatedCity.link || "",
             updatedCity.isPrimary || false,
             updatedCity.message,
+            formattedDate,
             updatedCity.id,
           ],
           function (err) {
@@ -136,7 +163,7 @@ class CityRepository {
       db = await getDatabaseConnection();
       const row = await new Promise((resolve, reject) => {
         db.get(
-          `SELECT id, name, link, isPrimary, message FROM cities WHERE id = ?`,
+          `SELECT id, name, link, isPrimary, message, date FROM cities WHERE id = ?`,
           [id],
           (err, result) => (err ? reject(err) : resolve(result))
         );
@@ -156,7 +183,7 @@ class CityRepository {
       db = await getDatabaseConnection();
       const row = await new Promise((resolve, reject) => {
         db.get(
-          `SELECT id, name, link, isPrimary, message FROM cities WHERE isPrimary = 1 LIMIT 1`,
+          `SELECT id, name, link, isPrimary, message, date FROM cities WHERE isPrimary = 1 LIMIT 1`,
           [],
           (err, result) => (err ? reject(err) : resolve(result))
         );

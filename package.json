@@ -1,11 +1,54 @@
 {
+  "name": "whatsapp-bot-jubileu",
+  "version": "1.0.0",
+  "description": "Bot de WhatsApp com interface Electron",
+  "author": "ItMeMario",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "postinstall": "electron-builder install-app-deps"
+  },
   "dependencies": {
     "clipboardy": "^4.0.0",
     "enquirer": "^2.4.1",
     "puppeteer": "^24.15.0",
+    "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
     "sqlite3": "^5.1.7",
     "string-similarity": "^4.0.4",
-    "whatsapp-web.js": "^1.31.0"
+    "whatsapp-web.js": "github:BenyFilho/whatsapp-web.js#fix_event_ready_again"
+  },
+  "devDependencies": {
+    "electron": "^37.4.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.seuapp.whatsappbot",
+    "productName": "Jubileu Bot",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/.cache/**/*",
+      "!dist/**/*",
+      "!node_modules/puppeteer-core/.local-chromium/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/whatsapp-web.js/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerHeaderIcon": "icon.ico"
+    },
+    "compression": "store"
   }
 }

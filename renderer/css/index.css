@@ -1,0 +1,90 @@
+/* Layout da tela inicial */
+body {
+    padding: 20px;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+}
+
+h1 {
+    text-align: center;
+    color: #25d366;
+    margin-bottom: 30px;
+}
+
+.button-group {
+    gap: 15px;
+    margin-bottom: 30px;
+    justify-content: center;
+}
+
+button {
+    background-color: #25d366;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+    min-width: 120px;
+}
+
+button:hover {
+    background-color: #128c7e;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Botões específicos */
+.stop-btn {
+    background-color: #dc3545;
+}
+
+.stop-btn:hover {
+    background-color: #c82333;
+}
+
+.config-btn {
+    background-color: #007bff;
+}
+
+.config-btn:hover {
+    background-color: #0056b3;
+}
+
+/* QR Code */
+.qr-container {
+    text-align: center;
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.qr-code {
+    max-width: 100%;
+    height: auto;
+    border: 2px solid #25d366;
+    border-radius: 8px;
+}
+
+.qr-instructions {
+    margin-top: 15px;
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.hidden {
+    display: none;
+}

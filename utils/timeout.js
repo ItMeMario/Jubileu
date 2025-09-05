@@ -1,5 +1,9 @@
+// timeout.js
+const { getMessage } = require("../utils/messageReader");
+const MessageType = require("../config/messageType");
+
 // Tempo de timeout em milissegundos (30 minutos)(1800000)
-const TIMEOUT_DURATION = 1800000 ;
+const TIMEOUT_DURATION = 1800000;
 
 // Armazena os timeouts ativos
 const activeTimeouts = new Map();
@@ -18,13 +22,32 @@ async function startTimeout(client, userNumber, chat, name = "") {
   // Configura novo timeout
   const timeoutId = setTimeout(async () => {
     try {
-      await client.sendMessage(
-        userNumber,
-        `Oi *${name}*, eu percebi seu interesse em participar da seleção... Digite *MENU* para fazer a sua inscrição e garantir a sua vaga.`
-      );
+      // Busca a mensagem de timeout do banco com as variáveis necessárias
+      const timeoutMessage = await getMessage(MessageType.TIMEOUT, {
+        name: name || "usuário",
+      });
+
+      await client.sendMessage(userNumber, timeoutMessage);
       activeTimeouts.delete(userNumber);
     } catch (error) {
-      console.error('Erro ao enviar mensagem de timeout:', error);
+      console.error("Erro ao enviar mensagem de timeout:", error);
+
+      // Fallback em caso de erro - mensagem básica padronizada
+      try {
+        const fallbackMessage =
+          `Oi *{{name}}*, eu percebi seu interesse em participar da seleção... Digite *MENU* para fazer a sua inscrição e garantir a sua vaga.`.replace(
+            "{{name}}",
+            name || "usuário"
+          );
+
+        await client.sendMessage(userNumber, fallbackMessage);
+        activeTimeouts.delete(userNumber);
+      } catch (fallbackError) {
+        console.error(
+          "Erro no fallback da mensagem de timeout:",
+          fallbackError
+        );
+      }
     }
   }, TIMEOUT_DURATION);
 
@@ -33,7 +56,7 @@ async function startTimeout(client, userNumber, chat, name = "") {
 
 /**
  * Cancela um timeout ativo
- * @param {string} userNumber 
+ * @param {string} userNumber
  */
 function cancelTimeout(userNumber) {
   if (activeTimeouts.has(userNumber)) {

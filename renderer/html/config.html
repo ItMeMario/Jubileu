@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - Jubileu</title>
+    <link rel="stylesheet" href="../css/globalCss.css">
+    <link rel="stylesheet" href="../css/config.css">
+    <link rel="stylesheet" href="../css/messages.css"><!-- ✅ novo -->
+    <link rel="stylesheet" href="../css/city.css">
+    <link rel="stylesheet" href="../css/indicadores.css">
+    <link rel="stylesheet" href="../css/modoDev.css">
+    <link rel="stylesheet" href="../css/dataBase.css">
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>🤖 Jubileu</h2>
+        <button class="menu-item active" data-section="messages">
+            📝 Gerenciar Mensagens
+        </button>
+        <button class="menu-item" data-section="cities">
+            🏙️ Gerenciar Cidades
+        </button>
+        <button class="menu-item" data-section="indicators">
+            📊 Indicadores
+        </button>
+        <button class="menu-item" data-section="dev-mode">
+            🔧 Modo Dev
+        </button>
+        <button class="menu-item" data-section="database">
+            🗄️ Banco de Dados
+        </button>
+    </div>
+
+    <div class="content">
+        <div id="status" class="status-message"></div>
+
+        <!-- Seção de Mensagens -->
+        <div id="messages-section" class="section active">
+            <div class="content-header">
+                <h1>Gerenciar Mensagens</h1>
+                <p>Adicione, edite e gerencie as mensagens do bot</p>
+            </div>
+
+            <!-- Lista de Mensagens -->
+            <div class="messages-list" id="messages-list">
+                <div class="empty-state">Carregando mensagens...</div>
+            </div>
+
+            <!-- Formulário de Mensagem -->
+            <div class="form-group">
+                <label for="message-locale">Idioma/Locale:</label>
+                <select id="message-locale">
+                    <option value="">Carregando...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="message-type">Tipo de Mensagem:</label>
+                <select id="message-type">
+                    <option value="">Carregando...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="message-content">Conteúdo da Mensagem:</label>
+                <textarea id="message-content" placeholder="Digite o conteúdo da mensagem aqui..." rows="6"></textarea>
+            </div>
+
+            <div class="button-group">
+                <button id="btn-save-message" class="btn btn-primary">Salvar Mensagem</button>
+                <button id="btn-clear-form" class="btn btn-secondary">Limpar</button>
+                <button id="btn-delete-message" class="btn btn-danger" style="display: none;">Excluir</button>
+            </div>
+
+            <!-- ✅ SEÇÃO MELHORADA: Verificação de Completude de Mensagens -->
+            <div class="message-completeness-section">
+                <div class="completeness-header">
+                    <h3>🔍 Verificação de Completude</h3>
+                    <p>Verifique se todas as mensagens necessárias estão configuradas</p>
+                </div>
+
+                <div class="completeness-controls">
+                    <!-- Modo de Verificação -->
+                    <div class="verification-mode">
+                        <h4>📊 Modo de Verificação</h4>
+                        <div class="mode-selector">
+                            <button id="btn-mode-all" class="btn-mode active" data-mode="all">
+                                🌐 Todos os Locales
+                            </button>
+                            <button id="btn-mode-specific" class="btn-mode" data-mode="specific">
+                                🎯 Locale Específico
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Seleção de Locale (só aparece quando modo específico está ativo) -->
+                    <div id="specific-locale-section" class="form-group" style="display: none;">
+                        <label for="completeness-locale">
+                            <span class="icon">🌍</span>
+                            Selecione o Locale:
+                        </label>
+                        <select id="completeness-locale">
+                            <option value="">Carregando locales...</option>
+                        </select>
+                        <div class="hint">Escolha o locale que deseja verificar individualmente</div>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="btn-check-completeness" class="btn btn-primary">
+                            <span class="icon">🔍</span>
+                            <span id="btn-text">Verificar Todos os Locales</span>
+                        </button>
+                    </div>
+
+                    <!-- Indicador de modo atual -->
+                    <div id="current-mode-indicator" class="mode-indicator">
+                        <span class="mode-badge active">🌐 Modo: Todos os Locales</span>
+                    </div>
+                </div>
+
+                <!-- Área de Resultados -->
+                <div id="completeness-results" class="completeness-results" style="display: none;">
+                    <div class="results-header">
+                        <h4>📊 Resultados da Verificação</h4>
+                        <div id="results-mode-info" class="results-mode-info"></div>
+                    </div>
+                    <div id="completeness-content" class="results-content">
+                        <!-- Conteúdo será preenchido dinamicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Cidades -->
+        <div id="cities-section" class="section">
+            <div class="content-header">
+                <h1>Gerenciar Cidades</h1>
+                <p>Adicione, edite e gerencie as cidades do sistema</p>
+            </div>
+
+            <!-- Lista de Cidades -->
+            <div class="cities-list" id="cities-list">
+                <div class="empty-state">Carregando cidades...</div>
+            </div>
+
+            <!-- Formulário de Cidade -->
+            <div class="form-group">
+                <label for="city-name">Nome da Cidade *:</label>
+                <input type="text" id="city-name" placeholder="Digite o nome da cidade..." maxlength="100">
+            </div>
+
+            <div class="form-group">
+                <label for="city-link">Link (opcional):</label>
+                <input type="url" id="city-link" placeholder="https://exemplo.com">
+                <div class="hint">Link relacionado à cidade (opcional)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="city-message">Mensagem (opcional):</label>
+                <textarea id="city-message" placeholder="Digite uma mensagem sobre a cidade..." rows="4"></textarea>
+                <div class="hint">Informações adicionais sobre a cidade</div>
+            </div>
+
+            <div class="form-group">
+                <label for="city-date">Data (opcional):</label>
+                <input type="text" id="city-date" placeholder="Ex: 2024-01-15">
+                <div class="hint">Data relacionada à cidade ou evento</div>
+            </div>
+
+            <div class="button-group">
+                <button id="btn-save-city" class="btn btn-primary">Salvar Cidade</button>
+                <button id="btn-clear-form" class="btn btn-secondary">Limpar</button>
+                <button id="btn-set-primary" class="btn btn-primary" style="display: none;">Definir como
+                    Primária</button>
+                <button id="btn-delete-city" class="btn btn-danger" style="display: none;">Excluir</button>
+            </div>
+        </div>
+
+        <!-- Seção de Indicadores -->
+        <div id="indicators-section" class="section">
+            <div class="content-header">
+                <h1>📊 Indicadores</h1>
+                <p>Carregando estatísticas do sistema...</p>
+            </div>
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Carregando dados...</p>
+            </div>
+        </div>
+
+        <!-- Seção de Modo Dev -->
+        <div id="dev-mode-section" class="section">
+            <div class="content-header">
+                <h1>🔧 Modo Dev</h1>
+                <p>Configure e monitore o ambiente de desenvolvimento</p>
+            </div>
+
+            <div id="modo-dev-loading" class="loading-state" style="display: none;">
+                <div class="spinner"></div>
+                <p>Carregando...</p>
+            </div>
+
+            <div class="dev-status-overview">
+                <h3>📊 Status Atual</h3>
+                <div class="status-grid">
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-icon">🚀</span>
+                            <h4>Modo de Execução</h4>
+                            <span id="dev-mode-indicator" class="status-indicator">◯</span>
+                        </div>
+                        <div class="status-info">
+                            <button id="btn-toggle-dev-mode" class="btn btn-toggle">
+                                Modo: Carregando...
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-icon">🛠</span>
+                            <h4>Debug</h4>
+                            <span id="debug-mode-indicator" class="status-indicator">◯</span>
+                        </div>
+                        <div class="status-info">
+                            <button id="btn-toggle-debug-mode" class="btn btn-toggle">
+                                Debug: Carregando...
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-icon">👥</span>
+                            <h4>Modo de Grupo</h4>
+                        </div>
+                        <div class="status-info">
+                            <button id="btn-toggle-group-mode" class="btn btn-toggle">
+                                Carregando...
+                            </button>
+                            <div class="hint">SINGLE = só grupo primário | MULTI = todos os grupos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dev-scout-config">
+                <h3>⏱️ Configuração do Scout</h3>
+                <div class="scout-config-card">
+                    <form id="scout-form" class="scout-form">
+                        <div class="form-group">
+                            <label for="scout-time-input">Tempo do Scout:</label>
+                            <input type="text" id="scout-time-input" placeholder="HH:MM:SS (ex: 01:30:45)"
+                                pattern="^([01]?[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$" title="Formato: HH:MM:SS">
+                            <div class="hint">Formato: Horas:Minutos:Segundos</div>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">
+                                💾 Salvar Configuração
+                            </button>
+                        </div>
+                    </form>
+                    <div id="current-scout-info" class="current-config">
+                        Tempo atual: Carregando...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Banco de Dados -->
+        <div id="database-section" class="section">
+            <!-- O conteúdo será gerado dinamicamente -->
+        </div>
+    </div>
+
+    <script src="../guiConfig/configRenderer.js"></script>
+    <script src="../guiScripts/messageRenderer.js"></script>
+    <script src="../guiScripts/cityRenderer.js"></script>
+    <script src="../guiScripts/indicadoresRenderer.js"></script>
+    <script src="../guiScripts/modoDevRenderer.js"></script>
+    <script src="../guiScripts/dataBaseRenderer.js"></script>
+
+</body>
+
+</html>

@@ -141,3 +141,89 @@ Adicionado tratamento para recusar emojis, garantindo consistência no conteúdo
 [Nenhuma correção registrada nesta versão.]
 
 📅 Data de Lançamento: 19/08/2025
+
+📌 Patch Notes - Versão 0.0.6
+✨ Novidades
+
+Adicionado Front-End com Electron.
+
+Adicionadas instruções de instalação no README.
+
+Adicionado botão de iniciar e parar o bot.
+
+Implementado CRUD de mensagens na interface gráfica (GUI).
+
+Implementado CRUD de cidades na GUI.
+
+Implementado CRUD de indicadores na GUI.
+
+Implementado CRUD do modo Dev na GUI.
+
+Implementado CRUD do banco de dados na GUI.
+
+Adicionado novo item no FAQ referente ao booking.
+
+Implementado timeout dinâmico.
+
+Implementado FAQ dinâmico.
+
+Implementado anti-spam dinâmico.
+
+Implementado menu de cidades dinâmico.
+
+Implementado menu de horários dinâmico.
+
+Implementado menu de nomes dinâmico.
+
+Implementado tratamento dinâmico para erros de cidades.
+
+Implementado tratamento dinâmico para convites de grupo, erros de grupo e status “já está no grupo”.
+
+Jubileu agora é multilíngue (suporte a múltiplos idiomas, inicialmente:
+
+🇺🇸 Inglês Americano
+
+🇧🇷 Português Brasileiro
+
+🇵🇾 Espanhol Paraguaio
+(as mensagens devem ser configuradas separadamente)).
+
+Adicionado ao modo Dev no CLI a opção de trocar o idioma.
+
+🛠️ Melhorias
+
+Ajustado o CRUD de cidades para incluir a data dos eventos.
+
+Refatorado o handler de mensagens para maior modularidade, agora dividido em 5 handlers:
+
+menuHandler
+
+faqHandler
+
+cityHandler
+
+timeHandler
+
+nameHandler
+
+Adicionado no CRUD de mensagens a verificação da quantidade de mensagens configuradas no bot.
+
+Atualização no GUI de mensagens para melhor usabilidade.
+
+🐛 Correções
+
+Corrigido o CRUD CLI de cidades, garantindo que traga corretamente mensagem e data cadastradas.
+
+Corrigido bug que fazia a mensagem de timeout aparecer mesmo quando o cliente já estava no grupo.
+
+Corrigido bug do “oi” no modo single.
+
+Corrigido bug na GUI relacionado aos tipos de mensagens.
+
+🗑️ Remoções
+
+Removido arquivo .bat que estava sem funcionalidade.
+
+Removido código legado de migração de mensagens.
+
+📅 Data de Lançamento: 05/09/2025

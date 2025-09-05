@@ -4,10 +4,20 @@ const indicadores = require("../utils/indicadores");
 const messageReader = require("../utils/messageReader");
 const delay = require("../utils/delay");
 const db = require("../config/db"); // conexão com o banco SQLite
+const { enviarMenuHorarios } = require("../handlers/timeHandler");
+const MessageType = require("../config/messageType");
+const { debug } = require("../services/debugService"); // ✅ usar debug
 
 const chatContext = {};
 
-// Função para buscar cidades do banco
+// Mensagens de fallback
+const FALLBACK_MESSAGES = {
+  [MessageType.CITY_MENU]:
+    "Estamos com seleções abertas em {{cityCount}} cidades neste momento: 🏙\n\n{{cityList}}\n\n✨ Em qual dessas cidades você gostaria de estar participando?",
+  [MessageType.WELCOME]: "Bem-vindo! Está aqui para seleção de modelos?", // Fallback simples
+};
+
+// Busca cidades do banco
 function getCitiesFromDB() {
   return new Promise((resolve, reject) => {
     db.all("SELECT * FROM cities", (err, rows) => {
@@ -17,44 +27,67 @@ function getCitiesFromDB() {
   });
 }
 
-async function enviarMenuCidades(client, chatId, chat) {
-  await chat.sendStateTyping();
-
-  const cities = await getCitiesFromDB();
-
-  let cityMenu =
-    "Estamos com seleções abertas em " +
-    cities.length +
-    " cidades neste momento: 📍\n\n";
-
-  cities.forEach((city, index) => {
-    const numberEmoji = index + 1 + "\uFE0F\u20E3";
-    cityMenu += `${numberEmoji} ${city.name}\n`;
-  });
-
-  cityMenu +=
-    "\n✨ Em qual dessas cidades você gostaria de estar participando?";
-
-  await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
-  await client.sendMessage(chatId, cityMenu);
+// Monta lista de cidades
+function buildCityList(cities) {
+  return cities
+    .map((city, index) => {
+      const numberEmoji = index + 1 + "\uFE0F\u20E3";
+      return `${numberEmoji} ${city.name}`;
+    })
+    .join("\n");
 }
 
-async function enviarMenuHorarios(client, chatId, chat) {
+// 🔹 Obter mensagem dinâmica de CITY_MENU com fallback
+async function getCityMenuMessage(cities) {
+  const cityCount = cities.length;
+  const cityList = buildCityList(cities);
+
+  try {
+    const dynamicMessage = await messageReader.getMessage(
+      MessageType.CITY_MENU,
+      { cityCount, cityList }
+    );
+
+    if (!dynamicMessage.includes("[ERRO:")) {
+      return dynamicMessage;
+    }
+
+    await debug("ℹ️ Mensagem CITY_MENU não cadastrada, usando fallback.");
+  } catch {
+    await debug("ℹ️ Erro ao buscar CITY_MENU, usando fallback.");
+  }
+
+  return FALLBACK_MESSAGES[MessageType.CITY_MENU]
+    .replace("{{cityCount}}", cityCount)
+    .replace("{{cityList}}", cityList);
+}
+
+// 🔹 Obter mensagem dinâmica de WELCOME com fallback
+async function getWelcomeMessage(name) {
+  try {
+    const dynamicMessage = await messageReader.getMessage(MessageType.WELCOME, {
+      name,
+    });
+
+    if (!dynamicMessage.includes("[ERRO:")) {
+      return dynamicMessage;
+    }
+
+    await debug("ℹ️ Mensagem WELCOME não cadastrada, usando fallback.");
+  } catch {
+    await debug("ℹ️ Erro ao buscar WELCOME, usando fallback.");
+  }
+
+  return FALLBACK_MESSAGES[MessageType.WELCOME];
+}
+
+async function enviarMenuCidades(client, chatId, chat) {
   await chat.sendStateTyping();
-
-  const timeMenu = `⚠*IMPORTANTE: Escolha seu horário:*
-_Horários disponíveis_
-1️⃣ - 10:00h (Manhã)
-2️⃣ - 12:00h (Meio-dia)
-3️⃣ - 14:00h (Depois do almoço)
-4️⃣ - 15:30h (Tarde)
-5️⃣ - 17:30h (Final da tarde)
-6️⃣ - 19:30h (Noite)
-
-*Por favor me informe o horário que você escolheu…*`;
+  const cities = await getCitiesFromDB();
+  const cityMenuMessage = await getCityMenuMessage(cities);
 
   await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
-  await client.sendMessage(chatId, timeMenu);
+  await client.sendMessage(chatId, cityMenuMessage);
 }
 
 async function enviarMensagemMenu(client, msg, chat) {
@@ -65,14 +98,9 @@ async function enviarMensagemMenu(client, msg, chat) {
   const contact = await msg.getContact();
   const name = contact.pushname?.split(" ")[0] || "";
 
-   const messageTemplate = await messageReader.getWelcomeMessage();
+  const welcomeMessage = await getWelcomeMessage(name);
 
-  const greetingMessage = `Olá ${name}! Tudo bem?\n\n${messageReader.processarMensagem(
-    messageTemplate,
-    name
-  )}`;
-
-  await client.sendMessage(msg.from, greetingMessage);
+  await client.sendMessage(msg.from, welcomeMessage);
   await enviarMenuCidades(client, msg.from, chat);
 }
 

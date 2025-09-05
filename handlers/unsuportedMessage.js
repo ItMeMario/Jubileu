@@ -1,35 +1,46 @@
 // messageTypeHandler.js - Gerenciador de tipos de mensagem não suportados
 const { antiSpamManager } = require("../utils/antiSpam");
+const { getMessage } = require("../utils/messageReader");
+const MessageType = require("../config/messageType");
+
+// Mensagens de fallback (mantidas como backup caso o banco não carregue)
+const FALLBACK_MESSAGES = {
+  [MessageType.UNSUPORTED_AUDIO]:
+    "🎵 Desculpe, não consigo escutar áudios! 😅\n\nPor favor, digite sua mensagem por texto para que eu possa te ajudar melhor. 📝\n\nSe precisar de ajuda, digite *AJUDA* ou *FAQ*! 😊",
+  [MessageType.UNSUPORTED_VIDEO]:
+    "🎥 Desculpe, não consigo visualizar vídeos! 😅\n\nPor favor, digite sua mensagem por texto para que eu possa te ajudar melhor. 📝",
+  [MessageType.UNSUPORTED_DOCUMENT]:
+    "📄 Desculpe, não consigo abrir documentos! 😅\n\nPor favor, digite sua mensagem por texto para que eu possa te ajudar melhor. 📝",
+  [MessageType.UNSUPORTED_STICKER]:
+    "😄 Que figurinha legal! Mas preciso que você digite sua mensagem por texto para que eu possa te ajudar. 📝",
+  [MessageType.UNSUPORTED_EMOJI]:
+    "😄 Emoji legal! Mas preciso que você digite sua resposta em texto para que eu possa te ajudar. 📝",
+};
 
 // Configurações para tipos de mensagem não suportados
 const UNSUPPORTED_MESSAGE_CONFIG = {
   audio: {
-    message:
-      "🎵 Desculpe, não consigo escutar áudios! 😅\n\nPor favor, digite sua mensagem por texto para que eu possa te ajudar melhor. 📝\n\nSe precisar de ajuda, digite *AJUDA* ou *FAQ*! 😊",
+    messageType: MessageType.UNSUPORTED_AUDIO,
     incrementSpam: true,
     logMessage: "Usuário enviou áudio",
   },
   video: {
-    message:
-      "🎥 Desculpe, não consigo visualizar vídeos! 😅\n\nPor favor, digite sua mensagem por texto para que eu possa te ajudar melhor. 📝",
+    messageType: MessageType.UNSUPORTED_VIDEO,
     incrementSpam: true,
     logMessage: "Usuário enviou vídeo",
   },
   document: {
-    message:
-      "📄 Desculpe, não consigo abrir documentos! 😅\n\nPor favor, digite sua mensagem por texto para que eu possa te ajudar melhor. 📝",
+    messageType: MessageType.UNSUPORTED_DOCUMENT,
     incrementSpam: false, // Documentos podem ser enviados por engano, não conta como spam
     logMessage: "Usuário enviou documento",
   },
   sticker: {
-    message:
-      "😄 Que figurinha legal! Mas preciso que você digite sua mensagem por texto para que eu possa te ajudar. 📝",
+    messageType: MessageType.UNSUPORTED_STICKER,
     incrementSpam: false, // Stickers são mais casuais, não conta como spam
     logMessage: "Usuário enviou sticker",
   },
   emoji: {
-    message:
-      "😄 Emoji legal! Mas preciso que você digite sua resposta em texto para que eu possa te ajudar. 📝",
+    messageType: MessageType.UNSUPORTED_EMOJI,
     incrementSpam: false, // Emojis são casuais, não contam como spam
     logMessage: "Usuário enviou apenas emoji",
   },
@@ -55,6 +66,36 @@ function isEmojiOnly(body) {
 }
 
 class MessageTypeHandler {
+  /**
+   * Obtém a mensagem dinâmica ou fallback
+   * @param {string} messageType - Tipo da mensagem (MessageType)
+   * @returns {Promise<string>} - Mensagem processada
+   */
+  async getUnsupportedMessage(messageType) {
+    try {
+      // Tenta buscar a mensagem do banco de dados
+      const dynamicMessage = await getMessage(messageType);
+
+      // Se a mensagem do banco não contém erro, usa ela
+      if (!dynamicMessage.includes("[ERRO:")) {
+        return dynamicMessage;
+      }
+
+      // Senão, usa fallback
+      return (
+        FALLBACK_MESSAGES[messageType] || "Tipo de mensagem não suportado."
+      );
+    } catch (error) {
+      console.warn(
+        `⚠️ Erro ao buscar mensagem dinâmica para ${messageType}, usando fallback:`,
+        error
+      );
+      return (
+        FALLBACK_MESSAGES[messageType] || "Tipo de mensagem não suportado."
+      );
+    }
+  }
+
   /**
    * Verifica se a mensagem é de um tipo não suportado
    * @param {Object} msg - Objeto da mensagem do WhatsApp
@@ -131,8 +172,9 @@ class MessageTypeHandler {
         // Incrementa contador de spam
         const spamCheck = await antiSpamManager.incrementAttempts(userNumber);
 
-        // Envia mensagem padrão do tipo não suportado
-        await client.sendMessage(userNumber, config.message);
+        // Busca mensagem dinâmica ou usa fallback
+        const message = await this.getUnsupportedMessage(config.messageType);
+        await client.sendMessage(userNumber, message);
 
         // Processa ação de spam se necessário
         if (spamCheck.action === "send_faq") {
@@ -160,7 +202,8 @@ class MessageTypeHandler {
         };
       } else {
         // Apenas envia mensagem informativa sem incrementar spam
-        await client.sendMessage(userNumber, config.message);
+        const message = await this.getUnsupportedMessage(config.messageType);
+        await client.sendMessage(userNumber, message);
         return {
           handled: true,
           action: "info_sent",
@@ -198,7 +241,7 @@ class MessageTypeHandler {
    */
   addUnsupportedType(type, config) {
     UNSUPPORTED_MESSAGE_CONFIG[type] = {
-      message: config.message || "Tipo de mensagem não suportado.",
+      messageType: config.messageType || MessageType.UNSUPORTED_AUDIO,
       incrementSpam:
         config.incrementSpam !== undefined ? config.incrementSpam : true,
       logMessage: config.logMessage || `Usuário enviou ${type}`,

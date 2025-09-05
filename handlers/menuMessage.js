@@ -3,6 +3,7 @@ const groupService = require("../services/groupService");
 
 const singleMenu = require("./menuSingle");
 const multiMenu = require("./menuMulti");
+const { enviarMenuHorarios } = require("./timeHandler");
 
 function enviarMensagemMenu(client, msg, chat) {
   const currentMode = groupService.getCurrentMode();
@@ -16,6 +17,6 @@ function enviarMensagemMenu(client, msg, chat) {
 
 module.exports = {
   enviarMensagemMenu,
-  enviarMenuHorarios: singleMenu.enviarMenuHorarios, // Compartilhada
-  chatContext: require("./menuSingle").chatContext // Centraliza para manter compatibilidade
+  enviarMenuHorarios,
+  chatContext: require("./menuSingle").chatContext, // Centraliza para manter compatibilidade
 };

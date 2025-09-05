@@ -1,28 +1,33 @@
 // menuSingle.js
-const modoDevService = require("../services/modoDevService");
 const indicadores = require("../utils/indicadores");
 const messageReader = require("../utils/messageReader");
 const delay = require("../utils/delay");
+const { enviarMenuHorarios } = require("../handlers/timeHandler");
+const MessageType = require("../config/messageType");
+const { debug } = require("../services/debugService"); // ✅ usar debug
 
 const chatContext = {};
 
-async function enviarMenuHorarios(client, chatId, chat) {
-  await chat.sendStateTyping();
+// Mensagem de fallback para WELCOME
+const FALLBACK_WELCOME_MESSAGE =
+  "Bem-vindo! Está aqui para seleção de modelos?";
 
-  const timeMenu = `⚠*IMPORTANTE: Escolha seu horário:*
-_Horarios disponíveis_
-1️⃣ - 10:00h (Manhã)
-2️⃣ - 12:00h (Meio-dia)
-3️⃣ - 14:00h (Depois do almoço)
-4️⃣ - 15:30h (Tarde)
-5️⃣ - 17:30h (Final da tarde)
-6️⃣ - 19:30h (Noite)
+/**
+* Obtém a mensagem de boas-vindas dinâmica com fallback
+ * @param {string} name - Nome do usuário
+ * @returns {Promise<string>} - Mensagem processada
+ */
+async function getWelcomeMessage(name) {
+  try {
+    const dynamicMessage = await messageReader.getMessage(MessageType.WELCOME, {
+      name,
+    });
 
-*Por favor me informe o horário que você escolheu…*`;
-
-  // Delay antes do menu de horários
-  await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
-  await client.sendMessage(chatId, timeMenu);
+    return dynamicMessage;
+  } catch (error) {
+    await debug("ℹ️ Erro ao buscar WELCOME, usando fallback:", error.message);
+    return messageReader.processVariables(FALLBACK_WELCOME_MESSAGE, { name });
+  }
 }
 
 async function enviarMensagemMenu(client, msg, chat) {
@@ -33,15 +38,9 @@ async function enviarMensagemMenu(client, msg, chat) {
   const contact = await msg.getContact();
   const name = contact.pushname?.split(" ")[0] || "";
 
-  // Agora lê a mensagem de boas-vindas do banco
-   const messageTemplate = await messageReader.getWelcomeMessage();
+  const welcomeMessage = await getWelcomeMessage(name);
 
-  const greetingMessage = `Olá ${name}! Tudo bem?\n\n${messageReader.processarMensagem(
-    messageTemplate,
-    name
-  )}`;
-
-  await client.sendMessage(msg.from, greetingMessage);
+  await client.sendMessage(msg.from, welcomeMessage);
   await enviarMenuHorarios(client, msg.from, chat);
 }
 

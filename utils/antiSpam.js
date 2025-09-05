@@ -2,6 +2,7 @@
 const { readJsonFile, saveJsonFile } = require("./initialize");
 const { enviarFAQ } = require("./triggers");
 const { debug } = require("../services/debugService");
+const { getMessage } = require("../utils/messageReader");
 
 const SPAM_CONFIG = {
   FAQ_THRESHOLD: 3, // Envia FAQ após 3 tentativas
@@ -158,33 +159,76 @@ class AntiSpamManager {
   async handleSpamAction(client, msg, action, extraData = {}) {
     const userNumber = msg.from;
 
-    switch (action) {
-      case "send_faq":
-        await enviarFAQ(client, msg);
-        await client.sendMessage(
-          userNumber,
-          "🤔 Percebi que você está com algumas dúvidas! Enviei acima nossa lista de perguntas frequentes que pode te ajudar. 😊"
-        );
-        break;
+    try {
+      switch (action) {
+        case "send_faq":
+          await enviarFAQ(client, msg);
+          break;
 
-      case "suspend":
-        await client.sendMessage(
-          userNumber,
-          `Oi, Léo aqui! 😊 Poderia me explicar, por gentileza, com detalhes por escrito a sua questão? Assim que possível, te respondo. Obrigado! 🙏`
-        );
-        break;
+        case "suspend":
+          const suspendMessage = await getMessage("suspend", {
+            suspendDurationMinutes: extraData.suspendDurationMinutes || 60,
+          });
+          await client.sendMessage(userNumber, suspendMessage);
+          break;
 
-      case "suspended":
-        // Usuário já suspenso tentando enviar mensagem
-        await client.sendMessage(
-          userNumber,
-          `Por favor, aguarde. Responderei assim que possível. ⏳\nAtenciosamente,\nLeonardo Rieper 👍🏻`
-        );
-        break;
+        case "suspended":
+          const suspendedMessage = await getMessage("suspended", {
+            remainingMinutes: extraData.remainingMinutes || 0,
+          });
+          await client.sendMessage(userNumber, suspendedMessage);
+          break;
+
+        default:
+          console.warn(`Ação de spam desconhecida: ${action}`);
+          break;
+      }
+    } catch (error) {
+      console.error(`Erro ao enviar mensagem de spam (${action}):`, error);
+
+      // Fallback para mensagens hardcoded em caso de erro
+      await this.handleSpamActionFallback(client, msg, action, extraData);
     }
   }
 
-  // Método para obter estatísticas (útil para debugging)
+  /**
+   * Método de fallback com mensagens hardcoded para casos de emergência
+   * @private
+   */
+  async handleSpamActionFallback(client, msg, action, extraData = {}) {
+    const userNumber = msg.from;
+
+    try {
+      switch (action) {
+        case "send_faq":
+          await client.sendMessage(
+            userNumber,
+            "🤔 Percebi que você está com algumas dúvidas! digite *FAQ* ou *AJUDA* nossa lista de perguntas frequentes que pode te ajudar. 😊"
+          );
+          break;
+
+        case "suspend":
+          await client.sendMessage(
+            userNumber,
+            `Oi! 😊 Poderia me explicar, por gentileza, com detalhes por escrito a sua questão? Assim que possível, te respondo. Obrigado! 🙏`
+          );
+          break;
+
+        case "suspended":
+          await client.sendMessage(
+            userNumber,
+            `Por favor, aguarde. Responderei assim que possível. ⏳\nAtenciosamente`
+          );
+          break;
+      }
+    } catch (fallbackError) {
+      console.error(
+        `Erro no fallback da mensagem de spam (${action}):`,
+        fallbackError
+      );
+    }
+  }
+
   getStats() {
     return {
       activeAttempts: Object.keys(this.userAttempts).length,
@@ -194,7 +238,6 @@ class AntiSpamManager {
   }
 }
 
-// Instância singleton
 const antiSpamManager = new AntiSpamManager();
 
 module.exports = {
