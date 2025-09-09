@@ -88,7 +88,7 @@
                         <h4>📊 Modo de Verificação</h4>
                         <div class="mode-selector">
                             <button id="btn-mode-all" class="btn-mode active" data-mode="all">
-                                🌐 Todos os Locales
+                                🌍 Todos os Locales
                             </button>
                             <button id="btn-mode-specific" class="btn-mode" data-mode="specific">
                                 🎯 Locale Específico
@@ -117,7 +117,7 @@
 
                     <!-- Indicador de modo atual -->
                     <div id="current-mode-indicator" class="mode-indicator">
-                        <span class="mode-badge active">🌐 Modo: Todos os Locales</span>
+                        <span class="mode-badge active">🌍 Modo: Todos os Locales</span>
                     </div>
                 </div>
 
@@ -210,7 +210,7 @@
                         <div class="status-header">
                             <span class="status-icon">🚀</span>
                             <h4>Modo de Execução</h4>
-                            <span id="dev-mode-indicator" class="status-indicator">◯</span>
+                            <span id="dev-mode-indicator" class="status-indicator">○</span>
                         </div>
                         <div class="status-info">
                             <button id="btn-toggle-dev-mode" class="btn btn-toggle">
@@ -223,7 +223,7 @@
                         <div class="status-header">
                             <span class="status-icon">🛠</span>
                             <h4>Debug</h4>
-                            <span id="debug-mode-indicator" class="status-indicator">◯</span>
+                            <span id="debug-mode-indicator" class="status-indicator">○</span>
                         </div>
                         <div class="status-info">
                             <button id="btn-toggle-debug-mode" class="btn btn-toggle">
@@ -265,6 +265,30 @@
                     </form>
                     <div id="current-scout-info" class="current-config">
                         Tempo atual: Carregando...
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== NOVA SEÇÃO: Configuração de Idioma ========== -->
+            <div class="dev-locale-config">
+                <h3>🌍 Configuração de Idioma</h3>
+                <div class="locale-config-card">
+                    <form id="locale-form" class="locale-form">
+                        <div class="form-group">
+                            <label for="locale-select">Selecionar Idioma:</label>
+                            <select id="locale-select">
+                                <option value="">Carregando idiomas...</option>
+                            </select>
+                            <div class="hint">Escolha o idioma do sistema</div>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">
+                                🌍 Alterar Idioma
+                            </button>
+                        </div>
+                    </form>
+                    <div id="current-locale-info" class="current-config">
+                        Idioma atual: Carregando...
                     </div>
                 </div>
             </div>

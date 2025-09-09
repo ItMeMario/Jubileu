@@ -202,6 +202,83 @@
     color: #495057;
 }
 
+/* ===== NOVA SEÇÃO: LOCALE CONFIGURATION ===== */
+.dev-locale-config {
+    margin-bottom: 30px;
+}
+
+.dev-locale-config h3 {
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.3em;
+}
+
+.locale-config-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.locale-form {
+    margin-bottom: 20px;
+}
+
+.locale-form .form-group {
+    margin-bottom: 20px;
+}
+
+.locale-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.locale-form select {
+    width: 100%;
+    max-width: 300px;
+    padding: 12px 15px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+    background-color: white;
+    cursor: pointer;
+}
+
+.locale-form select:focus {
+    outline: none;
+    border-color: #25d366;
+    box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+}
+
+.locale-form select:disabled {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.locale-form select option {
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.locale-form select option:hover {
+    background-color: #f8f9fa;
+}
+
+/* Estilo específico para informações de locale atual */
+#current-locale-info {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+    font-weight: 600;
+    color: #495057;
+}
+
 /* ===== HINTS ===== */
 .hint {
     font-size: 0.85em;
@@ -216,7 +293,8 @@
         grid-template-columns: 1fr;
     }
 
-    .scout-form input[type="text"] {
+    .scout-form input[type="text"],
+    .locale-form select {
         max-width: 100%;
     }
 }
@@ -245,19 +323,23 @@
 }
 
 .status-card,
-.scout-config-card {
+.scout-config-card,
+.locale-config-card {
     animation: fadeIn 0.3s ease-out;
 }
 
 /* ===== ESTADOS DE LOADING ===== */
 .dev-status-overview.loading .status-card,
-.dev-scout-config.loading .scout-config-card {
+.dev-scout-config.loading .scout-config-card,
+.dev-locale-config.loading .locale-config-card {
     opacity: 0.6;
     pointer-events: none;
 }
 
 /* ===== ESTADOS DE ERRO ===== */
-.status-card.error {
+.status-card.error,
+.scout-config-card.error,
+.locale-config-card.error {
     border-color: #dc3545;
     background-color: #fff5f5;
 }
@@ -277,3 +359,14 @@
     background: linear-gradient(135deg, #fffbf0 0%, #ffffff 100%);
 }
 
+/* ===== ESTADOS DE SUCESSO PARA LOCALE ===== */
+.locale-config-card.success {
+    border-left: 4px solid #28a745;
+    background: linear-gradient(135deg, #f8fff8 0%, #ffffff 100%);
+}
+
+.locale-config-card.success #current-locale-info {
+    border-left-color: #28a745;
+    background-color: #d4edda;
+    color: #155724;
+}

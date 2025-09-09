@@ -202,7 +202,7 @@ async function configureLocale(rl) {
   await modoDevView.waitForEnter(rl);
 }
 
-// ========== MÃ‰TODOS PARA GUI ==========
+// ========== MÉTODOS PARA GUI ==========
 
 async function toggleDevMode() {
   try {

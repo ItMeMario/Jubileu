@@ -94,6 +94,49 @@ class ModoDevHandlers {
       return { success: false, error: error.message };
     }
   }
+
+  // ========== NOVOS MÉTODOS PARA LOCALE ==========
+
+  // Obter locale atual
+  async getCurrentLocale() {
+    try {
+      console.log("Obtendo locale atual...");
+      return await modoDevController.getCurrentLocale();
+    } catch (error) {
+      console.error("Erro ao obter locale atual:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Obter locales disponíveis
+  async getAvailableLocales() {
+    try {
+      console.log("Obtendo locales disponíveis...");
+      return await modoDevController.getAvailableLocales();
+    } catch (error) {
+      console.error("Erro ao obter locales disponíveis:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Alterar locale
+  async setLocale(event, selectedIndex) {
+    try {
+      console.log("Alterando locale:", selectedIndex);
+      // Validação básica antes de enviar para o controller
+      if (
+        !selectedIndex ||
+        typeof selectedIndex !== "string" ||
+        selectedIndex.trim() === ""
+      ) {
+        return { success: false, error: "Seleção é obrigatória" };
+      }
+      return await modoDevController.setLocale(selectedIndex.trim());
+    } catch (error) {
+      console.error("Erro ao alterar locale:", error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 module.exports = ModoDevHandlers;

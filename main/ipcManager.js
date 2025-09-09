@@ -269,6 +269,20 @@ class IPCManager {
       this.handlers.modoDev.toggleGroupMode.bind(this.handlers.modoDev)
     );
 
+    // ========== NOVOS HANDLERS PARA LOCALE ==========
+    ipcMain.handle(
+      "modo-dev-get-current-locale",
+      this.handlers.modoDev.getCurrentLocale.bind(this.handlers.modoDev)
+    );
+    ipcMain.handle(
+      "modo-dev-get-available-locales",
+      this.handlers.modoDev.getAvailableLocales.bind(this.handlers.modoDev)
+    );
+    ipcMain.handle(
+      "modo-dev-set-locale",
+      this.handlers.modoDev.setLocale.bind(this.handlers.modoDev)
+    );
+
     console.log("Handlers de modo dev registrados");
   }
 
@@ -347,14 +361,17 @@ class IPCManager {
       "indicadores-clear-statistics",
       "indicadores-export-to-txt",
 
-      // Modo Dev events - ATUALIZADO: removido evento detailed-status
+      // Modo Dev events - ATUALIZADO: adicionados eventos de locale
       "modo-dev-toggle-dev-mode",
       "modo-dev-toggle-debug-mode",
       "modo-dev-set-scout-time",
       "modo-dev-get-scout-config",
       "modo-dev-get-current-mode",
-      // REMOVIDO: "modo-dev-get-detailed-status",
       "modo-dev-toggle-group-mode",
+      // NOVOS: eventos de locale
+      "modo-dev-get-current-locale",
+      "modo-dev-get-available-locales",
+      "modo-dev-set-locale",
 
       // Database events
       "database-get-all-tables",
