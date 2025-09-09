@@ -127,7 +127,7 @@ class ModoDevRenderer {
     }
   }
 
-  // ========== NOVO: Métodos para locale ==========
+  // ========== CORRIGIDO: Métodos para locale ==========
   async loadLocaleData() {
     try {
       // Carregar locale atual e locales disponíveis em paralelo
@@ -137,10 +137,12 @@ class ModoDevRenderer {
       ]);
 
       if (currentResult.success) {
+        // currentResult.data é uma string como "en-US"
         this.currentLocale = currentResult.data;
       }
 
       if (availableResult.success) {
+        // availableResult.data é um array de objetos como [{name: "English", code: "en-US"}, ...]
         this.availableLocales = availableResult.data;
         this.updateLocaleSelectOptions();
       }
@@ -166,7 +168,8 @@ class ModoDevRenderer {
       option.textContent = `${locale.name} (${locale.code})`;
 
       // Marcar como selecionado se for o locale atual
-      if (this.currentLocale && locale.code === this.currentLocale.code) {
+      // this.currentLocale é uma string como "en-US", então comparamos com locale.code
+      if (this.currentLocale && locale.code === this.currentLocale) {
         option.selected = true;
       }
 
@@ -176,8 +179,25 @@ class ModoDevRenderer {
 
   updateLocaleDisplay() {
     const currentLocaleInfo = document.getElementById("current-locale-info");
-    if (currentLocaleInfo && this.currentLocale) {
-      currentLocaleInfo.textContent = `Idioma atual: ${this.currentLocale.name} (${this.currentLocale.code})`;
+    if (currentLocaleInfo) {
+      if (this.currentLocale) {
+        // this.currentLocale é uma string como "en-US"
+        // Vamos buscar o nome correspondente no array de availableLocales
+        let displayName = this.currentLocale;
+
+        if (this.availableLocales) {
+          const localeObj = this.availableLocales.find(
+            (locale) => locale.code === this.currentLocale
+          );
+          if (localeObj) {
+            displayName = `${localeObj.name} (${localeObj.code})`;
+          }
+        }
+
+        currentLocaleInfo.textContent = `Idioma atual: ${displayName}`;
+      } else {
+        currentLocaleInfo.textContent = "Idioma atual: Não carregado";
+      }
     }
   }
 
@@ -505,7 +525,7 @@ class ModoDevRenderer {
     return this.currentStatus;
   }
 
-  // ========== NOVO: Métodos públicos para debug de locale ==========
+  // ========== CORRIGIDO: Métodos públicos para debug de locale ==========
   getCurrentLocale() {
     return this.currentLocale;
   }

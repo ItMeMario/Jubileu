@@ -1,8 +1,8 @@
 // config/locale.js
 const Locale = {
-  EN_US: "en-US", // Inglês (Estados Unidos)
-  PT_BR: "pt-BR", // Português (Brasil)
-  ES_PY: "es-PY", // Espanhol (Paraguai)
+  English_US: "en-US", // Inglês (Estados Unidos)
+  Portuguese_BR: "pt-BR", // Português (Brasil)
+  Spanish_PY: "es-PY", // Espanhol (Paraguai)
 };
 
 module.exports = Locale;
