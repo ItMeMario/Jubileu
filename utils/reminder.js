@@ -1,11 +1,12 @@
-// reminder.js - Sistema integrado ao bot existente
+// reminder.js - Sistema de lembretes com seleção aleatória
 const db = require("../config/db");
 const { debug } = require("../services/debugService");
 
 class ReminderSystem {
   constructor() {
-    this.reminderIntervals = [5, 3, 1]; // dias antes do evento
+    this.reminderIntervals = [5, 3]; // dias antes do evento
     this.isInitialized = false;
+    this.usedMessages = new Map(); // Para evitar repetição por cidade
   }
 
   // Verifica se é comando de reminder
@@ -14,342 +15,165 @@ class ReminderSystem {
     return text === "!reminder" || text === "!lembrete";
   }
 
-  // Processa comando !reminder (chamado pelo message.js)
+  // Processa comando !reminder manual
   async handleReminderCommand(client, msg) {
     try {
-      console.log(`\n🤖 Comando !reminder recebido`);
+      await debug("🤖 Comando !reminder recebido");
 
-      // Verifica se é um grupo
       const chat = await msg.getChat();
       if (!chat.isGroup) {
-        console.log("❌ Não é um grupo - enviando resposta...");
-        await this.safeSendMessage(
-          msg,
-          "⚠️ Este comando só funciona em grupos!"
-        );
+        await msg.reply("⚠️ Este comando só funciona em grupos!");
         return false;
       }
 
-      const groupId = chat.id._serialized;
-      console.log(`📱 Grupo: ${chat.name} (${groupId})`);
+      await debug(`📱 Grupo: ${chat.name}`);
 
-      // Busca cidade pelo nome/link do grupo
-      const city = await this.findCityByGroup(groupId, chat.name);
+      // Busca cidade pelo nome do grupo
+      const city = await this.findCityByGroupName(chat.name);
       if (!city) {
-        await this.safeSendMessage(
-          msg,
-          `⚠️ Este grupo não está cadastrado no sistema!\n\n💡 Para cadastrar, execute:\nUPDATE cities SET link = 'GRUPO:${groupId}' WHERE name = 'Nome da Cidade';`
-        );
+        await msg.reply("⚠️ Este grupo não está cadastrado no sistema!");
         return false;
       }
 
-      console.log(`🏙️ Cidade: ${city.name} | Evento: ${city.date}`);
-
-      // Busca mensagem de reminder
-      const reminderMessage = await this.getReminderMessage(city.id);
-      if (!reminderMessage) {
-        await this.safeSendMessage(
-          msg,
-          "⚠️ Nenhuma mensagem de reminder cadastrada!"
-        );
-        return false;
-      }
-
-      // Personaliza mensagem
-      const personalizedMessage = this.personalizeMessage(
-        reminderMessage,
-        city
+      const daysUntil = this.calculateDaysUntil(city.date);
+      await debug(
+        `🏙️ Cidade: ${city.name} | Evento: ${city.date} | Dias restantes: ${daysUntil}`
       );
 
-      // Tenta enviar usando método seguro
-      const success = await this.safeSendMessage(msg, personalizedMessage);
-
-      if (success) {
-        console.log(`✅ Lembrete enviado!`);
-        console.log(
-          `📄 Mensagem: ${personalizedMessage.substring(0, 100)}...\n`
-        );
-        await debug(`✅ Lembrete manual enviado para ${city.name}`);
-        return true;
-      } else {
-        console.log(`❌ Falha ao enviar lembrete`);
+      // Busca e seleciona mensagem de reminder
+      const reminderMessage = await this.selectReminderMessage(city.id);
+      if (!reminderMessage) {
+        await msg.reply("⚠️ Nenhuma mensagem de reminder cadastrada!");
         return false;
       }
+
+      // Monta mensagem final com dias restantes
+      const finalMessage = `⏰ Faltam ${daysUntil} dias!\n\n${reminderMessage}`;
+
+      await msg.reply(finalMessage);
+      await debug(
+        `✅ Lembrete manual enviado para ${city.name} (${daysUntil} dias)`
+      );
+
+      return true;
     } catch (error) {
-      console.error(`⚠️ Erro no comando !reminder:`, error);
       await debug(`⚠️ Erro no comando !reminder: ${error.message}`);
       return false;
     }
   }
 
-  // Método seguro para enviar mensagens
-  async safeSendMessage(msg, message) {
-    const methods = [
-      // Método 1: msg.reply (padrão)
-      async () => {
-        await msg.reply(message);
-        console.log("✅ Enviado via msg.reply");
+  // Processamento automático de lembretes
+  async processReminders(client) {
+    if (!client) return false;
+
+    try {
+      await debug("🔍 Verificando lembretes automáticos...");
+
+      const cities = await this.getCitiesNeedingReminders();
+      if (cities.length === 0) {
+        await debug("✅ Nenhum lembrete para enviar hoje");
         return true;
-      },
-
-      // Método 2: chat.sendMessage
-      async () => {
-        const chat = await msg.getChat();
-        await chat.sendMessage(message);
-        console.log("✅ Enviado via chat.sendMessage");
-        return true;
-      },
-
-      // Método 3: client.sendMessage com groupId
-      async () => {
-        const chat = await msg.getChat();
-        const client = msg.client;
-        await client.sendMessage(chat.id._serialized, message);
-        console.log("✅ Enviado via client.sendMessage");
-        return true;
-      },
-
-      // Método 4: Apenas log (fallback final)
-      async () => {
-        console.log("🚨 TODOS OS MÉTODOS FALHARAM - MENSAGEM A SER ENVIADA:");
-        console.log("=" * 50);
-        console.log(message);
-        console.log("=" * 50);
-        return false;
-      },
-    ];
-
-    for (let i = 0; i < methods.length; i++) {
-      try {
-        console.log(`🔄 Tentativa ${i + 1}/${methods.length}...`);
-        const result = await methods[i]();
-        if (result) return true;
-      } catch (error) {
-        console.log(`❌ Método ${i + 1} falhou:`, error.message);
-        continue;
       }
+
+      await debug(`📋 ${cities.length} cidade(s) precisam de lembrete`);
+
+      for (const city of cities) {
+        const daysUntil = this.calculateDaysUntil(city.date);
+        const reminderMessage = await this.selectReminderMessage(city.id);
+
+        if (reminderMessage) {
+          const finalMessage = `⏰ Faltam ${daysUntil} dias!\n\n${reminderMessage}`;
+          await this.sendAutomaticReminder(
+            client,
+            city,
+            finalMessage,
+            daysUntil
+          );
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // 2s entre envios
+      }
+
+      await debug("✅ Processamento automático concluído");
+      return true;
+    } catch (error) {
+      await debug(`⚠️ Erro no processamento automático: ${error.message}`);
+      return false;
+    }
+  }
+
+  // Seleciona mensagem de reminder sem repetir
+  async selectReminderMessage(cityId) {
+    const allMessages = await this.getAllReminderMessages();
+    if (allMessages.length === 0) return null;
+
+    // Se só tem uma mensagem, usa ela
+    if (allMessages.length === 1) {
+      return allMessages[0].message_content;
     }
 
-    return false;
-  }
+    // Pega mensagens já usadas para esta cidade
+    const usedIds = this.usedMessages.get(cityId) || [];
 
-  // Busca cidade pelo ID do grupo (versão corrigida)
-  async findCityByGroup(groupId, groupName = null) {
-    return new Promise((resolve, reject) => {
-      // PRIMEIRA TENTATIVA: Busca por nome do grupo (mais confiável)
-      if (groupName) {
-        db.get(
-          "SELECT * FROM cities WHERE LOWER(name) = LOWER(?)",
-          [groupName.trim()],
-          (err, row) => {
-            if (err) {
-              reject(err);
-              return;
-            }
-
-            if (row) {
-              console.log(`✅ Cidade encontrada por nome: ${row.name}`);
-              resolve(row);
-              return;
-            }
-
-            // SEGUNDA TENTATIVA: Busca por código do grupo (fallback)
-            this.findCityByGroupCode(groupId, resolve, reject);
-          }
-        );
-      } else {
-        // Se não tem nome, vai direto para busca por código
-        this.findCityByGroupCode(groupId, resolve, reject);
-      }
-    });
-  }
-
-  // Método auxiliar para busca por código
-  findCityByGroupCode(groupId, resolve, reject) {
-    const groupCode = groupId.replace("@g.us", "");
-
-    db.get(
-      "SELECT * FROM cities WHERE link LIKE ?",
-      [`%${groupCode}%`],
-      (err, row) => {
-        if (err) {
-          console.error("🚨 Erro na busca da cidade:", err);
-          reject(err);
-        } else {
-          if (row) {
-            console.log(`✅ Cidade encontrada por código: ${row.name}`);
-          } else {
-            console.log(
-              `❌ Nenhuma cidade encontrada para código: ${groupCode}`
-            );
-
-            // Debug: lista todas as cidades
-            db.all("SELECT id, name, link FROM cities", [], (err2, rows) => {
-              if (!err2 && rows) {
-                console.log("🔍 Cidades cadastradas:");
-                rows.forEach((city) => {
-                  console.log(
-                    `   ${city.id}. ${city.name} | Link: ${city.link}`
-                  );
-                });
-              }
-            });
-          }
-          resolve(row);
-        }
-      }
+    // Filtra mensagens não usadas
+    const availableMessages = allMessages.filter(
+      (msg) => !usedIds.includes(msg.id)
     );
+
+    // Se todas foram usadas, reseta a lista
+    if (availableMessages.length === 0) {
+      await debug(`🔄 Resetando mensagens usadas para cidade ${cityId}`);
+      this.usedMessages.set(cityId, []);
+      return this.selectReminderMessage(cityId); // Recursão para selecionar novamente
+    }
+
+    // Seleciona mensagem aleatória das disponíveis
+    const randomIndex = Math.floor(Math.random() * availableMessages.length);
+    const selectedMessage = availableMessages[randomIndex];
+
+    // Marca como usada
+    const updatedUsed = [...usedIds, selectedMessage.id];
+    this.usedMessages.set(cityId, updatedUsed);
+
+    await debug(
+      `🎲 Mensagem selecionada: ID ${selectedMessage.id} (${updatedUsed.length}/${allMessages.length} usadas)`
+    );
+
+    return selectedMessage.message_content;
   }
 
-  // Busca mensagem de reminder
-  async getReminderMessage(cityId) {
+  // Busca todas as mensagens de reminder
+  async getAllReminderMessages() {
     return new Promise((resolve, reject) => {
-      console.log(`🔍 Buscando mensagem reminder para cidade ID: ${cityId}`);
-
-      // Tenta buscar mensagem específica da cidade primeiro
-      db.get(
-        "SELECT message_content FROM messages WHERE message_type = 'reminder' AND locale = ?",
-        [cityId.toString()],
-        (err, row) => {
-          if (err) {
-            reject(err);
-          } else if (row) {
-            console.log(`✅ Mensagem específica encontrada`);
-            resolve(row.message_content);
-          } else {
-            console.log(`ℹ️ Sem mensagem específica, buscando geral...`);
-
-            // Se não tem específica, busca qualquer reminder
-            db.get(
-              "SELECT message_content FROM messages WHERE message_type = 'reminder' ORDER BY id ASC LIMIT 1",
-              [],
-              (err2, row2) => {
-                if (err2) {
-                  reject(err2);
-                } else if (row2) {
-                  console.log(`✅ Mensagem geral encontrada`);
-                  resolve(row2.message_content);
-                } else {
-                  console.log(`❌ Nenhuma mensagem reminder encontrada`);
-
-                  // Debug: mostra todas as mensagens
-                  db.all(
-                    "SELECT id, locale, message_type, message_content FROM messages LIMIT 10",
-                    [],
-                    (err3, rows) => {
-                      if (!err3 && rows) {
-                        console.log(`📋 Mensagens no banco (primeiras 10):`);
-                        rows.forEach((msg) => {
-                          console.log(
-                            `   ${msg.id}. Tipo: ${msg.message_type} | Locale: ${msg.locale}`
-                          );
-                        });
-                      }
-                      resolve(null);
-                    }
-                  );
-                }
-              }
-            );
-          }
+      db.all(
+        "SELECT id, message_content FROM messages WHERE message_type = 'reminder' ORDER BY id",
+        [],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows || []);
         }
       );
     });
   }
 
-  // Personaliza mensagem com dados da cidade
-  personalizeMessage(template, city) {
-    const daysUntilEvent = this.calculateDaysUntil(city.date);
-    const formattedDate = this.formatDate(city.date);
-
-    // Debug dos valores
-    console.log(`📝 Personalizando mensagem:`);
-    console.log(`   - Cidade: ${city.name}`);
-    console.log(`   - Data evento: ${city.date}`);
-    console.log(`   - Dias até evento: ${daysUntilEvent}`);
-    console.log(`   - Data formatada: ${formattedDate}`);
-    console.log(`   - Template original: ${template}`);
-
-    let message = template;
-    message = message.replace(
-      /\{cidade\}/g,
-      city.name || "Nome não disponível"
-    );
-    message = message.replace(/\{name\}/g, city.name || "Nome não disponível");
-    message = message.replace(
-      /\{dias\}/g,
-      isNaN(daysUntilEvent) ? "?" : daysUntilEvent
-    );
-    message = message.replace(
-      /\{days\}/g,
-      isNaN(daysUntilEvent) ? "?" : daysUntilEvent
-    );
-    message = message.replace(
-      /\{data\}/g,
-      formattedDate || "Data não disponível"
-    );
-    message = message.replace(
-      /\{date\}/g,
-      formattedDate || "Data não disponível"
-    );
-
-    console.log(`   - Mensagem final: ${message}`);
-    return message;
+  // Busca cidade pelo nome do grupo
+  async findCityByGroupName(groupName) {
+    return new Promise((resolve, reject) => {
+      db.get(
+        "SELECT * FROM cities WHERE LOWER(name) = LOWER(?)",
+        [groupName.trim()],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        }
+      );
+    });
   }
 
-  // Calcula dias até o evento
-  calculateDaysUntil(dateStr) {
-    const eventDate = new Date(dateStr + "T00:00:00");
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const timeDiff = eventDate.getTime() - today.getTime();
-    return Math.ceil(timeDiff / (1000 * 3600 * 24));
-  }
-
-  // Formata data
-  formatDate(dateStr) {
-    const date = new Date(dateStr + "T00:00:00");
-    return date.toLocaleDateString("pt-BR");
-  }
-
-  // Executa processamento automático de lembretes
-  async processReminders(client) {
-    if (!client) {
-      console.log("⚠️ Client não disponível para processamento automático");
-      return false;
-    }
-
-    try {
-      console.log("🔍 Verificando lembretes automáticos...");
-
-      const cities = await this.getCitiesNeedingReminders();
-
-      if (cities.length === 0) {
-        console.log("✅ Nenhum lembrete para enviar hoje");
-        return true;
-      }
-
-      console.log(`📋 ${cities.length} cidade(s) precisam de lembrete`);
-
-      for (const city of cities) {
-        await this.sendAutomaticReminder(client, city);
-        // Aguarda 2s entre envios para evitar spam
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      }
-
-      console.log("✅ Processamento automático concluído");
-      return true;
-    } catch (error) {
-      console.error("⚠️ Erro no processamento automático:", error);
-      return false;
-    }
-  }
-
-  // Busca cidades que precisam de lembrete
+  // Busca cidades que precisam de lembrete hoje
   async getCitiesNeedingReminders() {
     const cities = await new Promise((resolve, reject) => {
-      db.all("SELECT * FROM cities ORDER BY date ASC", [], (err, rows) => {
+      db.all("SELECT * FROM cities WHERE link IS NOT NULL", [], (err, rows) => {
         if (err) reject(err);
         else resolve(rows || []);
       });
@@ -362,51 +186,33 @@ class ReminderSystem {
   }
 
   // Envia lembrete automático
-  async sendAutomaticReminder(client, city) {
+  async sendAutomaticReminder(client, city, message, daysUntil) {
     try {
-      const groupId = this.extractGroupId(city.link);
-      if (!groupId) {
-        console.log(`⚠️ Link inválido para ${city.name}: ${city.link}`);
-        return false;
-      }
-
-      const reminderMessage = await this.getReminderMessage(city.id);
-      if (!reminderMessage) {
-        console.log(`⚠️ Sem mensagem cadastrada para ${city.name}`);
-        return false;
-      }
-
-      const personalizedMessage = this.personalizeMessage(
-        reminderMessage,
-        city
+      await client.sendMessage(city.link, message);
+      await debug(
+        `✅ Lembrete automático enviado para ${city.name} (${daysUntil} dias)`
       );
-
-      await client.sendMessage(groupId, personalizedMessage);
-      console.log(`✅ Lembrete automático enviado para ${city.name}`);
-
-      await debug(`✅ Lembrete automático enviado para ${city.name}`);
       return true;
     } catch (error) {
-      console.error(`⚠️ Erro ao enviar para ${city.name}:`, error);
+      await debug(`⚠️ Erro ao enviar para ${city.name}: ${error.message}`);
       return false;
     }
   }
 
-  // Extrai ID do grupo do link
-  extractGroupId(groupLink) {
-    try {
-      const match = groupLink.match(/chat\.whatsapp\.com\/([A-Za-z0-9]+)/);
-      return match && match[1] ? `${match[1]}@g.us` : null;
-    } catch (error) {
-      return null;
-    }
+  // Calcula dias até o evento
+  calculateDaysUntil(dateStr) {
+    const eventDate = new Date(dateStr + "T00:00:00");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const timeDiff = eventDate.getTime() - today.getTime();
+    return Math.ceil(timeDiff / (1000 * 3600 * 24));
   }
 
-  // Lista informações para debug
+  // Debug - lista informações do sistema
   async listInfo() {
-    console.log("\n📊 INFORMAÇÕES DO SISTEMA:");
+    await debug("📊 INFORMAÇÕES DO SISTEMA:");
 
-    // Lista cidades
     const cities = await new Promise((resolve, reject) => {
       db.all(
         "SELECT id, name, date, link FROM cities ORDER BY date ASC",
@@ -418,49 +224,41 @@ class ReminderSystem {
       );
     });
 
-    console.log(`\n🏙️ CIDADES CADASTRADAS: ${cities.length}`);
-    cities.forEach((city) => {
+    await debug(`🏙️ CIDADES: ${cities.length}`);
+    for (const city of cities) {
       const days = this.calculateDaysUntil(city.date);
       const needsReminder = this.reminderIntervals.includes(days);
-      console.log(
-        `• ${city.name}: ${this.formatDate(city.date)} (${days} dias) ${
+      const usedCount = this.usedMessages.get(city.id)?.length || 0;
+      await debug(
+        `• ${city.name}: ${days} dias ${
           needsReminder ? "🔔" : ""
-        } | Link: ${city.link ? "✅" : "❌"}`
+        } | Msgs usadas: ${usedCount}`
       );
-    });
+    }
 
-    // Lista mensagens
-    const messages = await new Promise((resolve, reject) => {
-      db.all(
-        "SELECT id, locale, message_content FROM messages WHERE message_type = 'reminder'",
-        [],
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows || []);
-        }
-      );
-    });
+    const messages = await this.getAllReminderMessages();
+    await debug(`💬 MENSAGENS REMINDER: ${messages.length}`);
 
-    console.log(`\n💬 MENSAGENS REMINDER: ${messages.length}`);
     messages.forEach((msg, i) => {
-      const preview = msg.message_content.substring(0, 50);
-      console.log(
-        `${i + 1}. ID: ${msg.id} | Locale: ${msg.locale} | "${preview}..."`
-      );
+      const preview = msg.message_content.substring(0, 40);
+      debug(`  ${i + 1}. ID: ${msg.id} - "${preview}..."`);
     });
-
-    console.log(
-      `\n🔧 Status: Sistema ${
-        this.isInitialized ? "INICIALIZADO" : "NÃO INICIALIZADO"
-      }`
-    );
-    console.log("");
   }
 
-  // Marca sistema como inicializado
+  // Reseta mensagens usadas (útil para testes)
+  resetUsedMessages(cityId = null) {
+    if (cityId) {
+      this.usedMessages.delete(cityId);
+      debug(`🔄 Mensagens resetadas para cidade ${cityId}`);
+    } else {
+      this.usedMessages.clear();
+      debug("🔄 Todas as mensagens usadas foram resetadas");
+    }
+  }
+
   initialize() {
     this.isInitialized = true;
-    console.log("✅ ReminderSystem inicializado");
+    debug("✅ ReminderSystem inicializado");
   }
 }
 
@@ -468,24 +266,14 @@ class ReminderSystem {
 const reminderSystem = new ReminderSystem();
 reminderSystem.initialize();
 
-// Funções para uso externo
-async function testReminder() {
-  console.log("🧪 TESTE DO SISTEMA DE LEMBRETES\n");
-  await reminderSystem.listInfo();
-}
-
-async function showInfo() {
-  await reminderSystem.listInfo();
-}
-
 module.exports = {
   ReminderSystem,
-  reminderSystem, // instância pronta
-  testReminder,
-  showInfo,
+  reminderSystem,
+  testReminder: () => reminderSystem.listInfo(),
+  showInfo: () => reminderSystem.listInfo(),
 };
 
-// Executa teste se chamado diretamente
+// Teste se executado diretamente
 if (require.main === module) {
-  testReminder().catch(console.error);
+  reminderSystem.listInfo().catch(console.error);
 }

@@ -4,6 +4,7 @@ const ModuleLoader = require("./main/ModuleLoader");
 const IPCManager = require("./main/ipcManager");
 const AppLifecycle = require("./main/AppLifecycle");
 const { initializeAllConfigs } = require("./utils/initialize");
+require("./utils/reminder");
 
 class Application {
   constructor() {
