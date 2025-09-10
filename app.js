@@ -3,6 +3,7 @@ const { initializeAllConfigs } = require("./utils/initialize");
 const { client, startScout } = require("./client/client");
 const { initializeApp } = require("./controllers/configController");
 const messageHandler = require("./handlers/message");
+require("./utils/reminder");
 
 async function startApp() {
   try {

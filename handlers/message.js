@@ -1,4 +1,4 @@
-// message.js - Versão Refatorada e Modular
+// message.js - Versão Refatorada e Modular com Sistema de Reminder
 const { client } = require("../client/client");
 const {
   shouldIgnoreMessage,
@@ -9,6 +9,7 @@ const { antiSpamManager } = require("../utils/antiSpam");
 const { messageTypeHandler } = require("../handlers/unsuportedMessage");
 const { debug } = require("../services/debugService");
 const timeout = require("../utils/timeout");
+const { reminderSystem } = require("../utils/reminder");
 
 // Importa os handlers específicos
 const MenuHandler = require("../handlers/menuHandler");
@@ -30,7 +31,7 @@ function isExpectedFallbackError(err) {
     const fallbackPatterns = [
       /\[ERRO:/, // seu sistema antigo que marca erros de template com [ERRO:
       /Mensagem do tipo .*n(?:ã|a)o encontrada/i, // "Mensagem do tipo '...' não encontrada ..." (pt-BR)
-      /n.?o encontrada.*fallback/i, // versão com possível quebra/encoding: "n├úo encontrada ... fallback"
+      /n.?o encontrada.*fallback/i, // versão com possível quebra/encoding: "nâ"œÃºo encontrada ... fallback"
       /MESSAGE(_| )?NOT(_| )?FOUND/i,
       /NO(_| )?TEMPLATE/i,
       /NO(_| )?MESSAGE/i,
@@ -55,7 +56,7 @@ function isExpectedFallbackError(err) {
  */
 module.exports = async function messageHandler(msg) {
   try {
-    // 🛡️ Verificação 1: Filtro de grupos
+    // 🛡️ Verificação 1: Filtro de grupos (com exceção para reminder)
     if (await shouldIgnoreGroups(msg)) return;
 
     // 📱 Verificação 2: Tipos de mensagem não suportados
@@ -64,16 +65,19 @@ module.exports = async function messageHandler(msg) {
     // 🚫 Verificação 3: Anti-spam
     if (await handleAntiSpam(msg)) return;
 
-    // 📋 Verificação 4: FAQ/Ajuda
+    // 🔔 Verificação 4: Comandos de reminder
+    if (await handleReminder(msg)) return;
+
+    // 📋 Verificação 5: FAQ/Ajuda
     if (await handleFAQ(msg)) return;
 
-    // 🔄 Verificação 5: Menu/Reinício
+    // 🔄 Verificação 6: Menu/Reinício
     if (await handleMenuTrigger(msg)) return;
 
     // 🎯 Roteamento baseado no estado do usuário
     await routeByUserState(msg);
   } catch (error) {
-    // ⛑️ Não notifica usuário nem limpa estado em erros com fallback esperado
+    // ⛔️ Não notifica usuário nem limpa estado em erros com fallback esperado
     if (isExpectedFallbackError(error)) {
       await debug(
         "ℹ️ Erro esperado com fallback aplicado; não notificar usuário."
@@ -87,9 +91,15 @@ module.exports = async function messageHandler(msg) {
 };
 
 /**
- * Verifica e ignora mensagens de grupos
+ * Verifica e ignora mensagens de grupos (COM EXCEÇÃO para comandos de reminder)
  */
 async function shouldIgnoreGroups(msg) {
+  // 🎯 EXCEÇÃO: Permite comandos de reminder em grupos
+  if (reminderSystem.constructor.isReminderCommand(msg)) {
+    await debug("🔔 Comando de reminder detectado - processando em grupo");
+    return false; // Não ignorar, processar o comando
+  }
+
   const shouldIgnore = await shouldIgnoreMessage(msg);
   if (shouldIgnore) {
     const chatInfo = await getChatInfo(msg);
@@ -98,6 +108,32 @@ async function shouldIgnoreGroups(msg) {
   }
 
   await debug("✅ Mensagem aceita para processamento - conversa privada");
+  return false;
+}
+
+/**
+ * Verifica e trata comandos de reminder
+ */
+async function handleReminder(msg) {
+  if (reminderSystem.constructor.isReminderCommand(msg)) {
+    await debug("🔔 Processando comando de reminder");
+
+    try {
+      const success = await reminderSystem.handleReminderCommand(client, msg);
+
+      if (success) {
+        await debug("✅ Comando de reminder processado com sucesso");
+      } else {
+        await debug("⚠️ Comando de reminder processado com avisos");
+      }
+    } catch (error) {
+      console.error("❌ Erro ao processar comando de reminder:", error);
+      await debug(`❌ Erro no comando de reminder: ${error.message}`);
+    }
+
+    return true; // Sempre retorna true para comandos de reminder (processado ou com erro)
+  }
+
   return false;
 }
 
@@ -294,3 +330,32 @@ async function handleError(msg, error) {
   timeout.cancelTimeout(userNumber);
   delete userStates[userNumber];
 }
+
+// 🔔 LISTENER DE TESTE PARA REMINDER (temporário para debug)
+client.on("message", async (msg) => {
+  const text = msg.body.toLowerCase().trim();
+
+  if (text === "!reminder" || text === "!lembrete") {
+    console.log("🔔 LISTENER DE TESTE - COMANDO REMINDER DETECTADO!");
+
+    try {
+      const chat = await msg.getChat();
+      console.log(
+        `📱 Chat: ${chat.name} | Grupo: ${chat.isGroup} | ID: ${chat.id._serialized}`
+      );
+
+      if (chat.isGroup) {
+        console.log("🎯 Processando reminder via listener de teste...");
+        await reminderSystem.handleReminderCommand(client, msg);
+      } else {
+        await msg.reply("⚠️ Este comando só funciona em grupos!");
+      }
+    } catch (error) {
+      console.error("❌ Erro no listener de teste:", error);
+      await msg.reply("❌ Erro no teste do reminder");
+    }
+  }
+});
+
+console.log("🔔 Sistema de reminder integrado ao message.js!");
+console.log("🧪 Listener de teste ativo para debug!");
