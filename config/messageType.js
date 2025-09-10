@@ -6,6 +6,7 @@ const MessageType = {
   TIMEOUT: "timeout",
   SUSPEND: "suspend",
   SUSPENDED: "suspended",
+  REMINDER: "reminder",
 
   // Fluxo
   SEND_FAQ: "send_faq",
