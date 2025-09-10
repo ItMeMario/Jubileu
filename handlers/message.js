@@ -357,5 +357,4 @@ client.on("message", async (msg) => {
   }
 });
 
-console.log("🔔 Sistema de reminder integrado ao message.js!");
-console.log("🧪 Listener de teste ativo para debug!");
+

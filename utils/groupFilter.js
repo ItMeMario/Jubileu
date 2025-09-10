@@ -1,5 +1,4 @@
 // groupFilter.js - Middleware para filtrar mensagens de grupos
-const { GroupChat } = require("whatsapp-web.js");
 const { debug } = require("../services/debugService");
 
 /**
