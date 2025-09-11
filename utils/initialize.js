@@ -218,7 +218,7 @@ async function initializeDatabase() {
 
         const queries = [
           `CREATE TABLE IF NOT EXISTS cities (
-            id TEXT PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             link TEXT,
             isPrimary BOOLEAN DEFAULT 0,
