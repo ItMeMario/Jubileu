@@ -1,22 +1,15 @@
-// reminderService.js - Sistema completo de lembretes automáticos
+// reminderService.js - Sistema de lembretes automáticos (Refatorado)
 const db = require("../config/db");
 const { debug } = require("../services/debugService");
+const { reminderConfig } = require("../config/reminderConfig");
+const { reminderScheduler } = require("../utils/reminderScheduler");
 
 class ReminderSystem {
   constructor() {
-    // Configurações dos lembretes
-    this.reminderIntervals = [5, 3]; // dias antes do evento
     this.isInitialized = false;
-    this.usedMessages = new Map(); // Para evitar repetição por cidade
 
-    // Configurações do agendamento automático
-    this.isSchedulerRunning = false;
-    this.scheduledHour = 9; // 9h da manhã
-    this.scheduledMinute = 0;
-    this.checkInterval = 60000; // Verifica a cada 1 minuto
-    this.intervalId = null;
-    this.lastExecutionDate = null;
-    this.client = null;
+    // Configura o scheduler para usar este sistema como processador
+    reminderScheduler.setReminderProcessor(this);
   }
 
   // ========== COMANDOS MANUAIS ==========
@@ -47,7 +40,7 @@ class ReminderSystem {
         return false;
       }
 
-      const daysUntil = this.calculateDaysUntil(city.date);
+      const daysUntil = reminderConfig.calculateDaysUntil(city.date);
       await debug(
         `🏙️ Cidade: ${city.name} | Evento: ${city.date} | Dias restantes: ${daysUntil}`
       );
@@ -92,7 +85,7 @@ class ReminderSystem {
       await debug(`📋 ${cities.length} cidade(s) precisam de lembrete`);
 
       for (const city of cities) {
-        const daysUntil = this.calculateDaysUntil(city.date);
+        const daysUntil = reminderConfig.calculateDaysUntil(city.date);
         const reminderMessage = await this.selectReminderMessage(city.id);
 
         if (reminderMessage) {
@@ -105,7 +98,9 @@ class ReminderSystem {
           );
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // 2s entre envios
+        // Usa delay configurado
+        const delay = reminderConfig.getDelayBetweenSends();
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
 
       await debug("✅ Processamento automático concluído");
@@ -126,8 +121,8 @@ class ReminderSystem {
       return allMessages[0].message_content;
     }
 
-    // Pega mensagens já usadas para esta cidade
-    const usedIds = this.usedMessages.get(cityId) || [];
+    // Pega mensagens já usadas para esta cidade do config
+    const usedIds = reminderConfig.getUsedMessages(cityId);
 
     // Filtra mensagens não usadas
     const availableMessages = allMessages.filter(
@@ -137,7 +132,7 @@ class ReminderSystem {
     // Se todas foram usadas, reseta a lista
     if (availableMessages.length === 0) {
       await debug(`🔄 Resetando mensagens usadas para cidade ${cityId}`);
-      this.usedMessages.set(cityId, []);
+      reminderConfig.resetUsedMessages(cityId);
       return this.selectReminderMessage(cityId); // Recursão para selecionar novamente
     }
 
@@ -145,10 +140,10 @@ class ReminderSystem {
     const randomIndex = Math.floor(Math.random() * availableMessages.length);
     const selectedMessage = availableMessages[randomIndex];
 
-    // Marca como usada
-    const updatedUsed = [...usedIds, selectedMessage.id];
-    this.usedMessages.set(cityId, updatedUsed);
+    // Marca como usada no config
+    reminderConfig.addUsedMessage(cityId, selectedMessage.id);
 
+    const updatedUsed = reminderConfig.getUsedMessages(cityId);
     await debug(
       `🎲 Mensagem selecionada: ID ${selectedMessage.id} (${updatedUsed.length}/${allMessages.length} usadas)`
     );
@@ -170,133 +165,48 @@ class ReminderSystem {
     }
   }
 
-  // ========== AGENDAMENTO AUTOMÁTICO ==========
+  // ========== MÉTODOS DE INTEGRAÇÃO COM SCHEDULER ==========
 
-  // Inicia o sistema de lembretes automáticos
+  // Inicia sistema automático (delega para o scheduler)
   startAutomaticReminders(client) {
-    if (this.isSchedulerRunning) {
-      debug("⚠️ Sistema de lembretes automáticos já está rodando");
-      return;
-    }
-
-    if (!client) {
-      debug("❌ Client não fornecido para o sistema automático");
-      return;
-    }
-
-    this.client = client;
-    this.isSchedulerRunning = true;
-
-    // Executa verificação imediatamente e depois a cada minuto
-    this.checkAndExecuteReminders();
-    this.intervalId = setInterval(() => {
-      this.checkAndExecuteReminders();
-    }, this.checkInterval);
-
-    debug(
-      `✅ Sistema automático iniciado - Lembretes às ${
-        this.scheduledHour
-      }:${this.scheduledMinute.toString().padStart(2, "0")}h`
-    );
+    return reminderScheduler.startAutomaticReminders(client);
   }
 
-  // Para o sistema automático
+  // Para sistema automático (delega para o scheduler)
   stopAutomaticReminders() {
-    if (!this.isSchedulerRunning) {
-      debug("⚠️ Sistema automático já está parado");
-      return;
-    }
-
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-    }
-
-    this.isSchedulerRunning = false;
-    debug("🛑 Sistema automático parado");
+    return reminderScheduler.stopAutomaticReminders();
   }
 
-  // Verifica se é hora de executar lembretes
-  async checkAndExecuteReminders() {
-    const now = new Date();
-
-    // Verifica se é o horário correto (9h por padrão)
-    if (
-      now.getHours() !== this.scheduledHour ||
-      now.getMinutes() !== this.scheduledMinute
-    ) {
-      return;
-    }
-
-    // Verifica se já executou hoje
-    const today = now.toDateString();
-    if (this.lastExecutionDate === today) {
-      return;
-    }
-
-    await debug(
-      `⏰ Hora de verificar lembretes: ${now.toLocaleString("pt-BR")}`
-    );
-
-    try {
-      // Executa processamento de lembretes
-      const success = await this.processReminders(this.client);
-
-      if (success) {
-        this.lastExecutionDate = today;
-        await debug("✅ Processamento automático executado com sucesso");
-      } else {
-        await debug("⚠️ Falha no processamento automático");
-      }
-    } catch (error) {
-      await debug(`❌ Erro no processamento agendado: ${error.message}`);
-    }
-  }
-
-  // Executa lembretes agora (para testes)
+  // Executa lembretes agora (delega para o scheduler)
   async executeRemindersNow() {
-    if (!this.client) {
-      await debug("❌ Client não disponível para execução manual");
-      return false;
-    }
-
-    await debug("🔧 Execução manual iniciada...");
-
-    try {
-      const success = await this.processReminders(this.client);
-
-      if (success) {
-        await debug("✅ Execução manual concluída com sucesso");
-        return true;
-      } else {
-        await debug("⚠️ Execução manual teve problemas");
-        return false;
-      }
-    } catch (error) {
-      await debug(`❌ Erro na execução manual: ${error.message}`);
-      return false;
-    }
+    return reminderScheduler.executeRemindersNow();
   }
 
-  // Configura novo horário para lembretes automáticos
+  // Configura horário (delega para o scheduler)
   setReminderScheduleTime(hour, minute = 0) {
-    if (hour < 0 || hour > 23) {
-      debug("❌ Hora inválida (0-23)");
-      return false;
-    }
+    return reminderScheduler.setReminderScheduleTime(hour, minute);
+  }
 
-    if (minute < 0 || minute > 59) {
-      debug("❌ Minuto inválido (0-59)");
-      return false;
-    }
+  // Reset da data de execução (delega para o scheduler)
+  resetExecutionDate() {
+    return reminderScheduler.resetExecutionDate();
+  }
 
-    this.scheduledHour = hour;
-    this.scheduledMinute = minute;
+  // ========== MÉTODOS DE INTEGRAÇÃO COM CONFIG ==========
 
-    debug(
-      `🕘 Horário alterado para ${hour}:${minute.toString().padStart(2, "0")}h`
-    );
-    return true;
+  // Reseta mensagens usadas (delega para o config)
+  resetUsedMessages(cityId = null) {
+    return reminderConfig.resetUsedMessages(cityId);
+  }
+
+  // Configura intervalos de lembretes (delega para o config)
+  setReminderIntervals(intervals) {
+    return reminderConfig.setReminderIntervals(intervals);
+  }
+
+  // Obtém intervalos de lembretes (delega para o config)
+  getReminderIntervals() {
+    return reminderConfig.getReminderIntervals();
   }
 
   // ========== MÉTODOS DE BANCO DE DADOS ==========
@@ -338,9 +248,10 @@ class ReminderSystem {
       });
     });
 
+    const intervals = reminderConfig.getReminderIntervals();
     return cities.filter((city) => {
-      const daysUntil = this.calculateDaysUntil(city.date);
-      return this.reminderIntervals.includes(daysUntil);
+      const daysUntil = reminderConfig.calculateDaysUntil(city.date);
+      return intervals.includes(daysUntil);
     });
   }
 
@@ -358,84 +269,75 @@ class ReminderSystem {
     });
   }
 
-  // ========== MÉTODOS UTILITÁRIOS ==========
-
-  // Calcula dias até o evento
-  calculateDaysUntil(dateStr) {
-    const eventDate = new Date(dateStr + "T00:00:00");
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const timeDiff = eventDate.getTime() - today.getTime();
-    return Math.ceil(timeDiff / (1000 * 3600 * 24));
-  }
+  // ========== STATUS DO SISTEMA COMPLETO ==========
 
   // Status do sistema completo
   getSystemStatus() {
+    const configStatus = reminderConfig.getConfigStatus();
+    const schedulerStatus = reminderScheduler.getSchedulerStatus();
+
     return {
       isInitialized: this.isInitialized,
-      isAutomaticRunning: this.isSchedulerRunning,
-      scheduledTime: `${this.scheduledHour}:${this.scheduledMinute
-        .toString()
-        .padStart(2, "0")}`,
-      lastExecution: this.lastExecutionDate,
-      nextExecution: this.getNextExecutionTime(),
-      reminderIntervals: this.reminderIntervals,
+      config: {
+        isValid: configStatus.validation.isValid,
+        reminderIntervals: configStatus.reminderIntervals,
+        usedMessagesCount: configStatus.usedMessagesCount,
+        totalUsedMessages: configStatus.totalUsedMessages,
+      },
+      scheduler: {
+        isRunning: schedulerStatus.isRunning,
+        scheduledTime: schedulerStatus.scheduledTime,
+        lastExecution: schedulerStatus.lastExecution,
+        nextExecution: schedulerStatus.nextExecution,
+        hasClient: schedulerStatus.hasClient,
+      },
     };
   }
 
-  // Calcula próxima execução
-  getNextExecutionTime() {
-    const now = new Date();
-    const next = new Date();
+  // Mostra status completo do sistema
+  async showSystemStatus() {
+    const status = this.getSystemStatus();
 
-    next.setHours(this.scheduledHour, this.scheduledMinute, 0, 0);
+    await debug("📊 STATUS DO SISTEMA DE LEMBRETES:");
+    await debug(
+      `• Sistema inicializado: ${status.isInitialized ? "✅" : "❌"}`
+    );
 
-    // Se já passou da hora hoje, agenda para amanhã
-    if (next <= now) {
-      next.setDate(next.getDate() + 1);
-    }
+    await debug("\n📋 CONFIGURAÇÕES:");
+    await debug(
+      `• Configuração válida: ${status.config.isValid ? "✅" : "❌"}`
+    );
+    await debug(
+      `• Intervalos: ${status.config.reminderIntervals.join(", ")} dias`
+    );
+    await debug(
+      `• Mensagens usadas: ${status.config.totalUsedMessages} (${status.config.usedMessagesCount} cidades)`
+    );
 
-    return next.toLocaleString("pt-BR");
+    await debug("\n⏰ AGENDADOR:");
+    await debug(
+      `• Status: ${status.scheduler.isRunning ? "🟢 Ativo" : "🔴 Parado"}`
+    );
+    await debug(`• Horário: ${status.scheduler.scheduledTime}`);
+    await debug(
+      `• Última execução: ${status.scheduler.lastExecution || "Nunca"}`
+    );
+    await debug(`• Próxima execução: ${status.scheduler.nextExecution}`);
+    await debug(
+      `• Client configurado: ${status.scheduler.hasClient ? "✅" : "❌"}`
+    );
   }
 
-  // Força reset da data de execução (para testes)
-  resetExecutionDate() {
-    this.lastExecutionDate = null;
-    debug("🔄 Data de execução resetada");
-  }
-
-  // Reseta mensagens usadas (útil para testes)
-  resetUsedMessages(cityId = null) {
-    if (cityId) {
-      this.usedMessages.delete(cityId);
-      debug(`🔄 Mensagens resetadas para cidade ${cityId}`);
-    } else {
-      this.usedMessages.clear();
-      debug("🔄 Todas as mensagens usadas foram resetadas");
-    }
-  }
-
-  // ========== MÉTODOS DE DEBUG E STATUS ==========
+  // ========== MÉTODOS DE DEBUG E INFORMAÇÕES ==========
 
   // Debug - lista informações do sistema
   async listInfo() {
     await debug("📊 INFORMAÇÕES DO SISTEMA DE LEMBRETES:");
 
-    const status = this.getSystemStatus();
-    await debug(
-      `• Estado: ${
-        status.isInitialized ? "✅ Inicializado" : "❌ Não inicializado"
-      }`
-    );
-    await debug(
-      `• Automático: ${status.isAutomaticRunning ? "🟢 Ativo" : "🔴 Parado"}`
-    );
-    await debug(`• Horário: ${status.scheduledTime}`);
-    await debug(`• Última execução: ${status.lastExecution || "Nunca"}`);
-    await debug(`• Próxima execução: ${status.nextExecution}`);
-    await debug(`• Intervalos: ${status.reminderIntervals.join(", ")} dias`);
+    // Mostra status dos componentes
+    await this.showSystemStatus();
 
+    // Mostra informações das cidades
     const cities = await new Promise((resolve, reject) => {
       db.all(
         "SELECT id, name, date, link FROM cities ORDER BY date ASC",
@@ -447,11 +349,13 @@ class ReminderSystem {
       );
     });
 
-    await debug(`🏙️ CIDADES: ${cities.length}`);
+    await debug(`\n🏙️ CIDADES: ${cities.length}`);
+    const intervals = reminderConfig.getReminderIntervals();
+
     for (const city of cities) {
-      const days = this.calculateDaysUntil(city.date);
-      const needsReminder = this.reminderIntervals.includes(days);
-      const usedCount = this.usedMessages.get(city.id)?.length || 0;
+      const days = reminderConfig.calculateDaysUntil(city.date);
+      const needsReminder = intervals.includes(days);
+      const usedCount = reminderConfig.getUsedMessages(city.id).length;
       await debug(
         `  • ${city.name}: ${days} dias ${
           needsReminder ? "🔔" : ""
@@ -459,8 +363,9 @@ class ReminderSystem {
       );
     }
 
+    // Mostra informações das mensagens
     const messages = await this.getAllReminderMessages();
-    await debug(`💬 MENSAGENS REMINDER: ${messages.length}`);
+    await debug(`\n💬 MENSAGENS REMINDER: ${messages.length}`);
 
     messages.forEach((msg, i) => {
       const preview = msg.message_content.substring(0, 40);
@@ -468,31 +373,19 @@ class ReminderSystem {
     });
   }
 
-  // Mostra status completo
-  async showSystemStatus() {
-    const status = this.getSystemStatus();
-
-    await debug("📊 STATUS DO SISTEMA DE LEMBRETES:");
-    await debug(`• Inicializado: ${status.isInitialized ? "✅" : "❌"}`);
-    await debug(
-      `• Automático: ${status.isAutomaticRunning ? "🟢 Ativo" : "🔴 Parado"}`
-    );
-    await debug(`• Horário: ${status.scheduledTime}`);
-    await debug(`• Última execução: ${status.lastExecution || "Nunca"}`);
-    await debug(`• Próxima execução: ${status.nextExecution}`);
-    await debug(
-      `• Intervalos de lembrete: ${status.reminderIntervals.join(", ")} dias`
-    );
-
-    if (status.isAutomaticRunning) {
-      await debug(`• Verificando a cada: ${this.checkInterval / 1000}s`);
-    }
-  }
+  // ========== INICIALIZAÇÃO ==========
 
   // Inicializa o sistema
   initialize() {
+    // Verifica se as dependências estão inicializadas
+    if (!reminderConfig.isSystemInitialized()) {
+      debug("❌ ReminderConfig não inicializado");
+      return false;
+    }
+
     this.isInitialized = true;
     debug("✅ ReminderSystem inicializado");
+    return true;
   }
 }
 
@@ -507,6 +400,9 @@ module.exports = {
   testReminder: () => reminderSystem.listInfo(),
   showInfo: () => reminderSystem.listInfo(),
   showStatus: () => reminderSystem.showSystemStatus(),
+  // Acesso direto aos componentes (para casos especiais)
+  reminderConfig,
+  reminderScheduler,
 };
 
 // Teste se executado diretamente
