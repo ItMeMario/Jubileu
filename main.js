@@ -4,8 +4,6 @@ const ModuleLoader = require("./main/ModuleLoader");
 const IPCManager = require("./main/ipcManager");
 const AppLifecycle = require("./main/AppLifecycle");
 const { initializeAllConfigs } = require("./utils/initialize");
-require("./services/reminderService");
-const { reminderSystem } = require("./services/reminderService");
 
 class Application {
   constructor() {
@@ -59,9 +57,7 @@ class Application {
           `Falha ao inicializar a aplicação:\n\n${error.message}\n\nA aplicação será fechada.`
         );
       }
-      client.on("ready", () => {
-        reminderSystem.startAutomaticReminders(client); // Inicia agendamento automático
-      });
+
       // Força saída em caso de erro crítico
       process.exit(1);
     }
