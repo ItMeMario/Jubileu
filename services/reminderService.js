@@ -1,307 +1,191 @@
-// reminderService.js - Sistema de lembretes automáticos (Refatorado)
-const db = require("../config/db");
-const { debug } = require("../services/debugService");
-const { reminderConfig } = require("../config/reminderConfig");
-const { reminderScheduler } = require("../utils/reminderScheduler");
+// reminderService.js
+// Sistema de lembretes para WhatsApp
 
-class ReminderSystem {
+const sqlite3 = require("sqlite3").verbose();
+const path = require("path");
+
+// Abre conexão com o banco
+const db = new sqlite3.Database(path.join(__dirname, "database.sqlite"));
+
+class ReminderService {
   constructor() {
-    this.isInitialized = false;
-
-    // Configura o scheduler para usar este sistema como processador
-    reminderScheduler.setReminderProcessor(this);
+    this.client = null; // Será definido pelo main.js
   }
 
-  // ========== COMANDOS MANUAIS ==========
-
-  // Verifica se é comando de reminder
-  static isReminderCommand(msg) {
-    const text = msg.body.toLowerCase().trim();
-    return text === "!reminder" || text === "!lembrete";
+  // Método para definir o cliente WhatsApp (chamado pelo app.js)
+  setWhatsAppClient(client) {
+    this.client = client;
+    console.log("📱 Cliente WhatsApp configurado no ReminderService");
   }
 
-  // Processa comando !reminder manual
-  async handleReminderCommand(client, msg) {
-    try {
-      await debug("🤖 Comando !reminder recebido");
+  async checkAndExecuteReminders() {
+    console.log("🔍 Verificando lembretes no banco...");
 
-      const chat = await msg.getChat();
-      if (!chat.isGroup) {
-        await msg.reply("⚠️ Este comando só funciona em grupos!");
-        return false;
-      }
+    if (!this.client) {
+      console.error("❌ Cliente WhatsApp não configurado!");
+      return;
+    }
 
-      await debug(`📱 Grupo: ${chat.name}`);
+    const today = new Date();
+    const targetDates = [
+      this.formatDateOffset(today, 3),
+      this.formatDateOffset(today, 5),
+    ];
 
-      // Busca cidade pelo nome do grupo
-      const city = await this.findCityByGroupName(chat.name);
-      if (!city) {
-        await msg.reply("⚠️ Este grupo não está cadastrado no sistema!");
-        return false;
-      }
+    console.log(`📅 Verificando datas: ${targetDates.join(", ")}`);
 
-      const daysUntil = reminderConfig.calculateDaysUntil(city.date);
-      await debug(
-        `🏙️ Cidade: ${city.name} | Evento: ${city.date} | Dias restantes: ${daysUntil}`
-      );
-
-      // Busca e seleciona mensagem de reminder
-      const reminderMessage = await this.selectReminderMessage(city.id);
-      if (!reminderMessage) {
-        await msg.reply("⚠️ Nenhuma mensagem de reminder cadastrada!");
-        return false;
-      }
-
-      // Monta mensagem final com dias restantes
-      const finalMessage = `⏰ Faltam ${daysUntil} dias!\n\n${reminderMessage}`;
-
-      await msg.reply(finalMessage);
-      await debug(
-        `✅ Lembrete manual enviado para ${city.name} (${daysUntil} dias)`
-      );
-
-      return true;
-    } catch (error) {
-      await debug(`⚠️ Erro no comando !reminder: ${error.message}`);
-      return false;
+    for (const targetDate of targetDates) {
+      await this.checkCitiesForDate(targetDate);
     }
   }
 
-  // ========== PROCESSAMENTO DE LEMBRETES ==========
+  formatDateOffset(baseDate, days) {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split("T")[0]; // YYYY-MM-DD
+  }
 
-  // Processamento automático de lembretes
-  async processReminders(client) {
-    if (!client) return false;
+  async checkCitiesForDate(targetDate) {
+    return new Promise((resolve, reject) => {
+      console.log(`🏙️ Verificando cidades para data: ${targetDate}`);
 
-    try {
-      await debug("🔍 Verificando lembretes automáticos...");
+      db.all(
+        "SELECT * FROM cities WHERE date = ?",
+        [targetDate],
+        async (err, rows) => {
+          if (err) {
+            console.error("❌ Erro ao buscar cidades:", err);
+            return reject(err);
+          }
 
-      const cities = await this.getCitiesNeedingReminders();
-      if (cities.length === 0) {
-        await debug("✅ Nenhum lembrete para enviar hoje");
-        return true;
-      }
+          if (rows.length === 0) {
+            console.log(`ℹ️ Nenhuma cidade com evento em ${targetDate}.`);
+            return resolve();
+          }
 
-      await debug(`📋 ${cities.length} cidade(s) precisam de lembrete`);
-
-      for (const city of cities) {
-        const daysUntil = reminderConfig.calculateDaysUntil(city.date);
-        const reminderMessage = await this.selectReminderMessage(city.id);
-
-        if (reminderMessage) {
-          const finalMessage = `⏰ Faltam ${daysUntil} dias!\n\n${reminderMessage}`;
-          await this.sendAutomaticReminder(
-            client,
-            city,
-            finalMessage,
-            daysUntil
+          console.log(
+            `✅ Encontradas ${rows.length} cidade(s) com eventos em ${targetDate}`
           );
+
+          for (const city of rows) {
+            try {
+              const message = await this.getRandomReminderMessage();
+              await this.executeReminder(city, message, targetDate);
+              // Aguarda 2 segundos entre mensagens para não sobrecarregar
+              await this.sleep(2000);
+            } catch (e) {
+              console.error(
+                "❌ Erro ao processar lembrete para cidade:",
+                city.name,
+                e
+              );
+            }
+          }
+
+          resolve();
         }
-
-        // Usa delay configurado
-        const delay = reminderConfig.getDelayBetweenSends();
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-
-      await debug("✅ Processamento automático concluído");
-      return true;
-    } catch (error) {
-      await debug(`⚠️ Erro no processamento automático: ${error.message}`);
-      return false;
-    }
-  }
-
-  // Seleciona mensagem de reminder sem repetir
-  async selectReminderMessage(cityId) {
-    const allMessages = await this.getAllReminderMessages();
-    if (allMessages.length === 0) return null;
-
-    // Se só tem uma mensagem, usa ela
-    if (allMessages.length === 1) {
-      return allMessages[0].message_content;
-    }
-
-    // Pega mensagens já usadas para esta cidade do config
-    const usedIds = reminderConfig.getUsedMessages(cityId);
-
-    // Filtra mensagens não usadas
-    const availableMessages = allMessages.filter(
-      (msg) => !usedIds.includes(msg.id)
-    );
-
-    // Se todas foram usadas, reseta a lista
-    if (availableMessages.length === 0) {
-      await debug(`🔄 Resetando mensagens usadas para cidade ${cityId}`);
-      reminderConfig.resetUsedMessages(cityId);
-      return this.selectReminderMessage(cityId); // Recursão para selecionar novamente
-    }
-
-    // Seleciona mensagem aleatória das disponíveis
-    const randomIndex = Math.floor(Math.random() * availableMessages.length);
-    const selectedMessage = availableMessages[randomIndex];
-
-    // Marca como usada no config
-    reminderConfig.addUsedMessage(cityId, selectedMessage.id);
-
-    const updatedUsed = reminderConfig.getUsedMessages(cityId);
-    await debug(
-      `🎲 Mensagem selecionada: ID ${selectedMessage.id} (${updatedUsed.length}/${allMessages.length} usadas)`
-    );
-
-    return selectedMessage.message_content;
-  }
-
-  // Envia lembrete automático
-  async sendAutomaticReminder(client, city, message, daysUntil) {
-    try {
-      await client.sendMessage(city.link, message);
-      await debug(
-        `✅ Lembrete automático enviado para ${city.name} (${daysUntil} dias)`
       );
-      return true;
-    } catch (error) {
-      await debug(`⚠️ Erro ao enviar para ${city.name}: ${error.message}`);
-      return false;
-    }
+    });
   }
 
-  // ========== MÉTODOS DE INTEGRAÇÃO COM SCHEDULER ==========
-
-  // Inicia sistema automático (delega para o scheduler)
-  startAutomaticReminders(client) {
-    return reminderScheduler.startAutomaticReminders(client);
-  }
-
-  // Para sistema automático (delega para o scheduler)
-  stopAutomaticReminders() {
-    return reminderScheduler.stopAutomaticReminders();
-  }
-
-  // Executa lembretes agora (delega para o scheduler)
-  async executeRemindersNow() {
-    return reminderScheduler.executeRemindersNow();
-  }
-
-  // Configura horário (delega para o scheduler)
-  setReminderScheduleTime(hour, minute = 0) {
-    return reminderScheduler.setReminderScheduleTime(hour, minute);
-  }
-
-  // Reset da data de execução (delega para o scheduler)
-  resetExecutionDate() {
-    return reminderScheduler.resetExecutionDate();
-  }
-
-  // ========== MÉTODOS DE INTEGRAÇÃO COM CONFIG ==========
-
-  // Reseta mensagens usadas (delega para o config)
-  resetUsedMessages(cityId = null) {
-    return reminderConfig.resetUsedMessages(cityId);
-  }
-
-  // Configura intervalos de lembretes (delega para o config)
-  setReminderIntervals(intervals) {
-    return reminderConfig.setReminderIntervals(intervals);
-  }
-
-  // Obtém intervalos de lembretes (delega para o config)
-  getReminderIntervals() {
-    return reminderConfig.getReminderIntervals();
-  }
-
-  // ========== MÉTODOS DE BANCO DE DADOS ==========
-
-  // Busca todas as mensagens de reminder
-  async getAllReminderMessages() {
+  async getRandomReminderMessage() {
     return new Promise((resolve, reject) => {
       db.all(
-        "SELECT id, message_content FROM messages WHERE message_type = 'reminder' ORDER BY id",
+        "SELECT message_content FROM messages WHERE message_type = 'reminder'",
         [],
         (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows || []);
+          if (err) {
+            console.error("❌ Erro ao buscar mensagens:", err);
+            return reject(err);
+          }
+
+          if (!rows || rows.length === 0) {
+            console.log(
+              "⚠️ Nenhuma mensagem de lembrete configurada, usando mensagem padrão"
+            );
+            return resolve(
+              "⚠️ Um evento está chegando em breve na cidade {city}! 📅 Data: {date}"
+            );
+          }
+
+          const randomMsg =
+            rows[Math.floor(Math.random() * rows.length)].message_content;
+          resolve(randomMsg);
         }
       );
     });
   }
 
-  // Busca cidade pelo nome do grupo
-  async findCityByGroupName(groupName) {
+  async executeReminder(city, message, eventDate) {
+    try {
+      // Calcula quantos dias faltam para o evento
+      const today = new Date();
+      const targetDate = new Date(eventDate);
+      const daysUntilEvent = Math.ceil(
+        (targetDate - today) / (1000 * 60 * 60 * 24)
+      );
+
+      // Substitui placeholders na mensagem
+      const finalMessage = message
+        .replace(/\{city\}/g, city.name)
+        .replace(/\{days\}/g, daysUntilEvent)
+        .replace(/\{date\}/g, this.formatDateBR(eventDate));
+
+      console.log(
+        `⏰ Enviando lembrete para cidade [${city.name}] (${city.link})`
+      );
+      console.log(`📤 Mensagem: ${finalMessage}`);
+
+      // Envia mensagem via WhatsApp
+      if (this.client && this.client.isReady) {
+        await this.client.sendMessage(city.link, finalMessage);
+        console.log(`✅ Lembrete enviado com sucesso para ${city.name}`);
+      } else {
+        console.error("❌ Cliente WhatsApp não está pronto!");
+        // Para teste, apenas loga
+        console.log(
+          `📱 TESTE - Mensagem seria enviada: "${finalMessage}" para ${city.link}`
+        );
+      }
+    } catch (error) {
+      console.error(`❌ Erro ao enviar lembrete para ${city.name}:`, error);
+      throw error;
+    }
+  }
+
+  // Formata data no padrão brasileiro
+  formatDateBR(dateStr) {
+    const date = new Date(dateStr + "T00:00:00");
+    return date.toLocaleDateString("pt-BR");
+  }
+
+  // Utilitário para aguardar
+  sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  // Método para testar a conexão com o banco
+  async testDatabaseConnection() {
     return new Promise((resolve, reject) => {
-      db.get(
-        "SELECT * FROM cities WHERE LOWER(name) = LOWER(?)",
-        [groupName.trim()],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
+      db.get("SELECT COUNT(*) as count FROM cities", (err, row) => {
+        if (err) {
+          console.error("❌ Erro na conexão com banco:", err);
+          reject(err);
+        } else {
+          console.log(`✅ Banco conectado. Total de cidades: ${row.count}`);
+          resolve(row.count);
         }
-      );
-    });
-  }
-
-  // Busca cidades que precisam de lembrete hoje
-  async getCitiesNeedingReminders() {
-    const cities = await new Promise((resolve, reject) => {
-      db.all("SELECT * FROM cities WHERE link IS NOT NULL", [], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows || []);
       });
     });
-
-    const intervals = reminderConfig.getReminderIntervals();
-    return cities.filter((city) => {
-      const daysUntil = reminderConfig.calculateDaysUntil(city.date);
-      return intervals.includes(daysUntil);
-    });
   }
 
-  // Busca cidades para status (versão simplificada)
-  async getCitiesForStatus() {
-    return new Promise((resolve, reject) => {
-      db.all(
-        "SELECT id, name, date FROM cities ORDER BY date ASC",
-        [],
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows || []);
-        }
-      );
-    });
-  }
+  // Método para teste - verifica eventos nos próximos X dias
+  async testRemindersForDays(days) {
+    console.log(`🧪 TESTE: Verificando eventos em ${days} dias...`);
 
-  // ========== INICIALIZAÇÃO ==========
-
-  // Inicializa o sistema
-  initialize() {
-    // Verifica se as dependências estão inicializadas
-    if (!reminderConfig.isSystemInitialized()) {
-      debug("❌ ReminderConfig não inicializado");
-      return false;
-    }
-
-    this.isInitialized = true;
-    debug("✅ ReminderSystem inicializado");
-    return true;
+    const testDate = this.formatDateOffset(new Date(), days);
+    await this.checkCitiesForDate(testDate);
   }
 }
 
-// Instância global
-const reminderSystem = new ReminderSystem();
-reminderSystem.initialize();
-
-module.exports = {
-  ReminderSystem,
-  reminderSystem,
-  // Métodos de compatibilidade/debug
-  testReminder: () => reminderSystem.listInfo(),
-  showInfo: () => reminderSystem.listInfo(),
-  showStatus: () => reminderSystem.showSystemStatus(),
-  // Acesso direto aos componentes (para casos especiais)
-  reminderConfig,
-  reminderScheduler,
-};
-
-// Teste se executado diretamente
-if (require.main === module) {
-  reminderSystem.listInfo().catch(console.error);
-}
+module.exports = new ReminderService();

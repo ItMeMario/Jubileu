@@ -5,11 +5,6 @@ const { debug } = require("../services/debugService");
  * Lista de comandos permitidos em grupos
  * Estes comandos não serão filtrados mesmo em grupos
  */
-const ALLOWED_GROUP_COMMANDS = [
-  "!reminder",
-  "!lembrete",
-  // Adicione outros comandos que devem funcionar em grupos
-];
 
 /**
  * Middleware para filtrar mensagens vindas de grupos
