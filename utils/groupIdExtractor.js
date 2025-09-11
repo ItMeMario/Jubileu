@@ -8,22 +8,21 @@ class GroupIdExtractor {
    * @returns {string|null} - Código do convite ou null se inválido
    */
   static extractInviteCode(link) {
-    if (!link || typeof link !== "string") return null;
-
-    const regex =
-      /(?:https?:\/\/)?(?:www\.)?(?:chat\.)?whatsapp\.com\/(?:invite\/)?([A-Za-z0-9]+)/i;
+    if (!link || typeof link !== 'string') return null;
+    
+    const regex = /(?:https?:\/\/)?(?:www\.)?(?:chat\.)?whatsapp\.com\/(?:invite\/)?([A-Za-z0-9]+)/i;
     const match = link.match(regex);
-
+    
     return match && match[1] ? match[1] : null;
   }
 
   /**
    * Verifica se o link é um convite do WhatsApp
-   * @param {string} link
+   * @param {string} link 
    * @returns {boolean}
    */
   static isWhatsAppLink(link) {
-    if (!link || typeof link !== "string") return false;
+    if (!link || typeof link !== 'string') return false;
     return /(?:https?:\/\/)?(?:www\.)?(?:chat\.)?whatsapp\.com\//i.test(link);
   }
 
@@ -34,11 +33,30 @@ class GroupIdExtractor {
    */
   static async getGroupIdFromInvite(inviteCode) {
     try {
-      if (!client || !client.isReady) return null;
-
+      // Verifica se o client existe e está pronto
+      if (!client) {
+        console.log("⚠️ Cliente WhatsApp não disponível");
+        return null;
+      }
+      
+      if (!client.isReady) {
+        console.log("⚠️ Cliente WhatsApp não está pronto");
+        return null;
+      }
+      
+      console.log(`🔍 Buscando info do grupo com código: ${inviteCode}`);
       const inviteInfo = await client.getInviteInfo(inviteCode);
-      return inviteInfo && inviteInfo.id ? inviteInfo.id._serialized : null;
+      
+      if (inviteInfo && inviteInfo.id) {
+        const groupId = inviteInfo.id._serialized;
+        console.log(`✅ ID do grupo extraído: ${groupId}`);
+        return groupId;
+      } else {
+        console.log("❌ Não foi possível obter info do convite");
+        return null;
+      }
     } catch (error) {
+      console.log(`❌ Erro ao buscar info do grupo: ${error.message}`);
       return null;
     }
   }
@@ -54,7 +72,7 @@ class GroupIdExtractor {
     // Se é link do WhatsApp, tenta extrair o ID real
     if (this.isWhatsAppLink(link)) {
       const inviteCode = this.extractInviteCode(link);
-
+      
       if (inviteCode) {
         const groupId = await this.getGroupIdFromInvite(inviteCode);
         if (groupId) return groupId;
