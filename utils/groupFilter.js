@@ -1,91 +1,55 @@
 // groupFilter.js - Middleware para filtrar mensagens de grupos
+const { GroupChat } = require("whatsapp-web.js");
 const { debug } = require("../services/debugService");
-
-/**
- * Lista de comandos permitidos em grupos
- * Estes comandos não serão filtrados mesmo em grupos
- */
 
 /**
  * Middleware para filtrar mensagens vindas de grupos
  * Retorna true se a mensagem deve ser ignorada (veio de grupo)
- * Retorna false se a mensagem deve ser processada
+ * Retorna false se a mensagem deve ser processada (conversa privada)
  */
 async function shouldIgnoreMessage(msg) {
   try {
     // Obtém o chat da mensagem
     const chat = await msg.getChat();
 
-    // Se NÃO é um grupo, sempre processar
-    if (!chat.isGroup && !chat.id._serialized.includes("@g.us")) {
+    // Verifica se é um grupo
+    if (chat.isGroup) {
       await debug(
-        `✅ Mensagem aceita - conversa privada com: ${
-          chat.name || "Usuário"
-        } (ID: ${chat.id._serialized})`
+        `🚫 Mensagem ignorada - veio do grupo: ${chat.name} (ID: ${chat.id._serialized})`
       );
-      return false; // Processar mensagem privada
+      return true; // Ignorar mensagem de grupo
     }
 
-    // Se É um grupo, verifica se é comando permitido
-    const messageText = msg.body.toLowerCase().trim();
-
-    // Verifica se é um comando permitido em grupos
-    const isAllowedCommand = ALLOWED_GROUP_COMMANDS.some(
-      (cmd) =>
-        messageText === cmd.toLowerCase() ||
-        messageText.startsWith(cmd.toLowerCase() + " ")
-    );
-
-    if (isAllowedCommand) {
+    // Verificação adicional usando instanceof (backup)
+    if (chat instanceof GroupChat) {
       await debug(
-        `✅ Comando permitido em grupo: "${messageText}" no grupo: ${chat.name} (ID: ${chat.id._serialized})`
+        `🚫 Mensagem ignorada - detectado como GroupChat: ${chat.name} (ID: ${chat.id._serialized})`
       );
-      return false; // Processar comando permitido
+      return true; // Ignorar mensagem de grupo
     }
 
-    // Se chegou até aqui, é uma mensagem comum de grupo - ignorar
+    // Verificação pelo ID do chat (grupos sempre têm '-g' no ID)
+    if (chat.id._serialized.includes("@g.us")) {
+      await debug(
+        `🚫 Mensagem ignorada - ID indica grupo: ${chat.id._serialized}`
+      );
+      return true; // Ignorar mensagem de grupo
+    }
+
+    // Se chegou até aqui, é uma conversa privada
     await debug(
-      `🚫 Mensagem ignorada - veio do grupo: ${chat.name} (ID: ${
-        chat.id._serialized
-      }) | Conteúdo: "${messageText.substring(0, 30)}..."`
+      `✅ Mensagem aceita - conversa privada com: ${
+        chat.name || "Usuário"
+      } (ID: ${chat.id._serialized})`
     );
-    return true; // Ignorar mensagem de grupo
+    return false; // Processar mensagem privada
   } catch (error) {
-    console.error("⚠️ Erro ao verificar tipo de chat:", error);
+    console.error("❌ Erro ao verificar tipo de chat:", error);
 
     // Em caso de erro, assume como grupo por segurança (para não enviar mensagens indevidas)
     await debug("🚫 Mensagem ignorada por precaução devido ao erro");
     return true;
   }
-}
-
-/**
- * Função para adicionar novos comandos permitidos em grupos
- */
-function addAllowedGroupCommand(command) {
-  if (!ALLOWED_GROUP_COMMANDS.includes(command)) {
-    ALLOWED_GROUP_COMMANDS.push(command);
-    console.log(`✅ Comando adicionado à lista de permitidos: ${command}`);
-  }
-}
-
-/**
- * Função para remover comandos da lista de permitidos
- */
-function removeAllowedGroupCommand(command) {
-  const index = ALLOWED_GROUP_COMMANDS.indexOf(command);
-  if (index > -1) {
-    ALLOWED_GROUP_COMMANDS.splice(index, 1);
-    console.log(`🗑️ Comando removido da lista de permitidos: ${command}`);
-  }
-}
-
-/**
- * Função para listar comandos permitidos
- */
-function listAllowedGroupCommands() {
-  console.log("📋 Comandos permitidos em grupos:", ALLOWED_GROUP_COMMANDS);
-  return ALLOWED_GROUP_COMMANDS;
 }
 
 /**
@@ -104,10 +68,9 @@ async function getChatInfo(msg) {
       participantCount: chat.isGroup ? chat.participants?.length : 1,
       fromNumber: msg.from,
       timestamp: new Date(msg.timestamp * 1000).toLocaleString("pt-BR"),
-      messageContent: msg.body.substring(0, 50) + "...",
     };
   } catch (error) {
-    console.error("⚠️ Erro ao obter informações do chat:", error);
+    console.error("❌ Erro ao obter informações do chat:", error);
     return null;
   }
 }
@@ -124,7 +87,6 @@ function logChatStats(chatInfo) {
     id: chatInfo.chatId,
     participantes: chatInfo.participantCount,
     horario: chatInfo.timestamp,
-    conteudo: chatInfo.messageContent,
   });
 }
 
@@ -132,8 +94,4 @@ module.exports = {
   shouldIgnoreMessage,
   getChatInfo,
   logChatStats,
-  addAllowedGroupCommand,
-  removeAllowedGroupCommand,
-  listAllowedGroupCommands,
-  ALLOWED_GROUP_COMMANDS,
 };
