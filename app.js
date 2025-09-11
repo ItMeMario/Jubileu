@@ -3,7 +3,8 @@ const { initializeAllConfigs } = require("./utils/initialize");
 const { client, startScout } = require("./client/client");
 const { initializeApp } = require("./controllers/configController");
 const messageHandler = require("./handlers/message");
-require("./utils/reminder");
+require("./services/reminderService");
+const { reminderSystem } = require("./services/reminderService");
 
 async function startApp() {
   try {
@@ -33,6 +34,10 @@ async function startApp() {
     console.error("Erro durante a inicialização:", error);
     process.exit(1);
   }
+
+  client.on("ready", () => {
+    reminderSystem.startAutomaticReminders(client);
+  });
 }
 
 startApp();

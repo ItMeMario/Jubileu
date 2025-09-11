@@ -9,7 +9,7 @@ const { antiSpamManager } = require("../utils/antiSpam");
 const { messageTypeHandler } = require("../handlers/unsuportedMessage");
 const { debug } = require("../services/debugService");
 const timeout = require("../utils/timeout");
-const { reminderSystem } = require("../utils/reminder");
+const { reminderSystem } = require("../services/reminderService");
 
 // Importa os handlers específicos
 const MenuHandler = require("../handlers/menuHandler");
