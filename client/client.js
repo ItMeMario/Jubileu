@@ -73,7 +73,7 @@ client.on("qr", (qr) => {
 
 client.on("ready", async () => {
   console.log("✅ Cliente WhatsApp está pronto!");
-  console.log(`📱 Conectado como: ${client.info.pushname}`);
+  
 
   // 🆕 Inicia a extração automática apenas uma vez
   if (!extractionStarted) {
