@@ -78,12 +78,12 @@ async function dbOperation(operation) {
   }
 }
 
-async function getCitiesWithoutLinkId() {
+// MUDANÇA: Busca TODAS as cidades com link (incluindo as que já têm link_id)
+async function getCitiesForProcessing() {
   return await dbOperation((db, callback) => {
     db.all(
-      `SELECT id, name, link FROM cities 
-       WHERE (link_id IS NULL OR link_id = '' OR link_id = '0') 
-       AND link IS NOT NULL AND link != ''`,
+      `SELECT id, name, link, link_id FROM cities 
+       WHERE link IS NOT NULL AND link != ''`,
       [],
       callback
     );
@@ -105,38 +105,50 @@ async function updateCityLinkId(cityId, groupId) {
 }
 
 /**
- * Processa uma única cidade
+ * MUDANÇA: Processa uma única cidade - sempre atualiza baseado no link atual
  */
 async function processSingleCity(client, city) {
   try {
     const inviteCode = extractInviteCode(city.link);
+
+    // Link inválido ou não é do WhatsApp
     if (!inviteCode) {
-      await updateCityLinkId(city.id, "0");
-      return false;
+      const updated = await updateCityLinkId(city.id, "0");
+      if (updated && city.link_id !== "0") {
+        console.log(`🔄 ${city.name}: Link inválido → 0`);
+      }
+      return updated;
     }
 
+    // Link válido do WhatsApp
     const groupInfo = await fetchGroupInfo(client, inviteCode);
     if (!groupInfo?.id) {
-      await updateCityLinkId(city.id, "0");
-      return false;
+      const updated = await updateCityLinkId(city.id, "0");
+      if (updated && city.link_id !== "0") {
+        console.log(`⚠️ ${city.name}: Grupo não encontrado → 0`);
+      }
+      return updated;
     }
 
+    // Atualiza com o ID do grupo
     const updated = await updateCityLinkId(city.id, groupInfo.id);
     if (updated) {
-      console.log(`✅ ${city.name}: ${groupInfo.id}`);
+      const action =
+        city.link_id !== groupInfo.id ? "atualizado" : "confirmado";
+      console.log(`✅ ${city.name}: ${groupInfo.id} (${action})`);
       return true;
     }
 
     return false;
   } catch (error) {
-    console.log(`Erro ao processar cidade ${city.name}: ${error.message}`);
+    console.log(`❌ Erro ao processar cidade ${city.name}: ${error.message}`);
     await updateCityLinkId(city.id, "0");
     return false;
   }
 }
 
 /**
- * Extrai IDs de grupos para todas as cidades
+ * MUDANÇA: Extrai IDs de grupos para todas as cidades (não só as sem link_id)
  */
 async function extractAllGroupIds(client) {
   if (isExtracting) {
@@ -151,21 +163,24 @@ async function extractAllGroupIds(client) {
 
   isExtracting = true;
   try {
-    const cities = await getCitiesWithoutLinkId();
+    const cities = await getCitiesForProcessing();
 
     if (cities.length === 0) {
-      console.log("ℹ️ Todas as cidades já possuem link_id definido");
+      console.log("ℹ️ Nenhuma cidade com link para processar");
       return true;
     }
 
     console.log(`📋 Processando ${cities.length} cidade(s):`);
 
+    let processed = 0;
     for (const city of cities) {
-      await processSingleCity(client, city);
+      const success = await processSingleCity(client, city);
+      if (success) processed++;
       // Delay opcional entre processamentos
       // await new Promise(resolve => setTimeout(resolve, 500));
     }
 
+    console.log(`📊 ${processed}/${cities.length} cidades processadas`);
     return true;
   } catch (error) {
     console.log(`❌ Erro durante extração: ${error.message}`);
@@ -212,7 +227,7 @@ module.exports = {
   extractInviteCode,
   fetchGroupInfo,
   updateCityLinkId,
-  getCitiesWithoutLinkId,
+  getCitiesForProcessing,
   processSingleCity,
   extractAllGroupIds,
   startBackgroundExtraction,
