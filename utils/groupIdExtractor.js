@@ -1,4 +1,5 @@
 const { getDatabaseConnection } = require("../utils/initialize");
+const { debug } = require("../services/debugService");
 
 // Flag para evitar execução duplicada
 let isExtracting = false;
@@ -115,7 +116,7 @@ async function processSingleCity(client, city) {
     if (!inviteCode) {
       const updated = await updateCityLinkId(city.id, "0");
       if (updated && city.link_id !== "0") {
-        console.log(`🔄 ${city.name}: Link inválido → 0`);
+        await debug(`🔄 ${city.name}: Link inválido → 0`);
       }
       return updated;
     }
@@ -125,7 +126,7 @@ async function processSingleCity(client, city) {
     if (!groupInfo?.id) {
       const updated = await updateCityLinkId(city.id, "0");
       if (updated && city.link_id !== "0") {
-        console.log(`⚠️ ${city.name}: Grupo não encontrado → 0`);
+        await debug(`⚠️ ${city.name}: Grupo não encontrado → 0`);
       }
       return updated;
     }
@@ -135,13 +136,13 @@ async function processSingleCity(client, city) {
     if (updated) {
       const action =
         city.link_id !== groupInfo.id ? "atualizado" : "confirmado";
-      console.log(`✅ ${city.name}: ${groupInfo.id} (${action})`);
+      await debug(`✅ ${city.name}: ${groupInfo.id} (${action})`);
       return true;
     }
 
     return false;
   } catch (error) {
-    console.log(`❌ Erro ao processar cidade ${city.name}: ${error.message}`);
+    await debug(`❌ Erro ao processar cidade ${city.name}: ${error.message}`);
     await updateCityLinkId(city.id, "0");
     return false;
   }
@@ -152,12 +153,12 @@ async function processSingleCity(client, city) {
  */
 async function extractAllGroupIds(client) {
   if (isExtracting) {
-    console.log("ℹ️ Extração já em andamento, ignorando...");
+    await debug("ℹ️ Extração já em andamento, ignorando...");
     return false;
   }
 
   if (!client) {
-    console.log("❌ Client do WhatsApp não fornecido");
+    await debug("❌ Client do WhatsApp não fornecido");
     return false;
   }
 
@@ -166,11 +167,11 @@ async function extractAllGroupIds(client) {
     const cities = await getCitiesForProcessing();
 
     if (cities.length === 0) {
-      console.log("ℹ️ Nenhuma cidade com link para processar");
+      await debug("ℹ️ Nenhuma cidade com link para processar");
       return true;
     }
 
-    console.log(`📋 Processando ${cities.length} cidade(s):`);
+    await debug(`📋 Processando ${cities.length} cidade(s):`);
 
     let processed = 0;
     for (const city of cities) {
@@ -180,10 +181,10 @@ async function extractAllGroupIds(client) {
       // await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    console.log(`📊 ${processed}/${cities.length} cidades processadas`);
+    await debug(`📊 ${processed}/${cities.length} cidades processadas`);
     return true;
   } catch (error) {
-    console.log(`❌ Erro durante extração: ${error.message}`);
+    await debug(`❌ Erro durante extração: ${error.message}`);
     return false;
   } finally {
     isExtracting = false;
@@ -195,25 +196,25 @@ async function extractAllGroupIds(client) {
  */
 async function startBackgroundExtraction(client, delay = 5000) {
   if (isExtracting) {
-    console.log("ℹ️ Extração já iniciada, ignorando nova solicitação");
+    await debug("ℹ️ Extração já iniciada, ignorando nova solicitação");
     return;
   }
 
   try {
-    console.log(
+    await debug(
       `🚀 Extração de IDs de grupos iniciará em ${delay / 1000} segundos...`
     );
 
     setTimeout(async () => {
       if (isExtracting) return; // Double check
 
-      console.log("⏰ Iniciando extração...");
+      await debug("⏰ Iniciando extração...");
       const success = await extractAllGroupIds(client);
 
-      console.log(success ? "🎉 Extração concluída!" : "⚠️ Extração falhou");
+      await debug(success ? "🎉 Extração concluída!" : "⚠️ Extração falhou");
     }, delay);
   } catch (error) {
-    console.log(`❌ Erro na extração: ${error.message}`);
+    await debug(`❌ Erro na extração: ${error.message}`);
     isExtracting = false;
   }
 }
