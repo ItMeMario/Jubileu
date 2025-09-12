@@ -221,6 +221,7 @@ async function initializeDatabase() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             link TEXT,
+            link_id,
             isPrimary BOOLEAN DEFAULT 0,
             message TEXT,
             date DATE NOT NULL

@@ -2,6 +2,7 @@
 const { initializeAllConfigs } = require("./utils/initialize");
 const { client, startScout } = require("./client/client");
 const { initializeApp } = require("./controllers/configController");
+const { startBackgroundExtraction } = require("./utils/groupIdExtractor");
 const messageHandler = require("./handlers/message");
 
 async function startApp() {
@@ -20,6 +21,9 @@ async function startApp() {
 
     client.on("ready", () => {
       console.log("Tudo certo! WhatsApp conectado.");
+
+      // 🆕 Inicia extração automática de IDs de grupos em background
+      startBackgroundExtraction(client);
     });
 
     client.on("message", messageHandler);
