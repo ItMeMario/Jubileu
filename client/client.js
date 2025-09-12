@@ -2,6 +2,8 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const path = require("path");
 const startScout = require("../utils/scout");
+// 🆕 Importa a função de extração de IDs
+const { startBackgroundExtraction } = require("../utils/groupIdExtractor");
 
 // Função para obter o caminho correto da sessão
 function getSessionPath() {
@@ -58,6 +60,47 @@ const client = new Client({
       "--mute-audio",
     ],
   },
+});
+
+// 🆕 Flag para evitar execução duplicada
+let extractionStarted = false;
+
+// 🆕 Event listeners para o client
+client.on("qr", (qr) => {
+  console.log("QR Code recebido");
+  // O QR code será tratado pelo scout ou pela GUI
+});
+
+client.on("ready", async () => {
+  console.log("✅ Cliente WhatsApp está pronto!");
+  console.log(`📱 Conectado como: ${client.info.pushname}`);
+
+  // 🆕 Inicia a extração automática apenas uma vez
+  if (!extractionStarted) {
+    extractionStarted = true;
+    try {
+      console.log("🚀 Iniciando extração automática de IDs de grupos...");
+      startBackgroundExtraction(client);
+    } catch (error) {
+      console.error("❌ Erro ao iniciar extração de IDs:", error);
+    }
+  } else {
+    console.log("ℹ️ Extração de IDs já foi iniciada, pulando...");
+  }
+});
+
+client.on("authenticated", () => {
+  console.log("✅ Cliente autenticado com sucesso!");
+});
+
+client.on("auth_failure", (msg) => {
+  console.error("❌ Falha na autenticação:", msg);
+});
+
+client.on("disconnected", (reason) => {
+  console.log("🔌 Cliente desconectado:", reason);
+  // Reset da flag quando desconectar
+  extractionStarted = false;
 });
 
 module.exports = { client, startScout };
