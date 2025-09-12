@@ -1,187 +1,128 @@
 const { getDatabaseConnection } = require("../utils/initialize");
 
+// Flag para evitar execução duplicada
+let isExtracting = false;
+
 /**
  * Extrai o código do convite de um link do WhatsApp
  */
-async function extractInviteCode(link) {
-  try {
-    if (!link || typeof link !== "string") {
-      return null;
-    }
+function extractInviteCode(link) {
+  if (!link || typeof link !== "string") return null;
 
-    const whatsappLinkRegex = /https:\/\/chat\.whatsapp\.com\/([A-Za-z0-9_-]+)/;
-    const match = link.match(whatsappLinkRegex);
-
-    return match && match[1] ? match[1] : null;
-  } catch (error) {
-    console.log(`Erro ao extrair código do convite: ${error.message}`);
-    return null;
-  }
+  const match = link.match(/https:\/\/chat\.whatsapp\.com\/([A-Za-z0-9_-]+)/);
+  return match?.[1] || null;
 }
 
 /**
  * Busca informações do grupo usando diferentes métodos disponíveis
  */
-async function fetchGroupInfoFromWhatsApp(client, inviteCode) {
+async function fetchGroupInfo(client, inviteCode) {
+  if (!client?.info?.wid || !inviteCode) return null;
+
   try {
-    if (!client || !inviteCode) {
-      return null;
-    }
+    // Método 1: getInviteInfo
+    if (typeof client.getInviteInfo === "function") {
+      const groupInfo = await client.getInviteInfo(inviteCode);
+      if (groupInfo) {
+        const groupId =
+          typeof groupInfo === "string"
+            ? groupInfo
+            : groupInfo.id?._serialized ||
+              groupInfo._serialized ||
+              JSON.stringify(groupInfo.id || groupInfo);
 
-    // Verifica se o client está pronto
-    if (!client.info || !client.info.wid) {
-      return null;
-    }
-
-    // Método 1: getInviteInfo (principal)
-    try {
-      if (typeof client.getInviteInfo === "function") {
-        const groupInfo = await client.getInviteInfo(inviteCode);
-
-        if (groupInfo) {
-          let groupId = null;
-          if (typeof groupInfo === "string") {
-            groupId = groupInfo;
-          } else if (groupInfo.id) {
-            groupId =
-              typeof groupInfo.id === "object"
-                ? JSON.stringify(groupInfo.id)
-                : String(groupInfo.id);
-          } else if (groupInfo._serialized) {
-            groupId = groupInfo._serialized;
-          }
-
-          if (groupId) {
-            return {
-              id: groupId,
-              subject: groupInfo.subject || "Sem nome",
-            };
-          }
+        if (groupId) {
+          return {
+            id: groupId,
+            subject: groupInfo.subject || "Sem nome",
+          };
         }
       }
-    } catch (error) {
-      // Método falhou, continua para próximo
     }
-
-    // Método 3: Construção manual do ID
-    try {
-      const constructedId = `${inviteCode}@g.us`;
-
-      // Tenta verificar se o grupo existe
-      if (typeof client.getChatById === "function") {
-        try {
-          const chat = await client.getChatById(constructedId);
-          if (chat && chat.id) {
-            return {
-              id:
-                typeof chat.id === "object" && chat.id._serialized
-                  ? chat.id._serialized
-                  : String(chat.id),
-              subject: chat.name || "Sem nome",
-            };
-          }
-        } catch (chatError) {
-          // Chat não encontrado, continua
-        }
-      }
-
-      // Retorna ID construído como fallback
-      return {
-        id: constructedId,
-        subject: "Desconhecido",
-      };
-    } catch (error) {
-      // Método falhou
-    }
-
-    return null;
   } catch (error) {
-    console.log(`Erro ao buscar informações do grupo: ${error.message}`);
+    // Continua para próximo método
+  }
+
+  try {
+    // Método 2: Construção manual + verificação
+    const constructedId = `${inviteCode}@g.us`;
+
+    if (typeof client.getChatById === "function") {
+      const chat = await client.getChatById(constructedId);
+      if (chat?.id) {
+        return {
+          id: chat.id._serialized || String(chat.id),
+          subject: chat.name || "Sem nome",
+        };
+      }
+    }
+
+    // Fallback: ID construído
+    return { id: constructedId, subject: "Desconhecido" };
+  } catch (error) {
     return null;
   }
 }
 
 /**
- * Atualiza o link_id de uma cidade no banco de dados
+ * Operações de banco de dados
  */
-async function updateCityLinkId(cityId, groupId) {
-  let db;
+async function dbOperation(operation) {
+  const db = await getDatabaseConnection();
   try {
-    db = await getDatabaseConnection();
-    const linkIdValue = groupId ? String(groupId) : "0";
-
-    const changes = await new Promise((resolve, reject) => {
-      db.run(
-        `UPDATE cities SET link_id = ? WHERE id = ?`,
-        [linkIdValue, cityId],
-        function (err) {
-          if (err) return reject(err);
-          resolve(this.changes);
-        }
-      );
+    return await new Promise((resolve, reject) => {
+      operation(db, (err, result) => (err ? reject(err) : resolve(result)));
     });
-
-    return changes > 0;
-  } catch (error) {
-    console.log(`Erro ao atualizar link_id da cidade: ${error.message}`);
-    return false;
   } finally {
-    if (db && typeof db.close === "function") {
-      db.close();
-    }
+    if (db?.close) db.close();
   }
 }
 
-/**
- * Busca todas as cidades que não possuem link_id definido
- */
 async function getCitiesWithoutLinkId() {
-  let db;
-  try {
-    db = await getDatabaseConnection();
+  return await dbOperation((db, callback) => {
+    db.all(
+      `SELECT id, name, link FROM cities 
+       WHERE (link_id IS NULL OR link_id = '' OR link_id = '0') 
+       AND link IS NOT NULL AND link != ''`,
+      [],
+      callback
+    );
+  }).catch(() => []);
+}
 
-    const rows = await new Promise((resolve, reject) => {
-      db.all(
-        `SELECT id, name, link FROM cities WHERE (link_id IS NULL OR link_id = '' OR link_id = '0') AND link IS NOT NULL AND link != ''`,
-        [],
-        (err, result) => (err ? reject(err) : resolve(result))
-      );
-    });
+async function updateCityLinkId(cityId, groupId) {
+  const changes = await dbOperation((db, callback) => {
+    db.run(
+      `UPDATE cities SET link_id = ? WHERE id = ?`,
+      [groupId ? String(groupId) : "0", cityId],
+      function (err) {
+        callback(err, this.changes);
+      }
+    );
+  }).catch(() => 0);
 
-    return rows || [];
-  } catch (error) {
-    console.log(`Erro ao buscar cidades sem link_id: ${error.message}`);
-    return [];
-  } finally {
-    if (db && typeof db.close === "function") {
-      db.close();
-    }
-  }
+  return changes > 0;
 }
 
 /**
- * Processa uma única cidade para extrair e salvar o ID do grupo
+ * Processa uma única cidade
  */
 async function processSingleCity(client, city) {
   try {
-    const inviteCode = await extractInviteCode(city.link);
-
+    const inviteCode = extractInviteCode(city.link);
     if (!inviteCode) {
       await updateCityLinkId(city.id, "0");
       return false;
     }
 
-    const groupInfo = await fetchGroupInfoFromWhatsApp(client, inviteCode);
-
-    if (!groupInfo || !groupInfo.id) {
+    const groupInfo = await fetchGroupInfo(client, inviteCode);
+    if (!groupInfo?.id) {
       await updateCityLinkId(city.id, "0");
       return false;
     }
 
     const updated = await updateCityLinkId(city.id, groupInfo.id);
-
     if (updated) {
-      // LOG PRINCIPAL: Cidade e seu link_id
       console.log(`✅ ${city.name}: ${groupInfo.id}`);
       return true;
     }
@@ -195,15 +136,21 @@ async function processSingleCity(client, city) {
 }
 
 /**
- * Extrai IDs de grupos para todas as cidades que não possuem link_id
+ * Extrai IDs de grupos para todas as cidades
  */
 async function extractAllGroupIds(client) {
-  try {
-    if (!client) {
-      console.log("❌ Client do WhatsApp não fornecido");
-      return false;
-    }
+  if (isExtracting) {
+    console.log("ℹ️ Extração já em andamento, ignorando...");
+    return false;
+  }
 
+  if (!client) {
+    console.log("❌ Client do WhatsApp não fornecido");
+    return false;
+  }
+
+  isExtracting = true;
+  try {
     const cities = await getCitiesWithoutLinkId();
 
     if (cities.length === 0) {
@@ -215,46 +162,59 @@ async function extractAllGroupIds(client) {
 
     for (const city of cities) {
       await processSingleCity(client, city);
-      // Delay opcional (descomente se necessário)
-      // await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Delay opcional entre processamentos
+      // await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     return true;
   } catch (error) {
     console.log(`❌ Erro durante extração: ${error.message}`);
     return false;
+  } finally {
+    isExtracting = false;
   }
 }
 
 /**
- * Função principal - executa 5 segundos após o bot iniciar
+ * Função principal - inicia extração com delay e proteção contra duplicação
  */
-async function startBackgroundExtraction(client) {
+async function startBackgroundExtraction(client, delay = 5000) {
+  if (isExtracting) {
+    console.log("ℹ️ Extração já iniciada, ignorando nova solicitação");
+    return;
+  }
+
   try {
-    console.log("🚀 Extração de IDs de grupos iniciará em 5 segundos...");
+    console.log(
+      `🚀 Extração de IDs de grupos iniciará em ${delay / 1000} segundos...`
+    );
 
     setTimeout(async () => {
-      console.log("⏰ Iniciando extração...");
+      if (isExtracting) return; // Double check
 
+      console.log("⏰ Iniciando extração...");
       const success = await extractAllGroupIds(client);
 
-      if (success) {
-        console.log("🎉 Extração concluída!");
-      } else {
-        console.log("⚠️ Extração falhou");
-      }
-    }, 5000); // 5 segundos
+      console.log(success ? "🎉 Extração concluída!" : "⚠️ Extração falhou");
+    }, delay);
   } catch (error) {
     console.log(`❌ Erro na extração: ${error.message}`);
+    isExtracting = false;
   }
+}
+
+// Função para resetar flag (útil para testes)
+function resetExtractionFlag() {
+  isExtracting = false;
 }
 
 module.exports = {
   extractInviteCode,
-  fetchGroupInfoFromWhatsApp,
+  fetchGroupInfo,
   updateCityLinkId,
   getCitiesWithoutLinkId,
   processSingleCity,
   extractAllGroupIds,
   startBackgroundExtraction,
+  resetExtractionFlag,
 };
