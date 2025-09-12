@@ -1,6 +1,6 @@
 const { app } = require("electron");
 const WindowManager = require("./main/windowManager");
-const ModuleLoader = require("./main/ModuleLoader");
+const ModuleLoader = require("./main/moduleLoader");
 const IPCManager = require("./main/ipcManager");
 const AppLifecycle = require("./main/AppLifecycle");
 const { initializeAllConfigs } = require("./utils/initialize");
