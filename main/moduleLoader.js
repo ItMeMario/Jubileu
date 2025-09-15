@@ -15,6 +15,9 @@ class ModuleLoader {
       // Carrega utilitários de inicialização
       await this.loadInitializationUtils();
 
+      // NOVO: Carrega módulos do sistema de lembretes
+      await this.loadReminderModules();
+
       this.isLoaded = true;
       console.log("Todos os módulos carregados com sucesso");
     } catch (error) {
@@ -58,6 +61,24 @@ class ModuleLoader {
     } catch (error) {
       console.error("Erro ao carregar utilitários:", error);
       throw new Error("Falha ao carregar utilitários de inicialização");
+    }
+  }
+
+  // NOVO MÉTODO: Carrega módulos de lembrete
+  async loadReminderModules() {
+    try {
+      // Carrega ReminderService
+      this.modules.reminderService = require("../services/reminderService");
+
+      // Carrega ReminderScheduler
+      const ReminderScheduler = require("../utils/reminderScheduler");
+      this.modules.ReminderScheduler = ReminderScheduler;
+
+      console.log("Módulos de lembrete carregados");
+    } catch (error) {
+      console.error("Erro ao carregar módulos de lembrete:", error);
+      // Não quebra a aplicação se os lembretes não carregarem
+      console.warn("Sistema de lembretes não disponível");
     }
   }
 

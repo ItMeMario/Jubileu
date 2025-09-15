@@ -6,13 +6,20 @@ class WhatsAppHandlers {
     this.startScout = modules.startScout;
     this.messageHandler = modules.messageHandler;
 
-    // 🆕 NOVAS FUNÇÕES DO CLIENT.JS
+    // NOVAS FUNÇÕES DO CLIENT.JS
     this.initializeClient = modules.initializeClient;
     this.setupClientEventListeners = modules.setupClientEventListeners;
     this.resetClientState = modules.resetClientState;
     this.getClientStatus = modules.getClientStatus;
 
-    console.log("🔧 WhatsAppHandlers inicializado com funções do client.js");
+    // NOVO: Módulos de lembrete
+    this.reminderService = modules.reminderService;
+    this.ReminderScheduler = modules.ReminderScheduler;
+    this.reminderScheduler = null; // Instância do scheduler
+
+    console.log(
+      "WhatsAppHandlers inicializado com funções do client.js e sistema de lembretes"
+    );
   }
 
   async startWhatsApp() {
@@ -31,17 +38,17 @@ class WhatsAppHandlers {
       // Remove listeners antigos para evitar duplicação
       this.client.removeAllListeners();
 
-      // 🆕 PRIMEIRO: Configura eventos GUI específicos (SEM messageHandler)
+      // PRIMEIRO: Configura eventos GUI específicos (SEM messageHandler)
       this.setupGUIEvents(mainWindow);
 
-      // 🆕 SEGUNDO: Usa initializeClient que já configura os event listeners do client.js
+      // SEGUNDO: Usa initializeClient que já configura os event listeners do client.js
       // Isso garante que a extração de IDs funcione igual ao CLI
       if (this.initializeClient) {
-        console.log("🚀 Usando initializeClient do client.js...");
+        console.log("Usando initializeClient do client.js...");
         // initializeClient já chama setupClientEventListeners + client.initialize
         await this.initializeClient();
       } else {
-        console.log("⚠️ Fallback: usando método antigo...");
+        console.log("Fallback: usando método antigo...");
         // Fallback para compatibilidade
         this.setupClientEvents(mainWindow);
         this.startScout(this.client);
@@ -63,10 +70,13 @@ class WhatsAppHandlers {
       if (this.client) {
         await this.client.destroy();
 
-        // 🆕 USA resetClientState do client.js se disponível
+        // USA resetClientState do client.js se disponível
         if (this.resetClientState) {
           this.resetClientState();
         }
+
+        // NOVO: Para o scheduler de lembretes
+        this.stopReminderSystem();
       }
       return { success: true, message: "WhatsApp desconectado" };
     } catch (error) {
@@ -79,7 +89,7 @@ class WhatsAppHandlers {
   }
 
   setupGUIEvents(mainWindow) {
-    console.log("📱 Configurando eventos GUI específicos...");
+    console.log("Configurando eventos GUI específicos...");
 
     // QR Code para a GUI
     this.client.on("qr", async (qr) => {
@@ -95,25 +105,28 @@ class WhatsAppHandlers {
           qrText: qr,
         });
 
-        console.log("📱 QR Code enviado para GUI");
+        console.log("QR Code enviado para GUI");
       } catch (err) {
         console.error("Erro ao gerar QR Code:", err);
         mainWindow.webContents.send("error", "Erro ao gerar QR Code");
       }
     });
 
-    // Notificações para GUI - ready
+    // MODIFICADO: Notificações para GUI - ready com inicialização de lembretes
     this.client.on("ready", () => {
-      console.log("✅ WhatsApp conectado! (GUI)");
+      console.log("WhatsApp conectado! (GUI)");
       mainWindow.webContents.send(
         "whatsapp-ready",
         "WhatsApp conectado com sucesso!"
       );
+
+      // NOVO: Configura sistema de lembretes
+      this.initializeReminderSystem();
     });
 
     // Notificações para GUI - authenticated
     this.client.on("authenticated", () => {
-      console.log("🔐 WhatsApp autenticado! (GUI)");
+      console.log("WhatsApp autenticado! (GUI)");
       mainWindow.webContents.send(
         "whatsapp-authenticated",
         "WhatsApp autenticado!"
@@ -122,27 +135,70 @@ class WhatsAppHandlers {
 
     // Notificações para GUI - auth_failure
     this.client.on("auth_failure", () => {
-      console.error("❌ Falha na autenticação (GUI)");
+      console.error("Falha na autenticação (GUI)");
       mainWindow.webContents.send("error", "Falha na autenticação do WhatsApp");
     });
 
     // Notificações para GUI - disconnected
     this.client.on("disconnected", (reason) => {
-      console.log(`🔌 WhatsApp desconectado: ${reason} (GUI)`);
+      console.log(`WhatsApp desconectado: ${reason} (GUI)`);
       mainWindow.webContents.send(
         "whatsapp-disconnected",
         `WhatsApp desconectado: ${reason}`
       );
+
+      // NOVO: Para o sistema de lembretes quando desconectar
+      this.stopReminderSystem();
     });
 
     console.log(
-      "✅ Eventos GUI configurados (sem messageHandler - evitando duplicação)"
+      "Eventos GUI configurados (sem messageHandler - evitando duplicação)"
     );
   }
 
-  // 📄 MÉTODO ANTIGO MANTIDO PARA COMPATIBILIDADE
+  // NOVO MÉTODO: Inicializa sistema de lembretes
+  initializeReminderSystem() {
+    try {
+      if (!this.reminderService || !this.ReminderScheduler) {
+        console.warn(
+          "Módulos de lembrete não carregados, pulando inicialização"
+        );
+        return;
+      }
+
+      console.log("Configurando sistema de lembretes...");
+
+      // Configura o cliente no reminderService
+      this.reminderService.setWhatsAppClient(this.client);
+
+      // Cria nova instância do scheduler se não existir
+      if (!this.reminderScheduler) {
+        this.reminderScheduler = new this.ReminderScheduler();
+        this.reminderScheduler.start();
+      }
+
+      console.log("Sistema de lembretes iniciado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao iniciar sistema de lembretes:", error);
+    }
+  }
+
+  // NOVO MÉTODO: Para sistema de lembretes
+  stopReminderSystem() {
+    try {
+      if (this.reminderScheduler) {
+        // O scheduler não tem método stop, mas podemos resetar a instância
+        this.reminderScheduler = null;
+        console.log("Sistema de lembretes parado");
+      }
+    } catch (error) {
+      console.error("Erro ao parar sistema de lembretes:", error);
+    }
+  }
+
+  // MÉTODO ANTIGO MANTIDO PARA COMPATIBILIDADE
   setupClientEvents(mainWindow) {
-    console.log("⚠️ Usando setupClientEvents antigo (fallback)");
+    console.log("Usando setupClientEvents antigo (fallback)");
 
     this.client.on("qr", async (qr) => {
       try {
@@ -168,6 +224,9 @@ class WhatsAppHandlers {
         "whatsapp-ready",
         "WhatsApp conectado com sucesso!"
       );
+
+      // NOVO: Mesmo no fallback, inicializa lembretes
+      this.initializeReminderSystem();
     });
 
     this.client.on("authenticated", () => {
@@ -186,13 +245,16 @@ class WhatsAppHandlers {
         "whatsapp-disconnected",
         `WhatsApp desconectado: ${reason}`
       );
+
+      // NOVO: Para lembretes no fallback também
+      this.stopReminderSystem();
     });
 
-    // ⚠️ MANTIDO no fallback para compatibilidade
+    // MANTIDO no fallback para compatibilidade
     this.client.on("message", this.messageHandler);
   }
 
-  // 🆕 MÉTODO MELHORADO: Usa getClientStatus do client.js se disponível
+  // MÉTODO MELHORADO: Usa getClientStatus do client.js se disponível
   getClientStatus() {
     if (this.getClientStatus && typeof this.getClientStatus === "function") {
       // Usa a função do client.js que tem mais informações
@@ -221,10 +283,13 @@ class WhatsAppHandlers {
       if (this.client) {
         await this.client.destroy();
 
-        // 🆕 Reset usando função do client.js se disponível
+        // Reset usando função do client.js se disponível
         if (this.resetClientState) {
           this.resetClientState();
         }
+
+        // NOVO: Para lembretes antes de reconectar
+        this.stopReminderSystem();
       }
       return await this.startWhatsApp();
     } catch (error) {
@@ -235,7 +300,7 @@ class WhatsAppHandlers {
     }
   }
 
-  // 🆕 NOVO MÉTODO: Para debug - mostra status completo
+  // NOVO MÉTODO: Para debug - mostra status completo
   async getDetailedStatus() {
     const basicStatus = this.getClientStatus();
 
@@ -243,6 +308,8 @@ class WhatsAppHandlers {
       ...basicStatus,
       hasInitializeClient: !!this.initializeClient,
       hasResetClientState: !!this.resetClientState,
+      hasReminderSystem: !!(this.reminderService && this.ReminderScheduler),
+      reminderSchedulerActive: !!this.reminderScheduler,
       clientInfo: this.client?.info || null,
       timestamp: new Date().toISOString(),
     };

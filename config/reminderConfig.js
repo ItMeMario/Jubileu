@@ -9,7 +9,7 @@
 const reminderConfig = {
   // Lista de horários configurados para checagem diária
   // Inicialmente temos apenas um horário (10:00),
-  scheduledTimes: [{ hour: 11, minute: 56 }],
+  scheduledTimes: [{ hour: 14, minute: 22 }],
 
   /**
    * Altera dinamicamente o horário de checagem diária.
