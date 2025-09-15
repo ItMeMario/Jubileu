@@ -3,10 +3,10 @@
 
 const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
+const { debug } = require("../services/debugService");
 
 const dbPath = path.join(__dirname, "..", "data", "database", "system.db");
 const db = new sqlite3.Database(dbPath);
-
 
 class ReminderService {
   constructor() {
@@ -16,11 +16,11 @@ class ReminderService {
   // Método para definir o cliente WhatsApp (chamado pelo app.js)
   setWhatsAppClient(client) {
     this.client = client;
-    console.log("📱 Cliente WhatsApp configurado no ReminderService");
+    debug("📱 Cliente WhatsApp configurado no ReminderService");
   }
 
   async checkAndExecuteReminders() {
-    console.log("🔍 Verificando lembretes no banco...");
+    await debug("🔍 Verificando lembretes no banco...");
 
     if (!this.client) {
       console.error("❌ Cliente WhatsApp não configurado!");
@@ -33,7 +33,7 @@ class ReminderService {
       this.formatDateOffset(today, 5),
     ];
 
-    console.log(`📅 Verificando datas: ${targetDates.join(", ")}`);
+    await debug(`📅 Verificando datas: ${targetDates.join(", ")}`);
 
     for (const targetDate of targetDates) {
       await this.checkCitiesForDate(targetDate);
@@ -47,8 +47,8 @@ class ReminderService {
   }
 
   async checkCitiesForDate(targetDate) {
-    return new Promise((resolve, reject) => {
-      console.log(`🏙️ Verificando cidades para data: ${targetDate}`);
+    return new Promise(async (resolve, reject) => {
+      await debug(`🏙️ Verificando cidades para data: ${targetDate}`);
 
       db.all(
         "SELECT * FROM cities WHERE date = ?",
@@ -60,11 +60,11 @@ class ReminderService {
           }
 
           if (rows.length === 0) {
-            console.log(`ℹ️ Nenhuma cidade com evento em ${targetDate}.`);
+            await debug(`ℹ️ Nenhuma cidade com evento em ${targetDate}.`);
             return resolve();
           }
 
-          console.log(
+          await debug(
             `✅ Encontradas ${rows.length} cidade(s) com eventos em ${targetDate}`
           );
 
@@ -94,14 +94,14 @@ class ReminderService {
       db.all(
         "SELECT message_content FROM messages WHERE message_type = 'reminder'",
         [],
-        (err, rows) => {
+        async (err, rows) => {
           if (err) {
             console.error("❌ Erro ao buscar mensagens:", err);
             return reject(err);
           }
 
           if (!rows || rows.length === 0) {
-            console.log(
+            await debug(
               "⚠️ Nenhuma mensagem de lembrete configurada, usando mensagem padrão"
             );
             return resolve(
@@ -140,20 +140,20 @@ class ReminderService {
         .replace(/\{days\}/g, daysUntilEvent)
         .replace(/\{date\}/g, this.formatDateBR(eventDate));
 
-      console.log(
+      await debug(
         `⏰ Enviando lembrete para cidade [${city.name}] (${city.link_id})`
       );
-      console.log(`📤 Mensagem: ${finalMessage}`);
+      await debug(`📤 Mensagem: ${finalMessage}`);
 
       // Envia mensagem via WhatsApp
       // whatsapp-web.js usa client.info para verificar se está pronto
       if (this.client && this.client.info) {
         await this.client.sendMessage(city.link_id, finalMessage);
-        console.log(`✅ Lembrete enviado com sucesso para ${city.name}`);
+        await debug(`✅ Lembrete enviado com sucesso para ${city.name}`);
       } else {
         console.error("❌ Cliente WhatsApp não está pronto!");
         // Para teste, apenas loga
-        console.log(
+        await debug(
           `📱 TESTE - Mensagem seria enviada: "${finalMessage}" para ${city.link_id}`
         );
       }
@@ -176,13 +176,13 @@ class ReminderService {
 
   // Método para testar a conexão com o banco
   async testDatabaseConnection() {
-    return new Promise((resolve, reject) => {
-      db.get("SELECT COUNT(*) as count FROM cities", (err, row) => {
+    return new Promise(async (resolve, reject) => {
+      db.get("SELECT COUNT(*) as count FROM cities", async (err, row) => {
         if (err) {
           console.error("❌ Erro na conexão com banco:", err);
           reject(err);
         } else {
-          console.log(`✅ Banco conectado. Total de cidades: ${row.count}`);
+          await debug(`✅ Banco conectado. Total de cidades: ${row.count}`);
           resolve(row.count);
         }
       });
@@ -191,7 +191,7 @@ class ReminderService {
 
   // Método para teste - verifica eventos nos próximos X dias
   async testRemindersForDays(days) {
-    console.log(`🧪 TESTE: Verificando eventos em ${days} dias...`);
+    await debug(`🧪 TESTE: Verificando eventos em ${days} dias...`);
 
     const testDate = this.formatDateOffset(new Date(), days);
     await this.checkCitiesForDate(testDate);

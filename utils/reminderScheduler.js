@@ -19,9 +19,6 @@ class ReminderScheduler {
   }
 
   start() {
-    console.log(
-      "🔔 ReminderScheduler iniciado. Aguardando horários configurados..."
-    );
     setInterval(() => this.checkScheduledTimes(), 5 * 1000);
   }
 
@@ -40,7 +37,6 @@ class ReminderScheduler {
         currentMinute === minute &&
         lastExecutionDate !== today
       ) {
-        console.log(`✅ Executando lembretes para horário ${key} (${today})`);
         this.executeReminders();
         this.lastExecutionDates[key] = today;
       }
