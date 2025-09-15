@@ -31,7 +31,7 @@ class WhatsAppHandlers {
       // Remove listeners antigos para evitar duplicação
       this.client.removeAllListeners();
 
-      // 🆕 PRIMEIRO: Configura eventos GUI específicos
+      // 🆕 PRIMEIRO: Configura eventos GUI específicos (SEM messageHandler)
       this.setupGUIEvents(mainWindow);
 
       // 🆕 SEGUNDO: Usa initializeClient que já configura os event listeners do client.js
@@ -78,7 +78,6 @@ class WhatsAppHandlers {
     }
   }
 
-  // 🆕 NOVO MÉTODO: Eventos específicos da GUI (QR, notificações, etc.)
   setupGUIEvents(mainWindow) {
     console.log("📱 Configurando eventos GUI específicos...");
 
@@ -136,13 +135,12 @@ class WhatsAppHandlers {
       );
     });
 
-    // Handler de mensagens
-    this.client.on("message", this.messageHandler);
-
-    console.log("✅ Eventos GUI configurados");
+    console.log(
+      "✅ Eventos GUI configurados (sem messageHandler - evitando duplicação)"
+    );
   }
 
-  // 🔄 MÉTODO ANTIGO MANTIDO PARA COMPATIBILIDADE
+  // 📄 MÉTODO ANTIGO MANTIDO PARA COMPATIBILIDADE
   setupClientEvents(mainWindow) {
     console.log("⚠️ Usando setupClientEvents antigo (fallback)");
 
@@ -190,6 +188,7 @@ class WhatsAppHandlers {
       );
     });
 
+    // ⚠️ MANTIDO no fallback para compatibilidade
     this.client.on("message", this.messageHandler);
   }
 
@@ -249,4 +248,5 @@ class WhatsAppHandlers {
     };
   }
 }
+
 module.exports = WhatsAppHandlers;
