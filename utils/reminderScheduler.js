@@ -9,8 +9,8 @@
 //   e ainda não tiver rodado nesse dia, executa os lembretes.
 // - Armazena em memória a última data em que rodou para cada horário (não persiste em disco).
 
-const reminderConfig = require("./reminderConfig");
-const reminderService = require("./reminderService");
+const reminderConfig = require("../config/reminderConfig");
+const reminderService = require("../services/reminderService");
 
 class ReminderScheduler {
   constructor() {

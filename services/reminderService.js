@@ -1,11 +1,12 @@
 // reminderService.js
 // Sistema de lembretes para WhatsApp
 
-const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
+const sqlite3 = require("sqlite3").verbose();
 
-// Abre conexão com o banco
-const db = new sqlite3.Database(path.join(__dirname, "database.sqlite"));
+const dbPath = path.join(__dirname, "..", "data", "database", "system.db");
+const db = new sqlite3.Database(dbPath);
+
 
 class ReminderService {
   constructor() {
@@ -118,6 +119,14 @@ class ReminderService {
 
   async executeReminder(city, message, eventDate) {
     try {
+      // Verifica se a cidade tem link_id configurado
+      if (!city.link_id || city.link_id === "0" || city.link_id === "") {
+        console.error(
+          `❌ Cidade ${city.name} não possui link_id válido (${city.link_id})`
+        );
+        return;
+      }
+
       // Calcula quantos dias faltam para o evento
       const today = new Date();
       const targetDate = new Date(eventDate);
@@ -132,19 +141,20 @@ class ReminderService {
         .replace(/\{date\}/g, this.formatDateBR(eventDate));
 
       console.log(
-        `⏰ Enviando lembrete para cidade [${city.name}] (${city.link})`
+        `⏰ Enviando lembrete para cidade [${city.name}] (${city.link_id})`
       );
       console.log(`📤 Mensagem: ${finalMessage}`);
 
       // Envia mensagem via WhatsApp
-      if (this.client && this.client.isReady) {
-        await this.client.sendMessage(city.link, finalMessage);
+      // whatsapp-web.js usa client.info para verificar se está pronto
+      if (this.client && this.client.info) {
+        await this.client.sendMessage(city.link_id, finalMessage);
         console.log(`✅ Lembrete enviado com sucesso para ${city.name}`);
       } else {
         console.error("❌ Cliente WhatsApp não está pronto!");
         // Para teste, apenas loga
         console.log(
-          `📱 TESTE - Mensagem seria enviada: "${finalMessage}" para ${city.link}`
+          `📱 TESTE - Mensagem seria enviada: "${finalMessage}" para ${city.link_id}`
         );
       }
     } catch (error) {
