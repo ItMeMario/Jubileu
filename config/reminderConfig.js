@@ -1,15 +1,13 @@
 // reminderConfig.js
 //
 // Configurações para o sistema de lembretes
-// O sistema foi migrado para verificação diária em horários fixos.
 // Atualmente suporta apenas um horário, mas a estrutura permite múltiplos futuramente.
-//
 // Formato: 24h (recomendado para evitar ambiguidades).
 
 const reminderConfig = {
   // Lista de horários configurados para checagem diária
-  // Inicialmente temos apenas um horário (10:00),
-  scheduledTimes: [{ hour: 15, minute: 41 }],
+  
+  scheduledTimes: [{ hour: 9, minute: 0 }],
 
   /**
    * Altera dinamicamente o horário de checagem diária.
