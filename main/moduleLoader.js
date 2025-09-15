@@ -25,21 +25,11 @@ class ModuleLoader {
 
   async loadClientModule() {
     try {
-      // 🆕 IMPORTA TODAS AS FUNÇÕES DO CLIENT.JS
       const clientModule = require("../client/client");
-
-      // Mantém compatibilidade com código existente
       this.modules.client = clientModule.client;
       this.modules.startScout = clientModule.startScout;
 
-      // 🆕 ADICIONA NOVAS FUNÇÕES EXPORTADAS
-      this.modules.initializeClient = clientModule.initializeClient;
-      this.modules.setupClientEventListeners =
-        clientModule.setupClientEventListeners;
-      this.modules.resetClientState = clientModule.resetClientState;
-      this.modules.getClientStatus = clientModule.getClientStatus;
-
-      console.log("✅ Módulo client carregado com todas as funções");
+      console.log("Módulo client carregado");
     } catch (error) {
       console.error("Erro ao carregar módulo client:", error);
       throw new Error("Falha ao carregar cliente WhatsApp");
@@ -101,13 +91,7 @@ class ModuleLoader {
 
   // Método para verificar se módulos críticos estão disponíveis
   validateCriticalModules() {
-    // 🆕 ATUALIZADA PARA INCLUIR NOVA FUNÇÃO
-    const criticalModules = [
-      "client",
-      "startScout",
-      "messageHandler",
-      "initializeClient",
-    ];
+    const criticalModules = ["client", "startScout", "messageHandler"];
     const missing = criticalModules.filter((module) => !this.modules[module]);
 
     if (missing.length > 0) {
