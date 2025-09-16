@@ -12,6 +12,7 @@ function getAppPaths() {
     return {
       DATA_DIR: path.join(userDataPath, "data"),
       DATABASE_DIR: path.join(userDataPath, "data", "database"),
+      AUDIO_DIR: path.join(userDataPath, "data", "audio"),
       isPackaged: true,
     };
   } else {
@@ -19,6 +20,7 @@ function getAppPaths() {
     return {
       DATA_DIR,
       DATABASE_DIR: path.join(DATA_DIR, "database"),
+      AUDIO_DIR: path.join(DATA_DIR, "audio"),
       isPackaged: false,
     };
   }
@@ -27,6 +29,7 @@ function getAppPaths() {
 const paths = getAppPaths();
 const DATA_DIR = paths.DATA_DIR;
 const DATABASE_DIR = paths.DATABASE_DIR;
+const AUDIO_DIR = paths.AUDIO_DIR;
 const DATABASE_PATH = path.join(DATABASE_DIR, "system.db");
 
 // =====================
@@ -38,6 +41,16 @@ async function ensureDatabaseDirectory() {
     await debug(`✅ Pasta database criada/verificada: ${DATABASE_DIR}`);
   } catch (error) {
     console.error("Erro ao criar diretório database:", error);
+    throw error;
+  }
+}
+
+async function ensureAudioDirectory() {
+  try {
+    await fs.mkdir(AUDIO_DIR, { recursive: true });
+    await debug(`✅ Pasta audio criada/verificada: ${AUDIO_DIR}`);
+  } catch (error) {
+    console.error("Erro ao criar diretório audio:", error);
     throw error;
   }
 }
@@ -387,7 +400,7 @@ async function migrateDevModeIfNeeded() {
     if (!data) return;
 
     if (!data.scoutConfig) {
-      await debug("📄 Migrando configuração de devMode para incluir Scout...");
+      await debug("🔄 Migrando configuração de devMode para incluir Scout...");
       data.scoutConfig = {
         enabled: true,
         timeSeconds: 3600,
@@ -430,6 +443,15 @@ async function initializeAllConfigs() {
     throw error;
   }
 
+  // Inicializar pasta de áudio
+  try {
+    await ensureAudioDirectory();
+    debug(`✅ Pasta de áudio inicializada: ${AUDIO_DIR}`);
+  } catch (error) {
+    console.error("❌ Erro ao inicializar pasta de áudio:", error);
+    throw error;
+  }
+
   const results = await Promise.allSettled([
     initializeConfigJson(),
     initializeDevModeConfig(),
@@ -467,6 +489,7 @@ async function initializeAllConfigs() {
 
 module.exports = {
   ensureDataDirectory,
+  ensureAudioDirectory,
   createJsonFileIfNotExists,
   initializeConfigJson,
   initializeDevModeConfig,
@@ -476,6 +499,7 @@ module.exports = {
   migrateDevModeIfNeeded,
   DATA_DIR,
   DATABASE_DIR,
+  AUDIO_DIR,
   DATABASE_PATH,
   readJsonFile,
   saveJsonFile,
