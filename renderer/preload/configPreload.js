@@ -254,9 +254,8 @@ contextBridge.exposeInMainWorld("configAPI", {
     ipcRenderer.invoke("config-import-settings", settingsData),
 });
 
-// ✅ MANTIDO: APIs de mensagem existentes + NOVA FUNÇÃO ADICIONADA
 contextBridge.exposeInMainWorld("messageAPI", {
-  // Operações CRUD de mensagens
+  // Operações CRUD de mensagens (EXISTENTES - MANTER)
   getMessages: () => ipcRenderer.invoke("message-get-messages"),
   addMessage: (messageData) =>
     ipcRenderer.invoke("message-add-message", messageData),
@@ -265,15 +264,77 @@ contextBridge.exposeInMainWorld("messageAPI", {
   deleteMessage: (id) => ipcRenderer.invoke("message-delete-message", id),
   getLastMessage: () => ipcRenderer.invoke("message-get-last-message"),
 
-  // ✅ MOVIDO DO preload.js: Verificação de completude de mensagens
+  // Verificação de completude (EXISTENTE - MANTER)
   checkMessageCompleteness: (specificLocale) =>
     ipcRenderer.invoke("message-check-completeness", specificLocale),
 
-  // Opções específicas para mensagens
+  // Opções específicas para mensagens (EXISTENTES - MANTER)
   getMessageTypes: () => ipcRenderer.invoke("message-get-types"),
   getMessageLocales: () => ipcRenderer.invoke("message-get-locales"),
   getAvailableOptions: () =>
     ipcRenderer.invoke("message-get-available-options"),
+
+  // NOVAS: APIs para áudio
+  addMessageWithAudio: (messageData, audioFileData) =>
+    ipcRenderer.invoke(
+      "message-add-message-with-audio",
+      messageData,
+      audioFileData
+    ),
+  updateMessageWithAudio: (id, messageData, audioFileData) =>
+    ipcRenderer.invoke(
+      "message-update-message-with-audio",
+      id,
+      messageData,
+      audioFileData
+    ),
+  getExistingAudioFiles: () => ipcRenderer.invoke("message-get-audio-files"),
+  validateAudioFile: (filename) =>
+    ipcRenderer.invoke("message-validate-audio-file", filename),
+});
+
+// ADIÇÕES PARA messagePreload.js
+// Substitua o contextBridge.exposeInMainWorld("messageAPI", { ... }) existente por:
+
+contextBridge.exposeInMainWorld("messageAPI", {
+  // Operações CRUD de mensagens (EXISTENTES)
+  getMessages: () => ipcRenderer.invoke("message-get-messages"),
+  addMessage: (messageData) =>
+    ipcRenderer.invoke("message-add-message", messageData),
+  updateMessage: (id, messageData) =>
+    ipcRenderer.invoke("message-update-message", id, messageData),
+  deleteMessage: (id) => ipcRenderer.invoke("message-delete-message", id),
+  getLastMessage: () => ipcRenderer.invoke("message-get-last-message"),
+
+  // Opções específicas para mensagens (EXISTENTES)
+  getMessageTypes: () => ipcRenderer.invoke("message-get-types"),
+  getMessageLocales: () => ipcRenderer.invoke("message-get-locales"),
+
+  // Nova função: verificar completude das mensagens (EXISTENTE)
+  checkMessageCompleteness: (specificLocale = null) =>
+    ipcRenderer.invoke("message-check-completeness", specificLocale),
+
+  // Método de compatibilidade (EXISTENTE)
+  getAvailableOptions: () =>
+    ipcRenderer.invoke("message-get-available-options"),
+
+  // NOVAS: APIs para áudio
+  addMessageWithAudio: (messageData, audioFileData) =>
+    ipcRenderer.invoke(
+      "message-add-message-with-audio",
+      messageData,
+      audioFileData
+    ),
+  updateMessageWithAudio: (id, messageData, audioFileData) =>
+    ipcRenderer.invoke(
+      "message-update-message-with-audio",
+      id,
+      messageData,
+      audioFileData
+    ),
+  getExistingAudioFiles: () => ipcRenderer.invoke("message-get-audio-files"),
+  validateAudioFile: (filename) =>
+    ipcRenderer.invoke("message-validate-audio-file", filename),
 });
 
 // ✅ ATUALIZADO: Debug helper para verificar se está funcionando

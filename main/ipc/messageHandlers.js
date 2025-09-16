@@ -188,6 +188,110 @@ class MessageHandlers {
 
     return true;
   }
+
+  async addMessageWithAudio(_, messageData, audioFileData = null) {
+    try {
+      const { handleAddMessageWithAudioGUI } = this.getMessageController();
+
+      let audioFile = null;
+      if (audioFileData) {
+        audioFile = {
+          buffer: Buffer.from(audioFileData.buffer),
+          name: audioFileData.name,
+        };
+      }
+
+      return await handleAddMessageWithAudioGUI(messageData, audioFile);
+    } catch (error) {
+      console.error("Erro em message-add-message-with-audio:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Editar mensagem com suporte a upload de áudio
+   */
+  async updateMessageWithAudio(_, id, messageData, audioFileData = null) {
+    try {
+      const { handleEditMessageWithAudioGUI } = this.getMessageController();
+
+      let audioFile = null;
+      if (audioFileData) {
+        audioFile = {
+          buffer: Buffer.from(audioFileData.buffer),
+          name: audioFileData.name,
+        };
+      }
+
+      return await handleEditMessageWithAudioGUI(id, messageData, audioFile);
+    } catch (error) {
+      console.error("Erro em message-update-message-with-audio:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Obter lista de arquivos de áudio existentes
+   */
+  async getExistingAudioFiles() {
+    try {
+      const { getExistingAudioFilesGUI } = this.getMessageController();
+      return await getExistingAudioFilesGUI();
+    } catch (error) {
+      console.error("Erro em message-get-audio-files:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Validar se um arquivo é de áudio válido
+   */
+  async validateAudioFile(_, filename) {
+    try {
+      const controller = this.getMessageController();
+
+      if (controller.isValidAudioFormat) {
+        const isValid = controller.isValidAudioFormat(filename);
+        return {
+          success: true,
+          data: { isValid, filename },
+        };
+      }
+
+      // Fallback simples se a função não existir
+      const validExtensions = [
+        ".mp3",
+        ".wav",
+        ".ogg",
+        ".opus",
+        ".m4a",
+        ".aac",
+        ".flac",
+      ];
+      const ext = filename.substring(filename.lastIndexOf(".")).toLowerCase();
+      const isValid = validExtensions.includes(ext);
+
+      return {
+        success: true,
+        data: { isValid, filename },
+      };
+    } catch (error) {
+      console.error("Erro em message-validate-audio-file:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
 }
 
 module.exports = MessageHandlers;
