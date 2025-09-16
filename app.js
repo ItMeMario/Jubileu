@@ -24,7 +24,7 @@ async function startApp() {
     });
 
     client.on("ready", async () => {
-      await debug("Tudo certo! WhatsApp conectado.");
+      console.log("Tudo certo! WhatsApp conectado.");
 
       // 🆕 CONFIGURA O SISTEMA DE LEMBRETES QUANDO O CLIENT ESTIVER PRONTO
       try {

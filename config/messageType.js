@@ -17,6 +17,7 @@ const MessageType = {
   TIME_MENU: "time_menu",
   CITY_MENU: "city_menu",
   NAME_MENU: "name_menu",
+  AUDIO_INVITE: "audio_invite",
 
   // Erros
   CITY_ERROR: "city_error",

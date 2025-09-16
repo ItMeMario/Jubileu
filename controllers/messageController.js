@@ -40,11 +40,27 @@ async function handleAddMessage(rl) {
   );
   const locale = locales[parseInt(localeIndex) - 1];
 
-  // Conteúdo da mensagem usando entrada multilinha
-  const message_content = await promptForMessageContent(rl);
+  let message_content;
+
+  // Lógica especial para audio_invite
+  if (message_type === "audio_invite") {
+    console.log("\n🎵 === MENSAGEM DE ÁUDIO ===");
+    console.log("📁 Pasta de áudios: data/audio/");
+    console.log(
+      "ℹ️  Coloque seu arquivo de áudio na pasta 'data/audio/' antes de continuar."
+    );
+    console.log("ℹ️  Digite apenas o nome do arquivo (ex: convite.mp3)");
+
+    message_content = await new Promise((resolve) =>
+      rl.question("Nome do arquivo de áudio: ", resolve)
+    );
+  } else {
+    // Conteúdo da mensagem usando entrada multilinha (comportamento original)
+    message_content = await promptForMessageContent(rl);
+  }
 
   if (!message_type || !locale || !message_content) {
-    console.log("⚠ Dados inválidos. Operação cancelada.");
+    console.log("⚠️ Dados inválidos. Operação cancelada.");
     return;
   }
 
@@ -54,7 +70,12 @@ async function handleAddMessage(rl) {
     message_content,
   });
 
-  console.log("✅ Mensagem adicionada com sucesso:", result);
+  if (message_type === "audio_invite") {
+    console.log("✅ Mensagem de áudio adicionada com sucesso:", result);
+    console.log(`🎵 Arquivo referenciado: data/audio/${message_content}`);
+  } else {
+    console.log("✅ Mensagem adicionada com sucesso:", result);
+  }
 }
 
 async function handleListMessages() {
@@ -89,13 +110,30 @@ async function handleEditMessage(rl) {
     return;
   }
 
-  // Usando entrada multilinha para edição também
-  console.log(`\nConteúdo atual da mensagem:`);
-  console.log(`"${existing.message_content}"`);
-  const newContent = await promptForMessageContent(
-    rl,
-    existing.message_content
-  );
+  let newContent;
+
+  // Lógica especial para edição de audio_invite
+  if (existing.message_type === "audio_invite") {
+    console.log("\n🎵 === EDITANDO MENSAGEM DE ÁUDIO ===");
+    console.log(`Arquivo atual: ${existing.message_content}`);
+    console.log("📁 Pasta de áudios: data/audio/");
+    console.log(
+      "ℹ️  Coloque seu novo arquivo de áudio na pasta 'data/audio/' antes de continuar."
+    );
+    console.log("ℹ️  Digite apenas o nome do arquivo (ex: novo_convite.mp3)");
+    console.log("ℹ️  Ou pressione Enter para manter o arquivo atual");
+
+    const input = await new Promise((resolve) =>
+      rl.question("Nome do arquivo de áudio: ", resolve)
+    );
+
+    newContent = input.trim() || existing.message_content;
+  } else {
+    // Usando entrada multilinha para edição (comportamento original)
+    console.log(`\nConteúdo atual da mensagem:`);
+    console.log(`"${existing.message_content}"`);
+    newContent = await promptForMessageContent(rl, existing.message_content);
+  }
 
   const success = await messageService.updateMessage(id, {
     locale: existing.locale,
@@ -103,7 +141,16 @@ async function handleEditMessage(rl) {
     message_content: newContent,
   });
 
-  console.log(success ? "✅ Mensagem atualizada!" : "⚠ Erro ao atualizar.");
+  if (success) {
+    if (existing.message_type === "audio_invite") {
+      console.log("✅ Mensagem de áudio atualizada!");
+      console.log(`🎵 Novo arquivo referenciado: data/audio/${newContent}`);
+    } else {
+      console.log("✅ Mensagem atualizada!");
+    }
+  } else {
+    console.log("⚠️ Erro ao atualizar.");
+  }
 }
 
 async function handleDeleteMessage(rl) {
