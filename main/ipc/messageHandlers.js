@@ -8,6 +8,7 @@ class MessageHandlers {
   getMessageController() {
     if (!this.controllers.message) {
       this.controllers.message = require("../../controllers/messageController");
+      this.controllers.message = require("../../controllers/messageControllerGui");
     }
     return this.controllers.message;
   }
