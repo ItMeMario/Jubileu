@@ -1,4 +1,4 @@
-const indicadoresController = require("../../controllers/indicadoresController");
+const indicadoresControllerGui = require("../../controllers/indicadoresControllerGui");
 
 class IndicadoresHandlers {
   constructor() {
@@ -9,7 +9,7 @@ class IndicadoresHandlers {
   async getStatistics() {
     try {
       console.log("Obtendo estatísticas completas...");
-      return await indicadoresController.getStatistics();
+      return await indicadoresControllerGui.getStatistics();
     } catch (error) {
       console.error("Erro ao obter estatísticas:", error);
       return { success: false, error: error.message };
@@ -20,7 +20,7 @@ class IndicadoresHandlers {
   async getHourlyStatistics() {
     try {
       console.log("Obtendo estatísticas de horários...");
-      return await indicadoresController.getHourlyStatistics();
+      return await indicadoresControllerGui.getHourlyStatistics();
     } catch (error) {
       console.error("Erro ao obter estatísticas de horários:", error);
       return { success: false, error: error.message };
@@ -31,7 +31,7 @@ class IndicadoresHandlers {
   async getSummaryStatistics() {
     try {
       console.log("Obtendo estatísticas resumidas...");
-      return await indicadoresController.getSummaryStatistics();
+      return await indicadoresControllerGui.getSummaryStatistics();
     } catch (error) {
       console.error("Erro ao obter estatísticas resumidas:", error);
       return { success: false, error: error.message };
@@ -42,7 +42,7 @@ class IndicadoresHandlers {
   async clearStatistics() {
     try {
       console.log("Limpando estatísticas...");
-      return await indicadoresController.clearStatistics();
+      return await indicadoresControllerGui.clearStatistics();
     } catch (error) {
       console.error("Erro ao limpar estatísticas:", error);
       return { success: false, error: error.message };
@@ -53,7 +53,7 @@ class IndicadoresHandlers {
   async exportToTxt() {
     try {
       console.log("Exportando estatísticas para TXT...");
-      return await indicadoresController.exportToTxt();
+      return await indicadoresControllerGui.exportToTxt();
     } catch (error) {
       console.error("Erro ao exportar para TXT:", error);
       return { success: false, error: error.message };

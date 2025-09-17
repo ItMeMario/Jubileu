@@ -1,22 +1,13 @@
+const messageControllerGui = require("../../controllers/messageControllerGui");
+
 class MessageHandlers {
   constructor() {
-    // Cache para controllers carregados dinamicamente
-    this.controllers = {};
-  }
-
-  // Método helper para carregar controller se necessário
-  getMessageController() {
-    if (!this.controllers.message) {
-      this.controllers.message = require("../../controllers/messageController");
-      this.controllers.message = require("../../controllers/messageControllerGui");
-    }
-    return this.controllers.message;
+    console.log("MessageHandlers inicializado");
   }
 
   async getMessages() {
     try {
-      const { handleListMessagesGUI } = this.getMessageController();
-      return await handleListMessagesGUI();
+      return await messageControllerGui.handleListMessagesGUI();
     } catch (error) {
       console.error("Erro em message-get-messages:", error);
       return {
@@ -28,8 +19,7 @@ class MessageHandlers {
 
   async addMessage(_, messageData) {
     try {
-      const { handleAddMessageGUI } = this.getMessageController();
-      return await handleAddMessageGUI(messageData);
+      return await messageControllerGui.handleAddMessageGUI(messageData);
     } catch (error) {
       console.error("Erro em message-add-message:", error);
       return {
@@ -41,8 +31,7 @@ class MessageHandlers {
 
   async updateMessage(_, id, messageData) {
     try {
-      const { handleEditMessageGUI } = this.getMessageController();
-      return await handleEditMessageGUI(id, messageData);
+      return await messageControllerGui.handleEditMessageGUI(id, messageData);
     } catch (error) {
       console.error("Erro em message-update-message:", error);
       return {
@@ -54,8 +43,7 @@ class MessageHandlers {
 
   async deleteMessage(_, id) {
     try {
-      const { handleDeleteMessageGUI } = this.getMessageController();
-      return await handleDeleteMessageGUI(id);
+      return await messageControllerGui.handleDeleteMessageGUI(id);
     } catch (error) {
       console.error("Erro em message-delete-message:", error);
       return {
@@ -67,8 +55,7 @@ class MessageHandlers {
 
   async getLastMessage() {
     try {
-      const { handleShowLastMessageGUI } = this.getMessageController();
-      return await handleShowLastMessageGUI();
+      return await messageControllerGui.handleShowLastMessageGUI();
     } catch (error) {
       console.error("Erro em message-get-last-message:", error);
       return {
@@ -78,11 +65,9 @@ class MessageHandlers {
     }
   }
 
-  // Método original mantido para compatibilidade
   async getAvailableOptions() {
     try {
-      const { getAvailableOptionsGUI } = this.getMessageController();
-      return await getAvailableOptionsGUI();
+      return await messageControllerGui.getAvailableOptionsGUI();
     } catch (error) {
       console.error("Erro em message-get-available-options:", error);
       return {
@@ -92,17 +77,8 @@ class MessageHandlers {
     }
   }
 
-  // Novos métodos específicos (com fallback se não existirem no controller)
   async getMessageTypes() {
     try {
-      const controller = this.getMessageController();
-
-      // Tenta usar método específico se existir
-      if (controller.getMessageTypesGUI) {
-        return await controller.getMessageTypesGUI();
-      }
-
-      // Fallback para getAvailableOptions
       const result = await this.getAvailableOptions();
       if (result.success && result.data.messageTypes) {
         return {
@@ -126,14 +102,6 @@ class MessageHandlers {
 
   async getMessageLocales() {
     try {
-      const controller = this.getMessageController();
-
-      // Tenta usar método específico se existir
-      if (controller.getMessageLocalesGUI) {
-        return await controller.getMessageLocalesGUI();
-      }
-
-      // Fallback para getAvailableOptions
       const result = await this.getAvailableOptions();
       if (result.success && result.data.locales) {
         return {
@@ -155,11 +123,11 @@ class MessageHandlers {
     }
   }
 
-  // Nova função para verificar completude das mensagens
   async checkMessageCompleteness(_, specificLocale = null) {
     try {
-      const { handleCheckMessageCompletenessGUI } = this.getMessageController();
-      return await handleCheckMessageCompletenessGUI(specificLocale);
+      return await messageControllerGui.handleCheckMessageCompletenessGUI(
+        specificLocale
+      );
     } catch (error) {
       console.error("Erro em message-check-completeness:", error);
       return {
@@ -169,13 +137,79 @@ class MessageHandlers {
     }
   }
 
-  // Método para limpar cache do controller (útil para desenvolvimento)
-  clearControllerCache() {
-    delete this.controllers.message;
-    // Remove do cache do require também
-    delete require.cache[
-      require.resolve("../../controllers/messageController")
-    ];
+  async addMessageWithAudio(_, messageData, audioFileData = null) {
+    try {
+      let audioFile = null;
+      if (audioFileData) {
+        audioFile = {
+          buffer: Buffer.from(audioFileData.buffer),
+          name: audioFileData.name,
+        };
+      }
+
+      return await messageControllerGui.handleAddMessageWithAudioGUI(
+        messageData,
+        audioFile
+      );
+    } catch (error) {
+      console.error("Erro em message-add-message-with-audio:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  async updateMessageWithAudio(_, id, messageData, audioFileData = null) {
+    try {
+      let audioFile = null;
+      if (audioFileData) {
+        audioFile = {
+          buffer: Buffer.from(audioFileData.buffer),
+          name: audioFileData.name,
+        };
+      }
+
+      return await messageControllerGui.handleEditMessageWithAudioGUI(
+        id,
+        messageData,
+        audioFile
+      );
+    } catch (error) {
+      console.error("Erro em message-update-message-with-audio:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  async getExistingAudioFiles() {
+    try {
+      return await messageControllerGui.getExistingAudioFilesGUI();
+    } catch (error) {
+      console.error("Erro em message-get-audio-files:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  async validateAudioFile(_, filename) {
+    try {
+      const isValid = messageControllerGui.isValidAudioFormat(filename);
+      return {
+        success: true,
+        data: { isValid, filename },
+      };
+    } catch (error) {
+      console.error("Erro em message-validate-audio-file:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
   }
 
   // Método para validar dados de mensagem
@@ -188,110 +222,6 @@ class MessageHandlers {
     }
 
     return true;
-  }
-
-  async addMessageWithAudio(_, messageData, audioFileData = null) {
-    try {
-      const { handleAddMessageWithAudioGUI } = this.getMessageController();
-
-      let audioFile = null;
-      if (audioFileData) {
-        audioFile = {
-          buffer: Buffer.from(audioFileData.buffer),
-          name: audioFileData.name,
-        };
-      }
-
-      return await handleAddMessageWithAudioGUI(messageData, audioFile);
-    } catch (error) {
-      console.error("Erro em message-add-message-with-audio:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
-
-  /**
-   * Editar mensagem com suporte a upload de áudio
-   */
-  async updateMessageWithAudio(_, id, messageData, audioFileData = null) {
-    try {
-      const { handleEditMessageWithAudioGUI } = this.getMessageController();
-
-      let audioFile = null;
-      if (audioFileData) {
-        audioFile = {
-          buffer: Buffer.from(audioFileData.buffer),
-          name: audioFileData.name,
-        };
-      }
-
-      return await handleEditMessageWithAudioGUI(id, messageData, audioFile);
-    } catch (error) {
-      console.error("Erro em message-update-message-with-audio:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
-
-  /**
-   * Obter lista de arquivos de áudio existentes
-   */
-  async getExistingAudioFiles() {
-    try {
-      const { getExistingAudioFilesGUI } = this.getMessageController();
-      return await getExistingAudioFilesGUI();
-    } catch (error) {
-      console.error("Erro em message-get-audio-files:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
-
-  /**
-   * Validar se um arquivo é de áudio válido
-   */
-  async validateAudioFile(_, filename) {
-    try {
-      const controller = this.getMessageController();
-
-      if (controller.isValidAudioFormat) {
-        const isValid = controller.isValidAudioFormat(filename);
-        return {
-          success: true,
-          data: { isValid, filename },
-        };
-      }
-
-      // Fallback simples se a função não existir
-      const validExtensions = [
-        ".mp3",
-        ".wav",
-        ".ogg",
-        ".opus",
-        ".m4a",
-        ".aac",
-        ".flac",
-      ];
-      const ext = filename.substring(filename.lastIndexOf(".")).toLowerCase();
-      const isValid = validExtensions.includes(ext);
-
-      return {
-        success: true,
-        data: { isValid, filename },
-      };
-    } catch (error) {
-      console.error("Erro em message-validate-audio-file:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
   }
 }
 
