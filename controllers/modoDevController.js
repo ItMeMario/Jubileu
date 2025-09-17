@@ -47,7 +47,7 @@ async function handleModoDevMenu(rl) {
         console.log("Voltando ao menu principal...");
         return;
       default:
-        console.log("OpÃ§Ã£o invÃ¡lida. Tente novamente.");
+        console.log("Opção inválida. Tente novamente.");
     }
   }
 }
@@ -96,7 +96,7 @@ async function configureScout(rl) {
     );
 
     if (timeInput.trim() === "") {
-      console.log("â¸ï¸  ConfiguraÃ§Ã£o mantida sem alteraÃ§Ãµes.");
+      console.log("⏸️  Configuração mantida sem alterações.");
       await modoDevView.waitForEnter(rl);
       return;
     }
@@ -135,8 +135,8 @@ async function toggleGroupMode(rl) {
   console.log(`\nModo atual: ${currentMode}`);
   console.log(`Novo modo: ${newMode}`);
   console.log("\nIMPORTANTE:");
-  console.log('- SINGLE: UsarÃ¡ apenas o grupo marcado como "primÃ¡rio"');
-  console.log("- MULTI: UsarÃ¡ todos os grupos cadastrados");
+  console.log('- SINGLE: Usará apenas o grupo marcado como "primário"');
+  console.log("- MULTI: Usará todos os grupos cadastrados");
 
   const resposta = await new Promise((resolve) =>
     rl.question(
@@ -146,27 +146,25 @@ async function toggleGroupMode(rl) {
   );
 
   if (resposta.toLowerCase() !== "s") {
-    console.log("\nOperaÃ§Ã£o cancelada.");
+    console.log("\nOperação cancelada.");
     return;
   }
 
   await groupService.setMode(newMode);
-  console.log(`\nâœ… Modo alterado para ${newMode}!`);
+  console.log(`\n✅ Modo alterado para ${newMode}!`);
 
   if (newMode === "SINGLE") {
     const groups = await groupService.getAllGroups();
     if (groups.length > 0 && !groups.some((g) => g.isPrimary)) {
       await groupService.setPrimaryGroup(groups[0].id);
       console.log(
-        `âš ï¸ Grupo ${groups[0].id} definido como primÃ¡rio automaticamente.`
+        `⚡ Grupo ${groups[0].id} definido como primário automaticamente.`
       );
     }
   }
 
   await modoDevView.waitForEnter(rl);
 }
-
-// ========== NOVA FUNÇÃO PARA LOCALE ==========
 
 async function configureLocale(rl) {
   try {
@@ -202,143 +200,12 @@ async function configureLocale(rl) {
   await modoDevView.waitForEnter(rl);
 }
 
-// ========== MÉTODOS PARA GUI ==========
-
-async function toggleDevMode() {
-  try {
-    return await modoDevService.toggleDevMode();
-  } catch (error) {
-    console.error("Erro ao alternar modo Dev:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-async function toggleDebugMode() {
-  try {
-    return await modoDevService.toggleDebugMode();
-  } catch (error) {
-    console.error("Erro ao alternar modo debug:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-async function setScoutTime(timeInput) {
-  try {
-    if (!timeInput || timeInput.trim() === "") {
-      return { success: false, error: "Tempo Ã© obrigatÃ³rio" };
-    }
-    return await modoDevService.setScoutTime(timeInput);
-  } catch (error) {
-    console.error("Erro ao configurar Scout:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-async function getScoutConfig() {
-  try {
-    const config = await modoDevService.getScoutConfig();
-    return { success: true, data: config };
-  } catch (error) {
-    console.error("Erro ao obter configuraÃ§Ã£o do Scout:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-async function getCurrentMode() {
-  try {
-    const mode = await modoDevService.getCurrentMode();
-
-    const groupService = require("../services/groupService");
-    const groupMode = groupService.getCurrentMode();
-
-    return {
-      success: true,
-      data: {
-        ...mode,
-        groupMode: groupMode,
-      },
-    };
-  } catch (error) {
-    console.error("Erro ao obter modo atual:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-async function toggleGroupMode() {
-  try {
-    const groupService = require("../services/groupService");
-    const currentMode = groupService.getCurrentMode();
-    const newMode = currentMode === "SINGLE" ? "MULTI" : "SINGLE";
-
-    await groupService.setMode(newMode);
-
-    // Se mudou para SINGLE e nÃ£o hÃ¡ grupo primÃ¡rio, definir o primeiro como primÃ¡rio
-    if (newMode === "SINGLE") {
-      const groups = await groupService.getAllGroups();
-      if (groups.length > 0 && !groups.some((g) => g.isPrimary)) {
-        await groupService.setPrimaryGroup(groups[0].id);
-      }
-    }
-
-    return {
-      success: true,
-      data: {
-        previousMode: currentMode,
-        currentMode: newMode,
-        message: `Modo alterado para ${newMode}`,
-      },
-    };
-  } catch (error) {
-    console.error("Erro ao alternar modo de grupo:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-// ========== NOVOS MÉTODOS PARA GUI - LOCALE ==========
-
-async function getCurrentLocale() {
-  try {
-    const locale = await modoDevService.getCurrentLocale();
-    return { success: true, data: locale };
-  } catch (error) {
-    console.error("Erro ao obter locale atual:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-async function getAvailableLocales() {
-  try {
-    const locales = modoDevService.getAvailableLocales();
-    return { success: true, data: locales };
-  } catch (error) {
-    console.error("Erro ao obter locales disponíveis:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-async function setLocale(selectedIndex) {
-  try {
-    if (!selectedIndex || selectedIndex.trim() === "") {
-      return { success: false, error: "Seleção é obrigatória" };
-    }
-    return await modoDevService.setLocale(selectedIndex);
-  } catch (error) {
-    console.error("Erro ao alterar locale:", error);
-    return { success: false, error: error.message };
-  }
-}
-
 module.exports = {
   handleModoDevMenu,
-
-  toggleDevMode,
-  toggleDebugMode,
-  setScoutTime,
-  getScoutConfig,
-  getCurrentMode,
+  toggleMode,
+  toggleDebug,
+  configureScout,
+  showStatus,
   toggleGroupMode,
-  // Novos exports para locale
-  getCurrentLocale,
-  getAvailableLocales,
-  setLocale,
+  configureLocale,
 };

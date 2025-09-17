@@ -1,4 +1,4 @@
-const modoDevController = require("../../controllers/modoDevController");
+const modoDevControllerGui = require("../../controllers/modoDevControllerGui");
 
 class ModoDevHandlers {
   constructor() {
@@ -9,7 +9,7 @@ class ModoDevHandlers {
   async toggleDevMode() {
     try {
       console.log("Alternando modo Dev/Produção...");
-      return await modoDevController.toggleDevMode();
+      return await modoDevControllerGui.toggleDevMode();
     } catch (error) {
       console.error("Erro ao alternar modo Dev:", error);
       return { success: false, error: error.message };
@@ -20,7 +20,7 @@ class ModoDevHandlers {
   async toggleDebugMode() {
     try {
       console.log("Alternando modo debug...");
-      return await modoDevController.toggleDebugMode();
+      return await modoDevControllerGui.toggleDebugMode();
     } catch (error) {
       console.error("Erro ao alternar debug:", error);
       return { success: false, error: error.message };
@@ -39,7 +39,7 @@ class ModoDevHandlers {
       ) {
         return { success: false, error: "Tempo é obrigatório" };
       }
-      return await modoDevController.setScoutTime(timeInput.trim());
+      return await modoDevControllerGui.setScoutTime(timeInput.trim());
     } catch (error) {
       console.error("Erro ao configurar Scout:", error);
       return { success: false, error: error.message };
@@ -50,7 +50,7 @@ class ModoDevHandlers {
   async getScoutConfig() {
     try {
       console.log("Obtendo configuração do Scout...");
-      return await modoDevController.getScoutConfig();
+      return await modoDevControllerGui.getScoutConfig();
     } catch (error) {
       console.error("Erro ao obter configuração do Scout:", error);
       return { success: false, error: error.message };
@@ -61,17 +61,18 @@ class ModoDevHandlers {
   async getCurrentMode() {
     try {
       console.log("Obtendo modo atual...");
-      return await modoDevController.getCurrentMode();
+      return await modoDevControllerGui.getCurrentMode();
     } catch (error) {
       console.error("Erro ao obter modo atual:", error);
       return { success: false, error: error.message };
     }
   }
+
   // Alternar modo de grupo (SINGLE/MULTI) - CORRIGIDO: melhor tratamento de erros
   async toggleGroupMode() {
     try {
       console.log("Alternando modo de grupo...");
-      const result = await modoDevController.toggleGroupMode();
+      const result = await modoDevControllerGui.toggleGroupMode();
 
       // Garantir que sempre retornamos uma estrutura consistente
       if (result && result.success) {
@@ -101,7 +102,7 @@ class ModoDevHandlers {
   async getCurrentLocale() {
     try {
       console.log("Obtendo locale atual...");
-      return await modoDevController.getCurrentLocale();
+      return await modoDevControllerGui.getCurrentLocale();
     } catch (error) {
       console.error("Erro ao obter locale atual:", error);
       return { success: false, error: error.message };
@@ -112,7 +113,7 @@ class ModoDevHandlers {
   async getAvailableLocales() {
     try {
       console.log("Obtendo locales disponíveis...");
-      return await modoDevController.getAvailableLocales();
+      return await modoDevControllerGui.getAvailableLocales();
     } catch (error) {
       console.error("Erro ao obter locales disponíveis:", error);
       return { success: false, error: error.message };
@@ -131,7 +132,7 @@ class ModoDevHandlers {
       ) {
         return { success: false, error: "Seleção é obrigatória" };
       }
-      return await modoDevController.setLocale(selectedIndex.trim());
+      return await modoDevControllerGui.setLocale(selectedIndex.trim());
     } catch (error) {
       console.error("Erro ao alterar locale:", error);
       return { success: false, error: error.message };
