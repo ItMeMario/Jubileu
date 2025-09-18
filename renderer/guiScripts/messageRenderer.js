@@ -5,7 +5,11 @@ class MessagesManager {
     this.messages = [];
     this.messageTypes = [];
     this.locales = [];
-    this.currentCompletenessMode = "all"; // 'all' ou 'specific'
+    this.currentCompletenessMode = "all";
+
+    // NOVAS propriedades para áudio
+    this.selectedAudioFile = null;
+    this.isAudioInviteMode = false;
 
     this.initializeElements();
     this.setupEventListeners();
@@ -25,7 +29,13 @@ class MessagesManager {
     );
     this.statusDiv = document.getElementById("status");
 
-    // Elementos da nova interface de completude
+    // NOVOS elementos para áudio
+    this.audioUploadArea = document.getElementById("audio-upload-area");
+    this.audioFileInfo = document.getElementById("audio-file-info");
+    this.audioFileName = document.getElementById("audio-file-name");
+    this.btnRemoveAudio = document.getElementById("btn-remove-audio");
+
+    // Elementos da interface de completude (existentes)
     this.btnModeAll = document.getElementById("btn-mode-all");
     this.btnModeSpecific = document.getElementById("btn-mode-specific");
     this.specificLocaleSection = document.getElementById(
@@ -44,12 +54,28 @@ class MessagesManager {
   }
 
   setupEventListeners() {
-    // Listeners originais
+    // Listeners originais (MANTER EXISTENTES)
     this.btnSaveMessage.addEventListener("click", () => this.saveMessage());
     this.btnClearForm.addEventListener("click", () => this.clearForm());
     this.btnDeleteMessage.addEventListener("click", () => this.deleteMessage());
 
-    // Novos listeners para verificação de completude
+    // NOVO: Listener para mudança no tipo de mensagem
+    this.messageTypeSelect.addEventListener("change", () =>
+      this.onMessageTypeChange()
+    );
+
+    // NOVOS: Event listeners para áudio
+    if (this.audioUploadArea) {
+      this.setupAudioDragAndDrop();
+    }
+
+    if (this.btnRemoveAudio) {
+      this.btnRemoveAudio.addEventListener("click", () =>
+        this.removeSelectedAudioFile()
+      );
+    }
+
+    // Listeners da interface de completude (MANTER EXISTENTES)
     if (this.btnModeAll) {
       this.btnModeAll.addEventListener("click", () =>
         this.setCompletenessMode("all")
@@ -72,6 +98,199 @@ class MessagesManager {
       this.completenessLocaleSelect.addEventListener("change", () =>
         this.updateCompletenessButtonText()
       );
+    }
+  }
+
+  onMessageTypeChange() {
+    const selectedType = this.messageTypeSelect.value;
+    this.isAudioInviteMode = selectedType === "audio_invite";
+
+    this.toggleAudioInterface();
+  }
+
+  toggleAudioInterface() {
+    if (this.isAudioInviteMode) {
+      // Mostrar interface de áudio, esconder textarea
+      if (this.messageContentTextarea) {
+        this.messageContentTextarea.style.display = "none";
+      }
+      if (this.audioUploadArea) {
+        this.audioUploadArea.style.display = "block";
+      }
+    } else {
+      // Mostrar textarea, esconder interface de áudio
+      if (this.messageContentTextarea) {
+        this.messageContentTextarea.style.display = "block";
+      }
+      if (this.audioUploadArea) {
+        this.audioUploadArea.style.display = "none";
+      }
+      // Limpar arquivo selecionado se houver
+      this.removeSelectedAudioFile();
+    }
+  }
+
+  setupAudioDragAndDrop() {
+    const dropArea = this.audioUploadArea;
+
+    // Prevenir comportamento padrão
+    ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+      dropArea.addEventListener(eventName, this.preventDefaults, false);
+      document.body.addEventListener(eventName, this.preventDefaults, false);
+    });
+
+    // Destacar área de drop
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropArea.addEventListener(
+        eventName,
+        () => this.highlightDropArea(dropArea),
+        false
+      );
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropArea.addEventListener(
+        eventName,
+        () => this.unhighlightDropArea(dropArea),
+        false
+      );
+    });
+
+    // Lidar com arquivos soltos
+    dropArea.addEventListener("drop", (e) => this.handleDrop(e), false);
+
+    // Adicionar click para seleção de arquivo
+    dropArea.addEventListener("click", () => this.openFileDialog());
+  }
+
+  /**
+   * Previne comportamentos padrão do drag and drop
+   */
+  preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  /**
+   * Destacar área de drop
+   */
+  highlightDropArea(dropArea) {
+    dropArea.classList.add("drag-over");
+  }
+
+  /**
+   * Remove destaque da área de drop
+   */
+  unhighlightDropArea(dropArea) {
+    dropArea.classList.remove("drag-over");
+  }
+
+  /**
+   * Lidar com arquivos soltos na área
+   */
+  async handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    if (files.length > 0) {
+      await this.handleAudioFile(files[0]);
+    }
+  }
+
+  openFileDialog() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "audio/*,.opus";
+    input.addEventListener("change", async (e) => {
+      if (e.target.files.length > 0) {
+        await this.handleAudioFile(e.target.files[0]);
+      }
+    });
+    input.click();
+  }
+
+  /**
+   * Processa arquivo de áudio selecionado
+   */
+  async handleAudioFile(file) {
+    try {
+      // Validar se é arquivo de áudio
+      const validation = await window.messageAPI.validateAudioFile(file.name);
+
+      if (!validation.success || !validation.data.isValid) {
+        this.showStatus(
+          "Formato de arquivo não suportado. Use: mp3, wav, ogg, opus, m4a, aac, flac",
+          "error"
+        );
+        return;
+      }
+
+      // Validar tamanho (opcional - ex: máximo 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        this.showStatus(
+          "Arquivo muito grande. Máximo 10MB permitido.",
+          "error"
+        );
+        return;
+      }
+
+      // Armazenar arquivo selecionado
+      this.selectedAudioFile = file;
+
+      // Atualizar interface
+      this.showSelectedAudioFile(file);
+
+      this.showStatus("Arquivo de áudio selecionado com sucesso", "success");
+    } catch (error) {
+      console.error("Erro ao processar arquivo de áudio:", error);
+      this.showStatus("Erro ao processar arquivo de áudio", "error");
+    }
+  }
+
+  /**
+   * Mostra informações do arquivo selecionado
+   */
+  showSelectedAudioFile(file) {
+    if (this.audioFileInfo && this.audioFileName) {
+      this.audioFileInfo.style.display = "block";
+      this.audioFileName.textContent = file.name;
+
+      // Adicionar informações adicionais
+      const fileSize = (file.size / 1024 / 1024).toFixed(2);
+      this.audioFileName.innerHTML = `
+            <strong>${file.name}</strong><br>
+            <small>Tamanho: ${fileSize} MB</small>
+        `;
+    }
+
+    // Esconder área de upload, mostrar info do arquivo
+    if (this.audioUploadArea) {
+      this.audioUploadArea.querySelector(".upload-prompt").style.display =
+        "none";
+    }
+  }
+
+  /**
+   * Remove arquivo selecionado
+   */
+  removeSelectedAudioFile() {
+    this.selectedAudioFile = null;
+
+    if (this.audioFileInfo) {
+      this.audioFileInfo.style.display = "none";
+    }
+
+    if (this.audioFileName) {
+      this.audioFileName.innerHTML = "";
+    }
+
+    // Mostrar área de upload novamente
+    if (this.audioUploadArea) {
+      const uploadPrompt = this.audioUploadArea.querySelector(".upload-prompt");
+      if (uploadPrompt) {
+        uploadPrompt.style.display = "block";
+      }
     }
   }
 
@@ -490,7 +709,26 @@ class MessagesManager {
   loadMessageToForm(message) {
     this.messageLocaleSelect.value = message.locale;
     this.messageTypeSelect.value = message.message_type;
-    this.messageContentTextarea.value = message.message_content;
+
+    // Se for audio_invite, não preencher o textarea mas mostrar nome do arquivo
+    if (message.message_type === "audio_invite") {
+      this.messageContentTextarea.value = "";
+      this.isAudioInviteMode = true;
+      this.toggleAudioInterface();
+
+      // Mostrar nome do arquivo atual (sem possibilidade de edição, apenas informação)
+      if (this.audioFileInfo && this.audioFileName) {
+        this.audioFileInfo.style.display = "block";
+        this.audioFileName.innerHTML = `
+                <strong>Arquivo atual: ${message.message_content}</strong><br>
+                <small>Para alterar, selecione um novo arquivo</small>
+            `;
+      }
+    } else {
+      this.messageContentTextarea.value = message.message_content;
+      this.isAudioInviteMode = false;
+      this.toggleAudioInterface();
+    }
   }
 
   clearForm() {
@@ -500,6 +738,11 @@ class MessagesManager {
     this.messageContentTextarea.value = "";
     this.btnDeleteMessage.style.display = "none";
     this.btnSaveMessage.textContent = "Salvar Mensagem";
+
+    // NOVO: Limpar dados de áudio
+    this.removeSelectedAudioFile();
+    this.isAudioInviteMode = false;
+    this.toggleAudioInterface();
 
     this.messagesList.querySelectorAll(".message-item").forEach((item) => {
       item.classList.remove("selected");
@@ -513,26 +756,64 @@ class MessagesManager {
       message_content: this.messageContentTextarea.value.trim(),
     };
 
-    if (
-      !messageData.locale ||
-      !messageData.message_type ||
-      !messageData.message_content
-    ) {
-      this.showStatus("Todos os campos são obrigatórios", "error");
+    if (!messageData.locale || !messageData.message_type) {
+      this.showStatus("Locale e tipo de mensagem são obrigatórios", "error");
       return;
+    }
+
+    // Validação específica para audio_invite
+    if (this.isAudioInviteMode) {
+      if (!this.selectedAudioFile && !this.currentMessage) {
+        this.showStatus("Selecione um arquivo de áudio", "error");
+        return;
+      }
+    } else {
+      if (!messageData.message_content) {
+        this.showStatus("Conteúdo da mensagem é obrigatório", "error");
+        return;
+      }
     }
 
     try {
       this.showButtonLoading(this.btnSaveMessage);
 
       let result;
-      if (this.currentMessage) {
-        result = await window.messageAPI.updateMessage(
-          this.currentMessage.id,
-          messageData
-        );
+
+      if (this.isAudioInviteMode) {
+        // Usar APIs específicas para áudio
+        let audioFileData = null;
+
+        if (this.selectedAudioFile) {
+          // Converter arquivo para o formato esperado pelo backend
+          const arrayBuffer = await this.selectedAudioFile.arrayBuffer();
+          audioFileData = {
+            buffer: Array.from(new Uint8Array(arrayBuffer)),
+            name: this.selectedAudioFile.name,
+          };
+        }
+
+        if (this.currentMessage) {
+          result = await window.messageAPI.updateMessageWithAudio(
+            this.currentMessage.id,
+            messageData,
+            audioFileData
+          );
+        } else {
+          result = await window.messageAPI.addMessageWithAudio(
+            messageData,
+            audioFileData
+          );
+        }
       } else {
-        result = await window.messageAPI.addMessage(messageData);
+        // Usar APIs normais para mensagens de texto
+        if (this.currentMessage) {
+          result = await window.messageAPI.updateMessage(
+            this.currentMessage.id,
+            messageData
+          );
+        } else {
+          result = await window.messageAPI.addMessage(messageData);
+        }
       }
 
       if (result.success) {
@@ -549,7 +830,7 @@ class MessagesManager {
       this.hideButtonLoading(this.btnSaveMessage);
     }
   }
-
+  
   async deleteMessage() {
     if (!this.currentMessage) return;
 

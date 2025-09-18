@@ -2,6 +2,11 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const path = require("path");
 const startScout = require("../utils/scout");
+const { startBackgroundExtraction } = require("../utils/groupIdExtractor");
+const { debug } = require("../services/debugService");
+
+// Flag para controlar a extração automática
+let extractionStarted = false;
 
 // Função para obter o caminho correto da sessão
 function getSessionPath() {
@@ -60,4 +65,70 @@ const client = new Client({
   },
 });
 
-module.exports = { client, startScout };
+// Função de inicialização dos event listeners
+function setupClientEventListeners() {
+  // Remove listeners existentes para evitar duplicação
+  client.removeAllListeners();
+
+  client.on("qr", async (qr) => {
+    await debug("📱 QR Code recebido");
+  });
+
+  client.on("ready", async () => {
+    await debug("✅ Cliente WhatsApp está pronto!");
+
+    // Inicia a extração automática apenas uma vez
+    if (!extractionStarted) {
+      extractionStarted = true;
+      try {
+        await debug("🚀 Iniciando extração automática de IDs de grupos...");
+        startBackgroundExtraction(client);
+      } catch (error) {
+        await debug(`⚠️ Erro ao iniciar extração de IDs: ${error.message}`);
+      }
+    } else {
+      await debug("ℹ️ Extração de IDs já foi iniciada, pulando...");
+    }
+  });
+
+  client.on("authenticated", async () => {
+    await debug("✅ Cliente autenticado com sucesso!");
+  });
+
+  client.on("auth_failure", async (msg) => {
+    await debug(`⚠️ Falha na autenticação: ${msg}`);
+  });
+
+  client.on("disconnected", async (reason) => {
+    await debug(`🔌 Cliente desconectado: ${reason}`);
+    // Reset da flag quando desconectar
+    extractionStarted = false;
+  });
+}
+
+// Função de inicialização completa
+async function initializeClient() {
+  await debug("🚀 Inicializando cliente WhatsApp...");
+
+  // Configura os event listeners
+  setupClientEventListeners();
+
+  // Inicializa o cliente
+  await client.initialize();
+
+  return client;
+}
+
+// Para CLI: Auto-inicialização se não estiver em ambiente Electron
+if (!process.versions.electron) {
+  debug("🖥️ Modo CLI detectado - inicializando automaticamente...");
+  setupClientEventListeners();
+  // No CLI, o client.initialize() será chamado externamente
+}
+
+module.exports = {
+  client,
+  startScout,
+  initializeClient,
+  setupClientEventListeners,
+};

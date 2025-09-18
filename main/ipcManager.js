@@ -125,7 +125,7 @@ class IPCManager {
   }
 
   registerMessageHandlers() {
-    // Handlers básicos de mensagens (que já existem)
+    // Handlers básicos de mensagens (que já existem) - MANTER ESTES
     ipcMain.handle(
       "message-get-messages",
       this.handlers.message.getMessages.bind(this.handlers.message)
@@ -147,7 +147,25 @@ class IPCManager {
       this.handlers.message.getLastMessage.bind(this.handlers.message)
     );
 
-    // Registra métodos novos com verificação
+    // NOVOS: Handlers para áudio - ADICIONAR ESTES
+    ipcMain.handle(
+      "message-add-message-with-audio",
+      this.handlers.message.addMessageWithAudio.bind(this.handlers.message)
+    );
+    ipcMain.handle(
+      "message-update-message-with-audio",
+      this.handlers.message.updateMessageWithAudio.bind(this.handlers.message)
+    );
+    ipcMain.handle(
+      "message-get-audio-files",
+      this.handlers.message.getExistingAudioFiles.bind(this.handlers.message)
+    );
+    ipcMain.handle(
+      "message-validate-audio-file",
+      this.handlers.message.validateAudioFile.bind(this.handlers.message)
+    );
+
+    // Registra métodos existentes com verificação - MANTER ESTES
     this.registerMessageMethodIfExists("getMessageTypes", "message-get-types");
     this.registerMessageMethodIfExists(
       "getMessageLocales",
@@ -158,7 +176,7 @@ class IPCManager {
       "message-check-completeness"
     );
 
-    // Mantém compatibilidade com método antigo
+    // Mantém compatibilidade com método antigo - MANTER ESTE
     this.registerMessageMethodIfExists(
       "getAvailableOptions",
       "message-get-available-options"
@@ -269,6 +287,20 @@ class IPCManager {
       this.handlers.modoDev.toggleGroupMode.bind(this.handlers.modoDev)
     );
 
+    // ========== NOVOS HANDLERS PARA LOCALE ==========
+    ipcMain.handle(
+      "modo-dev-get-current-locale",
+      this.handlers.modoDev.getCurrentLocale.bind(this.handlers.modoDev)
+    );
+    ipcMain.handle(
+      "modo-dev-get-available-locales",
+      this.handlers.modoDev.getAvailableLocales.bind(this.handlers.modoDev)
+    );
+    ipcMain.handle(
+      "modo-dev-set-locale",
+      this.handlers.modoDev.setLocale.bind(this.handlers.modoDev)
+    );
+
     console.log("Handlers de modo dev registrados");
   }
 
@@ -302,14 +334,13 @@ class IPCManager {
     console.log("Handlers de banco de dados registrados");
   }
 
-  // Método para limpar todos os handlers (útil para testes ou reinicialização)
   removeAllHandlers() {
     const events = [
-      // WhatsApp events
+      // WhatsApp events - MANTER
       "start-whatsapp",
       "stop-whatsapp",
 
-      // Config events
+      // Config events - MANTER
       "open-config",
       "config-close-window",
       "config-get-system-config",
@@ -320,7 +351,7 @@ class IPCManager {
       "config-export-settings",
       "config-import-settings",
 
-      // Message events
+      // Message events - ADICIONAR AS NOVAS LINHAS
       "message-get-messages",
       "message-add-message",
       "message-update-message",
@@ -330,8 +361,13 @@ class IPCManager {
       "message-get-locales",
       "message-get-available-options",
       "message-check-completeness",
+      // NOVOS: eventos de áudio
+      "message-add-message-with-audio",
+      "message-update-message-with-audio",
+      "message-get-audio-files",
+      "message-validate-audio-file",
 
-      // City events
+      // City events - MANTER TODOS
       "city-get-cities",
       "city-add-city",
       "city-update-city",
@@ -340,23 +376,25 @@ class IPCManager {
       "city-get-primary",
       "city-get-by-id",
 
-      // Indicadores events
+      // Indicadores events - MANTER TODOS
       "indicadores-get-statistics",
       "indicadores-get-hourly-statistics",
       "indicadores-get-summary-statistics",
       "indicadores-clear-statistics",
       "indicadores-export-to-txt",
 
-      // Modo Dev events - ATUALIZADO: removido evento detailed-status
+      // Modo Dev events - MANTER TODOS
       "modo-dev-toggle-dev-mode",
       "modo-dev-toggle-debug-mode",
       "modo-dev-set-scout-time",
       "modo-dev-get-scout-config",
       "modo-dev-get-current-mode",
-      // REMOVIDO: "modo-dev-get-detailed-status",
       "modo-dev-toggle-group-mode",
+      "modo-dev-get-current-locale",
+      "modo-dev-get-available-locales",
+      "modo-dev-set-locale",
 
-      // Database events
+      // Database events - MANTER TODOS
       "database-get-all-tables",
       "database-get-table-info",
       "database-get-table-counts",

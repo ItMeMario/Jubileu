@@ -4,6 +4,8 @@ class ModoDevRenderer {
   constructor() {
     this.currentStatus = null;
     this.isLoading = false;
+    this.availableLocales = null;
+    this.currentLocale = null;
     this.init();
   }
 
@@ -21,6 +23,10 @@ class ModoDevRenderer {
 
     // Scout configuration
     const scoutForm = document.getElementById("scout-form");
+
+    // ========== NOVO: Locale configuration ==========
+    const localeForm = document.getElementById("locale-form");
+    const localeSelect = document.getElementById("locale-select");
 
     if (toggleDevBtn) {
       toggleDevBtn.addEventListener("click", () => this.handleToggleDevMode());
@@ -44,13 +50,30 @@ class ModoDevRenderer {
       );
     }
 
+    // ========== NOVO: Event listeners para locale ==========
+    if (localeForm) {
+      localeForm.addEventListener("submit", (e) =>
+        this.handleLocaleFormSubmit(e)
+      );
+    }
+
+    if (localeSelect) {
+      localeSelect.addEventListener("change", () =>
+        this.handleLocaleSelectChange()
+      );
+    }
+
     // REMOVIDO: refreshStatusBtn - não será mais usado
   }
 
   async loadInitialData() {
     try {
       this.showLoading(true);
-      await Promise.all([this.loadCurrentStatus(), this.loadScoutConfig()]);
+      await Promise.all([
+        this.loadCurrentStatus(),
+        this.loadScoutConfig(),
+        this.loadLocaleData(), // ========== NOVO ==========
+      ]);
 
       // ADICIONADO: Fallback para garantir que o modo de grupo seja carregado
       if (!this.currentStatus?.groupMode) {
@@ -104,7 +127,130 @@ class ModoDevRenderer {
     }
   }
 
-  
+  // ========== CORRIGIDO: Métodos para locale ==========
+  async loadLocaleData() {
+    try {
+      // Carregar locale atual e locales disponíveis em paralelo
+      const [currentResult, availableResult] = await Promise.all([
+        window.modoDevAPI.getCurrentLocale(),
+        window.modoDevAPI.getAvailableLocales(),
+      ]);
+
+      if (currentResult.success) {
+        // currentResult.data é uma string como "en-US"
+        this.currentLocale = currentResult.data;
+      }
+
+      if (availableResult.success) {
+        // availableResult.data é um array de objetos como [{name: "English", code: "en-US"}, ...]
+        this.availableLocales = availableResult.data;
+        this.updateLocaleSelectOptions();
+      }
+
+      this.updateLocaleDisplay();
+    } catch (error) {
+      console.error("Erro ao carregar dados de locale:", error);
+      this.showError("Erro ao carregar configurações de idioma");
+    }
+  }
+
+  updateLocaleSelectOptions() {
+    const localeSelect = document.getElementById("locale-select");
+    if (!localeSelect || !this.availableLocales) return;
+
+    // Limpar opções existentes
+    localeSelect.innerHTML = '<option value="">Selecione um idioma...</option>';
+
+    // Adicionar opções disponíveis
+    this.availableLocales.forEach((locale, index) => {
+      const option = document.createElement("option");
+      option.value = (index + 1).toString(); // Índice baseado em 1, como no CLI
+      option.textContent = `${locale.name} (${locale.code})`;
+
+      // Marcar como selecionado se for o locale atual
+      // this.currentLocale é uma string como "en-US", então comparamos com locale.code
+      if (this.currentLocale && locale.code === this.currentLocale) {
+        option.selected = true;
+      }
+
+      localeSelect.appendChild(option);
+    });
+  }
+
+  updateLocaleDisplay() {
+    const currentLocaleInfo = document.getElementById("current-locale-info");
+    if (currentLocaleInfo) {
+      if (this.currentLocale) {
+        // this.currentLocale é uma string como "en-US"
+        // Vamos buscar o nome correspondente no array de availableLocales
+        let displayName = this.currentLocale;
+
+        if (this.availableLocales) {
+          const localeObj = this.availableLocales.find(
+            (locale) => locale.code === this.currentLocale
+          );
+          if (localeObj) {
+            displayName = `${localeObj.name} (${localeObj.code})`;
+          }
+        }
+
+        currentLocaleInfo.textContent = `Idioma atual: ${displayName}`;
+      } else {
+        currentLocaleInfo.textContent = "Idioma atual: Não carregado";
+      }
+    }
+  }
+
+  async handleLocaleFormSubmit(event) {
+    event.preventDefault();
+
+    if (this.isLoading) return;
+
+    const localeSelect = document.getElementById("locale-select");
+    if (!localeSelect) return;
+
+    const selectedIndex = localeSelect.value;
+    if (!selectedIndex) {
+      this.showError("Por favor, selecione um idioma");
+      return;
+    }
+
+    try {
+      this.isLoading = true;
+      this.showLoading(true, "Alterando idioma...");
+
+      const result = await window.modoDevAPI.setLocale(selectedIndex);
+
+      if (result.success) {
+        this.showSuccess(`Idioma alterado para ${result.locale.name}`);
+        await this.loadLocaleData(); // Recarregar dados de locale
+      } else {
+        this.showError(result.error || "Erro ao alterar idioma");
+      }
+    } catch (error) {
+      console.error("Erro ao alterar locale:", error);
+      this.showError("Erro interno ao alterar idioma");
+    } finally {
+      this.isLoading = false;
+      this.showLoading(false);
+    }
+  }
+
+  handleLocaleSelectChange() {
+    // Opcional: Mostrar preview do idioma selecionado
+    const localeSelect = document.getElementById("locale-select");
+    const selectedIndex = parseInt(localeSelect.value) - 1;
+
+    if (
+      this.availableLocales &&
+      selectedIndex >= 0 &&
+      selectedIndex < this.availableLocales.length
+    ) {
+      const selectedLocale = this.availableLocales[selectedIndex];
+      console.log("Idioma selecionado:", selectedLocale);
+    }
+  }
+
   async loadGroupModeOnly() {
     try {
       // Como não temos um método específico, vamos fazer um toggle e voltar
@@ -134,7 +280,6 @@ class ModoDevRenderer {
   updateStatusDisplay() {
     if (!this.currentStatus) return;
 
-   
     this.updateStatusIndicator(
       "dev-mode-indicator",
       this.currentStatus.isDevMode
@@ -144,7 +289,6 @@ class ModoDevRenderer {
       this.currentStatus.debugEnabled
     );
 
-   
     this.updateToggleButtonText(
       "btn-toggle-dev-mode",
       this.currentStatus.isDevMode ? "Modo: DESENVOLVIMENTO" : "Modo: PRODUÇÃO"
@@ -155,7 +299,6 @@ class ModoDevRenderer {
       this.currentStatus.debugEnabled ? "Debug: ATIVO" : "Debug: INATIVO"
     );
 
-    
     if (this.currentStatus.groupMode) {
       this.updateToggleButtonText(
         "btn-toggle-group-mode",
@@ -284,7 +427,6 @@ class ModoDevRenderer {
         );
         await this.loadCurrentStatus();
 
-       
         const groupBtn = document.getElementById("btn-toggle-group-mode");
         if (groupBtn) {
           groupBtn.textContent = `Modo: ${currentMode}`;
@@ -383,7 +525,14 @@ class ModoDevRenderer {
     return this.currentStatus;
   }
 
+  // ========== CORRIGIDO: Métodos públicos para debug de locale ==========
+  getCurrentLocale() {
+    return this.currentLocale;
+  }
 
+  getAvailableLocales() {
+    return this.availableLocales;
+  }
 }
 
 // Inicializar quando o DOM estiver pronto

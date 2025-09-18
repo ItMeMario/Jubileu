@@ -1,9 +1,11 @@
 const { app } = require("electron");
-const WindowManager = require("./main/WindowManager");
-const ModuleLoader = require("./main/ModuleLoader");
+const WindowManager = require("./main/windowManager");
+const ModuleLoader = require("./main/moduleLoader");
 const IPCManager = require("./main/ipcManager");
 const AppLifecycle = require("./main/AppLifecycle");
 const { initializeAllConfigs } = require("./utils/initialize");
+// 🆕 NOVA IMPORTAÇÃO
+const ConsoleRedirect = require("./main/consoleRedirect");
 
 class Application {
   constructor() {
@@ -17,6 +19,9 @@ class Application {
     try {
       // Aguarda o app estar pronto
       await app.whenReady();
+
+      // 🆕 CONFIGURA REDIRECIONAMENTO DE CONSOLE LOGO APÓS APP.WHENREADY()
+      ConsoleRedirect.setup();
 
       console.log("🔧 Inicializando estruturas básicas...");
       // 🔑 CRÍTICO: Cria pastas, arquivos e banco ANTES de qualquer coisa

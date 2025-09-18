@@ -9,6 +9,33 @@ const qrImage = document.getElementById("qr-image");
 // Estado da aplicação
 let isWhatsAppRunning = false;
 
+// 🆕 CONFIGURAÇÃO DO CONSOLE REDIRECT - ADICIONE NO INÍCIO
+if (window.electronAPI && window.electronAPI.onConsoleMessage) {
+  window.electronAPI.onConsoleMessage((data) => {
+    const { level, message, timestamp } = data;
+
+    // Aplica cores diferentes baseado no nível
+    const styles = {
+      log: "color: #2196F3; background: #E3F2FD; padding: 2px 6px; border-radius: 3px;",
+      error:
+        "color: #F44336; background: #FFEBEE; padding: 2px 6px; border-radius: 3px;",
+      warn: "color: #FF9800; background: #FFF3E0; padding: 2px 6px; border-radius: 3px;",
+      info: "color: #4CAF50; background: #E8F5E8; padding: 2px 6px; border-radius: 3px;",
+    };
+
+    // Exibe o log nas DevTools com formatação bonita
+    console.log(
+      `%c[MAIN-${level.toUpperCase()}]%c ${message}`,
+      styles[level] || styles.log,
+      "color: inherit; background: inherit;"
+    );
+  });
+
+  console.log(
+    "🔧 Console redirect ativado - logs do processo principal aparecerão aqui!"
+  );
+}
+
 // Função para mostrar status
 function showStatus(message, type = "info") {
   statusDiv.textContent = message;
@@ -145,3 +172,12 @@ window.electronAPI.onError((message) => {
 window.addEventListener("beforeunload", () => {
   window.electronAPI.removeAllListeners();
 });
+
+console.log("🔧 Testando console redirect...");
+
+// Testa se a função existe
+if (window.electronAPI && window.electronAPI.onConsoleMessage) {
+  console.log("✅ onConsoleMessage está disponível");
+} else {
+  console.log("❌ onConsoleMessage NÃO está disponível");
+}

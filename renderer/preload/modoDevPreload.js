@@ -60,5 +60,37 @@ contextBridge.exposeInMainWorld("modoDevAPI", {
     }
   },
 
+  // ========== NOVAS APIs PARA LOCALE ==========
+
+  // Obter locale atual
+  getCurrentLocale: async () => {
+    try {
+      return await ipcRenderer.invoke("modo-dev-get-current-locale");
+    } catch (error) {
+      console.error("Erro ao obter locale atual:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Obter locales disponíveis
+  getAvailableLocales: async () => {
+    try {
+      return await ipcRenderer.invoke("modo-dev-get-available-locales");
+    } catch (error) {
+      console.error("Erro ao obter locales disponíveis:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Alterar locale
+  setLocale: async (selectedIndex) => {
+    try {
+      return await ipcRenderer.invoke("modo-dev-set-locale", selectedIndex);
+    } catch (error) {
+      console.error("Erro ao alterar locale:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
   // REMOVIDO: getDetailedStatus - não será mais usado
 });

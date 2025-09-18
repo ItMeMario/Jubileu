@@ -7,6 +7,9 @@ const timeout = require("../utils/timeout");
 const messageReader = require("../utils/messageReader");
 const MessageType = require("../config/messageType");
 const { debug } = require("../services/debugService");
+const { MessageMedia } = require("whatsapp-web.js");
+const path = require("path");
+const fs = require("fs");
 
 // Mensagens de fallback
 const FALLBACK_MESSAGES = {
@@ -31,7 +34,7 @@ class NameHandler {
     try {
       timeout.cancelTimeout(userNumber);
 
-      const messageText = await this.generateInviteMessage(
+      const result = await this.generateInviteMessage(
         client,
         userNumber,
         nomeCompleto,
@@ -39,7 +42,7 @@ class NameHandler {
         userStates
       );
 
-      if (messageText === null) {
+      if (result === null) {
         // Usuário já está no grupo - cleanup foi feito internamente
         await antiSpamManager.resetUserAttempts(userNumber);
         delete userStates[userNumber];
@@ -47,8 +50,21 @@ class NameHandler {
         return null; // ← Retorna null para o message.js detectar
       }
 
+      // Se o resultado for "sent_with_audio", significa que já enviamos tudo
+      if (result === "sent_with_audio") {
+        await this.updateCounters();
+        await antiSpamManager.resetUserAttempts(userNumber);
+
+        // Cleanup
+        delete userStates[userNumber];
+        delete chatContext[userNumber];
+
+        return "completed";
+      }
+
+      // Caso contrário, enviar mensagem normalmente (fallback)
       await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
-      await client.sendMessage(msg.from, messageText);
+      await client.sendMessage(msg.from, result);
 
       await this.updateCounters();
       await antiSpamManager.resetUserAttempts(userNumber);
@@ -61,6 +77,57 @@ class NameHandler {
     } catch (error) {
       await this.handleError(msg, userNumber, error, userStates);
       return "error"; // ← Retorna status para indicar erro
+    }
+  }
+
+  /**
+   * Busca e envia áudio AUDIO_INVITE se existir para o locale atual
+   */
+  async sendAudioInviteIfExists(client, userNumber) {
+    try {
+      const currentLocale = messageReader.getConfigLocale();
+
+      // Verificar se existe mensagem AUDIO_INVITE para o locale atual
+      const audioExists = await messageReader.messageExists(
+        MessageType.AUDIO_INVITE,
+        currentLocale
+      );
+
+      if (!audioExists) {
+        // Não há áudio para este locale, não fazer nada
+        return false;
+      }
+
+      // Buscar o nome do arquivo de áudio
+      const audioFileName = await messageReader.getMessage(
+        MessageType.AUDIO_INVITE,
+        {},
+        currentLocale
+      );
+
+      if (!audioFileName || audioFileName.includes("[ERRO:")) {
+        return false;
+      }
+
+      // Construir o caminho completo do arquivo
+      const { DATA_DIR } = require("../utils/initialize");
+      const audioPath = path.join(DATA_DIR, "audio", audioFileName);
+
+      // Verificar se o arquivo realmente existe
+      if (!fs.existsSync(audioPath)) {
+        await debug(`⚠️ Arquivo de áudio não encontrado: ${audioPath}`);
+        return false;
+      }
+
+      // Criar MessageMedia e enviar o áudio
+      const audioMedia = MessageMedia.fromFilePath(audioPath);
+      await client.sendMessage(userNumber, audioMedia);
+
+      await debug(`🎵 Áudio enviado: ${audioFileName} para ${userNumber}`);
+      return true;
+    } catch (error) {
+      await debug(`❌ Erro ao enviar áudio AUDIO_INVITE: ${error.message}`);
+      return false;
     }
   }
 
@@ -215,12 +282,18 @@ class NameHandler {
     if (!primaryGroup) {
       const primaryLink = await groupService.getPrimaryGroupLink();
       const dataEvento = "";
-      return await this.getSingleInviteMessage(
+      const textMessage = await this.getSingleInviteMessage(
         nomeCompleto,
         horarioSelecionado,
         primaryLink,
         dataEvento
       );
+
+      // Enviar texto primeiro, depois áudio
+      await client.sendMessage(userNumber, textMessage);
+      await this.sendAudioInviteIfExists(client, userNumber);
+
+      return "sent_with_audio"; // Indicador especial
     }
 
     // Verifica se usuário já está no grupo
@@ -245,12 +318,18 @@ class NameHandler {
     const dataEvento = primaryGroup.date
       ? `\n📅 Dia: ${primaryGroup.date}`
       : "";
-    return await this.getSingleInviteMessage(
+    const textMessage = await this.getSingleInviteMessage(
       nomeCompleto,
       horarioSelecionado,
       primaryGroup.link,
       dataEvento
     );
+
+    // Enviar texto primeiro, depois áudio
+    await client.sendMessage(userNumber, textMessage);
+    await this.sendAudioInviteIfExists(client, userNumber);
+
+    return "sent_with_audio"; // Indicador especial
   }
 
   async handleMultiMode(client, userNumber, nomeCompleto, horarioSelecionado) {
@@ -297,13 +376,19 @@ class NameHandler {
     const dataEvento = selectedCityData.date
       ? `\n📅 Dia: ${selectedCityData.date}`
       : "";
-    return await this.getMultiInviteMessage(
+    const textMessage = await this.getMultiInviteMessage(
       nomeCompleto,
       horarioSelecionado,
       selectedCityData.link,
       selectedCityData.name,
       dataEvento
     );
+
+    // Enviar texto primeiro, depois áudio
+    await client.sendMessage(userNumber, textMessage);
+    await this.sendAudioInviteIfExists(client, userNumber);
+
+    return "sent_with_audio"; // Indicador especial
   }
 
   async updateCounters() {

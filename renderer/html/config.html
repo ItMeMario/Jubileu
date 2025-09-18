@@ -64,7 +64,30 @@
                 </select>
             </div>
 
-            <div class="form-group">
+            <div id="audio-upload-area" class="audio-upload-area" style="display: none;">
+                <div class="upload-prompt">
+                    <div class="upload-icon">🎵</div>
+                    <h4>Arraste um arquivo de áudio aqui</h4>
+                    <p>Ou clique para selecionar</p>
+                    <div class="supported-formats">
+                        Formatos suportados: MP3, WAV, OGG, OPUS, M4A, AAC, FLAC
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOVA: Informações do arquivo selecionado -->
+            <div id="audio-file-info" class="audio-file-info" style="display: none;">
+                <div class="file-preview">
+                    <div class="file-icon">🎵</div>
+                    <div id="audio-file-name" class="file-name"></div>
+                    <button id="btn-remove-audio" class="btn-remove-audio" type="button">
+                        ❌ Remover
+                    </button>
+                </div>
+            </div>
+
+            <!-- Campo de conteúdo da mensagem (escondido quando audio_invite está selecionado) -->
+            <div id="message-content-group" class="form-group">
                 <label for="message-content">Conteúdo da Mensagem:</label>
                 <textarea id="message-content" placeholder="Digite o conteúdo da mensagem aqui..." rows="6"></textarea>
             </div>
@@ -88,7 +111,7 @@
                         <h4>📊 Modo de Verificação</h4>
                         <div class="mode-selector">
                             <button id="btn-mode-all" class="btn-mode active" data-mode="all">
-                                🌐 Todos os Locales
+                                🌍 Todos os Locales
                             </button>
                             <button id="btn-mode-specific" class="btn-mode" data-mode="specific">
                                 🎯 Locale Específico
@@ -117,7 +140,7 @@
 
                     <!-- Indicador de modo atual -->
                     <div id="current-mode-indicator" class="mode-indicator">
-                        <span class="mode-badge active">🌐 Modo: Todos os Locales</span>
+                        <span class="mode-badge active">🌍 Modo: Todos os Locales</span>
                     </div>
                 </div>
 
@@ -153,19 +176,19 @@
             </div>
 
             <div class="form-group">
-                <label for="city-link">Link (opcional):</label>
+                <label for="city-link">Link:</label>
                 <input type="url" id="city-link" placeholder="https://exemplo.com">
-                <div class="hint">Link relacionado à cidade (opcional)</div>
+                <div class="hint">Link relacionado à cidade</div>
             </div>
 
             <div class="form-group">
-                <label for="city-message">Mensagem (opcional):</label>
+                <label for="city-message">Mensagem:</label>
                 <textarea id="city-message" placeholder="Digite uma mensagem sobre a cidade..." rows="4"></textarea>
                 <div class="hint">Informações adicionais sobre a cidade</div>
             </div>
 
             <div class="form-group">
-                <label for="city-date">Data (opcional):</label>
+                <label for="city-date">Data:</label>
                 <input type="text" id="city-date" placeholder="Ex: 2024-01-15">
                 <div class="hint">Data relacionada à cidade ou evento</div>
             </div>
@@ -210,7 +233,7 @@
                         <div class="status-header">
                             <span class="status-icon">🚀</span>
                             <h4>Modo de Execução</h4>
-                            <span id="dev-mode-indicator" class="status-indicator">◯</span>
+                            <span id="dev-mode-indicator" class="status-indicator">⚪</span>
                         </div>
                         <div class="status-info">
                             <button id="btn-toggle-dev-mode" class="btn btn-toggle">
@@ -223,7 +246,7 @@
                         <div class="status-header">
                             <span class="status-icon">🛠</span>
                             <h4>Debug</h4>
-                            <span id="debug-mode-indicator" class="status-indicator">◯</span>
+                            <span id="debug-mode-indicator" class="status-indicator">⚪</span>
                         </div>
                         <div class="status-info">
                             <button id="btn-toggle-debug-mode" class="btn btn-toggle">
@@ -234,7 +257,7 @@
 
                     <div class="status-card">
                         <div class="status-header">
-                            <span class="status-icon">👥</span>
+                            <span class="status-icon">💥</span>
                             <h4>Modo de Grupo</h4>
                         </div>
                         <div class="status-info">
@@ -265,6 +288,30 @@
                     </form>
                     <div id="current-scout-info" class="current-config">
                         Tempo atual: Carregando...
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== NOVA SEÇÃO: Configuração de Idioma ========== -->
+            <div class="dev-locale-config">
+                <h3>🌍 Configuração de Idioma</h3>
+                <div class="locale-config-card">
+                    <form id="locale-form" class="locale-form">
+                        <div class="form-group">
+                            <label for="locale-select">Selecionar Idioma:</label>
+                            <select id="locale-select">
+                                <option value="">Carregando idiomas...</option>
+                            </select>
+                            <div class="hint">Escolha o idioma do sistema</div>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">
+                                🌍 Alterar Idioma
+                            </button>
+                        </div>
+                    </form>
+                    <div id="current-locale-info" class="current-config">
+                        Idioma atual: Carregando...
                     </div>
                 </div>
             </div>

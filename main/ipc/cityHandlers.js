@@ -8,7 +8,7 @@ class CityHandlers {
   // Método helper para carregar controller se necessário
   getCityController() {
     if (!this.controllers.city) {
-      this.controllers.city = require("../../controllers/cityController");
+      this.controllers.city = require("../../controllers/cityControllerGui");
     }
     return this.controllers.city;
   }

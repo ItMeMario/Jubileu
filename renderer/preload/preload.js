@@ -32,6 +32,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("error", (event, message) => callback(message));
   },
 
+  // 🆕 NOVO MÉTODO PARA LOGS DO PROCESSO PRINCIPAL
+  onConsoleMessage: (callback) => {
+    ipcRenderer.on("console-message", (event, data) => {
+      callback(data);
+    });
+  },
+
   // Método para remover listeners (cleanup)
   removeAllListeners: () => {
     ipcRenderer.removeAllListeners("qr-generated");
@@ -39,5 +46,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.removeAllListeners("whatsapp-authenticated");
     ipcRenderer.removeAllListeners("whatsapp-disconnected");
     ipcRenderer.removeAllListeners("error");
+    // 🆕 ADICIONA REMOÇÃO DO NOVO LISTENER
+    ipcRenderer.removeAllListeners("console-message");
   },
 });
+
+// Debug simples sem acessar arguments
+console.log("🔧 Preload carregado - console redirect disponível!");

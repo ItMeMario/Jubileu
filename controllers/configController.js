@@ -1,5 +1,4 @@
 const { handleConfigMenu } = require("../views/configViews");
-const messageController = require("../controllers/messageController");
 const { createInterface } = require("readline");
 const { initializeAllConfigs } = require("../utils/initialize");
 

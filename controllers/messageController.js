@@ -1,6 +1,6 @@
 const messageService = require("../services/messageService");
 
-// Versões originais para CLI (mantidas)
+// Versões originais para CLI
 async function promptForMessageContent(rl, currentContent = "") {
   console.log(
     "\nDigite o conteúdo da mensagem. Você pode colar várias linhas."
@@ -40,11 +40,27 @@ async function handleAddMessage(rl) {
   );
   const locale = locales[parseInt(localeIndex) - 1];
 
-  // Conteúdo da mensagem usando entrada multilinha
-  const message_content = await promptForMessageContent(rl);
+  let message_content;
+
+  // Lógica especial para audio_invite
+  if (message_type === "audio_invite") {
+    console.log("\n🎵 === MENSAGEM DE ÁUDIO ===");
+    console.log("📁 Pasta de áudios: data/audio/");
+    console.log(
+      "ℹ️  Coloque seu arquivo de áudio na pasta 'data/audio/' antes de continuar."
+    );
+    console.log("ℹ️  Digite apenas o nome do arquivo (ex: convite.mp3)");
+
+    message_content = await new Promise((resolve) =>
+      rl.question("Nome do arquivo de áudio: ", resolve)
+    );
+  } else {
+    // Conteúdo da mensagem usando entrada multilinha (comportamento original)
+    message_content = await promptForMessageContent(rl);
+  }
 
   if (!message_type || !locale || !message_content) {
-    console.log("⚠ Dados inválidos. Operação cancelada.");
+    console.log("⚠️ Dados inválidos. Operação cancelada.");
     return;
   }
 
@@ -54,7 +70,12 @@ async function handleAddMessage(rl) {
     message_content,
   });
 
-  console.log("✅ Mensagem adicionada com sucesso:", result);
+  if (message_type === "audio_invite") {
+    console.log("✅ Mensagem de áudio adicionada com sucesso:", result);
+    console.log(`🎵 Arquivo referenciado: data/audio/${message_content}`);
+  } else {
+    console.log("✅ Mensagem adicionada com sucesso:", result);
+  }
 }
 
 async function handleListMessages() {
@@ -89,13 +110,30 @@ async function handleEditMessage(rl) {
     return;
   }
 
-  // Usando entrada multilinha para edição também
-  console.log(`\nConteúdo atual da mensagem:`);
-  console.log(`"${existing.message_content}"`);
-  const newContent = await promptForMessageContent(
-    rl,
-    existing.message_content
-  );
+  let newContent;
+
+  // Lógica especial para edição de audio_invite
+  if (existing.message_type === "audio_invite") {
+    console.log("\n🎵 === EDITANDO MENSAGEM DE ÁUDIO ===");
+    console.log(`Arquivo atual: ${existing.message_content}`);
+    console.log("📁 Pasta de áudios: data/audio/");
+    console.log(
+      "ℹ️  Coloque seu novo arquivo de áudio na pasta 'data/audio/' antes de continuar."
+    );
+    console.log("ℹ️  Digite apenas o nome do arquivo (ex: novo_convite.mp3)");
+    console.log("ℹ️  Ou pressione Enter para manter o arquivo atual");
+
+    const input = await new Promise((resolve) =>
+      rl.question("Nome do arquivo de áudio: ", resolve)
+    );
+
+    newContent = input.trim() || existing.message_content;
+  } else {
+    // Usando entrada multilinha para edição (comportamento original)
+    console.log(`\nConteúdo atual da mensagem:`);
+    console.log(`"${existing.message_content}"`);
+    newContent = await promptForMessageContent(rl, existing.message_content);
+  }
 
   const success = await messageService.updateMessage(id, {
     locale: existing.locale,
@@ -103,7 +141,16 @@ async function handleEditMessage(rl) {
     message_content: newContent,
   });
 
-  console.log(success ? "✅ Mensagem atualizada!" : "⚠ Erro ao atualizar.");
+  if (success) {
+    if (existing.message_type === "audio_invite") {
+      console.log("✅ Mensagem de áudio atualizada!");
+      console.log(`🎵 Novo arquivo referenciado: data/audio/${newContent}`);
+    } else {
+      console.log("✅ Mensagem atualizada!");
+    }
+  } else {
+    console.log("⚠️ Erro ao atualizar.");
+  }
 }
 
 async function handleDeleteMessage(rl) {
@@ -111,7 +158,7 @@ async function handleDeleteMessage(rl) {
     rl.question("Digite o ID da mensagem a excluir: ", resolve)
   );
   const success = await messageService.deleteMessage(id);
-  console.log(success ? "✅ Mensagem excluída." : "⚠ Erro ao excluir.");
+  console.log(success ? "✅ Mensagem excluída." : "⚠️ Erro ao excluir.");
 }
 
 async function handleShowLastMessage() {
@@ -125,7 +172,7 @@ async function handleShowLastMessage() {
   );
 }
 
-// Nova função para verificar completude das mensagens (CLI)
+// Função para verificar completude das mensagens (CLI)
 async function handleCheckMessageCompleteness(rl) {
   try {
     console.log("\n📊 === VERIFICAÇÃO DE COMPLETUDE ===");
@@ -144,7 +191,7 @@ async function handleCheckMessageCompleteness(rl) {
 
       // Exibir resumo geral
       console.log("=== RESUMO GERAL ===");
-      console.log(`📁 Total de locales: ${report.summary.totalLocales}`);
+      console.log(`📝 Total de locales: ${report.summary.totalLocales}`);
       console.log(
         `📝 Total de tipos de mensagem: ${report.summary.totalMessageTypes}`
       );
@@ -237,241 +284,11 @@ async function handleCheckMessageCompleteness(rl) {
   }
 }
 
-// =========================
-// VERSÕES ADAPTADAS PARA GUI
-// =========================
-
-async function handleListMessagesGUI() {
-  try {
-    const messages = await messageService.getMessages();
-    return {
-      success: true,
-      data: messages,
-    };
-  } catch (error) {
-    console.error("Erro ao listar mensagens:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
-async function handleAddMessageGUI(messageData) {
-  try {
-    const { locale, message_type, message_content } = messageData;
-
-    if (!locale || !message_type || !message_content) {
-      return {
-        success: false,
-        error: "Todos os campos são obrigatórios",
-      };
-    }
-
-    const result = await messageService.addMessage({
-      locale,
-      message_type,
-      message_content,
-    });
-
-    return {
-      success: true,
-      data: result,
-      message: "Mensagem adicionada com sucesso",
-    };
-  } catch (error) {
-    console.error("Erro ao adicionar mensagem:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
-async function handleEditMessageGUI(id, messageData) {
-  try {
-    const { locale, message_type, message_content } = messageData;
-
-    if (!locale || !message_type || !message_content) {
-      return {
-        success: false,
-        error: "Todos os campos são obrigatórios",
-      };
-    }
-
-    const existing = await messageService.getMessageById(id);
-    if (!existing) {
-      return {
-        success: false,
-        error: "Mensagem não encontrada",
-      };
-    }
-
-    const success = await messageService.updateMessage(id, {
-      locale,
-      message_type,
-      message_content,
-    });
-
-    if (success) {
-      return {
-        success: true,
-        message: "Mensagem atualizada com sucesso",
-      };
-    } else {
-      return {
-        success: false,
-        error: "Erro ao atualizar mensagem",
-      };
-    }
-  } catch (error) {
-    console.error("Erro ao editar mensagem:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
-async function handleDeleteMessageGUI(id) {
-  try {
-    const success = await messageService.deleteMessage(id);
-
-    if (success) {
-      return {
-        success: true,
-        message: "Mensagem excluída com sucesso",
-      };
-    } else {
-      return {
-        success: false,
-        error: "Mensagem não encontrada ou erro ao excluir",
-      };
-    }
-  } catch (error) {
-    console.error("Erro ao excluir mensagem:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
-async function handleShowLastMessageGUI() {
-  try {
-    const last = await messageService.getLastMessage();
-
-    if (!last) {
-      return {
-        success: false,
-        error: "Nenhuma mensagem encontrada",
-      };
-    }
-
-    return {
-      success: true,
-      data: last,
-    };
-  } catch (error) {
-    console.error("Erro ao buscar última mensagem:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
-// Função para obter tipos de mensagem e locales disponíveis
-async function getAvailableOptionsGUI() {
-  try {
-    const messageTypes = messageService.getAvailableMessageTypes();
-    const locales = messageService.getAvailableLocales();
-
-    return {
-      success: true,
-      data: {
-        messageTypes,
-        locales,
-      },
-    };
-  } catch (error) {
-    console.error("Erro ao obter opções disponíveis:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
-async function handleCheckMessageCompletenessGUI(specificLocale = null) {
-  try {
-    const report = await messageService.checkMessageCompleteness();
-
-    // Melhorar validação do specificLocale
-    if (specificLocale && typeof specificLocale === "string") {
-      const cleanLocale = specificLocale.trim();
-
-      if (!cleanLocale) {
-        return {
-          success: false,
-          error: "Locale não pode estar vazio",
-        };
-      }
-
-      if (!report.byLocale[cleanLocale]) {
-        return {
-          success: false,
-          error: `Locale '${cleanLocale}' não encontrado. Locales disponíveis: ${Object.keys(
-            report.byLocale
-          ).join(", ")}`,
-        };
-      }
-
-      return {
-        success: true,
-        data: {
-          locale: cleanLocale,
-          stats: report.byLocale[cleanLocale],
-          messageTypes: messageService.getAvailableMessageTypes(),
-        },
-      };
-    }
-
-    // Retorna relatório completo se specificLocale for null/undefined
-    return {
-      success: true,
-      data: {
-        summary: report.summary,
-        byLocale: report.byLocale,
-        missing: report.missing,
-        locales: messageService.getAvailableLocales(),
-        messageTypes: messageService.getAvailableMessageTypes(),
-      },
-    };
-  } catch (error) {
-    console.error("Erro ao verificar completude das mensagens:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
 module.exports = {
-  // Versões CLI (originais)
   handleAddMessage,
   handleListMessages,
   handleEditMessage,
   handleDeleteMessage,
   handleShowLastMessage,
-  handleCheckMessageCompleteness, // Nova função CLI
-
-  // Versões GUI (novas)
-  handleListMessagesGUI,
-  handleAddMessageGUI,
-  handleEditMessageGUI,
-  handleDeleteMessageGUI,
-  handleShowLastMessageGUI,
-  getAvailableOptionsGUI,
-  handleCheckMessageCompletenessGUI, // Nova função GUI
+  handleCheckMessageCompleteness,
 };

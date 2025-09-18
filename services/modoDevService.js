@@ -14,7 +14,7 @@ const DEFAULT_CONFIG = {
   lastDebugChanged: null,
   scoutConfig: {
     enabled: false,
-    timeSeconds: 300, // 5 minutos padrÃ£o
+    timeSeconds: 300, // 5 minutos padrão
     timeFormatted: "00:05:00",
     lastChanged: null,
   },
@@ -28,7 +28,7 @@ async function loadConfig() {
     const data = await fs.readFile(CONFIG_FILE, "utf8");
     const config = JSON.parse(data);
 
-    // Garante que scoutConfig existe (migraÃ§Ã£o automÃ¡tica)
+    // Garante que scoutConfig existe (migração automática)
     if (!config.scoutConfig) {
       config.scoutConfig = DEFAULT_CONFIG.scoutConfig;
       await saveConfig(config);
@@ -36,7 +36,7 @@ async function loadConfig() {
 
     return config;
   } catch (error) {
-    console.error("Erro ao carregar configuraÃ§Ã£o:", error);
+    console.error("Erro ao carregar configuração:", error);
     return DEFAULT_CONFIG;
   }
 }
@@ -46,13 +46,13 @@ async function saveConfig(config) {
     await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2));
     return true;
   } catch (error) {
-    console.error("Erro ao salvar configuraÃ§Ã£o:", error);
+    console.error("Erro ao salvar configuração:", error);
     return false;
   }
 }
 
 function parseTimeInput(timeInput) {
-  // Remove espaÃ§os e valida formato bÃ¡sico
+  // Remove espaços e valida formato básico
   const cleanInput = timeInput.trim();
   const timeRegex = /^(\d{1,2}):(\d{1,2}):(\d{1,2})$/;
 
@@ -60,7 +60,7 @@ function parseTimeInput(timeInput) {
   if (!match) {
     return {
       valid: false,
-      error: "Formato invÃ¡lido. Use HH:MM:SS (exemplo: 01:30:45)",
+      error: "Formato inválido. Use HH:MM:SS (exemplo: 01:30:45)",
     };
   }
 
@@ -68,7 +68,7 @@ function parseTimeInput(timeInput) {
   const minutes = parseInt(match[2], 10);
   const seconds = parseInt(match[3], 10);
 
-  // ValidaÃ§Ãµes
+  // Validações
   if (hours > 23) {
     return { valid: false, error: "Horas devem ser entre 00 e 23" };
   }
@@ -82,10 +82,10 @@ function parseTimeInput(timeInput) {
   const totalSeconds = hours * 3600 + minutes * 60 + seconds;
 
   if (totalSeconds === 0) {
-    return { valid: false, error: "O tempo total nÃ£o pode ser zero" };
+    return { valid: false, error: "O tempo total não pode ser zero" };
   }
 
-  // Formata com zeros Ã  esquerda
+  // Formata com zeros à esquerda
   const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
     .toString()
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
@@ -110,7 +110,7 @@ async function toggleDevMode() {
     if (saved) {
       return { success: true, isDevMode: config.isDevMode };
     } else {
-      return { success: false, error: "Falha ao salvar configuraÃ§Ã£o" };
+      return { success: false, error: "Falha ao salvar configuração" };
     }
   } catch (error) {
     return { success: false, error: error.message };
@@ -129,7 +129,7 @@ async function toggleDebugMode() {
     } else {
       return {
         success: false,
-        error: "Falha ao salvar configuraÃ§Ã£o de debug",
+        error: "Falha ao salvar configuração de debug",
       };
     }
   } catch (error) {
@@ -161,7 +161,7 @@ async function setScoutTime(timeInput) {
     } else {
       return {
         success: false,
-        error: "Falha ao salvar configuraÃ§Ã£o do Scout",
+        error: "Falha ao salvar configuração do Scout",
       };
     }
   } catch (error) {
@@ -179,7 +179,7 @@ async function getScoutConfig() {
       lastChanged: config.scoutConfig.lastChanged,
     };
   } catch (error) {
-    console.error("Erro ao carregar configuraÃ§Ã£o do Scout:", error);
+    console.error("Erro ao carregar configuração do Scout:", error);
     return DEFAULT_CONFIG.scoutConfig;
   }
 }
@@ -195,7 +195,7 @@ async function getCurrentMode() {
       scoutConfig: config.scoutConfig || DEFAULT_CONFIG.scoutConfig,
     };
   } catch (error) {
-    console.error("Erro ao carregar configuraÃ§Ã£o:", error);
+    console.error("Erro ao carregar configuração:", error);
     return DEFAULT_CONFIG;
   }
 }
@@ -236,7 +236,7 @@ async function getDetailedStatus() {
   }
 }
 
-// ========== NOVAS FUNÇÕES PARA LOCALE ==========
+// ========== FUNÇÕES PARA LOCALE - CORRIGIDAS ==========
 
 async function loadSystemConfig() {
   try {
@@ -268,17 +268,41 @@ async function getCurrentLocale() {
   }
 }
 
+// Função helper para formatar o nome do locale
+function formatLocaleName(localeKey) {
+  // Converte "English_US" para "English (United States)"
+  const [language, country] = localeKey.split("_");
+
+  // Mapeamento de países para nomes mais legíveis
+  const countryNames = {
+    US: "United States",
+    BR: "Brasil",
+    PY: "Paraguay",
+  };
+
+  const countryName = countryNames[country] || country;
+  return `${language} (${countryName})`;
+}
+
 function getAvailableLocales() {
   try {
-    // Retorna array de objetos com índice e código do locale
-    const locales = Object.values(Locale);
-    return locales.map((locale, index) => ({
+    // Com a nova estrutura, as chaves já são descritivas
+    const locales = Object.entries(Locale);
+
+    return locales.map(([key, code], index) => ({
       index: index + 1,
-      code: locale,
+      code: code,
+      name: formatLocaleName(key), // Converte "English_US" para "English (United States)"
     }));
   } catch (error) {
     console.error("Erro ao obter locales disponíveis:", error);
-    return [{ index: 1, code: "en-US" }];
+    return [
+      {
+        index: 1,
+        code: "en-US",
+        name: "English (United States)",
+      },
+    ];
   }
 }
 
@@ -300,8 +324,11 @@ async function setLocale(selectedIndex) {
     if (saved) {
       return {
         success: true,
-        locale: selectedLocale.code,
-        message: `Idioma alterado para ${selectedLocale.code}`,
+        locale: {
+          code: selectedLocale.code,
+          name: selectedLocale.name,
+        },
+        message: `Idioma alterado para ${selectedLocale.name}`,
       };
     } else {
       return {
@@ -321,7 +348,7 @@ module.exports = {
   getScoutConfig,
   getCurrentMode,
   getDetailedStatus,
-  // Novas funções para locale
+  // Funções para locale - corrigidas
   getCurrentLocale,
   getAvailableLocales,
   setLocale,

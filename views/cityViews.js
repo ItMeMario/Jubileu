@@ -81,7 +81,7 @@ async function promptForCityName(rl, currentName = "", isEditing = false) {
 async function promptForCityLink(rl, currentLink = '') {
     const prompt = currentLink 
         ? `\nDigite o novo link da cidade (deixe em branco para manter o atual: ${currentLink}): `
-        : '\nDigite o link da cidade (opcional): ';
+        : '\nDigite o link da cidade: ';
     
     const link = await new Promise(resolve => rl.question(prompt, resolve));
     return link.trim(); // Retorna o link ou string vazia
@@ -105,7 +105,7 @@ async function promptForCityMessage(rl, currentMessage = '') {
 async function promptForCityDate(rl, currentDate = '') {
     const prompt = currentDate 
         ? `\nDigite a nova data do evento (deixe em branco para manter a atual: ${currentDate}): `
-        : '\nDigite a data do evento (opcional): ';
+        : '\nDigite a data do evento: ';
     
     const date = await new Promise(resolve => rl.question(prompt, resolve));
     return date.trim(); // Retorna a data ou string vazia
