@@ -227,3 +227,44 @@ Removido arquivo .bat que estava sem funcionalidade.
 Removido código legado de migração de mensagens.
 
 📅 Data de Lançamento: 05/09/2025
+
+📌 Patch Notes - Versão 0.0.7
+✨ Novidades
+
+Adicionado suporte para trocar de idiomas pela GUI.
+
+Implementado sistema de lembretes:
+
+Envia mensagens automáticas no grupo quando faltar 5 dias e 3 dias para o evento.
+
+Utiliza o novo tipo de mensagem "reminder".
+
+Mensagens são enviadas às 09:00 (horário de Brasília).
+
+Novo message type "audio_invite".
+
+Adicionada opção de incluir um áudio no final do texto de convite para o grupo.
+
+Adicionado novo message type "reminder" para suporte ao sistema de lembretes.
+
+🛠️ Melhorias
+
+Sincronizadas as funções do GUI e CLI através do client.js.
+
+Refatorado o messageController para separar lógica do CLI e do GUI.
+
+Refatorado o indicadoresController para separar lógica do CLI e do GUI.
+
+Refatorado o modoDevController para separar lógica do CLI e do GUI.
+
+🐛 Correções
+
+Corrigido bug que impedia os logs de aparecer no console da GUI.
+
+Corrigido bug no menu de horários, que não estava trazendo os últimos horários cadastrados.
+
+🗑️ Remoções
+
+Removido o texto “opcional” dos CRUDs.
+
+📅 Data de Lançamento: 18/09/2025
