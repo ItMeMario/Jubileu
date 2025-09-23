@@ -10,6 +10,7 @@ let whatsappClient = null;
  */
 function setWhatsAppClient(client) {
   whatsappClient = client;
+  console.log("📱 Cliente WhatsApp configurado no droneService");
   debug("📱 Cliente WhatsApp configurado no droneService");
 }
 
@@ -18,7 +19,22 @@ function setWhatsAppClient(client) {
  * @returns {boolean} Status da conexão
  */
 function isClientReady() {
-  return whatsappClient && whatsappClient.info;
+  if (!whatsappClient) {
+    console.log("❌ Cliente WhatsApp não foi configurado");
+    return false;
+  }
+
+  try {
+    // Verifica se o cliente tem a propriedade info (indica que está conectado)
+    const hasInfo = whatsappClient.info !== undefined;
+    console.log(
+      `🔍 Status do cliente: ${hasInfo ? "Conectado" : "Desconectado"}`
+    );
+    return hasInfo;
+  } catch (error) {
+    console.log(`❌ Erro ao verificar status do cliente: ${error.message}`);
+    return false;
+  }
 }
 
 /**
@@ -215,10 +231,26 @@ async function getChatInfo(number) {
  */
 async function getClientStats() {
   try {
-    if (!isClientReady()) {
+    if (!whatsappClient) {
       return {
         connected: false,
-        error: "Cliente não conectado",
+        error: "Cliente não foi configurado",
+      };
+    }
+
+    // Verifica diferentes propriedades para determinar o status
+    const hasInfo = whatsappClient.info !== undefined;
+    const puppeteer = whatsappClient.pupPage !== undefined;
+
+    if (!hasInfo) {
+      return {
+        connected: false,
+        error: "Cliente não tem informações (ainda não conectou)",
+        debug: {
+          hasInfo: hasInfo,
+          hasPuppeteer: puppeteer,
+          clientState: whatsappClient.state || "unknown",
+        },
       };
     }
 
@@ -244,6 +276,10 @@ async function getClientStats() {
     return {
       connected: false,
       error: error.message,
+      debug: {
+        hasClient: !!whatsappClient,
+        clientType: typeof whatsappClient,
+      },
     };
   }
 }

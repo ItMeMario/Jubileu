@@ -165,12 +165,19 @@ async function executeDroneDispatch(messageId, options = {}) {
       throw new Error("Nenhum número na lista para disparo.");
     }
 
+    console.log("🔍 Verificando status do cliente WhatsApp...");
+
     // Verificar se o cliente está conectado
     if (!droneService.isClientReady()) {
+      // Tentar obter mais informações sobre o estado do cliente
+      const stats = await droneService.getClientStats();
+      console.log("📊 Status detalhado:", stats);
       throw new Error(
         "Cliente WhatsApp não está conectado. Aguarde a conexão."
       );
     }
+
+    console.log("✅ Cliente WhatsApp está conectado e pronto!");
 
     // Buscar a mensagem
     const message = await getMessageById(messageId);
