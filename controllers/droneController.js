@@ -149,26 +149,31 @@ async function getMessageById(messageId) {
 /**
  * Executa o disparo drone para todos os números da lista
  * @param {number} messageId ID da mensagem a ser enviada
+ * @param {Object} options Opções do disparo
  * @returns {Object} Resultado do disparo com estatísticas
  */
-async function executeDroneDispatch(messageId) {
-  const result = {
-    sent: 0,
-    failed: 0,
-    total: 0,
-    errors: [],
-  };
+async function executeDroneDispatch(messageId, options = {}) {
+  const {
+    delayMs = 2000,
+    clearAfterDispatch = true,
+    validateNumbers = false,
+  } = options;
 
-
+  try {
     // Verificar se há números na lista
     if (numbersList.length === 0) {
       throw new Error("Nenhum número na lista para disparo.");
     }
 
+    // Verificar se o cliente está conectado
+    if (!droneService.isClientReady()) {
+      throw new Error(
+        "Cliente WhatsApp não está conectado. Aguarde a conexão."
+      );
+    }
+
     // Buscar a mensagem
     const message = await getMessageById(messageId);
-
-    result.total = numbersList.length;
 
     console.log(`🚁 Iniciando disparo para ${numbersList.length} números...`);
     console.log(
@@ -177,38 +182,36 @@ async function executeDroneDispatch(messageId) {
       }"`
     );
 
-    // Processar cada número
-    for (let i = 0; i < numbersList.length; i++) {
-      const number = numbersList[i];
+    // Validar números se solicitado
+    let validNumbers = [...numbersList];
+    if (validateNumbers) {
+      console.log("🔍 Validando números...");
+      validNumbers = [];
 
-      try {
-        console.log(`📤 Enviando ${i + 1}/${numbersList.length}: ${number}`);
-
-        const success = await droneService.sendDroneMessage(
-          number,
-          message.message_content
-        );
-
-        if (success) {
-          result.sent++;
-          console.log(`✅ Enviado para: ${number}`);
+      for (const number of numbersList) {
+        const exists = await droneService.checkNumberExists(number);
+        if (exists) {
+          validNumbers.push(number);
         } else {
-          result.failed++;
-          result.errors.push(`Falha ao enviar para: ${number}`);
-          console.log(`❌ Falhou para: ${number}`);
+          console.log(`⚠️ Número não encontrado no WhatsApp: ${number}`);
         }
-
-        // Delay entre envios para evitar spam
-        if (i < numbersList.length - 1) {
-          console.log(`⏳ Aguardando 2 segundos...`);
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-        }
-      } catch (error) {
-        result.failed++;
-        result.errors.push(`Erro para ${number}: ${error.message}`);
-        console.log(`❌ Erro para ${number}: ${error.message}`);
       }
+
+      if (validNumbers.length === 0) {
+        throw new Error("Nenhum número válido encontrado no WhatsApp.");
+      }
+
+      console.log(
+        `✅ ${validNumbers.length} números válidos de ${numbersList.length} verificados`
+      );
     }
+
+    // Executar disparo usando o service
+    const result = await droneService.sendBatchDroneMessages(
+      validNumbers,
+      message.message_content,
+      delayMs
+    );
 
     // Log do resultado final
     console.log(`\n📊 Disparo concluído:`);
@@ -216,15 +219,28 @@ async function executeDroneDispatch(messageId) {
     console.log(`   ❌ Falhas: ${result.failed}`);
     console.log(`   📱 Total: ${result.total}`);
 
-    // Opcional: limpar a lista após o disparo
-    const clearAfterDispatch = true; // Pode ser configurável
+    const duration = (result.endTime - result.startTime) / 1000;
+    console.log(`   ⏱️ Duração: ${duration.toFixed(1)}s`);
+
+    if (result.errors.length > 0) {
+      console.log(`\n⚠️ Detalhes dos erros:`);
+      result.errors.forEach((error, index) => {
+        console.log(`   ${index + 1}. ${error}`);
+      });
+    }
+
+    // Limpar lista após disparo se solicitado
     if (clearAfterDispatch) {
       numbersList = [];
       console.log(`🗑️ Lista de números limpa automaticamente.`);
     }
 
     return result;
-  } 
+  } catch (error) {
+    throw new Error(`Erro durante disparo: ${error.message}`);
+  }
+}
+
 /**
  * Retorna estatísticas da lista atual
  * @returns {Object} Estatísticas da lista
@@ -233,6 +249,8 @@ async function getNumbersListStats() {
   return {
     count: numbersList.length,
     numbers: [...numbersList],
+    sample: numbersList.slice(0, 5), // Primeiros 5 números como amostra
+    hasNumbers: numbersList.length > 0,
   };
 }
 
@@ -257,6 +275,59 @@ async function removeNumberFromList(number) {
   }
 }
 
+/**
+ * Valida todos os números da lista atual
+ * @returns {Object} Resultado da validação
+ */
+async function validateAllNumbers() {
+  if (numbersList.length === 0) {
+    return { valid: [], invalid: [], total: 0 };
+  }
+
+  const result = { valid: [], invalid: [], total: numbersList.length };
+
+  console.log(`🔍 Validando ${numbersList.length} números...`);
+
+  for (let i = 0; i < numbersList.length; i++) {
+    const number = numbersList[i];
+    console.log(`📱 Validando ${i + 1}/${numbersList.length}: ${number}`);
+
+    try {
+      const exists = await droneService.checkNumberExists(number);
+      if (exists) {
+        result.valid.push(number);
+        console.log(`✅ Válido: ${number}`);
+      } else {
+        result.invalid.push(number);
+        console.log(`❌ Inválido: ${number}`);
+      }
+    } catch (error) {
+      result.invalid.push(number);
+      console.log(`❌ Erro ao validar ${number}: ${error.message}`);
+    }
+
+    // Pequeno delay para não sobrecarregar
+    if (i < numbersList.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+
+  console.log(`\n📊 Validação concluída:`);
+  console.log(`   ✅ Válidos: ${result.valid.length}`);
+  console.log(`   ❌ Inválidos: ${result.invalid.length}`);
+
+  return result;
+}
+
+/**
+ * Configura o cliente WhatsApp no droneService
+ * @param {Object} client Cliente WhatsApp
+ */
+function setWhatsAppClient(client) {
+  droneService.setWhatsAppClient(client);
+  console.log("📱 Cliente WhatsApp configurado no droneController");
+}
+
 module.exports = {
   listDroneMessages,
   addNumbersToList,
@@ -266,4 +337,6 @@ module.exports = {
   getMessageById,
   getNumbersListStats,
   removeNumberFromList,
+  validateAllNumbers,
+  setWhatsAppClient,
 };

@@ -1,59 +1,259 @@
-const { handleConfigMenu } = require("../views/configViews");
-const { handleDroneMenu } = require("../views/droneViews");
-const { createInterface } = require("readline");
-const { initializeAllConfigs } = require("../utils/initialize");
+// droneService.js - Serviço responsável pelos disparos de mensagens
+const { debug } = require("./debugService");
 
-async function initializeApp() {
-  // Inicializa arquivos, pastas e banco de dados primeiro
+// Referência para o cliente WhatsApp (será definida externamente)
+let whatsappClient = null;
+
+/**
+ * Define o cliente WhatsApp para usar nos disparos
+ * @param {Object} client - Instância do cliente WhatsApp
+ */
+function setWhatsAppClient(client) {
+  whatsappClient = client;
+  debug("📱 Cliente WhatsApp configurado no droneService");
+}
+
+/**
+ * Verifica se o cliente WhatsApp está disponível e conectado
+ * @returns {boolean} Status da conexão
+ */
+function isClientReady() {
+  return whatsappClient && whatsappClient.info;
+}
+
+/**
+ * Envia uma mensagem drone para um número específico
+ * @param {string} number - Número no formato WhatsApp (com @c.us)
+ * @param {string} messageContent - Conteúdo da mensagem
+ * @returns {Promise<boolean>} Sucesso do envio
+ */
+async function sendDroneMessage(number, messageContent) {
   try {
-    await initializeAllConfigs();
-  } catch (err) {
-    console.error("Erro ao inicializar arquivos/pastas/banco de dados:", err);
-    // Interrompe a inicialização do app se ocorrer erro crítico
+    // Verifica se o cliente está pronto
+    if (!isClientReady()) {
+      throw new Error("Cliente WhatsApp não está conectado");
+    }
+
+    // Garante que o número está no formato correto
+    let formattedNumber = number;
+    if (!number.includes("@c.us")) {
+      formattedNumber = `${number}@c.us`;
+    }
+
+    // Remove caracteres especiais do número se necessário
+    formattedNumber = formattedNumber.replace(/[^\d@c.us]/g, "");
+
+    // Verifica se o número é válido
+    if (!formattedNumber.match(/^\d+@c\.us$/)) {
+      throw new Error(`Número inválido: ${number}`);
+    }
+
+    await debug(`📤 Enviando mensagem para: ${formattedNumber}`);
+
+    // Envia a mensagem
+    const message = await whatsappClient.sendMessage(
+      formattedNumber,
+      messageContent
+    );
+
+    if (message) {
+      await debug(`✅ Mensagem enviada com sucesso para: ${formattedNumber}`);
+      return true;
+    } else {
+      await debug(`❌ Falha ao enviar mensagem para: ${formattedNumber}`);
+      return false;
+    }
+  } catch (error) {
+    await debug(`❌ Erro ao enviar mensagem para ${number}: ${error.message}`);
+    throw new Error(`Falha no envio: ${error.message}`);
+  }
+}
+
+/**
+ * Envia mensagem para múltiplos números (disparo em lote)
+ * @param {Array<string>} numbers - Array de números
+ * @param {string} messageContent - Conteúdo da mensagem
+ * @param {number} delayMs - Delay entre envios em millisegundos (padrão: 2000)
+ * @returns {Promise<Object>} Resultado do disparo com estatísticas
+ */
+async function sendBatchDroneMessages(numbers, messageContent, delayMs = 2000) {
+  const result = {
+    sent: 0,
+    failed: 0,
+    total: numbers.length,
+    errors: [],
+    startTime: new Date(),
+    endTime: null,
+  };
+
+  try {
+    if (!isClientReady()) {
+      throw new Error("Cliente WhatsApp não está conectado");
+    }
+
+    if (!numbers || numbers.length === 0) {
+      throw new Error("Nenhum número fornecido para disparo");
+    }
+
+    await debug(`🚁 Iniciando disparo em lote para ${numbers.length} números`);
+
+    for (let i = 0; i < numbers.length; i++) {
+      const number = numbers[i];
+
+      try {
+        console.log(`📤 Enviando ${i + 1}/${numbers.length}: ${number}`);
+
+        const success = await sendDroneMessage(number, messageContent);
+
+        if (success) {
+          result.sent++;
+          console.log(`✅ ${i + 1}/${numbers.length} - Sucesso: ${number}`);
+        } else {
+          result.failed++;
+          result.errors.push(`Falha ao enviar para: ${number}`);
+          console.log(`❌ ${i + 1}/${numbers.length} - Falhou: ${number}`);
+        }
+      } catch (error) {
+        result.failed++;
+        result.errors.push(`Erro para ${number}: ${error.message}`);
+        console.log(
+          `❌ ${i + 1}/${numbers.length} - Erro: ${number} (${error.message})`
+        );
+      }
+
+      // Delay entre envios (exceto no último)
+      if (i < numbers.length - 1 && delayMs > 0) {
+        console.log(`⏳ Aguardando ${delayMs / 1000}s...`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+
+    result.endTime = new Date();
+    const duration = (result.endTime - result.startTime) / 1000;
+
+    await debug(
+      `🏁 Disparo concluído em ${duration}s - Sucessos: ${result.sent}, Falhas: ${result.failed}`
+    );
+
+    return result;
+  } catch (error) {
+    result.endTime = new Date();
+    await debug(`❌ Erro no disparo em lote: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Verifica se um número está disponível no WhatsApp
+ * @param {string} number - Número para verificar
+ * @returns {Promise<boolean>} Se o número existe no WhatsApp
+ */
+async function checkNumberExists(number) {
+  try {
+    if (!isClientReady()) {
+      throw new Error("Cliente WhatsApp não está conectado");
+    }
+
+    // Formata o número
+    let formattedNumber = number;
+    if (!number.includes("@c.us")) {
+      formattedNumber = `${number}@c.us`;
+    }
+
+    // Verifica se o número está registrado no WhatsApp
+    const isRegistered = await whatsappClient.isRegisteredUser(formattedNumber);
+
+    await debug(
+      `🔍 Verificação de número ${formattedNumber}: ${
+        isRegistered ? "Existe" : "Não existe"
+      }`
+    );
+
+    return isRegistered;
+  } catch (error) {
+    await debug(`❌ Erro ao verificar número ${number}: ${error.message}`);
     return false;
   }
+}
 
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+/**
+ * Obtém informações sobre um chat/número
+ * @param {string} number - Número para obter informações
+ * @returns {Promise<Object|null>} Informações do chat ou null se não encontrado
+ */
+async function getChatInfo(number) {
+  try {
+    if (!isClientReady()) {
+      throw new Error("Cliente WhatsApp não está conectado");
+    }
 
-  const answer = await new Promise((resolve) => {
-    rl.question(
-      'Pressione Enter para continuar, digite "config" para configurar ou "drone" para acessar o menu drone: ',
-      resolve
+    let formattedNumber = number;
+    if (!number.includes("@c.us")) {
+      formattedNumber = `${number}@c.us`;
+    }
+
+    const chat = await whatsappClient.getChatById(formattedNumber);
+
+    return {
+      id: chat.id._serialized,
+      name: chat.name || chat.id.user,
+      isGroup: chat.isGroup,
+      timestamp: chat.timestamp,
+      unreadCount: chat.unreadCount,
+    };
+  } catch (error) {
+    await debug(
+      `❌ Erro ao obter informações do chat ${number}: ${error.message}`
     );
-  });
-
-  const normalized = (answer || "").toString().trim().toLowerCase();
-
-  if (normalized === "config") {
-    try {
-      await handleConfigMenu(rl);
-    } catch (err) {
-      console.error("Erro no menu de configuração:", err);
-    } finally {
-      rl.close();
-    }
-    return false; // Indica que o app não deve continuar após configuração
+    return null;
   }
+}
 
-  if (normalized === "drone") {
-    try {
-      await handleDroneMenu(rl);
-    } catch (err) {
-      console.error("Erro no menu drone:", err);
-    } finally {
-      rl.close();
+/**
+ * Obtém estatísticas do cliente WhatsApp
+ * @returns {Promise<Object>} Estatísticas do cliente
+ */
+async function getClientStats() {
+  try {
+    if (!isClientReady()) {
+      return {
+        connected: false,
+        error: "Cliente não conectado",
+      };
     }
-    return false; // Indica que o app não deve continuar após usar o drone
-  }
 
-  rl.close();
-  return true; // Indica que o app pode continuar
+    const info = await whatsappClient.info;
+    const chats = await whatsappClient.getChats();
+
+    return {
+      connected: true,
+      user: {
+        number: info.wid.user,
+        name: info.pushname || "N/A",
+      },
+      chats: {
+        total: chats.length,
+        individual: chats.filter((chat) => !chat.isGroup).length,
+        groups: chats.filter((chat) => chat.isGroup).length,
+      },
+      battery: info.battery || "N/A",
+      platform: info.platform || "N/A",
+    };
+  } catch (error) {
+    await debug(`❌ Erro ao obter estatísticas: ${error.message}`);
+    return {
+      connected: false,
+      error: error.message,
+    };
+  }
 }
 
 module.exports = {
-  initializeApp,
-  handleConfigMenu,
+  setWhatsAppClient,
+  isClientReady,
+  sendDroneMessage,
+  sendBatchDroneMessages,
+  checkNumberExists,
+  getChatInfo,
+  getClientStats,
 };
