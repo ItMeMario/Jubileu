@@ -1,4 +1,5 @@
 const { handleConfigMenu } = require("../views/configViews");
+const { handleDroneMenu } = require("../views/droneViews");
 const { createInterface } = require("readline");
 const { initializeAllConfigs } = require("../utils/initialize");
 
@@ -19,12 +20,13 @@ async function initializeApp() {
 
   const answer = await new Promise((resolve) => {
     rl.question(
-      'Pressione Enter para continuar ou digite "config" para configurar: ',
+      'Pressione Enter para continuar, digite "config" para configurar ou "drone" para drone: ',
       resolve
     );
   });
 
   const normalized = (answer || "").toString().trim().toLowerCase();
+
   if (normalized === "config") {
     try {
       await handleConfigMenu(rl);
@@ -34,6 +36,17 @@ async function initializeApp() {
       rl.close();
     }
     return false; // Indica que o app não deve continuar após configuração
+  }
+
+  if (normalized === "drone") {
+    try {
+      await handleDroneMenu(rl);
+    } catch (err) {
+      console.error("Erro no menu de drone:", err);
+    } finally {
+      rl.close();
+    }
+    return false; // Indica que o app não deve continuar após drone
   }
 
   rl.close();
