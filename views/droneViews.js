@@ -10,7 +10,7 @@ async function handleDroneMenu(rl) {
     console.log("3. Ver lista atual de números");
     console.log("4. Limpar lista de números");
     console.log("5. Executar disparo de drone");
-    console.log("0. Voltar ao menu principal");
+    console.log("0. Sair");
     console.log("=".repeat(50));
 
     const choice = await new Promise((resolve) => {
@@ -36,9 +36,9 @@ async function handleDroneMenu(rl) {
         await executarDisparoDrone(rl);
         break;
       case "0":
-        console.log("Voltando ao menu principal...");
-        running = false;
-        break;
+    console.log("Saindo do sistema...");
+        rl.close();
+        process.exit(0);
       default:
         console.log("Opção inválida! Tente novamente.");
         break;
