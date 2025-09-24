@@ -1,3 +1,6 @@
+// views/droneViews.js
+const droneController = require("../controllers/droneController");
+
 async function handleDroneMenu(rl) {
   let running = true;
 
@@ -21,7 +24,7 @@ async function handleDroneMenu(rl) {
 
     switch (option) {
       case "1":
-        await listarMensagensDisponiveis();
+        await listarMensagens();
         break;
       case "2":
         await adicionarNumerosDisparo(rl);
@@ -36,7 +39,7 @@ async function handleDroneMenu(rl) {
         await executarDisparoDrone(rl);
         break;
       case "0":
-    console.log("Saindo do sistema...");
+        console.log("Saindo do sistema...");
         rl.close();
         process.exit(0);
       default:
@@ -46,9 +49,13 @@ async function handleDroneMenu(rl) {
   }
 }
 
-async function listarMensagensDisponiveis() {
+async function listarMensagens() {
   console.log("\n--- LISTAR MENSAGENS DISPONÍVEIS ---");
-  console.log("Funcionalidade em desenvolvimento...");
+
+  const mensagens = await droneController.listarMensagens();
+
+  mensagens.forEach((msg) => console.log(msg));
+
   await pausar();
 }
 
