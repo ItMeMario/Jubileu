@@ -278,6 +278,122 @@ async function obterEstatisticasNumeros() {
   }
 }
 
+/**
+ * Obtém status de conexão do WhatsApp
+ * @returns {Promise<Object>} - Status formatado para a view
+ */
+async function obterStatusCliente() {
+  try {
+    const status = await droneService.verificarStatusCliente();
+
+    const statusTexto = {
+      CONNECTED: "✅ Conectado",
+      OPENING: "🔄 Conectando...",
+      QRCODE: "📱 Aguardando QR Code",
+      LOADING_SCREEN: "⏳ Carregando...",
+      UNPAIRED: "❌ Desconectado",
+      UNPAIRED_IDLE: "😴 Inativo",
+      UNKNOWN: "❓ Status desconhecido",
+    };
+
+    return {
+      sucesso: status.success,
+      conectado: status.connected,
+      status: status.state,
+      statusTexto: statusTexto[status.state] || `❓ ${status.state}`,
+      info: status.info,
+      erro: status.error,
+    };
+  } catch (error) {
+    return {
+      sucesso: false,
+      conectado: false,
+      statusTexto: "❌ Erro ao verificar status",
+      erro: error.message,
+    };
+  }
+}
+
+/**
+ * Executa disparo de drone com mensagem selecionada
+ * @param {number} mensagemIndex - Índice da mensagem (baseado em 1)
+ * @param {number} batchSize - Tamanho do batch
+ * @param {Function} onProgress - Callback de progresso
+ * @param {Function} onBatchComplete - Callback entre batches
+ * @returns {Promise<Object>} - Resultado do disparo
+ */
+async function executarDisparoDrone(
+  mensagemIndex,
+  batchSize = 200,
+  onProgress = null,
+  onBatchComplete = null
+) {
+  try {
+    // Verifica se há números cadastrados
+    const listaNumeros = await droneService.listarNumeros();
+    if (!listaNumeros.success || listaNumeros.numbers.length === 0) {
+      return {
+        sucesso: false,
+        mensagem:
+          "Nenhum número cadastrado para disparo. Adicione números primeiro.",
+      };
+    }
+
+    // Busca mensagens disponíveis
+    const mensagens = await droneService.listarMensagensDisponiveis();
+    if (!mensagens || mensagens.length === 0) {
+      return {
+        sucesso: false,
+        mensagem: "Nenhuma mensagem disponível para disparo.",
+      };
+    }
+
+    // Valida índice da mensagem
+    const mensagemIndex0 = mensagemIndex - 1; // Converte para índice base 0
+    if (mensagemIndex0 < 0 || mensagemIndex0 >= mensagens.length) {
+      return {
+        sucesso: false,
+        mensagem: "Mensagem selecionada inválida.",
+      };
+    }
+
+    const mensagemSelecionada = mensagens[mensagemIndex0];
+
+    // Executa disparo completo
+    const resultado = await droneService.executarDisparoCompleto(
+      mensagemSelecionada.id,
+      batchSize,
+      onProgress,
+      onBatchComplete
+    );
+
+    return {
+      sucesso: resultado.success,
+      mensagem: resultado.message || "Disparo finalizado",
+      detalhes: {
+        mensagemUsada: {
+          id: mensagemSelecionada.id,
+          conteudo: mensagemSelecionada.message_content,
+          locale: mensagemSelecionada.locale,
+        },
+        totalNumeros: resultado.totalNumeros,
+        totalBatches: resultado.totalBatches,
+        batchesProcessados: resultado.batchesProcessados,
+        totalEnviados: resultado.totalEnviados,
+        totalFalhas: resultado.totalFalhas,
+        batches: resultado.batches,
+      },
+      erro: resultado.error,
+    };
+  } catch (error) {
+    console.error("Erro no controller ao executar disparo:", error);
+    return {
+      sucesso: false,
+      mensagem: `Erro interno: ${error.message}`,
+    };
+  }
+}
+
 // Funções auxiliares
 
 /**
@@ -349,4 +465,6 @@ module.exports = {
   removerNumero,
   limparListaCompleta,
   obterEstatisticasNumeros,
+  obterStatusCliente,
+  executarDisparoDrone,
 };
