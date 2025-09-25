@@ -3,6 +3,9 @@ const { handleDroneMenu } = require("../views/droneViews");
 const { createInterface } = require("readline");
 const { initializeAllConfigs } = require("../utils/initialize");
 
+// Variável global para o readline persistente
+let persistentRl = null;
+
 async function initializeApp() {
   // Inicializa arquivos, pastas e banco de dados primeiro
   try {
@@ -53,7 +56,70 @@ async function initializeApp() {
   return true; // Indica que o app pode continuar
 }
 
+// Nova função para manter o terminal interativo
+function startPersistentTerminal() {
+  if (persistentRl) {
+    persistentRl.close();
+  }
+
+  persistentRl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  console.log(
+    '\n📝 Terminal interativo ativo. Digite "config" ou "drone" a qualquer momento...\n'
+  );
+
+  persistentRl.on("line", async (input) => {
+    const command = input.trim().toLowerCase();
+
+    if (command === "config") {
+      console.log("\n🔧 Abrindo menu de configuração...\n");
+      try {
+        await handleConfigMenu(persistentRl);
+        console.log("\n✅ Configuração finalizada. Bot continua rodando...");
+        console.log(
+          '📝 Digite "config" ou "drone" para acessar os menus novamente.\n'
+        );
+      } catch (err) {
+        console.error("Erro no menu de configuração:", err);
+      }
+    } else if (command === "drone") {
+      console.log("\n🚁 Abrindo menu de drone...\n");
+      try {
+        await handleDroneMenu(persistentRl);
+        console.log("\n✅ Menu drone finalizado. Bot continua rodando...");
+        console.log(
+          '📝 Digite "config" ou "drone" para acessar os menus novamente.\n'
+        );
+      } catch (err) {
+        console.error("Erro no menu de drone:", err);
+      }
+    }
+  });
+
+  // Cleanup quando o processo for finalizado
+  process.on("SIGINT", () => {
+    console.log("\n👋 Finalizando aplicação...");
+    if (persistentRl) {
+      persistentRl.close();
+    }
+    process.exit(0);
+  });
+}
+
+// Função para fechar o terminal persistente
+function closePersistentTerminal() {
+  if (persistentRl) {
+    persistentRl.close();
+    persistentRl = null;
+  }
+}
+
 module.exports = {
   initializeApp,
   handleConfigMenu,
+  startPersistentTerminal,
+  closePersistentTerminal,
 };

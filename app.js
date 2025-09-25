@@ -1,7 +1,10 @@
 // app.js
 const { initializeAllConfigs } = require("./utils/initialize");
 const { client, startScout } = require("./client/client");
-const { initializeApp } = require("./controllers/configController");
+const {
+  initializeApp,
+  startPersistentTerminal,
+} = require("./controllers/configController");
 const messageHandler = require("./handlers/message");
 const { debug } = require("./services/debugService");
 
@@ -41,6 +44,12 @@ async function startApp() {
       } catch (error) {
         await debug("❌ Erro ao iniciar sistema de lembretes:", error);
       }
+
+      // 🔥 NOVA FUNCIONALIDADE: Inicia o terminal interativo após a conexão
+      // Usa setTimeout para garantir que seja executado após todos os outros listeners
+      setTimeout(() => {
+        startPersistentTerminal();
+      }, 1000);
     });
 
     client.on("message", messageHandler);
