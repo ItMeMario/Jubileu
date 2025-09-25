@@ -13,7 +13,7 @@ async function handleDroneMenu(rl) {
     console.log("3. Ver lista atual de números");
     console.log("4. Limpar lista de números");
     console.log("5. Executar disparo de drone");
-    console.log("0. Sair");
+    console.log("0. Voltar ao menu principal");
     console.log("=".repeat(50));
 
     const choice = await new Promise((resolve) => {
@@ -39,9 +39,9 @@ async function handleDroneMenu(rl) {
         await executarDisparoDrone(rl);
         break;
       case "0":
-        console.log("Saindo do sistema...");
-        rl.close();
-        process.exit(0);
+        console.log("Voltando ao menu principal...");
+        running = false; // Sai do loop e retorna ao menu principal
+        break;
       default:
         console.log("Opção inválida! Tente novamente.");
         break;
@@ -194,7 +194,7 @@ async function limparListaNumeros(rl) {
     return;
   }
 
-  console.log(`⚠️  Você tem ${lista.total} número(s) cadastrado(s).`);
+  console.log(`⚠️ Você tem ${lista.total} número(s) cadastrado(s).`);
   console.log("Esta ação irá remover TODOS os números da lista.");
   console.log("");
 
