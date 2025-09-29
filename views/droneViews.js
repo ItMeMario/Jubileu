@@ -65,11 +65,10 @@ async function listarMensagens() {
 
 async function adicionarNumerosDisparo(rl) {
   console.log("\n--- ADICIONAR NÚMEROS PARA DISPARO ---");
-  console.log("Você pode inserir números das seguintes formas:");
-  console.log("• Um número por vez: 11999999999");
-  console.log("• Múltiplos separados por vírgula: 11999999999, 21888888888");
-  console.log("• Formato brasileiro: (11) 99999-9999");
-  console.log("• Com código do país: +5511999999999");
+  console.log("• Formato: 55 + DDD + número (ex: 5547991234567)");
+  console.log("• Múltiplos: 5547991234567, 5548988888888, 5511999999999");
+  console.log("• Aceita formatação: +55 (47) 99123-4567");
+  console.log("⚠️  Código 55 obrigatório para números brasileiros!");
   console.log("• Cole vários números (um por linha)");
   console.log("");
 

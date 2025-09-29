@@ -3,7 +3,7 @@ const { getDatabaseConnection } = require("../utils/initialize");
 const {
   convertToWhatsAppFormat,
   validateMultipleNumbers,
-} = require("../utils/telNumberConversor");
+} = require("../utils/validateNumber");
 const { client } = require("../client/client");
 const { smartDelay } = require("../utils/delay");
 

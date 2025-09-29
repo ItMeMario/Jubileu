@@ -1,321 +1,226 @@
 // utils/validateNumber.js
-const { client } = require("../whatsapp/client");
-const { convertToWhatsAppFormat } = require("./telNumberConversor");
+const { isValidDDD } = require("../aliases/dddAliases");
 
 /**
- * Verifica se um número existe no WhatsApp
- * @param {string} whatsappFormat - Número no formato do WhatsApp (ex: 5511999999999@c.us)
- * @returns {Promise<Object>} - Resultado da verificação
+ * Remove todos os caracteres não numéricos do número
+ * @param {string} number - Número de telefone
+ * @returns {string} - Número apenas com dígitos
  */
-async function verificarNumeroExisteWhatsApp(whatsappFormat) {
-  try {
-    // Remove @c.us se estiver presente para usar getNumberId
-    const numeroLimpo = whatsappFormat.replace("@c.us", "");
-
-    // Usa a função getNumberId do WhatsApp Web.js
-    const numberId = await client.getNumberId(numeroLimpo);
-
-    return {
-      existe: numberId !== null,
-      numberId: numberId,
-      numeroTestado: whatsappFormat,
-    };
-  } catch (error) {
-    return {
-      existe: false,
-      numberId: null,
-      numeroTestado: whatsappFormat,
-      erro: error.message,
-    };
-  }
+function cleanNumber(number) {
+  return number.toString().replace(/\D/g, "");
 }
 
 /**
- * Para números brasileiros de 11 dígitos, testa com e sem o 9º dígito
- * @param {string} numeroOriginal - Número original inserido pelo usuário
- * @returns {Promise<Object>} - Resultado da validação com ambas as variações
+ * Valida se número tem formato brasileiro válido
+ * @param {string} cleanedNumber - Número limpo (apenas dígitos)
+ * @returns {Object} - Resultado da validação
  */
-async function validarNumeroBrasileiro11Digitos(numeroOriginal) {
-  try {
-    const resultado = {
-      numeroOriginal: numeroOriginal,
-      variacoes: [],
-      numeroValido: null,
-      multiplosValidos: false,
-      erro: null,
-    };
-
-    // Converte o número original
-    const conversaoOriginal = await convertToWhatsAppFormat(numeroOriginal);
-
-    if (!conversaoOriginal.success) {
-      resultado.erro = `Erro na conversão: ${conversaoOriginal.error}`;
-      return resultado;
-    }
-
-    // Se não for brasileiro de 11 dígitos, retorna conversão simples
-    if (
-      conversaoOriginal.numberType !== "brazilian" &&
-      conversaoOriginal.numberType !== "brazilian_assumed"
-    ) {
-      const verificacao = await verificarNumeroExisteWhatsApp(
-        conversaoOriginal.whatsappFormat
-      );
-      resultado.variacoes.push({
-        numeroConvertido: conversaoOriginal,
-        verificacao: verificacao,
-      });
-
-      if (verificacao.existe) {
-        resultado.numeroValido = conversaoOriginal;
-      } else {
-        resultado.erro = "Número não existe no WhatsApp";
-      }
-
-      return resultado;
-    }
-
-    // Para números brasileiros, verifica se tem 11 dígitos (DDD + 9 dígitos)
-    const numeroLimpo = conversaoOriginal.cleanedNumber;
-    const numeroBrasileiroSemPais = numeroLimpo.startsWith("55")
-      ? numeroLimpo.substring(2)
-      : numeroLimpo;
-
-    if (numeroBrasileiroSemPais.length !== 11) {
-      // Se não tem 11 dígitos, testa apenas a conversão original
-      const verificacao = await verificarNumeroExisteWhatsApp(
-        conversaoOriginal.whatsappFormat
-      );
-      resultado.variacoes.push({
-        numeroConvertido: conversaoOriginal,
-        verificacao: verificacao,
-      });
-
-      if (verificacao.existe) {
-        resultado.numeroValido = conversaoOriginal;
-      } else {
-        resultado.erro = "Número não existe no WhatsApp";
-      }
-
-      return resultado;
-    }
-
-    // Testa a versão original primeiro
-    const verificacaoOriginal = await verificarNumeroExisteWhatsApp(
-      conversaoOriginal.whatsappFormat
-    );
-    resultado.variacoes.push({
-      tipo: "original",
-      numeroConvertido: conversaoOriginal,
-      verificacao: verificacaoOriginal,
-    });
-
-    // Gera a versão alternativa (com ou sem 9)
-    let numeroAlternativo;
-    const ddd = numeroBrasileiroSemPais.substring(0, 2);
-    const restante = numeroBrasileiroSemPais.substring(2);
-
-    if (restante.startsWith("9")) {
-      // Remove o 9 (celular novo -> celular antigo)
-      numeroAlternativo = ddd + restante.substring(1);
-    } else if (
-      restante.length === 8 &&
-      !["2", "3", "4", "5"].includes(restante[0])
-    ) {
-      // Adiciona o 9 (celular antigo -> celular novo)
-      numeroAlternativo = ddd + "9" + restante;
-    } else {
-      // Não é um padrão reconhecido para alternativa
-      if (verificacaoOriginal.existe) {
-        resultado.numeroValido = conversaoOriginal;
-      } else {
-        resultado.erro = "Número não existe no WhatsApp";
-      }
-      return resultado;
-    }
-
-    // Converte a versão alternativa
-    const numeroComPais = "55" + numeroAlternativo;
-    const conversaoAlternativa = {
-      success: true,
-      originalNumber: numeroOriginal,
-      cleanedNumber: numeroComPais,
-      finalNumber: numeroComPais,
-      whatsappFormat: numeroComPais + "@c.us",
-      numberType: "brazilian",
-    };
-
-    // Verifica se a versão alternativa existe
-    const verificacaoAlternativa = await verificarNumeroExisteWhatsApp(
-      conversaoAlternativa.whatsappFormat
-    );
-    resultado.variacoes.push({
-      tipo: "alternativa",
-      numeroConvertido: conversaoAlternativa,
-      verificacao: verificacaoAlternativa,
-    });
-
-    // Determina qual versão usar
-    const originalExiste = verificacaoOriginal.existe;
-    const alternativaExiste = verificacaoAlternativa.existe;
-
-    if (originalExiste && alternativaExiste) {
-      resultado.multiplosValidos = true;
-      resultado.numeroValido = conversaoOriginal; // Prefere o original
-      resultado.erro =
-        "ATENÇÃO: Ambas as versões (com e sem 9) existem no WhatsApp! Usando versão original.";
-    } else if (originalExiste) {
-      resultado.numeroValido = conversaoOriginal;
-    } else if (alternativaExiste) {
-      resultado.numeroValido = conversaoAlternativa;
-    } else {
-      resultado.erro =
-        "Número não existe no WhatsApp em nenhuma das variações testadas";
-    }
-
-    return resultado;
-  } catch (error) {
+function validateBrazilianFormat(cleanedNumber) {
+  // Deve começar com 55 (código do país obrigatório)
+  if (!cleanedNumber.startsWith("55")) {
     return {
-      numeroOriginal: numeroOriginal,
-      variacoes: [],
-      numeroValido: null,
-      multiplosValidos: false,
-      erro: `Erro durante validação: ${error.message}`,
+      valid: false,
+      error: "Número brasileiro deve começar com código do país 55",
     };
   }
-}
 
-/**
- * Valida uma lista de números em lote
- * @param {Array<Object>} numerosLista - Array de objetos com números da memória
- * @param {Function} onProgress - Callback de progresso
- * @returns {Promise<Object>} - Resultado da validação em lote
- */
-async function validarListaNumerosWhatsApp(numerosLista, onProgress = null) {
-  const resultado = {
-    totalProcessados: 0,
-    numerosValidos: [],
-    numerosInvalidos: [],
-    numerosComAlternativa: [],
-    multiplosValidos: [],
-    erros: [],
+  // Remove o código do país
+  const withoutCountryCode = cleanedNumber.substring(2);
+
+  // Deve ter 10 ou 11 dígitos após o 55
+  if (withoutCountryCode.length !== 10 && withoutCountryCode.length !== 11) {
+    return {
+      valid: false,
+      error: `Número brasileiro deve ter 10 ou 11 dígitos após o código 55. Encontrados: ${withoutCountryCode.length}`,
+    };
+  }
+
+  const ddd = withoutCountryCode.substring(0, 2);
+  const restante = withoutCountryCode.substring(2);
+
+  // Valida DDD
+  if (!isValidDDD(ddd)) {
+    return {
+      valid: false,
+      error: `DDD ${ddd} não é válido no Brasil`,
+    };
+  }
+
+  // Para números de 11 dígitos (celular) - DEVE começar com 9
+  if (withoutCountryCode.length === 11) {
+    const firstDigit = restante[0];
+    if (firstDigit !== "9") {
+      return {
+        valid: false,
+        error: `Celular com 11 dígitos deve começar com 9. Encontrado: ${firstDigit}`,
+      };
+    }
+  }
+
+  // Para números de 10 dígitos (pode ser fixo OU celular antigo sem 9)
+  if (withoutCountryCode.length === 10) {
+    const firstDigit = restante[0];
+    // Aceita fixo (2-5) ou celular antigo (6-9)
+    if (!["2", "3", "4", "5", "6", "7", "8", "9"].includes(firstDigit)) {
+      return {
+        valid: false,
+        error: `Número com 10 dígitos deve começar com 2-9. Encontrado: ${firstDigit}`,
+      };
+    }
+  }
+
+  return {
+    valid: true,
+    ddd: ddd,
+    number: restante,
+    isCelular:
+      withoutCountryCode.length === 11 ||
+      (withoutCountryCode.length === 10 &&
+        ["6", "7", "8", "9"].includes(restante[0])),
   };
-
-  for (let i = 0; i < numerosLista.length; i++) {
-    const numeroObj = numerosLista[i];
-
-    try {
-      if (onProgress) {
-        onProgress({
-          atual: i + 1,
-          total: numerosLista.length,
-          numero: numeroObj.originalNumber,
-          status: "validando",
-        });
-      }
-
-      const validacao = await validarNumeroBrasileiro11Digitos(
-        numeroObj.originalNumber
-      );
-      resultado.totalProcessados++;
-
-      if (validacao.numeroValido) {
-        const numeroAtualizado = {
-          ...numeroObj,
-          // Atualiza com a versão validada
-          whatsappFormat: validacao.numeroValido.whatsappFormat,
-          finalNumber: validacao.numeroValido.finalNumber,
-          validado: true,
-          versaoAlternativaUsada:
-            validacao.numeroValido !== validacao.variacoes[0]?.numeroConvertido,
-        };
-
-        resultado.numerosValidos.push(numeroAtualizado);
-
-        if (validacao.multiplosValidos) {
-          resultado.multiplosValidos.push({
-            numero: numeroObj.originalNumber,
-            aviso: validacao.erro,
-          });
-        }
-
-        if (numeroAtualizado.versaoAlternativaUsada) {
-          resultado.numerosComAlternativa.push({
-            original: numeroObj.whatsappFormat,
-            corrigido: validacao.numeroValido.whatsappFormat,
-            numeroOriginal: numeroObj.originalNumber,
-          });
-        }
-      } else {
-        resultado.numerosInvalidos.push({
-          ...numeroObj,
-          motivoInvalido: validacao.erro,
-        });
-      }
-
-      if (onProgress) {
-        onProgress({
-          atual: i + 1,
-          total: numerosLista.length,
-          numero: numeroObj.originalNumber,
-          status: validacao.numeroValido ? "valido" : "invalido",
-        });
-      }
-
-      // Pequeno delay entre validações para não sobrecarregar
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    } catch (error) {
-      resultado.erros.push({
-        numero: numeroObj.originalNumber,
-        erro: error.message,
-      });
-
-      if (onProgress) {
-        onProgress({
-          atual: i + 1,
-          total: numerosLista.length,
-          numero: numeroObj.originalNumber,
-          status: "erro",
-          erro: error.message,
-        });
-      }
-    }
-  }
-
-  return resultado;
 }
 
 /**
- * Aplica correções na lista de números em memória
- * @param {Array<Object>} numerosValidos - Números validados
- * @param {Array<Object>} numbersInMemory - Referência para o array em memória
- * @returns {Object} - Resultado da aplicação
+ * Valida formato internacional (não brasileiro)
+ * @param {string} cleanedNumber - Número limpo
+ * @returns {Object} - Resultado da validação
  */
-function aplicarCorrecoes(numerosValidos, numbersInMemory) {
-  try {
-    // Limpa a lista atual
-    numbersInMemory.length = 0;
-
-    // Adiciona apenas os números válidos
-    numbersInMemory.push(...numerosValidos);
-
+function validateInternationalFormat(cleanedNumber) {
+  // Básico: deve ter entre 7 e 15 dígitos e não começar com 55
+  if (cleanedNumber.length < 7 || cleanedNumber.length > 15) {
     return {
-      success: true,
-      message: `Lista atualizada com ${numerosValidos.length} números válidos`,
-      totalCorrigidos: numerosValidos.filter((n) => n.versaoAlternativaUsada)
-        .length,
+      valid: false,
+      error: `Número internacional deve ter entre 7 e 15 dígitos. Encontrados: ${cleanedNumber.length}`,
     };
+  }
+
+  if (cleanedNumber.startsWith("55")) {
+    return {
+      valid: false,
+      error: "Número com código 55 deve seguir formato brasileiro",
+    };
+  }
+
+  return {
+    valid: true,
+  };
+}
+
+/**
+ * Função principal para converter número de telefone
+ * @param {string} phoneNumber - Número de telefone em qualquer formato
+ * @returns {Promise<Object>} - Objeto com resultado da conversão
+ */
+async function convertToWhatsAppFormat(phoneNumber) {
+  try {
+    if (!phoneNumber || phoneNumber.trim() === "") {
+      return {
+        success: false,
+        error: "Número de telefone não pode ser vazio",
+        originalNumber: phoneNumber,
+        whatsappFormat: null,
+      };
+    }
+
+    const cleaned = cleanNumber(phoneNumber);
+
+    if (cleaned.length < 7) {
+      return {
+        success: false,
+        error: "Número muito curto (menos de 7 dígitos)",
+        originalNumber: phoneNumber,
+        whatsappFormat: null,
+      };
+    }
+
+    // Verifica se é brasileiro (código 55)
+    if (cleaned.startsWith("55")) {
+      const validation = validateBrazilianFormat(cleaned);
+
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error,
+          originalNumber: phoneNumber,
+          whatsappFormat: null,
+        };
+      }
+
+      const whatsappFormat = cleaned + "@c.us";
+
+      return {
+        success: true,
+        error: null,
+        originalNumber: phoneNumber,
+        cleanedNumber: cleaned,
+        finalNumber: cleaned,
+        whatsappFormat: whatsappFormat,
+        numberType: validation.isCelular
+          ? "brazilian_mobile"
+          : "brazilian_fixed",
+        ddd: validation.ddd,
+      };
+    } else {
+      // Número internacional
+      const validation = validateInternationalFormat(cleaned);
+
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error,
+          originalNumber: phoneNumber,
+          whatsappFormat: null,
+        };
+      }
+
+      const whatsappFormat = cleaned + "@c.us";
+
+      return {
+        success: true,
+        error: null,
+        originalNumber: phoneNumber,
+        cleanedNumber: cleaned,
+        finalNumber: cleaned,
+        whatsappFormat: whatsappFormat,
+        numberType: "international",
+      };
+    }
   } catch (error) {
     return {
       success: false,
-      error: `Erro ao aplicar correções: ${error.message}`,
+      error: "Erro interno na conversão: " + error.message,
+      originalNumber: phoneNumber,
+      whatsappFormat: null,
     };
   }
 }
 
+/**
+ * Valida múltiplos números de uma vez
+ * @param {Array<string>} phoneNumbers - Array de números
+ * @returns {Promise<Object>} - Resultado da validação em lote
+ */
+async function validateMultipleNumbers(phoneNumbers) {
+  const results = {
+    valid: [],
+    invalid: [],
+    total: phoneNumbers.length,
+  };
+
+  for (const number of phoneNumbers) {
+    const result = await convertToWhatsAppFormat(number);
+    if (result.success) {
+      results.valid.push(result);
+    } else {
+      results.invalid.push(result);
+    }
+  }
+
+  return results;
+}
+
 module.exports = {
-  verificarNumeroExisteWhatsApp,
-  validarNumeroBrasileiro11Digitos,
-  validarListaNumerosWhatsApp,
-  aplicarCorrecoes,
+  convertToWhatsAppFormat,
+  validateMultipleNumbers,
+  cleanNumber,
 };
