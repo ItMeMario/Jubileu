@@ -6,6 +6,7 @@ const CityHandlers = require("./ipc/cityHandlers");
 const IndicadoresHandlers = require("./ipc/indicadoresHandlers");
 const ModoDevHandlers = require("./ipc/modoDevHandlers");
 const DataBaseHandlers = require("./ipc/dataBaseHandlers");
+const DroneHandlers = require("./ipc/droneHandlers");
 
 class IPCManager {
   constructor() {
@@ -17,6 +18,7 @@ class IPCManager {
       indicadores: null,
       modoDev: null,
       dataBase: null,
+      drone: null,
     };
   }
 
@@ -30,6 +32,7 @@ class IPCManager {
       this.handlers.indicadores = new IndicadoresHandlers();
       this.handlers.modoDev = new ModoDevHandlers();
       this.handlers.dataBase = new DataBaseHandlers();
+      this.handlers.drone = new DroneHandlers();
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -51,6 +54,9 @@ class IPCManager {
 
       // Registra handlers de banco de dados
       this.registerDataBaseHandlers();
+
+      // Registra handlers de drone
+      this.registerDroneHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -281,7 +287,7 @@ class IPCManager {
       "modo-dev-get-current-mode",
       this.handlers.modoDev.getCurrentMode.bind(this.handlers.modoDev)
     );
-    // REMOVIDO: modo-dev-get-detailed-status - não será mais usado
+    
     ipcMain.handle(
       "modo-dev-toggle-group-mode",
       this.handlers.modoDev.toggleGroupMode.bind(this.handlers.modoDev)
@@ -334,6 +340,44 @@ class IPCManager {
     console.log("Handlers de banco de dados registrados");
   }
 
+  registerDroneHandlers() {
+    // Handlers de drone
+    ipcMain.handle(
+      "drone-listar-mensagens",
+      this.handlers.drone.listarMensagens.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-adicionar-numeros",
+      this.handlers.drone.adicionarNumeros.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-listar-numeros-atuais",
+      this.handlers.drone.listarNumerosAtuais.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-remover-numero",
+      this.handlers.drone.removerNumero.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-limpar-lista-completa",
+      this.handlers.drone.limparListaCompleta.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-obter-estatisticas-numeros",
+      this.handlers.drone.obterEstatisticasNumeros.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-obter-status-cliente",
+      this.handlers.drone.obterStatusCliente.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-executar-disparo-drone",
+      this.handlers.drone.executarDisparoDrone.bind(this.handlers.drone)
+    );
+
+    console.log("Handlers de drone registrados");
+  }
+
   removeAllHandlers() {
     const events = [
       // WhatsApp events - MANTER
@@ -361,7 +405,7 @@ class IPCManager {
       "message-get-locales",
       "message-get-available-options",
       "message-check-completeness",
-      // NOVOS: eventos de áudio
+      //eventos de áudio
       "message-add-message-with-audio",
       "message-update-message-with-audio",
       "message-get-audio-files",
@@ -401,6 +445,16 @@ class IPCManager {
       "database-get-database-info",
       "database-get-primary-city",
       "database-get-overview",
+
+      // Drone events - NOVOS
+      "drone-listar-mensagens",
+      "drone-adicionar-numeros",
+      "drone-listar-numeros-atuais",
+      "drone-remover-numero",
+      "drone-limpar-lista-completa",
+      "drone-obter-estatisticas-numeros",
+      "drone-obter-status-cliente",
+      "drone-executar-disparo-drone",
     ];
 
     events.forEach((event) => {
