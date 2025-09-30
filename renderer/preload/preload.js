@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Métodos para comunicação com o processo principal
   startWhatsApp: () => ipcRenderer.invoke("start-whatsapp"),
   openConfig: () => ipcRenderer.invoke("open-config"),
+  openDrone: () => ipcRenderer.invoke("open-drone"),
   stopWhatsApp: () => ipcRenderer.invoke("stop-whatsapp"),
 
   // Listeners para eventos do processo principal

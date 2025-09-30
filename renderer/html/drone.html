@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drone - Disparo de Mensagens</title>
+    <link rel="stylesheet" href="../css/globalCss.css">
+    <link rel="stylesheet" href="../css/drone.css">
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>🚁 Drone</h2>
+        <button class="menu-item active" data-section="mensagens">
+            📝 Mensagens
+        </button>
+        <button class="menu-item" data-section="numeros">
+            📱 Números
+        </button>
+        <button class="menu-item" data-section="disparo">
+            🚀 Disparo
+        </button>
+        <button class="menu-item" data-section="status">
+            📊 Status
+        </button>
+    </div>
+
+    <div class="content">
+        <div id="status" class="status-message"></div>
+
+        <!-- Seção de Mensagens -->
+        <div id="mensagens-section" class="section active">
+            <div class="content-header">
+                <h1>Mensagens Disponíveis</h1>
+                <p>Selecione uma mensagem para usar no disparo</p>
+            </div>
+
+            <div class="messages-list" id="messages-list">
+                <div class="empty-state">Carregando mensagens...</div>
+            </div>
+
+            <div class="selected-message-info" id="selected-message-info" style="display: none;">
+                <h3>Mensagem Selecionada</h3>
+                <div class="message-preview">
+                    <div class="message-locale" id="preview-locale"></div>
+                    <div class="message-content" id="preview-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Números -->
+        <div id="numeros-section" class="section">
+            <div class="content-header">
+                <h1>Gerenciar Números</h1>
+                <p>Adicione e gerencie os números para disparo</p>
+            </div>
+
+            <!-- Estatísticas -->
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="stat-total">0</div>
+                        <div class="stat-label">Total de Números</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🇧🇷</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="stat-br">0</div>
+                        <div class="stat-label">Números BR</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🌍</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="stat-int">0</div>
+                        <div class="stat-label">Internacionais</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Adicionar Números -->
+            <div class="add-numbers-section">
+                <h3>Adicionar Números</h3>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="manual">✍️ Manual</button>
+                    <button class="tab-btn" data-tab="file">📂 Arquivo</button>
+                </div>
+
+                <!-- Aba Manual -->
+                <div id="manual-tab" class="tab-content active">
+                    <div class="form-group">
+                        <label for="numbers-input">Números (um por linha ou separados por vírgula):</label>
+                        <textarea id="numbers-input" rows="6"
+                            placeholder="Ex:&#10;5547999887766&#10;5547988776655&#10;ou: 5547999887766, 5547988776655"></textarea>
+                        <div class="hint">Formato: DDI + DDD + Número (sem espaços ou caracteres especiais)</div>
+                    </div>
+                    <div class="button-group">
+                        <button id="btn-add-numbers" class="btn btn-primary">Adicionar Números</button>
+                        <button id="btn-clear-input" class="btn btn-secondary">Limpar</button>
+                    </div>
+                </div>
+
+                <!-- Aba Arquivo -->
+                <div id="file-tab" class="tab-content">
+                    <div class="file-upload-area" id="file-upload-area">
+                        <div class="upload-prompt">
+                            <div class="upload-icon">📂</div>
+                            <h4>Arraste um arquivo aqui</h4>
+                            <p>Ou clique para selecionar</p>
+                            <div class="supported-formats">
+                                Formatos suportados: TXT, CSV
+                            </div>
+                        </div>
+                        <input type="file" id="file-input" accept=".txt,.csv" style="display: none;">
+                    </div>
+                    <div id="file-info" class="file-info" style="display: none;">
+                        <div class="file-preview">
+                            <div class="file-icon">📄</div>
+                            <div id="file-name" class="file-name"></div>
+                            <div id="file-count" class="file-count"></div>
+                            <button id="btn-remove-file" class="btn-remove-file">❌ Remover</button>
+                        </div>
+                    </div>
+                    <div class="button-group">
+                        <button id="btn-import-file" class="btn btn-primary" disabled>Importar Números</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Números -->
+            <div class="numbers-list-section">
+                <div class="list-header">
+                    <h3>Números Cadastrados</h3>
+                    <button id="btn-clear-all" class="btn btn-danger">🗑️ Limpar Todos</button>
+                </div>
+                <div class="numbers-list" id="numbers-list">
+                    <div class="empty-state">Nenhum número cadastrado</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Disparo -->
+        <div id="disparo-section" class="section">
+            <div class="content-header">
+                <h1>Executar Disparo</h1>
+                <p>Configure e execute o disparo de mensagens</p>
+            </div>
+
+            <!-- Verificação de Requisitos -->
+            <div class="requirements-check" id="requirements-check">
+                <h3>Verificação de Requisitos</h3>
+                <div class="requirement-item" id="req-whatsapp">
+                    <span class="req-icon">⏳</span>
+                    <span class="req-text">WhatsApp conectado</span>
+                </div>
+                <div class="requirement-item" id="req-message">
+                    <span class="req-icon">⏳</span>
+                    <span class="req-text">Mensagem selecionada</span>
+                </div>
+                <div class="requirement-item" id="req-numbers">
+                    <span class="req-icon">⏳</span>
+                    <span class="req-text">Números cadastrados</span>
+                </div>
+            </div>
+
+            <!-- Configuração do Disparo -->
+            <div class="disparo-config" id="disparo-config">
+                <h3>Configuração do Disparo</h3>
+
+                <div class="form-group">
+                    <label for="message-select">Mensagem:</label>
+                    <select id="message-select">
+                        <option value="">Selecione uma mensagem...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="batch-size">Tamanho do Batch:</label>
+                    <input type="number" id="batch-size" value="200" min="1" max="1000">
+                    <div class="hint">Quantidade de números por lote (recomendado: 200)</div>
+                </div>
+
+                <div class="disparo-summary" id="disparo-summary">
+                    <h4>Resumo do Disparo</h4>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span class="summary-label">Total de números:</span>
+                            <span class="summary-value" id="summary-total">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Batches estimados:</span>
+                            <span class="summary-value" id="summary-batches">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="btn-execute-disparo" class="btn btn-primary" disabled>
+                        🚀 Executar Disparo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progresso do Disparo -->
+            <div class="disparo-progress" id="disparo-progress" style="display: none;">
+                <h3>Disparo em Andamento</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-info">
+                    <span id="progress-text">Iniciando...</span>
+                </div>
+                <div class="progress-details">
+                    <div class="detail-item">
+                        <span>Enviados:</span>
+                        <span id="progress-sent">0</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Falhas:</span>
+                        <span id="progress-failed">0</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>Batch atual:</span>
+                        <span id="progress-batch">0/0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultados -->
+            <div class="disparo-results" id="disparo-results" style="display: none;">
+                <h3>Resultados do Disparo</h3>
+                <div class="results-content" id="results-content"></div>
+            </div>
+        </div>
+
+        <!-- Seção de Status -->
+        <div id="status-section" class="section">
+            <div class="content-header">
+                <h1>Status do Sistema</h1>
+                <p>Monitore o status da conexão e do sistema</p>
+            </div>
+
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="status-header">
+                        <span class="status-icon">📱</span>
+                        <h3>WhatsApp</h3>
+                    </div>
+                    <div class="status-content">
+                        <div class="status-indicator" id="whatsapp-status">
+                            <span class="indicator-dot">⚪</span>
+                            <span class="indicator-text">Verificando...</span>
+                        </div>
+                        <button id="btn-refresh-status" class="btn btn-secondary">🔄 Atualizar</button>
+                    </div>
+                </div>
+
+                <div class="status-card">
+                    <div class="status-header">
+                        <span class="status-icon">📊</span>
+                        <h3>Estatísticas</h3>
+                    </div>
+                    <div class="status-content" id="status-stats">
+                        <div class="stat-row">
+                            <span>Total de números:</span>
+                            <span id="status-total">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>Mensagens disponíveis:</span>
+                            <span id="status-messages">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../guiScripts/droneRenderer.js"></script>
+</body>
+
+</html>

@@ -2,8 +2,22 @@
 const droneControllerGui = require("../../controllers/droneControllerGui");
 
 class DroneHandlers {
-  constructor() {
+  constructor(windowManager) {
+    this.windowManager = windowManager;
     console.log("DroneHandlers inicializado");
+  }
+
+  /**
+   * Abre a janela do Drone
+   */
+  async openDrone() {
+    try {
+      console.log("Abrindo janela Drone...");
+      return this.windowManager.openDroneWindow();
+    } catch (error) {
+      console.error("Erro ao abrir janela Drone:", error);
+      return { success: false, error: error.message };
+    }
   }
 
   /**

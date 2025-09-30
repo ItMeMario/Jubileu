@@ -6,7 +6,11 @@ const {
   closeConfigWindow,
   getConfigWindow,
 } = require("../renderer/guiConfig/configWindow");
-
+const {
+  createDroneWindow,
+  closeDroneWindow,
+  getDroneWindow,
+} = require("../renderer/guiConfig/droneWindow");
 
 class WindowManager {
   constructor() {
@@ -74,6 +78,39 @@ class WindowManager {
       return {
         success: false,
         message: "Erro ao fechar configurações: " + error.message,
+      };
+    }
+  }
+
+  // Métodos para janela de Drone
+  openDroneWindow() {
+    try {
+      console.log("Abrindo Drone...");
+      let win = getDroneWindow();
+      if (!win) {
+        win = createDroneWindow();
+      } else {
+        win.focus();
+      }
+      return { success: true, message: "Janela Drone aberta" };
+    } catch (error) {
+      console.error("Erro ao abrir Drone:", error);
+      return {
+        success: false,
+        message: "Erro ao abrir Drone: " + error.message,
+      };
+    }
+  }
+
+  closeDroneWindow() {
+    try {
+      closeDroneWindow();
+      return { success: true, message: "Janela Drone fechada" };
+    } catch (error) {
+      console.error("Erro ao fechar Drone:", error);
+      return {
+        success: false,
+        message: "Erro ao fechar Drone: " + error.message,
       };
     }
   }

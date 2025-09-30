@@ -32,7 +32,7 @@ class IPCManager {
       this.handlers.indicadores = new IndicadoresHandlers();
       this.handlers.modoDev = new ModoDevHandlers();
       this.handlers.dataBase = new DataBaseHandlers();
-      this.handlers.drone = new DroneHandlers();
+      this.handlers.drone = new DroneHandlers(modules.windowManager); // 🆕 Passa windowManager
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -287,7 +287,7 @@ class IPCManager {
       "modo-dev-get-current-mode",
       this.handlers.modoDev.getCurrentMode.bind(this.handlers.modoDev)
     );
-    
+
     ipcMain.handle(
       "modo-dev-toggle-group-mode",
       this.handlers.modoDev.toggleGroupMode.bind(this.handlers.modoDev)
@@ -341,6 +341,12 @@ class IPCManager {
   }
 
   registerDroneHandlers() {
+    // 🆕 Handler para abrir janela do Drone
+    ipcMain.handle(
+      "open-drone",
+      this.handlers.drone.openDrone.bind(this.handlers.drone)
+    );
+
     // Handlers de drone
     ipcMain.handle(
       "drone-listar-mensagens",
@@ -380,11 +386,11 @@ class IPCManager {
 
   removeAllHandlers() {
     const events = [
-      // WhatsApp events - MANTER
+      // WhatsApp events
       "start-whatsapp",
       "stop-whatsapp",
 
-      // Config events - MANTER
+      // Config events
       "open-config",
       "config-close-window",
       "config-get-system-config",
@@ -395,7 +401,7 @@ class IPCManager {
       "config-export-settings",
       "config-import-settings",
 
-      // Message events - ADICIONAR AS NOVAS LINHAS
+      // Message events
       "message-get-messages",
       "message-add-message",
       "message-update-message",
@@ -405,13 +411,12 @@ class IPCManager {
       "message-get-locales",
       "message-get-available-options",
       "message-check-completeness",
-      //eventos de áudio
       "message-add-message-with-audio",
       "message-update-message-with-audio",
       "message-get-audio-files",
       "message-validate-audio-file",
 
-      // City events - MANTER TODOS
+      // City events
       "city-get-cities",
       "city-add-city",
       "city-update-city",
@@ -420,14 +425,14 @@ class IPCManager {
       "city-get-primary",
       "city-get-by-id",
 
-      // Indicadores events - MANTER TODOS
+      // Indicadores events
       "indicadores-get-statistics",
       "indicadores-get-hourly-statistics",
       "indicadores-get-summary-statistics",
       "indicadores-clear-statistics",
       "indicadores-export-to-txt",
 
-      // Modo Dev events - MANTER TODOS
+      // Modo Dev events
       "modo-dev-toggle-dev-mode",
       "modo-dev-toggle-debug-mode",
       "modo-dev-set-scout-time",
@@ -438,7 +443,7 @@ class IPCManager {
       "modo-dev-get-available-locales",
       "modo-dev-set-locale",
 
-      // Database events - MANTER TODOS
+      // Database events
       "database-get-all-tables",
       "database-get-table-info",
       "database-get-table-counts",
@@ -446,7 +451,8 @@ class IPCManager {
       "database-get-primary-city",
       "database-get-overview",
 
-      // Drone events - NOVOS
+      // Drone events
+      "open-drone", // 🆕 NOVO
       "drone-listar-mensagens",
       "drone-adicionar-numeros",
       "drone-listar-numeros-atuais",

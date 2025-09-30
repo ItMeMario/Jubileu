@@ -2,6 +2,7 @@
 const btnStart = document.getElementById("btn-start");
 const btnStop = document.getElementById("btn-stop");
 const btnConfig = document.getElementById("btn-config");
+const btnDrone = document.getElementById("btn-drone");
 const statusDiv = document.getElementById("status");
 const qrContainer = document.getElementById("qr-container");
 const qrImage = document.getElementById("qr-image");
@@ -131,6 +132,22 @@ btnConfig.addEventListener("click", async () => {
     console.error("Erro ao abrir configurações:", error);
     showStatus("Erro ao abrir configurações", "error");
     hideButtonLoading(btnConfig, "Configurações");
+  }
+});
+
+// 🆕 EVENT LISTENER DO BOTÃO DRONE
+btnDrone.addEventListener("click", async () => {
+  try {
+    showButtonLoading(btnDrone, "Abrindo...");
+
+    const result = await window.electronAPI.openDrone();
+    showStatus(result.message, result.success ? "success" : "error");
+
+    hideButtonLoading(btnDrone, "🚁 Drone");
+  } catch (error) {
+    console.error("Erro ao abrir Drone:", error);
+    showStatus("Erro ao abrir Drone", "error");
+    hideButtonLoading(btnDrone, "🚁 Drone");
   }
 });
 
