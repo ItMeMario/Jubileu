@@ -4,6 +4,7 @@ class DroneManager {
   constructor() {
     this.selectedMessageIndex = null;
     this.selectedMessageData = null;
+    this.allMessages = []; // Armazena todas as mensagens carregadas
     this.currentNumbers = [];
     this.currentFile = null;
     this.isDisparoRunning = false;
@@ -138,10 +139,11 @@ class DroneManager {
     // Números - Clear All
     this.btnClearAll.addEventListener("click", () => this.clearAllNumbers());
 
-    // Disparo
-    this.messageSelect.addEventListener("change", () =>
-      this.updateDisparoSummary()
-    );
+    // Disparo - EVENTO PRINCIPAL DE SELEÇÃO DE MENSAGEM
+    this.messageSelect.addEventListener("change", (e) => {
+      this.selectMessageFromDisparo();
+    });
+
     this.batchSize.addEventListener("input", () => this.updateDisparoSummary());
     this.btnExecuteDisparo.addEventListener("click", () =>
       this.executeDisparo()
@@ -179,6 +181,7 @@ class DroneManager {
     } else if (sectionName === "disparo") {
       this.checkRequirements();
       this.loadMessagesForSelect();
+      this.updateDisparoSummary();
     } else if (sectionName === "status") {
       this.refreshStatus();
     }
@@ -211,6 +214,8 @@ class DroneManager {
         return;
       }
 
+      // Armazena as mensagens para uso posterior
+      this.allMessages = result.mensagens;
       this.renderMessages(result.mensagens);
     } catch (error) {
       console.error("Erro ao carregar mensagens:", error);
@@ -219,6 +224,7 @@ class DroneManager {
   }
 
   renderMessages(mensagens) {
+    // Renderiza as mensagens apenas para VISUALIZAÇÃO (sem seleção)
     this.messagesList.innerHTML = mensagens
       .map(
         (msg) => `
@@ -233,31 +239,8 @@ class DroneManager {
       )
       .join("");
 
-    // Add click listeners
-    document.querySelectorAll(".message-item").forEach((item) => {
-      item.addEventListener("click", () => {
-        const index = parseInt(item.dataset.index);
-        this.selectMessage(index, mensagens);
-      });
-    });
-  }
-
-  selectMessage(index, mensagens) {
-    this.selectedMessageIndex = index;
-    this.selectedMessageData = mensagens.find((m) => m.indice === index);
-
-    // Update UI
-    document.querySelectorAll(".message-item").forEach((item) => {
-      item.classList.remove("selected");
-    });
-    document.querySelector(`[data-index="${index}"]`).classList.add("selected");
-
-    // Show preview
-    this.previewLocale.textContent = this.selectedMessageData.locale;
-    this.previewContent.textContent = this.selectedMessageData.conteudo;
-    this.selectedMessageInfo.style.display = "block";
-
-    this.showStatus("Mensagem selecionada", "success");
+    // NÃO adiciona event listeners - apenas visualização
+    // A seleção agora acontece apenas na seção de Disparo
   }
 
   // ========================================
@@ -545,16 +528,25 @@ class DroneManager {
       const result = await window.droneAPI.listarMensagens();
 
       if (result.success && result.mensagens) {
+        // Armazena as mensagens
+        this.allMessages = result.mensagens;
+
+        // Popula o select
         this.messageSelect.innerHTML =
           '<option value="">Selecione uma mensagem...</option>' +
           result.mensagens
             .map(
               (msg) =>
-                `<option value="${msg.indice}">${msg.indice}. (${
+                `<option value="${msg.indice}">#${msg.indice} - (${
                   msg.locale
                 }) ${msg.conteudo.substring(0, 50)}...</option>`
             )
             .join("");
+
+        // Se já tinha uma mensagem selecionada, mantém a seleção
+        if (this.selectedMessageIndex !== null) {
+          this.messageSelect.value = this.selectedMessageIndex;
+        }
 
         if (this.statusMessages) {
           this.statusMessages.textContent = result.mensagens.length;
@@ -565,8 +557,40 @@ class DroneManager {
     }
   }
 
-  updateDisparoSummary() {
+  // NOVA FUNÇÃO: Seleciona mensagem através do select na seção Disparo
+  selectMessageFromDisparo() {
     const selectedIndex = parseInt(this.messageSelect.value);
+
+    if (!selectedIndex || isNaN(selectedIndex)) {
+      // Desseleciona se não houver valor válido
+      this.selectedMessageIndex = null;
+      this.selectedMessageData = null;
+      this.checkRequirements();
+      this.updateDisparoSummary();
+      return;
+    }
+
+    // Encontra a mensagem selecionada
+    const selectedMessage = this.allMessages.find(
+      (m) => m.indice === selectedIndex
+    );
+
+    if (selectedMessage) {
+      this.selectedMessageIndex = selectedIndex;
+      this.selectedMessageData = selectedMessage;
+
+      this.showStatus(`Mensagem #${selectedIndex} selecionada`, "success");
+
+      // Atualiza os requisitos e resumo
+      this.checkRequirements();
+      this.updateDisparoSummary();
+    } else {
+      console.error("Mensagem não encontrada:", selectedIndex);
+      this.showStatus("Erro ao selecionar mensagem", "error");
+    }
+  }
+
+  updateDisparoSummary() {
     const batchSize = parseInt(this.batchSize.value) || 200;
     const totalNumbers = this.currentNumbers.length;
 
@@ -580,7 +604,7 @@ class DroneManager {
       return;
     }
 
-    const selectedIndex = parseInt(this.messageSelect.value);
+    const selectedIndex = this.selectedMessageIndex;
     const batchSize = parseInt(this.batchSize.value) || 200;
 
     if (!selectedIndex) {
