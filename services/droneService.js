@@ -6,7 +6,7 @@ const {
 } = require("../utils/validateNumber");
 const { client } = require("../client/client");
 const { smartDelay } = require("../utils/delay");
-const { processVariables } = require("../utils/messageReader"); // ✅ NOVO: Importa processador de variáveis
+const { processVariables } = require("../utils/messageReader");
 
 // Array em memória para armazenar os números
 let numbersInMemory = [];
@@ -106,7 +106,6 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
           });
         }
 
-
         let name = "";
         try {
           const contact = await client.getContactById(numero.whatsappFormat);
@@ -145,9 +144,9 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
           });
         }
 
-        // Delay entre envios (exceto no último)
+        // Delay aleatório entre 3-10 segundos entre envios (exceto no último)
         if (i < numeros.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 3000)); // 3 segundos fixo
+          await smartDelay({ minMs: 3000, maxMs: 10000 });
         }
       } catch (error) {
         resultados.falhas++;
@@ -283,7 +282,7 @@ async function executarDisparoCompleto(
       // Delay entre batches (exceto no último)
       if (batchIndex < totalBatches - 1) {
         console.log("⏳ Aguardando delay entre batches...");
-        await smartDelay(); // Usa o delay inteligente
+        await smartDelay(); // Usa o delay inteligente padrão (1-3 minutos)
       }
     }
 
