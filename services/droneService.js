@@ -6,6 +6,7 @@ const {
 } = require("../utils/validateNumber");
 const { client } = require("../client/client");
 const { smartDelay } = require("../utils/delay");
+const { processVariables } = require("../utils/messageReader"); // ✅ NOVO: Importa processador de variáveis
 
 // Array em memória para armazenar os números
 let numbersInMemory = [];
@@ -105,11 +106,26 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
           });
         }
 
-        // Envia mensagem
-        await client.sendMessage(
-          numero.whatsappFormat,
-          mensagem.message_content
+
+        let name = "";
+        try {
+          const contact = await client.getContactById(numero.whatsappFormat);
+          name = contact.pushname?.split(" ")[0] || "";
+        } catch (contactError) {
+          console.warn(
+            `Não foi possível obter contato para ${numero.whatsappFormat}:`,
+            contactError.message
+          );
+          // Continua sem o nome caso não consiga buscar o contato
+        }
+
+        const mensagemPersonalizada = processVariables(
+          mensagem.message_content,
+          { name }
         );
+
+        // Envia mensagem personalizada
+        await client.sendMessage(numero.whatsappFormat, mensagemPersonalizada);
 
         resultados.enviados++;
         resultados.results.push({
