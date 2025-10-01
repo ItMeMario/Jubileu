@@ -13,7 +13,7 @@ body {
 /* Sidebar */
 .sidebar {
     width: 250px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
     color: white;
     padding: 20px;
     display: flex;
@@ -52,7 +52,7 @@ body {
 
 .menu-item.active {
     background: white;
-    color: #667eea;
+    color: #25d366;
     font-weight: bold;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
@@ -158,7 +158,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
     border-radius: 12px;
 }
 
@@ -201,13 +201,13 @@ body {
 }
 
 .tab-btn:hover {
-    color: #667eea;
+    color: #25d366;
 }
 
 .tab-btn.active {
-    color: #667eea;
+    color: #25d366;
     font-weight: bold;
-    border-bottom-color: #667eea;
+    border-bottom-color: #25d366;
 }
 
 .tab-content {
@@ -251,7 +251,7 @@ body {
 .form-group textarea:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #25d366;
 }
 
 .form-group textarea {
@@ -281,13 +281,13 @@ body {
 }
 
 .file-upload-area:hover {
-    border-color: #667eea;
-    background: #f8f9ff;
+    border-color: #25d366;
+    background: #f0fdf4;
 }
 
 .file-upload-area.dragover {
-    border-color: #667eea;
-    background: #f0f3ff;
+    border-color: #25d366;
+    background: #dcfce7;
     transform: scale(1.02);
 }
 
@@ -334,9 +334,9 @@ body {
     align-items: center;
     gap: 15px;
     padding: 15px;
-    background: #f8f9ff;
+    background: #f0fdf4;
     border-radius: 6px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #25d366;
 }
 
 .file-icon {
@@ -350,7 +350,7 @@ body {
 }
 
 .file-count {
-    color: #667eea;
+    color: #25d366;
     font-weight: bold;
     font-size: 14px;
 }
@@ -419,7 +419,7 @@ body {
 }
 
 .number-item:hover {
-    background: #f8f9ff;
+    background: #f0fdf4;
 }
 
 .number-item:last-child {
@@ -445,8 +445,8 @@ body {
 .number-type {
     display: inline-block;
     padding: 2px 8px;
-    background: #e3f2fd;
-    color: #1976d2;
+    background: #dcfce7;
+    color: #166534;
     border-radius: 4px;
     font-size: 11px;
     font-weight: 500;
@@ -475,17 +475,16 @@ body {
 .message-item {
     padding: 15px;
     border-bottom: 1px solid #f0f0f0;
-    cursor: pointer;
     transition: background 0.3s;
 }
 
 .message-item:hover {
-    background: #f8f9ff;
+    background: #f0fdf4;
 }
 
 .message-item.selected {
-    background: #e3f2fd;
-    border-left: 4px solid #667eea;
+    background: #dcfce7;
+    border-left: 4px solid #25d366;
 }
 
 .message-header {
@@ -498,7 +497,7 @@ body {
 .message-locale {
     display: inline-block;
     padding: 4px 10px;
-    background: #667eea;
+    background: #25d366;
     color: white;
     border-radius: 4px;
     font-size: 12px;
@@ -532,9 +531,9 @@ body {
 
 .message-preview {
     padding: 15px;
-    background: #f8f9ff;
+    background: #f0fdf4;
     border-radius: 6px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #25d366;
 }
 
 .message-preview .message-locale {
@@ -604,7 +603,7 @@ body {
 }
 
 .disparo-summary {
-    background: #f0f3ff;
+    background: #f0fdf4;
     border-radius: 6px;
     padding: 15px;
     margin-top: 20px;
@@ -633,7 +632,7 @@ body {
 }
 
 .summary-value {
-    color: #667eea;
+    color: #25d366;
     font-weight: bold;
     font-size: 16px;
 }
@@ -663,7 +662,7 @@ body {
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, #25d366 0%, #128c7e 100%);
     width: 0%;
     transition: width 0.3s;
     display: flex;
@@ -706,7 +705,7 @@ body {
     display: block;
     font-size: 20px;
     font-weight: bold;
-    color: #667eea;
+    color: #25d366;
 }
 
 /* Results */
@@ -804,7 +803,7 @@ body {
 }
 
 .stat-row span:last-child {
-    color: #667eea;
+    color: #25d366;
     font-weight: bold;
 }
 
