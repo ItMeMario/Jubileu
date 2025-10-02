@@ -268,3 +268,38 @@ Corrigido bug no menu de horários, que não estava trazendo os últimos horári
 Removido o texto “opcional” dos CRUDs.
 
 📅 Data de Lançamento: 18/09/2025
+
+📌 Patch Notes - Versão 0.0.8
+
+✨ Novidades
+
+Agora é possível navegar pelo terminal enquanto o bot continua executando em segundo plano, tanto na versão GUI quanto na CLI, trazendo mais liberdade e praticidade durante o uso.
+
+Implementada a nova funcionalidade de disparo de mensagens privadas chamada "Drone", expandindo as possibilidades de comunicação automatizada.
+
+Adicionado um novo tipo de mensagem "drone", utilizado exclusivamente pela nova função do sistema.
+
+Incluída nova tela dedicada ao Drone na interface GUI, oferecendo uma forma intuitiva de gerenciar disparos.
+
+Incluída nova tela dedicada ao Drone na interface CLI, permitindo o uso completo da funcionalidade também em modo terminal.
+
+📦 Como o Drone funciona:
+O Drone é responsável por enviar automaticamente mensagens do tipo "drone" cadastradas no sistema. Ele exige que o bot esteja conectado para funcionar corretamente.
+
+Os números de destino podem ser cadastrados manualmente ou importados por meio de arquivos .txt ou .csv. e precisam seguir o seguinte formato: DDD+número
+
+Após a confirmação do disparo, o Drone envia as mensagens com intervalo aleatório entre 3 e 10 segundos.
+
+As mensagens são enviadas em lotes de até 200 envios, seguidos de uma pausa automática de 1 a 3 minutos antes de continuar o processo.
+
+O ciclo se repete até que todas as mensagens cadastradas sejam enviadas.
+
+🛠️ Melhorias
+
+[Nenhuma melhoria registrada nesta versão]
+
+🐛 Correções
+
+[Nenhuma correção registrada nesta versão]
+
+📅 Data de Lançamento: 02/10/2025
