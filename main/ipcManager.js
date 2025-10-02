@@ -6,6 +6,7 @@ const CityHandlers = require("./ipc/cityHandlers");
 const IndicadoresHandlers = require("./ipc/indicadoresHandlers");
 const ModoDevHandlers = require("./ipc/modoDevHandlers");
 const DataBaseHandlers = require("./ipc/dataBaseHandlers");
+const DroneHandlers = require("./ipc/droneHandlers");
 
 class IPCManager {
   constructor() {
@@ -17,6 +18,7 @@ class IPCManager {
       indicadores: null,
       modoDev: null,
       dataBase: null,
+      drone: null,
     };
   }
 
@@ -30,6 +32,7 @@ class IPCManager {
       this.handlers.indicadores = new IndicadoresHandlers();
       this.handlers.modoDev = new ModoDevHandlers();
       this.handlers.dataBase = new DataBaseHandlers();
+      this.handlers.drone = new DroneHandlers(modules.windowManager); // 🆕 Passa windowManager
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -51,6 +54,9 @@ class IPCManager {
 
       // Registra handlers de banco de dados
       this.registerDataBaseHandlers();
+
+      // Registra handlers de drone
+      this.registerDroneHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -281,7 +287,7 @@ class IPCManager {
       "modo-dev-get-current-mode",
       this.handlers.modoDev.getCurrentMode.bind(this.handlers.modoDev)
     );
-    // REMOVIDO: modo-dev-get-detailed-status - não será mais usado
+
     ipcMain.handle(
       "modo-dev-toggle-group-mode",
       this.handlers.modoDev.toggleGroupMode.bind(this.handlers.modoDev)
@@ -334,13 +340,57 @@ class IPCManager {
     console.log("Handlers de banco de dados registrados");
   }
 
+  registerDroneHandlers() {
+    // 🆕 Handler para abrir janela do Drone
+    ipcMain.handle(
+      "open-drone",
+      this.handlers.drone.openDrone.bind(this.handlers.drone)
+    );
+
+    // Handlers de drone
+    ipcMain.handle(
+      "drone-listar-mensagens",
+      this.handlers.drone.listarMensagens.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-adicionar-numeros",
+      this.handlers.drone.adicionarNumeros.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-listar-numeros-atuais",
+      this.handlers.drone.listarNumerosAtuais.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-remover-numero",
+      this.handlers.drone.removerNumero.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-limpar-lista-completa",
+      this.handlers.drone.limparListaCompleta.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-obter-estatisticas-numeros",
+      this.handlers.drone.obterEstatisticasNumeros.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-obter-status-cliente",
+      this.handlers.drone.obterStatusCliente.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-executar-disparo-drone",
+      this.handlers.drone.executarDisparoDrone.bind(this.handlers.drone)
+    );
+
+    console.log("Handlers de drone registrados");
+  }
+
   removeAllHandlers() {
     const events = [
-      // WhatsApp events - MANTER
+      // WhatsApp events
       "start-whatsapp",
       "stop-whatsapp",
 
-      // Config events - MANTER
+      // Config events
       "open-config",
       "config-close-window",
       "config-get-system-config",
@@ -351,7 +401,7 @@ class IPCManager {
       "config-export-settings",
       "config-import-settings",
 
-      // Message events - ADICIONAR AS NOVAS LINHAS
+      // Message events
       "message-get-messages",
       "message-add-message",
       "message-update-message",
@@ -361,13 +411,12 @@ class IPCManager {
       "message-get-locales",
       "message-get-available-options",
       "message-check-completeness",
-      // NOVOS: eventos de áudio
       "message-add-message-with-audio",
       "message-update-message-with-audio",
       "message-get-audio-files",
       "message-validate-audio-file",
 
-      // City events - MANTER TODOS
+      // City events
       "city-get-cities",
       "city-add-city",
       "city-update-city",
@@ -376,14 +425,14 @@ class IPCManager {
       "city-get-primary",
       "city-get-by-id",
 
-      // Indicadores events - MANTER TODOS
+      // Indicadores events
       "indicadores-get-statistics",
       "indicadores-get-hourly-statistics",
       "indicadores-get-summary-statistics",
       "indicadores-clear-statistics",
       "indicadores-export-to-txt",
 
-      // Modo Dev events - MANTER TODOS
+      // Modo Dev events
       "modo-dev-toggle-dev-mode",
       "modo-dev-toggle-debug-mode",
       "modo-dev-set-scout-time",
@@ -394,13 +443,24 @@ class IPCManager {
       "modo-dev-get-available-locales",
       "modo-dev-set-locale",
 
-      // Database events - MANTER TODOS
+      // Database events
       "database-get-all-tables",
       "database-get-table-info",
       "database-get-table-counts",
       "database-get-database-info",
       "database-get-primary-city",
       "database-get-overview",
+
+      // Drone events
+      "open-drone", // 🆕 NOVO
+      "drone-listar-mensagens",
+      "drone-adicionar-numeros",
+      "drone-listar-numeros-atuais",
+      "drone-remover-numero",
+      "drone-limpar-lista-completa",
+      "drone-obter-estatisticas-numeros",
+      "drone-obter-status-cliente",
+      "drone-executar-disparo-drone",
     ];
 
     events.forEach((event) => {

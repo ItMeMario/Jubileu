@@ -1,342 +1,470 @@
-const { getDatabaseConnection } = require("../utils/initialize");
-const {
-  convertToWhatsAppFormat,
-  validatePhoneNumber,
-} = require("../utils/numberConverter");
+// controllers/droneController.js
 const droneService = require("../services/droneService");
 
-// Armazenamento temporário em memória para os números
-let numbersList = [];
+async function listarMensagens() {
+  try {
+    const mensagens = await droneService.listarMensagensDisponiveis();
+
+    if (!mensagens || mensagens.length === 0) {
+      return ["Nenhuma mensagem disponível."];
+    }
+
+    // monta as mensagens já formatadas para a view
+    return mensagens.map(
+      (mensagem, index) =>
+        `${index + 1}. (${mensagem.locale}) ${mensagem.message_content}`
+    );
+  } catch (error) {
+    console.error("Erro no controller de mensagens:", error);
+    return ["Erro ao carregar mensagens."];
+  }
+}
 
 /**
- * Lista todas as mensagens do tipo 'drone' do banco de dados
- * @returns {Array} Array de mensagens drone
+ * Adiciona número(s) de telefone à lista
+ * @param {string|Array<string>} input - Número único ou array de números
+ * @returns {Promise<Object>} - Resultado formatado para a view
  */
-async function listDroneMessages() {
+async function adicionarNumeros(input) {
   try {
-    const db = await getDatabaseConnection();
+    let resultado;
 
-    const query = `
-      SELECT id, locale, message_type, message_content, created_at 
-      FROM messages 
-      WHERE message_type = 'drone' 
-      ORDER BY created_at DESC
-    `;
+    // Verifica se é um array ou string única
+    if (Array.isArray(input)) {
+      resultado = await droneService.adicionarMultiplosNumeros(input);
+    } else {
+      // Se é string única, mas contém vírgulas ou quebras de linha, divide
+      const numeros = input
+        .split(/[,\n;]/)
+        .map((n) => n.trim())
+        .filter((n) => n.length > 0);
 
-    const messages = await new Promise((resolve, reject) => {
-      db.all(query, [], (err, rows) => {
-        if (err) {
-          reject(err);
+      if (numeros.length > 1) {
+        resultado = await droneService.adicionarMultiplosNumeros(numeros);
+      } else {
+        const single = await droneService.adicionarNumero(input.trim());
+        // Converte resultado single para formato similar ao múltiplo
+        if (single.success) {
+          resultado = {
+            success: true,
+            message: single.message,
+            added: [single.number],
+            errors: [],
+            totalNumbers: single.totalNumbers,
+          };
         } else {
-          resolve(rows);
+          resultado = {
+            success: false,
+            message: single.error,
+            added: [],
+            errors: [
+              { originalNumber: single.originalNumber, error: single.error },
+            ],
+            totalNumbers: 0,
+          };
         }
-      });
+      }
+    }
+
+    return formatarResultadoAdicao(resultado);
+  } catch (error) {
+    console.error("Erro no controller ao adicionar números:", error);
+    return {
+      sucesso: false,
+      mensagens: [`Erro interno: ${error.message}`],
+      detalhes: null,
+    };
+  }
+}
+
+/**
+ * Lista os números atualmente em memória
+ * @returns {Promise<Object>} - Lista formatada para a view
+ */
+async function listarNumerosAtuais() {
+  try {
+    const resultado = await droneService.listarNumeros();
+
+    if (!resultado.success) {
+      return {
+        sucesso: false,
+        mensagens: [resultado.error],
+        numeros: [],
+        total: 0,
+      };
+    }
+
+    if (resultado.numbers.length === 0) {
+      return {
+        sucesso: true,
+        mensagens: ["Nenhum número cadastrado."],
+        numeros: [],
+        total: 0,
+      };
+    }
+
+    // Formata números para exibição
+    const numerosFormatados = resultado.numbers.map((num, index) => {
+      const dataFormatada = new Date(num.addedAt).toLocaleString("pt-BR");
+      const tipoTexto = getTipoTexto(num.numberType);
+
+      return {
+        indice: index + 1,
+        id: num.id,
+        numeroOriginal: num.originalNumber,
+        numeroWhatsapp: num.whatsappFormat,
+        tipo: tipoTexto,
+        adicionadoEm: dataFormatada,
+        textoExibicao: `${index + 1}. ${num.originalNumber} → ${
+          num.whatsappFormat
+        } [${tipoTexto}]`,
+      };
     });
 
-    return messages;
+    return {
+      sucesso: true,
+      mensagens: [`Total de números: ${resultado.total}`],
+      numeros: numerosFormatados,
+      total: resultado.total,
+    };
   } catch (error) {
-    throw new Error(`Erro ao buscar mensagens drone: ${error.message}`);
+    console.error("Erro no controller ao listar números:", error);
+    return {
+      sucesso: false,
+      mensagens: [`Erro interno: ${error.message}`],
+      numeros: [],
+      total: 0,
+    };
   }
-}
-
-/**
- * Adiciona números à lista temporária em memória
- * @param {Array} numbers Array de números em vários formatos
- * @returns {Object} Resultado da operação com estatísticas
- */
-async function addNumbersToList(numbers) {
-  const result = {
-    added: 0,
-    invalid: [],
-    duplicates: 0,
-    totalCount: 0,
-  };
-
-  try {
-    for (const number of numbers) {
-      const cleanNumber = number.trim();
-
-      if (!cleanNumber) continue;
-
-      // Validar número
-      if (!validatePhoneNumber(cleanNumber)) {
-        result.invalid.push(cleanNumber);
-        continue;
-      }
-
-      // Converter para formato WhatsApp
-      const whatsappNumber = convertToWhatsAppFormat(cleanNumber);
-
-      // Verificar duplicata
-      if (numbersList.includes(whatsappNumber)) {
-        result.duplicates++;
-        continue;
-      }
-
-      // Adicionar à lista
-      numbersList.push(whatsappNumber);
-      result.added++;
-    }
-
-    result.totalCount = numbersList.length;
-    return result;
-  } catch (error) {
-    throw new Error(`Erro ao adicionar números: ${error.message}`);
-  }
-}
-
-/**
- * Retorna a lista atual de números
- * @returns {Array} Lista de números em formato WhatsApp
- */
-async function showNumbersList() {
-  return [...numbersList]; // Retorna uma cópia para evitar modificações externas
-}
-
-/**
- * Limpa a lista de números da memória
- * @returns {boolean} Sucesso da operação
- */
-async function clearNumbersList() {
-  try {
-    const previousCount = numbersList.length;
-    numbersList = [];
-
-    console.log(`🗑️ ${previousCount} números removidos da lista.`);
-    return true;
-  } catch (error) {
-    throw new Error(`Erro ao limpar lista: ${error.message}`);
-  }
-}
-
-/**
- * Busca uma mensagem específica por ID
- * @param {number} messageId ID da mensagem
- * @returns {Object} Dados da mensagem
- */
-async function getMessageById(messageId) {
-  try {
-    const db = await getDatabaseConnection();
-
-    const query = `
-      SELECT id, locale, message_type, message_content, created_at 
-      FROM messages 
-      WHERE id = ? AND message_type = 'drone'
-    `;
-
-    const message = await new Promise((resolve, reject) => {
-      db.get(query, [messageId], (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
-      });
-    });
-
-    if (!message) {
-      throw new Error(
-        `Mensagem com ID ${messageId} não encontrada ou não é do tipo drone.`
-      );
-    }
-
-    return message;
-  } catch (error) {
-    throw new Error(`Erro ao buscar mensagem: ${error.message}`);
-  }
-}
-
-/**
- * Executa o disparo drone para todos os números da lista
- * @param {number} messageId ID da mensagem a ser enviada
- * @param {Object} options Opções do disparo
- * @returns {Object} Resultado do disparo com estatísticas
- */
-async function executeDroneDispatch(messageId, options = {}) {
-  const {
-    delayMs = 2000,
-    clearAfterDispatch = true,
-    validateNumbers = false,
-  } = options;
-
-  try {
-    // Verificar se há números na lista
-    if (numbersList.length === 0) {
-      throw new Error("Nenhum número na lista para disparo.");
-    }
-
-    // Verificar se o cliente está conectado
-    if (!droneService.isClientReady()) {
-      throw new Error(
-        "Cliente WhatsApp não está conectado. Aguarde a conexão."
-      );
-    }
-
-    // Buscar a mensagem
-    const message = await getMessageById(messageId);
-
-    console.log(`🚁 Iniciando disparo para ${numbersList.length} números...`);
-    console.log(
-      `💬 Mensagem: "${message.message_content.substring(0, 50)}${
-        message.message_content.length > 50 ? "..." : ""
-      }"`
-    );
-
-    // Validar números se solicitado
-    let validNumbers = [...numbersList];
-    if (validateNumbers) {
-      console.log("🔍 Validando números...");
-      validNumbers = [];
-
-      for (const number of numbersList) {
-        const exists = await droneService.checkNumberExists(number);
-        if (exists) {
-          validNumbers.push(number);
-        } else {
-          console.log(`⚠️ Número não encontrado no WhatsApp: ${number}`);
-        }
-      }
-
-      if (validNumbers.length === 0) {
-        throw new Error("Nenhum número válido encontrado no WhatsApp.");
-      }
-
-      console.log(
-        `✅ ${validNumbers.length} números válidos de ${numbersList.length} verificados`
-      );
-    }
-
-    // Executar disparo usando o service
-    const result = await droneService.sendBatchDroneMessages(
-      validNumbers,
-      message.message_content,
-      delayMs
-    );
-
-    // Log do resultado final
-    console.log(`\n📊 Disparo concluído:`);
-    console.log(`   ✅ Sucessos: ${result.sent}`);
-    console.log(`   ❌ Falhas: ${result.failed}`);
-    console.log(`   📱 Total: ${result.total}`);
-
-    const duration = (result.endTime - result.startTime) / 1000;
-    console.log(`   ⏱️ Duração: ${duration.toFixed(1)}s`);
-
-    if (result.errors.length > 0) {
-      console.log(`\n⚠️ Detalhes dos erros:`);
-      result.errors.forEach((error, index) => {
-        console.log(`   ${index + 1}. ${error}`);
-      });
-    }
-
-    // Limpar lista após disparo se solicitado
-    if (clearAfterDispatch) {
-      numbersList = [];
-      console.log(`🗑️ Lista de números limpa automaticamente.`);
-    }
-
-    return result;
-  } catch (error) {
-    throw new Error(`Erro durante disparo: ${error.message}`);
-  }
-}
-
-/**
- * Retorna estatísticas da lista atual
- * @returns {Object} Estatísticas da lista
- */
-async function getNumbersListStats() {
-  return {
-    count: numbersList.length,
-    numbers: [...numbersList],
-    sample: numbersList.slice(0, 5), // Primeiros 5 números como amostra
-    hasNumbers: numbersList.length > 0,
-  };
 }
 
 /**
  * Remove um número específico da lista
- * @param {string} number Número a ser removido
- * @returns {boolean} Sucesso da operação
+ * @param {number|string} identificador - ID do número ou índice da lista
+ * @returns {Promise<Object>} - Resultado da remoção
  */
-async function removeNumberFromList(number) {
+async function removerNumero(identificador) {
   try {
-    const whatsappNumber = convertToWhatsAppFormat(number);
-    const index = numbersList.indexOf(whatsappNumber);
+    // Se for um índice (número da lista exibida), precisa converter para ID
+    const listaAtual = await droneService.listarNumeros();
 
-    if (index > -1) {
-      numbersList.splice(index, 1);
-      return true;
+    if (!listaAtual.success || listaAtual.numbers.length === 0) {
+      return {
+        sucesso: false,
+        mensagem: "Nenhum número disponível para remoção.",
+      };
     }
 
-    return false;
+    let idParaRemover;
+
+    // Se identificador é um número e menor/igual ao total, trata como índice
+    if (
+      !isNaN(identificador) &&
+      identificador > 0 &&
+      identificador <= listaAtual.numbers.length
+    ) {
+      const indice = parseInt(identificador) - 1; // Converte para índice base 0
+      idParaRemover = listaAtual.numbers[indice].id;
+    } else {
+      // Caso contrário, trata como ID direto
+      idParaRemover = identificador;
+    }
+
+    const resultado = await droneService.removerNumero(idParaRemover);
+
+    if (resultado.success) {
+      return {
+        sucesso: true,
+        mensagem: `Número removido: ${resultado.removedNumber.originalNumber}`,
+        numeroRemovido: resultado.removedNumber,
+        totalRestante: resultado.totalNumbers,
+      };
+    } else {
+      return {
+        sucesso: false,
+        mensagem: resultado.error,
+      };
+    }
   } catch (error) {
-    throw new Error(`Erro ao remover número: ${error.message}`);
+    console.error("Erro no controller ao remover número:", error);
+    return {
+      sucesso: false,
+      mensagem: `Erro interno: ${error.message}`,
+    };
   }
 }
 
 /**
- * Valida todos os números da lista atual
- * @returns {Object} Resultado da validação
+ * Limpa toda a lista de números
+ * @returns {Promise<Object>} - Resultado da operação
  */
-async function validateAllNumbers() {
-  if (numbersList.length === 0) {
-    return { valid: [], invalid: [], total: 0 };
-  }
+async function limparListaCompleta() {
+  try {
+    const resultado = await droneService.limparListaNumeros();
 
-  const result = { valid: [], invalid: [], total: numbersList.length };
-
-  console.log(`🔍 Validando ${numbersList.length} números...`);
-
-  for (let i = 0; i < numbersList.length; i++) {
-    const number = numbersList[i];
-    console.log(`📱 Validando ${i + 1}/${numbersList.length}: ${number}`);
-
-    try {
-      const exists = await droneService.checkNumberExists(number);
-      if (exists) {
-        result.valid.push(number);
-        console.log(`✅ Válido: ${number}`);
-      } else {
-        result.invalid.push(number);
-        console.log(`❌ Inválido: ${number}`);
-      }
-    } catch (error) {
-      result.invalid.push(number);
-      console.log(`❌ Erro ao validar ${number}: ${error.message}`);
+    if (resultado.success) {
+      return {
+        sucesso: true,
+        mensagem: resultado.message,
+        totalRemovidos: resultado.totalRemoved,
+      };
+    } else {
+      return {
+        sucesso: false,
+        mensagem: resultado.error,
+      };
     }
-
-    // Pequeno delay para não sobrecarregar
-    if (i < numbersList.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
+  } catch (error) {
+    console.error("Erro no controller ao limpar lista:", error);
+    return {
+      sucesso: false,
+      mensagem: `Erro interno: ${error.message}`,
+    };
   }
-
-  console.log(`\n📊 Validação concluída:`);
-  console.log(`   ✅ Válidos: ${result.valid.length}`);
-  console.log(`   ❌ Inválidos: ${result.invalid.length}`);
-
-  return result;
 }
 
 /**
- * Configura o cliente WhatsApp no droneService
- * @param {Object} client Cliente WhatsApp
+ * Obtém estatísticas dos números cadastrados
+ * @returns {Promise<Object>} - Estatísticas formatadas
  */
-function setWhatsAppClient(client) {
-  droneService.setWhatsAppClient(client);
-  console.log("📱 Cliente WhatsApp configurado no droneController");
+async function obterEstatisticasNumeros() {
+  try {
+    const resultado = await droneService.obterEstatisticas();
+
+    if (!resultado.success) {
+      return {
+        sucesso: false,
+        mensagem: resultado.error,
+      };
+    }
+
+    const stats = resultado.stats;
+    const resumo = [
+      `Total de números: ${stats.total}`,
+      `Brasileiros: ${stats.porTipo.brazilian}`,
+      `Internacionais: ${stats.porTipo.international}`,
+      `Assumidos como BR: ${stats.porTipo.brazilian_assumed}`,
+    ];
+
+    if (stats.maisAntigo) {
+      const dataAntiga = new Date(stats.maisAntigo.addedAt).toLocaleString(
+        "pt-BR"
+      );
+      resumo.push(
+        `Mais antigo: ${stats.maisAntigo.originalNumber} (${dataAntiga})`
+      );
+    }
+
+    if (stats.maisRecente) {
+      const dataRecente = new Date(stats.maisRecente.addedAt).toLocaleString(
+        "pt-BR"
+      );
+      resumo.push(
+        `Mais recente: ${stats.maisRecente.originalNumber} (${dataRecente})`
+      );
+    }
+
+    return {
+      sucesso: true,
+      estatisticas: stats,
+      resumoTexto: resumo,
+    };
+  } catch (error) {
+    console.error("Erro no controller ao obter estatísticas:", error);
+    return {
+      sucesso: false,
+      mensagem: `Erro interno: ${error.message}`,
+    };
+  }
+}
+
+/**
+ * Obtém status de conexão do WhatsApp
+ * @returns {Promise<Object>} - Status formatado para a view
+ */
+async function obterStatusCliente() {
+  try {
+    const status = await droneService.verificarStatusCliente();
+
+    const statusTexto = {
+      CONNECTED: "✅ Conectado",
+      OPENING: "🔄 Conectando...",
+      QRCODE: "📱 Aguardando QR Code",
+      LOADING_SCREEN: "⏳ Carregando...",
+      UNPAIRED: "❌ Desconectado",
+      UNPAIRED_IDLE: "😴 Inativo",
+      UNKNOWN: "❓ Status desconhecido",
+    };
+
+    return {
+      sucesso: status.success,
+      conectado: status.connected,
+      status: status.state,
+      statusTexto: statusTexto[status.state] || `❓ ${status.state}`,
+      info: status.info,
+      erro: status.error,
+    };
+  } catch (error) {
+    return {
+      sucesso: false,
+      conectado: false,
+      statusTexto: "❌ Erro ao verificar status",
+      erro: error.message,
+    };
+  }
+}
+
+/**
+ * Executa disparo de drone com mensagem selecionada
+ * @param {number} mensagemIndex - Índice da mensagem (baseado em 1)
+ * @param {number} batchSize - Tamanho do batch
+ * @param {Function} onProgress - Callback de progresso
+ * @param {Function} onBatchComplete - Callback entre batches
+ * @returns {Promise<Object>} - Resultado do disparo
+ */
+async function executarDisparoDrone(
+  mensagemIndex,
+  batchSize = 200,
+  onProgress = null,
+  onBatchComplete = null
+) {
+  try {
+    // Verifica se há números cadastrados
+    const listaNumeros = await droneService.listarNumeros();
+    if (!listaNumeros.success || listaNumeros.numbers.length === 0) {
+      return {
+        sucesso: false,
+        mensagem:
+          "Nenhum número cadastrado para disparo. Adicione números primeiro.",
+      };
+    }
+
+    // Busca mensagens disponíveis
+    const mensagens = await droneService.listarMensagensDisponiveis();
+    if (!mensagens || mensagens.length === 0) {
+      return {
+        sucesso: false,
+        mensagem: "Nenhuma mensagem disponível para disparo.",
+      };
+    }
+
+    // Valida índice da mensagem
+    const mensagemIndex0 = mensagemIndex - 1; // Converte para índice base 0
+    if (mensagemIndex0 < 0 || mensagemIndex0 >= mensagens.length) {
+      return {
+        sucesso: false,
+        mensagem: "Mensagem selecionada inválida.",
+      };
+    }
+
+    const mensagemSelecionada = mensagens[mensagemIndex0];
+
+    // Executa disparo completo
+    const resultado = await droneService.executarDisparoCompleto(
+      mensagemSelecionada.id,
+      batchSize,
+      onProgress,
+      onBatchComplete
+    );
+
+    return {
+      sucesso: resultado.success,
+      mensagem: resultado.message || "Disparo finalizado",
+      detalhes: {
+        mensagemUsada: {
+          id: mensagemSelecionada.id,
+          conteudo: mensagemSelecionada.message_content,
+          locale: mensagemSelecionada.locale,
+        },
+        totalNumeros: resultado.totalNumeros,
+        totalBatches: resultado.totalBatches,
+        batchesProcessados: resultado.batchesProcessados,
+        totalEnviados: resultado.totalEnviados,
+        totalFalhas: resultado.totalFalhas,
+        batches: resultado.batches,
+      },
+      erro: resultado.error,
+    };
+  } catch (error) {
+    console.error("Erro no controller ao executar disparo:", error);
+    return {
+      sucesso: false,
+      mensagem: `Erro interno: ${error.message}`,
+    };
+  }
+}
+
+// Funções auxiliares
+
+/**
+ * Formata o resultado da adição de números para a view
+ * @param {Object} resultado - Resultado do service
+ * @returns {Object} - Resultado formatado
+ */
+function formatarResultadoAdicao(resultado) {
+  const mensagens = [];
+
+  if (resultado.success) {
+    mensagens.push(resultado.message);
+
+    if (resultado.added.length > 0) {
+      mensagens.push("Números adicionados:");
+      resultado.added.forEach((num, index) => {
+        const tipoTexto = getTipoTexto(num.numberType);
+        mensagens.push(
+          `  ${index + 1}. ${num.originalNumber} → ${
+            num.whatsappFormat
+          } [${tipoTexto}]`
+        );
+      });
+    }
+
+    if (resultado.errors.length > 0) {
+      mensagens.push("Erros encontrados:");
+      resultado.errors.forEach((erro, index) => {
+        mensagens.push(`  ${index + 1}. ${erro.originalNumber}: ${erro.error}`);
+      });
+    }
+
+    mensagens.push(`Total de números na lista: ${resultado.totalNumbers}`);
+  } else {
+    mensagens.push(resultado.message || "Erro desconhecido");
+  }
+
+  return {
+    sucesso: resultado.success,
+    mensagens: mensagens,
+    detalhes: {
+      adicionados: resultado.added || [],
+      erros: resultado.errors || [],
+      total: resultado.totalNumbers || 0,
+    },
+  };
+}
+
+/**
+ * Converte o tipo do número para texto legível
+ * @param {string} numberType - Tipo do número
+ * @returns {string} - Texto descritivo
+ */
+function getTipoTexto(numberType) {
+  const tipos = {
+    brazilian: "BR",
+    international: "INT",
+    brazilian_assumed: "BR*",
+    unknown: "?",
+  };
+
+  return tipos[numberType] || "?";
 }
 
 module.exports = {
-  listDroneMessages,
-  addNumbersToList,
-  showNumbersList,
-  clearNumbersList,
-  executeDroneDispatch,
-  getMessageById,
-  getNumbersListStats,
-  removeNumberFromList,
-  validateAllNumbers,
-  setWhatsAppClient,
+  listarMensagens,
+  adicionarNumeros,
+  listarNumerosAtuais,
+  removerNumero,
+  limparListaCompleta,
+  obterEstatisticasNumeros,
+  obterStatusCliente,
+  executarDisparoDrone,
 };
