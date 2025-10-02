@@ -144,9 +144,9 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
           });
         }
 
-        // Delay aleatório entre 3-10 segundos entre envios (exceto no último)
+        // Delay aleatório entre 1 minuto e 3 minutos entre envios (exceto no último)
         if (i < numeros.length - 1) {
-          await smartDelay({ minMs: 3000, maxMs: 10000 });
+          await smartDelay({ minMs: 60000, maxMs: 180000 });
         }
       } catch (error) {
         resultados.falhas++;
@@ -279,10 +279,11 @@ async function executarDisparoCompleto(
         }
       }
 
-      // Delay entre batches (exceto no último)
+      // Delay entre batches (exceto no último) - 24 a 26 horas
       if (batchIndex < totalBatches - 1) {
-        console.log("⏳ Aguardando delay entre batches...");
-        await smartDelay(); // Usa o delay inteligente padrão (1-3 minutos)
+        console.log("⏳ Aguardando delay entre batches (24-26 horas)...");
+        // 24 horas = 86400000 ms, 26 horas = 93600000 ms
+        await smartDelay({ minMs: 86400000, maxMs: 93600000 });
       }
     }
 
