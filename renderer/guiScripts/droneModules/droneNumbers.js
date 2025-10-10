@@ -76,7 +76,7 @@ export default class DroneNumbers {
       .map((num) => {
         const nomeDisplay =
           num.nome && num.nome !== "-"
-            ? `<span class="number-name">👤 ${num.nome}</span>`
+            ? `<span class="number-name">${num.nome}</span>`
             : "";
 
         return `
@@ -86,7 +86,6 @@ export default class DroneNumbers {
               ${nomeDisplay}
               <div class="number-meta">
                 <span class="number-type">${num.tipo}</span>
-                <span>${num.dataFormatada}</span>
               </div>
             </div>
             <button class="btn-remove" data-id="${num.id}">Remover</button>
