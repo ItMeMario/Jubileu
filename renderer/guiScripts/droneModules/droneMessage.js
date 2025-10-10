@@ -26,6 +26,11 @@ export default class DroneMessage {
       // Armazena as mensagens para uso posterior
       this.manager.allMessages = result.mensagens;
       this.renderMessages(result.mensagens);
+
+      // Atualiza o status total de mensagens
+      if (this.manager.statusMessages) {
+        this.manager.statusMessages.textContent = result.mensagens.length;
+      }
     } catch (error) {
       console.error("Erro ao carregar mensagens:", error);
       this.manager.utility.showStatus("Erro ao carregar mensagens", "error");

@@ -50,15 +50,6 @@ class DroneManager {
     this.statBr = document.getElementById("stat-br");
     this.statInt = document.getElementById("stat-int");
 
-    // Números - Tabs
-    this.tabBtns = document.querySelectorAll(".tab-btn");
-    this.tabContents = document.querySelectorAll(".tab-content");
-
-    // Números - Manual
-    this.numbersInput = document.getElementById("numbers-input");
-    this.btnAddNumbers = document.getElementById("btn-add-numbers");
-    this.btnClearInput = document.getElementById("btn-clear-input");
-
     // Números - File
     this.fileUploadArea = document.getElementById("file-upload-area");
     this.fileInput = document.getElementById("file-input");
@@ -67,6 +58,9 @@ class DroneManager {
     this.fileCount = document.getElementById("file-count");
     this.btnRemoveFile = document.getElementById("btn-remove-file");
     this.btnImportFile = document.getElementById("btn-import-file");
+
+    // Números - Processing Options
+    this.processingOptions = document.getElementById("processing-options");
 
     // Números - Lista
     this.numbersList = document.getElementById("numbers-list");
@@ -121,29 +115,15 @@ class DroneManager {
       });
     });
 
-    // Tabs
-    this.tabBtns.forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const tab = e.target.dataset.tab;
-        this.navigation.switchTab(tab);
-      });
-    });
-
-    // Números - Manual
-    this.btnAddNumbers.addEventListener("click", () =>
-      this.numbers.addNumbersManual()
-    );
-    this.btnClearInput.addEventListener("click", () => {
-      this.numbersInput.value = "";
-    });
-
     // Números - File Upload
     this.fileUploadArea.addEventListener("click", () => {
       this.fileInput.click();
     });
 
     this.fileInput.addEventListener("change", (e) => {
-      this.numbers.handleFileSelect(e.target.files[0]);
+      if (e.target.files.length > 0) {
+        this.numbers.handleFileSelect(e.target.files[0]);
+      }
     });
 
     this.fileUploadArea.addEventListener("dragover", (e) => {
@@ -158,8 +138,9 @@ class DroneManager {
     this.fileUploadArea.addEventListener("drop", (e) => {
       e.preventDefault();
       this.fileUploadArea.classList.remove("dragover");
-      const file = e.dataTransfer.files[0];
-      this.numbers.handleFileSelect(file);
+      if (e.dataTransfer.files.length > 0) {
+        this.numbers.handleFileSelect(e.dataTransfer.files[0]);
+      }
     });
 
     this.btnRemoveFile.addEventListener("click", () =>
@@ -175,7 +156,7 @@ class DroneManager {
     );
 
     // Disparo - Seleção de mensagem
-    this.messageSelect.addEventListener("change", (e) => {
+    this.messageSelect.addEventListener("change", () => {
       this.dispatch.selectMessageFromDisparo();
     });
 
@@ -195,6 +176,8 @@ class DroneManager {
   async loadInitialData() {
     await this.messages.loadMessages();
     await this.numbers.loadNumbers();
+    await this.numbers.loadStatistics();
+    await this.dispatch.loadMessagesForSelect();
     await this.dispatch.checkRequirements();
   }
 }

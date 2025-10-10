@@ -3,6 +3,45 @@
 export default class DroneNumbers {
   constructor(manager) {
     this.manager = manager;
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    // Checkboxes que mostram/escondem campos
+    const checkboxDdd = document.getElementById("checkbox-ddd");
+    const checkboxPrefixo = document.getElementById("checkbox-prefixo");
+
+    if (checkboxDdd) {
+      checkboxDdd.addEventListener("change", () => {
+        this.toggleDddInput(checkboxDdd.checked);
+      });
+    }
+
+    if (checkboxPrefixo) {
+      checkboxPrefixo.addEventListener("change", () => {
+        this.togglePrefixoInput(checkboxPrefixo.checked);
+      });
+    }
+  }
+
+  toggleDddInput(show) {
+    const wrapper = document.getElementById("ddd-input-wrapper");
+    if (wrapper) {
+      wrapper.style.display = show ? "flex" : "none";
+      if (!show) {
+        document.getElementById("ddd").value = "";
+      }
+    }
+  }
+
+  togglePrefixoInput(show) {
+    const wrapper = document.getElementById("prefixo-input-wrapper");
+    if (wrapper) {
+      wrapper.style.display = show ? "flex" : "none";
+      if (!show) {
+        document.getElementById("prefixo-pais").value = "";
+      }
+    }
   }
 
   async loadNumbers() {
@@ -34,20 +73,26 @@ export default class DroneNumbers {
     }
 
     this.manager.numbersList.innerHTML = numeros
-      .map(
-        (num) => `
-      <div class="number-item" data-id="${num.id}">
-        <div class="number-info">
-          <div class="number-value">${num.numeroWhatsapp}</div>
-          <div class="number-meta">
-            <span class="number-type">${num.tipo}</span>
-            <span>${num.dataFormatada}</span>
+      .map((num) => {
+        const nomeDisplay =
+          num.nome && num.nome !== "-"
+            ? `<span class="number-name">👤 ${num.nome}</span>`
+            : "";
+
+        return `
+          <div class="number-item" data-id="${num.id}">
+            <div class="number-info">
+              <div class="number-value">${num.numeroWhatsapp}</div>
+              ${nomeDisplay}
+              <div class="number-meta">
+                <span class="number-type">${num.tipo}</span>
+                <span>${num.dataFormatada}</span>
+              </div>
+            </div>
+            <button class="btn-remove" data-id="${num.id}">Remover</button>
           </div>
-        </div>
-        <button class="btn-remove" data-id="${num.id}">Remover</button>
-      </div>
-    `
-      )
+        `;
+      })
       .join("");
 
     // Add remove listeners
@@ -59,51 +104,15 @@ export default class DroneNumbers {
     });
   }
 
-  async addNumbersManual() {
-    const input = this.manager.numbersInput.value.trim();
-
-    if (!input) {
-      this.manager.utility.showStatus("Digite pelo menos um número", "error");
-      return;
-    }
-
-    try {
-      const result = await window.droneAPI.adicionarNumeros(input);
-
-      if (result.success) {
-        this.manager.utility.showStatus(
-          `${result.adicionados.length} número(s) adicionado(s)`,
-          "success"
-        );
-        this.manager.numbersInput.value = "";
-        await this.loadNumbers();
-        await this.loadStatistics();
-      } else {
-        this.manager.utility.showStatus(
-          result.error || "Erro ao adicionar números",
-          "error"
-        );
-      }
-
-      // Show errors if any
-      if (result.erros && result.erros.length > 0) {
-        console.warn("Erros ao adicionar alguns números:", result.erros);
-      }
-    } catch (error) {
-      console.error("Erro ao adicionar números:", error);
-      this.manager.utility.showStatus("Erro ao adicionar números", "error");
-    }
-  }
-
   handleFileSelect(file) {
     if (!file) return;
 
-    const validTypes = [".txt", ".csv", "text/plain", "text/csv"];
+    // Aceita apenas CSV
     const ext = "." + file.name.split(".").pop().toLowerCase();
 
-    if (!validTypes.includes(ext) && !validTypes.includes(file.type)) {
+    if (ext !== ".csv") {
       this.manager.utility.showStatus(
-        "Arquivo inválido. Use TXT ou CSV",
+        "Apenas arquivos CSV são aceitos",
         "error"
       );
       return;
@@ -112,28 +121,118 @@ export default class DroneNumbers {
     this.manager.currentFile = file;
     this.manager.fileName.textContent = file.name;
     this.manager.fileInfo.style.display = "block";
+    this.manager.processingOptions.style.display = "block";
     this.manager.btnImportFile.disabled = false;
 
-    // Read and count numbers
-    window.fileAPI.readFile(file).then((result) => {
-      if (result.success) {
-        const parsed = window.fileAPI.parseNumbers(result.content);
-        this.manager.fileCount.textContent = `${parsed.total} números encontrados`;
+    // Lê o arquivo e gera preview
+    this.previewCSV(file);
+  }
+
+  async previewCSV(file) {
+    try {
+      const fileResult = await window.fileAPI.readFile(file);
+
+      if (!fileResult.success) {
+        this.manager.utility.showStatus("Erro ao ler arquivo", "error");
+        return;
       }
-    });
+
+      // Chama preview do backend
+      const previewResult = await window.droneAPI.previewCSV(
+        fileResult.content,
+        5
+      );
+
+      if (previewResult.success) {
+        const totalLinhas = previewResult.totalLinhas || 0;
+        this.manager.fileCount.textContent = `${totalLinhas} linha(s) encontrada(s)`;
+
+        // Mostra preview das primeiras linhas no console
+        if (previewResult.preview && previewResult.preview.length > 0) {
+          console.log("Preview do CSV:", previewResult.preview);
+        }
+      } else {
+        this.manager.utility.showStatus(
+          "Erro ao gerar preview: " + previewResult.error,
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao gerar preview:", error);
+    }
   }
 
   removeFile() {
     this.manager.currentFile = null;
     this.manager.fileInfo.style.display = "none";
+    this.manager.processingOptions.style.display = "none";
     this.manager.btnImportFile.disabled = true;
     this.manager.fileInput.value = "";
+    this.resetProcessingOptions();
   }
 
+  resetProcessingOptions() {
+    document.getElementById("checkbox-ddd").checked = false;
+    document.getElementById("checkbox-prefixo").checked = false;
+    document.getElementById("adicionar-9-digito").checked = false;
+    document.getElementById("usar-nomes-csv").checked = true;
+
+    document.getElementById("ddd").value = "";
+    document.getElementById("prefixo-pais").value = "";
+
+    this.toggleDddInput(false);
+    this.togglePrefixoInput(false);
+  }
+
+  /**
+   * Captura as opções dos campos do formulário
+   */
+  getProcessingOptions() {
+    // Captura valores dos checkboxes
+    const usarDdd = document.getElementById("checkbox-ddd").checked;
+    const usarPrefixo = document.getElementById("checkbox-prefixo").checked;
+    const adicionar9Digito =
+      document.getElementById("adicionar-9-digito").checked;
+    const usarNomesCSV = document.getElementById("usar-nomes-csv").checked;
+
+    // Captura valores dos inputs (se os checkboxes estão marcados)
+    const ddd = usarDdd ? document.getElementById("ddd").value.trim() : "";
+    const prefixoPais = usarPrefixo
+      ? document.getElementById("prefixo-pais").value.trim()
+      : "";
+
+    return {
+      prefixoPais: prefixoPais,
+      ddd: ddd,
+      adicionar9Digito: adicionar9Digito,
+      usarNomesCSV: usarNomesCSV,
+    };
+  }
+
+  /**
+   * Constrói mensagem de confirmação com as opções aplicadas
+   */
+  buildConfirmationMessage(opcoes) {
+    let msg = "Confirmar importação do CSV?\n\n";
+    msg += "Opções aplicadas:\n";
+    msg += `• Prefixo país: ${opcoes.prefixoPais || "Nenhum"}\n`;
+    msg += `• DDD: ${opcoes.ddd || "Nenhum"}\n`;
+    msg += `• Adicionar 9º dígito: ${
+      opcoes.adicionar9Digito ? "Sim" : "Não"
+    }\n`;
+    msg += `• Usar nomes do CSV: ${opcoes.usarNomesCSV ? "Sim" : "Não"}`;
+
+    return msg;
+  }
+
+  /**
+   * Importa arquivo CSV com opções de transformação
+   */
   async importFile() {
     if (!this.manager.currentFile) return;
 
     try {
+      // Lê o conteúdo do arquivo
       const fileResult = await window.fileAPI.readFile(
         this.manager.currentFile
       );
@@ -143,29 +242,63 @@ export default class DroneNumbers {
         return;
       }
 
-      const parsed = window.fileAPI.parseNumbers(fileResult.content);
+      // Captura as opções dos campos do formulário
+      const opcoes = this.getProcessingOptions();
 
-      if (!parsed.success || parsed.numbers.length === 0) {
+      // Valida opções antes de processar
+      const validacao = await window.droneAPI.validarOpcoes(opcoes);
+
+      if (!validacao.valido) {
+        const errosMsg = validacao.erros.join("\n");
         this.manager.utility.showStatus(
-          "Nenhum número válido encontrado no arquivo",
+          `Opções inválidas:\n${errosMsg}`,
           "error"
         );
         return;
       }
 
-      const result = await window.droneAPI.adicionarNumeros(parsed.numbers);
+      // Mostra avisos se houver
+      if (validacao.avisos && validacao.avisos.length > 0) {
+        console.warn("Avisos:", validacao.avisos);
+      }
+
+      // Confirma com usuário antes de processar
+      const confirmMsg = this.buildConfirmationMessage(opcoes);
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+
+      // Processa o CSV com as opções
+      const result = await window.droneAPI.processarArquivoCSV(
+        fileResult.content,
+        opcoes
+      );
 
       if (result.success) {
-        this.manager.utility.showStatus(
-          `${result.adicionados.length} número(s) importado(s)`,
-          "success"
-        );
+        // Mostra resumo do processamento
+        const resumo = result.resumo;
+        let statusMsg = `✅ ${resumo.totalAdicionados} número(s) adicionado(s)`;
+
+        if (resumo.totalErros > 0) {
+          statusMsg += `\n⚠️ ${resumo.totalErros} erro(s)`;
+        }
+
+        this.manager.utility.showStatus(statusMsg, "success");
+
+        // Mostra detalhes no console
+        console.log("Resultado do processamento:", result);
+
+        if (result.erros && result.erros.length > 0) {
+          console.warn("Erros encontrados:", result.erros);
+        }
+
+        // Limpa o arquivo e atualiza a lista
         this.removeFile();
         await this.loadNumbers();
         await this.loadStatistics();
       } else {
         this.manager.utility.showStatus(
-          result.error || "Erro ao importar números",
+          result.error || "Erro ao processar CSV",
           "error"
         );
       }
@@ -231,6 +364,13 @@ export default class DroneNumbers {
         this.manager.statTotal.textContent = stats.total || 0;
         this.manager.statBr.textContent = stats.porTipo?.brazilian || 0;
         this.manager.statInt.textContent = stats.porTipo?.international || 0;
+
+        // Atualiza também o contador de nomes personalizados se existir
+        if (stats.comNomePersonalizado !== undefined) {
+          console.log(
+            `Números com nomes: ${stats.comNomePersonalizado}/${stats.total} (${stats.percentualComNome}%)`
+          );
+        }
       }
     } catch (error) {
       console.error("Erro ao carregar estatísticas:", error);

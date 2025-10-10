@@ -11,9 +11,9 @@
 
 <body>
     <div class="sidebar">
-        <h2>🚁 Drone</h2>
+        <h2>🚀 Drone</h2>
         <button class="menu-item active" data-section="mensagens">
-            📝 Mensagens
+            📨 Mensagens
         </button>
         <button class="menu-item" data-section="numeros">
             📱 Números
@@ -84,46 +84,83 @@
             <!-- Adicionar Números -->
             <div class="add-numbers-section">
                 <h3>Adicionar Números</h3>
-                <div class="tabs">
-                    <button class="tab-btn active" data-tab="manual">✍️ Manual</button>
-                    <button class="tab-btn" data-tab="file">📂 Arquivo</button>
-                </div>
 
-                <!-- Aba Manual -->
-                <div id="manual-tab" class="tab-content active">
-                    <div class="form-group">
-                        <label for="numbers-input">Números (um por linha ou separados por vírgula):</label>
-                        <textarea id="numbers-input" rows="6"
-                            placeholder="Ex:&#10;5547999887766&#10;5547988776655&#10;ou: 5547999887766, 5547988776655"></textarea>
-                        <div class="hint">Formato: DDI + DDD + Número (sem espaços ou caracteres especiais)</div>
-                    </div>
-                    <div class="button-group">
-                        <button id="btn-add-numbers" class="btn btn-primary">Adicionar Números</button>
-                        <button id="btn-clear-input" class="btn btn-secondary">Limpar</button>
-                    </div>
-                </div>
-
-                <!-- Aba Arquivo -->
-                <div id="file-tab" class="tab-content">
+                <!-- Upload de Arquivo CSV -->
+                <div class="csv-upload-section">
                     <div class="file-upload-area" id="file-upload-area">
                         <div class="upload-prompt">
-                            <div class="upload-icon">📂</div>
+                            <div class="upload-icon">📁</div>
                             <h4>Arraste um arquivo aqui</h4>
                             <p>Ou clique para selecionar</p>
                             <div class="supported-formats">
-                                Formatos suportados: TXT, CSV
+                                Formato: CSV (Nome, Número)
                             </div>
                         </div>
-                        <input type="file" id="file-input" accept=".txt,.csv" style="display: none;">
+                        <input type="file" id="file-input" accept=".csv" style="display: none;">
                     </div>
+
                     <div id="file-info" class="file-info" style="display: none;">
                         <div class="file-preview">
                             <div class="file-icon">📄</div>
                             <div id="file-name" class="file-name"></div>
                             <div id="file-count" class="file-count"></div>
-                            <button id="btn-remove-file" class="btn-remove-file">❌ Remover</button>
+                            <button id="btn-remove-file" class="btn-remove-file">✕ Remover</button>
                         </div>
                     </div>
+
+                    <!-- Opções de Processamento -->
+                    <div class="processing-options" id="processing-options" style="display: none;">
+                        <h4>Opções de Processamento</h4>
+
+                        <div class="option-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="adicionar-9-digito" name="adicionar9Digito">
+                                <label for="adicionar-9-digito">
+                                    <span class="checkbox-label">Adicionar 9º dígito</span>
+                                    <span class="checkbox-hint">Adiciona o 9º dígito para números brasileiros sem
+                                        ele</span>
+                                </label>
+                            </div>
+
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="usar-nomes-csv" name="usarNomesCSV" checked>
+                                <label for="usar-nomes-csv">
+                                    <span class="checkbox-label">Usar nomes do CSV</span>
+                                    <span class="checkbox-hint">Usa o nome da primeira coluna para personalizar
+                                        mensagens</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="ddd-section">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="checkbox-ddd" name="usarDDD">
+                                <label for="checkbox-ddd">
+                                    <span class="checkbox-label">Adicionar DDD</span>
+                                    <span class="checkbox-hint">Adiciona um DDD específico aos números</span>
+                                </label>
+                            </div>
+                            <div class="ddd-input-wrapper" id="ddd-input-wrapper" style="display: none;">
+                                <input type="text" id="ddd" placeholder="Ex: 47" maxlength="2">
+                                <span class="input-hint">Apenas 2 dígitos</span>
+                            </div>
+                        </div>
+
+                        <div class="prefixo-section">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="checkbox-prefixo" name="usarPrefixo">
+                                <label for="checkbox-prefixo">
+                                    <span class="checkbox-label">Adicionar Prefixo de País</span>
+                                    <span class="checkbox-hint">Adiciona um prefixo de país específico</span>
+                                </label>
+                            </div>
+                            <div class="prefixo-input-wrapper" id="prefixo-input-wrapper" style="display: none;">
+                                <input type="text" id="prefixo-pais" placeholder="Ex: 55" maxlength="3">
+                                <span class="input-hint">Máximo 3 dígitos</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="button-group">
                         <button id="btn-import-file" class="btn btn-primary" disabled>Importar Números</button>
                     </div>
@@ -251,7 +288,7 @@
                     </div>
                     <div class="status-content">
                         <div class="status-indicator" id="whatsapp-status">
-                            <span class="indicator-dot">⚪</span>
+                            <span class="indicator-dot">⚫</span>
                             <span class="indicator-text">Verificando...</span>
                         </div>
                         <button id="btn-refresh-status" class="btn btn-secondary">🔄 Atualizar</button>
@@ -277,6 +314,8 @@
             </div>
         </div>
     </div>
-<script type="module" src="../guiScripts/droneRenderer.js"></script>
+    <script type="module" src="../guiScripts/droneRenderer.js"></script>
+
+</body>
 
 </html>

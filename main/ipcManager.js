@@ -32,7 +32,7 @@ class IPCManager {
       this.handlers.indicadores = new IndicadoresHandlers();
       this.handlers.modoDev = new ModoDevHandlers();
       this.handlers.dataBase = new DataBaseHandlers();
-      this.handlers.drone = new DroneHandlers(modules.windowManager); // 🆕 Passa windowManager
+      this.handlers.drone = new DroneHandlers(modules.windowManager);
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -77,7 +77,6 @@ class IPCManager {
   }
 
   registerConfigHandlers() {
-    // Handlers básicos que já existem
     ipcMain.handle(
       "open-config",
       this.handlers.config.openConfig.bind(this.handlers.config)
@@ -87,7 +86,6 @@ class IPCManager {
       this.handlers.config.closeWindow.bind(this.handlers.config)
     );
 
-    // Registra apenas métodos que existem no ConfigHandlers
     this.registerConfigMethodIfExists(
       "getSystemConfig",
       "config-get-system-config"
@@ -131,7 +129,6 @@ class IPCManager {
   }
 
   registerMessageHandlers() {
-    // Handlers básicos de mensagens (que já existem) - MANTER ESTES
     ipcMain.handle(
       "message-get-messages",
       this.handlers.message.getMessages.bind(this.handlers.message)
@@ -153,7 +150,6 @@ class IPCManager {
       this.handlers.message.getLastMessage.bind(this.handlers.message)
     );
 
-    // NOVOS: Handlers para áudio - ADICIONAR ESTES
     ipcMain.handle(
       "message-add-message-with-audio",
       this.handlers.message.addMessageWithAudio.bind(this.handlers.message)
@@ -171,7 +167,6 @@ class IPCManager {
       this.handlers.message.validateAudioFile.bind(this.handlers.message)
     );
 
-    // Registra métodos existentes com verificação - MANTER ESTES
     this.registerMessageMethodIfExists("getMessageTypes", "message-get-types");
     this.registerMessageMethodIfExists(
       "getMessageLocales",
@@ -181,8 +176,6 @@ class IPCManager {
       "checkMessageCompleteness",
       "message-check-completeness"
     );
-
-    // Mantém compatibilidade com método antigo - MANTER ESTE
     this.registerMessageMethodIfExists(
       "getAvailableOptions",
       "message-get-available-options"
@@ -202,7 +195,6 @@ class IPCManager {
   }
 
   registerCityHandlers() {
-    // Handlers básicos de cidades
     ipcMain.handle(
       "city-get-cities",
       this.handlers.city.getCities.bind(this.handlers.city)
@@ -236,7 +228,6 @@ class IPCManager {
   }
 
   registerIndicadoresHandlers() {
-    // Handlers de indicadores
     ipcMain.handle(
       "indicadores-get-statistics",
       this.handlers.indicadores.getStatistics.bind(this.handlers.indicadores)
@@ -266,7 +257,6 @@ class IPCManager {
   }
 
   registerModoDevHandlers() {
-    // Handlers de modo dev
     ipcMain.handle(
       "modo-dev-toggle-dev-mode",
       this.handlers.modoDev.toggleDevMode.bind(this.handlers.modoDev)
@@ -293,7 +283,6 @@ class IPCManager {
       this.handlers.modoDev.toggleGroupMode.bind(this.handlers.modoDev)
     );
 
-    // ========== NOVOS HANDLERS PARA LOCALE ==========
     ipcMain.handle(
       "modo-dev-get-current-locale",
       this.handlers.modoDev.getCurrentLocale.bind(this.handlers.modoDev)
@@ -311,7 +300,6 @@ class IPCManager {
   }
 
   registerDataBaseHandlers() {
-    // Handlers de banco de dados
     ipcMain.handle(
       "database-get-all-tables",
       this.handlers.dataBase.getAllTables.bind(this.handlers.dataBase)
@@ -341,20 +329,14 @@ class IPCManager {
   }
 
   registerDroneHandlers() {
-    // 🆕 Handler para abrir janela do Drone
     ipcMain.handle(
       "open-drone",
       this.handlers.drone.openDrone.bind(this.handlers.drone)
     );
 
-    // Handlers de drone
     ipcMain.handle(
       "drone-listar-mensagens",
       this.handlers.drone.listarMensagens.bind(this.handlers.drone)
-    );
-    ipcMain.handle(
-      "drone-adicionar-numeros",
-      this.handlers.drone.adicionarNumeros.bind(this.handlers.drone)
     );
     ipcMain.handle(
       "drone-listar-numeros-atuais",
@@ -381,16 +363,43 @@ class IPCManager {
       this.handlers.drone.executarDisparoDrone.bind(this.handlers.drone)
     );
 
+    ipcMain.handle(
+      "drone-processar-arquivo-csv",
+      this.handlers.drone.processarArquivoCSV.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-preview-csv",
+      this.handlers.drone.previewCSV.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-validar-opcoes",
+      this.handlers.drone.validarOpcoes.bind(this.handlers.drone)
+    );
+
+    this.registerDroneMethodIfExists(
+      "gerarRelatorioNomes",
+      "drone-gerar-relatorio-nomes"
+    );
+
     console.log("Handlers de drone registrados");
+  }
+
+  registerDroneMethodIfExists(methodName, ipcChannel) {
+    if (typeof this.handlers.drone[methodName] === "function") {
+      ipcMain.handle(
+        ipcChannel,
+        this.handlers.drone[methodName].bind(this.handlers.drone)
+      );
+      console.log(`Registrado: ${ipcChannel}`);
+    } else {
+      console.warn(`Método ${methodName} não encontrado em DroneHandlers`);
+    }
   }
 
   removeAllHandlers() {
     const events = [
-      // WhatsApp events
       "start-whatsapp",
       "stop-whatsapp",
-
-      // Config events
       "open-config",
       "config-close-window",
       "config-get-system-config",
@@ -400,8 +409,6 @@ class IPCManager {
       "config-update-theme-settings",
       "config-export-settings",
       "config-import-settings",
-
-      // Message events
       "message-get-messages",
       "message-add-message",
       "message-update-message",
@@ -415,8 +422,6 @@ class IPCManager {
       "message-update-message-with-audio",
       "message-get-audio-files",
       "message-validate-audio-file",
-
-      // City events
       "city-get-cities",
       "city-add-city",
       "city-update-city",
@@ -424,15 +429,11 @@ class IPCManager {
       "city-set-primary",
       "city-get-primary",
       "city-get-by-id",
-
-      // Indicadores events
       "indicadores-get-statistics",
       "indicadores-get-hourly-statistics",
       "indicadores-get-summary-statistics",
       "indicadores-clear-statistics",
       "indicadores-export-to-txt",
-
-      // Modo Dev events
       "modo-dev-toggle-dev-mode",
       "modo-dev-toggle-debug-mode",
       "modo-dev-set-scout-time",
@@ -442,25 +443,24 @@ class IPCManager {
       "modo-dev-get-current-locale",
       "modo-dev-get-available-locales",
       "modo-dev-set-locale",
-
-      // Database events
       "database-get-all-tables",
       "database-get-table-info",
       "database-get-table-counts",
       "database-get-database-info",
       "database-get-primary-city",
       "database-get-overview",
-
-      // Drone events
-      "open-drone", // 🆕 NOVO
+      "open-drone",
       "drone-listar-mensagens",
-      "drone-adicionar-numeros",
       "drone-listar-numeros-atuais",
       "drone-remover-numero",
       "drone-limpar-lista-completa",
       "drone-obter-estatisticas-numeros",
       "drone-obter-status-cliente",
       "drone-executar-disparo-drone",
+      "drone-processar-arquivo-csv",
+      "drone-preview-csv",
+      "drone-validar-opcoes",
+      "drone-gerar-relatorio-nomes",
     ];
 
     events.forEach((event) => {
@@ -468,7 +468,6 @@ class IPCManager {
     });
   }
 
-  // Método para obter handler específico (útil para debug)
   getHandler(type) {
     return this.handlers[type];
   }
