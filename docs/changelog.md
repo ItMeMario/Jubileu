@@ -114,7 +114,7 @@ Corrigido bug na função de trocar de modo do programa.
 
 Corrigido bug na troca de modo single e multi.
 
-📅 Data de Lançamento: 13/08/2025
+📅 Data de Lançamento: [13/08/2025]
 
 📌 Patch Notes - Versão 0.0.5
 
@@ -140,7 +140,7 @@ Adicionado tratamento para recusar emojis, garantindo consistência no conteúdo
 
 [Nenhuma correção registrada nesta versão.]
 
-📅 Data de Lançamento: 19/08/2025
+📅 Data de Lançamento: [19/08/2025]
 
 📌 Patch Notes - Versão 0.0.6
 ✨ Novidades
@@ -226,7 +226,7 @@ Removido arquivo .bat que estava sem funcionalidade.
 
 Removido código legado de migração de mensagens.
 
-📅 Data de Lançamento: 05/09/2025
+📅 Data de Lançamento: [05/09/2025]
 
 📌 Patch Notes - Versão 0.0.7
 ✨ Novidades
@@ -267,7 +267,7 @@ Corrigido bug no menu de horários, que não estava trazendo os últimos horári
 
 Removido o texto “opcional” dos CRUDs.
 
-📅 Data de Lançamento: 18/09/2025
+📅 Data de Lançamento: [18/09/2025]
 
 📌 Patch Notes - Versão 0.0.8
 
@@ -302,4 +302,40 @@ O ciclo se repete até que todas as mensagens cadastradas sejam enviadas.
 
 [Nenhuma correção registrada nesta versão]
 
-📅 Data de Lançamento: 02/10/2025
+📅 Data de Lançamento: [13/10/2025]
+
+📌 Patch Notes - Versão 0.0.9
+
+✨ Novidades
+
+Adicionada a possibilidade de editar o arquivo CSV importado diretamente no sistema, trazendo mais flexibilidade no preparo dos disparos pelo Drone.
+As novas opções de edição incluem:
+
+Adicionar DDD automaticamente aos números.
+
+Adicionar prefixo do país (código internacional).
+
+Adicionar 9º dígito aos números que estiverem sem ele.
+
+O sistema agora utiliza o nome da planilha do arquivo CSV para personalizar as mensagens.
+
+Caso o campo esteja vazio, o sistema continuará usando a variável {{nome}}.
+
+Se {{nome}} também não estiver definido, será usado o nome da conta do WhatsApp do destinatário.
+
+🛠️ Melhorias
+
+Ajustes gerais no processo de leitura e tratamento de arquivos CSV, melhorando compatibilidade e desempenho.
+
+🐛 Correções
+
+Adicionado colchetes entre algumas datas do changelog que estavam faltando.
+
+⚙️ Alterações e Remoções
+
+Removido o suporte a arquivos TXT na função Drone dentro da interface GUI.
+
+Removida a opção de adicionar números manualmente no GUI, mantendo agora apenas o fluxo via importação de arquivos CSV.
+
+
+📅 Data de Lançamento: 13/10/2025
