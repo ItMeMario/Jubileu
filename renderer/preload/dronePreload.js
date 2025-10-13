@@ -13,16 +13,6 @@ contextBridge.exposeInMainWorld("droneAPI", {
     }
   },
 
-  // Adicionar números
-  adicionarNumeros: async (input) => {
-    try {
-      return await ipcRenderer.invoke("drone-adicionar-numeros", input);
-    } catch (error) {
-      console.error("Erro ao adicionar números:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
   // Listar números atuais
   listarNumerosAtuais: async () => {
     try {
@@ -86,6 +76,54 @@ contextBridge.exposeInMainWorld("droneAPI", {
       return { success: false, error: error.message };
     }
   },
+
+  // Processar arquivo CSV com opções de transformação
+  processarArquivoCSV: async (csvContent, opcoes = {}) => {
+    try {
+      return await ipcRenderer.invoke(
+        "drone-processar-arquivo-csv",
+        csvContent,
+        opcoes
+      );
+    } catch (error) {
+      console.error("Erro ao processar CSV:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Preview do CSV antes de processar
+  previewCSV: async (csvContent, linhas = 5) => {
+    try {
+      return await ipcRenderer.invoke("drone-preview-csv", csvContent, linhas);
+    } catch (error) {
+      console.error("Erro ao gerar preview:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Validar opções antes do processamento
+  validarOpcoes: async (opcoes) => {
+    try {
+      return await ipcRenderer.invoke("drone-validar-opcoes", opcoes);
+    } catch (error) {
+      console.error("Erro ao validar opções:", error);
+      return {
+        valido: false,
+        erros: [error.message],
+        avisos: [],
+      };
+    }
+  },
+
+  // Gerar relatório de nomes personalizados
+  gerarRelatorioNomes: async () => {
+    try {
+      return await ipcRenderer.invoke("drone-gerar-relatorio-nomes");
+    } catch (error) {
+      console.error("Erro ao gerar relatório:", error);
+      return { success: false, error: error.message };
+    }
+  },
 });
 
 // API para leitura de arquivos (TXT/CSV)
@@ -122,7 +160,6 @@ contextBridge.exposeInMainWorld("fileAPI", {
 
   parseNumbers: (content) => {
     try {
-      // Remove espaços, quebras de linha extras e separa por vírgula, ponto-e-vírgula ou quebra de linha
       const numbers = content
         .split(/[,;\n]/)
         .map((n) => n.trim())
@@ -144,17 +181,17 @@ contextBridge.exposeInMainWorld("fileAPI", {
 contextBridge.exposeInMainWorld("debugAPI", {
   log: (message) => console.log("[DronePreload]", message),
   checkAPIs: () => {
-    console.log("🔋 APIs disponíveis na janela do Drone:");
+    console.log("APIs disponíveis na janela do Drone:");
     console.log("- window.droneAPI:", typeof window.droneAPI);
     console.log("- window.fileAPI:", typeof window.fileAPI);
 
     if (window.droneAPI) {
-      console.log("🚁 Métodos droneAPI:", Object.keys(window.droneAPI));
+      console.log("Métodos droneAPI:", Object.keys(window.droneAPI));
     }
     if (window.fileAPI) {
-      console.log("📂 Métodos fileAPI:", Object.keys(window.fileAPI));
+      console.log("Métodos fileAPI:", Object.keys(window.fileAPI));
     }
   },
 });
 
-console.log("🔧 DronePreload carregado com sucesso!");
+console.log("DronePreload carregado com sucesso!");

@@ -179,47 +179,6 @@ body {
 }
 
 /* ========================================
-   TABS
-   ======================================== */
-
-.tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #e0e0e0;
-}
-
-.tab-btn {
-    background: none;
-    border: none;
-    padding: 12px 24px;
-    cursor: pointer;
-    font-size: 14px;
-    color: #666;
-    border-bottom: 3px solid transparent;
-    transition: all 0.3s;
-}
-
-.tab-btn:hover {
-    color: #25d366;
-}
-
-.tab-btn.active {
-    color: #25d366;
-    font-weight: bold;
-    border-bottom-color: #25d366;
-}
-
-.tab-content {
-    display: none;
-}
-
-.tab-content.active {
-    display: block;
-    animation: fadeIn 0.3s;
-}
-
-/* ========================================
    FORMULÁRIOS
    ======================================== */
 
@@ -245,6 +204,7 @@ body {
     font-size: 14px;
     font-family: inherit;
     transition: border-color 0.3s;
+    box-sizing: border-box;
 }
 
 .form-group input:focus,
@@ -268,6 +228,13 @@ body {
 /* ========================================
    UPLOAD DE ARQUIVOS
    ======================================== */
+
+.csv-upload-section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
 
 .file-upload-area {
     border: 3px dashed #e0e0e0;
@@ -364,10 +331,127 @@ body {
     cursor: pointer;
     font-size: 14px;
     transition: background 0.3s;
+    white-space: nowrap;
 }
 
 .btn-remove-file:hover {
     background: #c82333;
+}
+
+/* ========================================
+   PROCESSING OPTIONS
+   ======================================== */
+
+.processing-options {
+    background: #f0fdf4;
+    border-left: 4px solid #25d366;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.processing-options h4 {
+    margin: 0 0 20px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.option-group,
+.ddd-section,
+.prefixo-section {
+    margin-bottom: 20px;
+}
+
+.ddd-section,
+.prefixo-section {
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(37, 211, 102, 0.2);
+}
+
+.ddd-section:last-of-type,
+.prefixo-section:last-of-type {
+    border-bottom: none;
+}
+
+/* Checkbox Items */
+.checkbox-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 15px;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    transition: background 0.3s;
+}
+
+.checkbox-item:hover {
+    background: #f5f5f5;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    cursor: pointer;
+    accent-color: #25d366;
+}
+
+.checkbox-item label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    flex: 1;
+    margin: 0;
+    padding: 0;
+}
+
+.checkbox-label {
+    color: #333;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.checkbox-hint {
+    color: #999;
+    font-size: 12px;
+    font-weight: normal;
+}
+
+/* Input Wrappers */
+.ddd-input-wrapper,
+.prefixo-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    margin-left: 32px;
+    margin-bottom: 15px;
+}
+
+.ddd-input-wrapper input,
+.prefixo-input-wrapper input {
+    width: 80px;
+    padding: 8px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.ddd-input-wrapper input:focus,
+.prefixo-input-wrapper input:focus {
+    outline: none;
+    border-color: #25d366;
+}
+
+.input-hint {
+    color: #999;
+    font-size: 12px;
+    white-space: nowrap;
 }
 
 /* ========================================
@@ -434,6 +518,14 @@ body {
     font-weight: 500;
     color: #333;
     font-size: 15px;
+}
+
+.number-name {
+    display: block;
+    color: #25d366;
+    font-weight: 500;
+    font-size: 14px;
+    margin-top: 4px;
 }
 
 .number-meta {
@@ -728,6 +820,62 @@ body {
 }
 
 /* ========================================
+   BUTTONS
+   ======================================== */
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.btn-secondary:hover {
+    background: #d0d0d0;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+/* ========================================
    STATUS SECTION
    ======================================== */
 
@@ -808,6 +956,50 @@ body {
 }
 
 /* ========================================
+   STATUS MESSAGES
+   ======================================== */
+
+.status-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s;
+    max-width: 400px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.status-message.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.status-message.success {
+    background: #dcfce7;
+    color: #166534;
+    border-left: 4px solid #25d366;
+}
+
+.status-message.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border-left: 4px solid #dc3545;
+}
+
+.status-message.info {
+    background: #dbeafe;
+    color: #1e40af;
+    border-left: 4px solid #0ea5e9;
+}
+
+/* ========================================
    RESPONSIVIDADE
    ======================================== */
 
@@ -840,5 +1032,35 @@ body {
 
     .status-grid {
         grid-template-columns: 1fr;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .ddd-input-wrapper,
+    .prefixo-input-wrapper {
+        flex-wrap: wrap;
+    }
+
+    .ddd-input-wrapper input,
+    .prefixo-input-wrapper input {
+        flex: 1;
+        min-width: 100px;
+    }
+
+    .checkbox-item {
+        gap: 8px;
+    }
+
+    .status-message {
+        right: 10px;
+        left: 10px;
+        max-width: none;
     }
 }

@@ -34,17 +34,49 @@ class DroneHandlers {
   }
 
   /**
-   * Adiciona número(s) de telefone à lista
+   * Processa arquivo CSV com opções de transformação
    * @param {Object} event - Evento IPC
-   * @param {string|Array<string>} input - Número único ou array de números
+   * @param {string} csvContent - Conteúdo do arquivo CSV
+   * @param {Object} opcoes - Opções de processamento
    */
-  async adicionarNumeros(event, input) {
+  async processarArquivoCSV(event, csvContent, opcoes = {}) {
     try {
-      console.log("Adicionando números...");
-      return await droneControllerGui.adicionarNumeros(input);
+      console.log("Processando arquivo CSV...");
+      return await droneControllerGui.processarArquivoCSV(csvContent, opcoes);
     } catch (error) {
-      console.error("Erro ao adicionar números:", error);
+      console.error("Erro ao processar CSV:", error);
       return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Preview do CSV antes de processar
+   * @param {Object} event - Evento IPC
+   * @param {string} csvContent - Conteúdo do CSV
+   * @param {number} linhas - Quantidade de linhas para preview
+   */
+  async previewCSV(event, csvContent, linhas = 5) {
+    try {
+      console.log("Gerando preview do CSV...");
+      return droneControllerGui.previewCSV(csvContent, linhas);
+    } catch (error) {
+      console.error("Erro ao gerar preview:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Valida opções antes do processamento
+   * @param {Object} event - Evento IPC
+   * @param {Object} opcoes - Opções a validar
+   */
+  async validarOpcoes(event, opcoes) {
+    try {
+      console.log("Validando opções...");
+      return droneControllerGui.validarOpcoes(opcoes);
+    } catch (error) {
+      console.error("Erro ao validar opções:", error);
+      return { valido: false, erros: [error.message], avisos: [] };
     }
   }
 
@@ -132,6 +164,19 @@ class DroneHandlers {
       );
     } catch (error) {
       console.error("Erro ao executar disparo:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Gera relatório de números com nomes personalizados
+   */
+  async gerarRelatorioNomes() {
+    try {
+      console.log("Gerando relatório de nomes...");
+      return await droneControllerGui.gerarRelatorioNomes();
+    } catch (error) {
+      console.error("Erro ao gerar relatório:", error);
       return { success: false, error: error.message };
     }
   }
