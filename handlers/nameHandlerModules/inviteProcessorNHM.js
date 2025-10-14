@@ -4,6 +4,7 @@ const inviteManager = require("../../utils/inviteManager");
 const delay = require("../../utils/delay");
 const messageManagerNHM = require("./messageManagerNHM");
 const audioManagerNHM = require("./audioManagerNHM");
+const { sendSocialLinkIfExists } = require("../../utils/socialLink");
 
 class InviteProcessorNHM {
   async handleSingleMode(
@@ -30,7 +31,7 @@ class InviteProcessorNHM {
       await audioManagerNHM.sendAudioInviteIfExists(client, userNumber);
 
       // Enviar social link se existir
-      await this.sendSocialLinkIfExists(client, userNumber);
+      await sendSocialLinkIfExists(client, userNumber);
 
       return "sent_with_audio"; // Indicador especial
     }
@@ -56,7 +57,7 @@ class InviteProcessorNHM {
     }
 
     const dataEvento = primaryGroup.date
-      ? `\nðŸ"… Dia: ${primaryGroup.date}`
+      ? `\n📅 Dia: ${primaryGroup.date}`
       : "";
     const textMessage = await messageManagerNHM.getSingleInviteMessage(
       nomeCompleto,
@@ -70,7 +71,7 @@ class InviteProcessorNHM {
     await audioManagerNHM.sendAudioInviteIfExists(client, userNumber);
 
     // Enviar social link se existir
-    await this.sendSocialLinkIfExists(client, userNumber);
+    await sendSocialLinkIfExists(client, userNumber);
 
     return "sent_with_audio"; // Indicador especial
   }
@@ -118,7 +119,7 @@ class InviteProcessorNHM {
     }
 
     const dataEvento = selectedCityData.date
-      ? `\nðŸ"… Dia: ${selectedCityData.date}`
+      ? `\n📅 Dia: ${selectedCityData.date}`
       : "";
     const textMessage = await messageManagerNHM.getMultiInviteMessage(
       nomeCompleto,
@@ -133,21 +134,9 @@ class InviteProcessorNHM {
     await audioManagerNHM.sendAudioInviteIfExists(client, userNumber);
 
     // Enviar social link se existir
-    await this.sendSocialLinkIfExists(client, userNumber);
+    await sendSocialLinkIfExists(client, userNumber);
 
     return "sent_with_audio"; // Indicador especial
-  }
-
-  async sendSocialLinkIfExists(client, userNumber) {
-    try {
-      const socialLinkMessage = await messageManagerNHM.getSocialLinkMessage();
-
-      if (socialLinkMessage) {
-        await client.sendMessage(userNumber, socialLinkMessage);
-      }
-    } catch (error) {
-      // Silenciosamente não faz nada se houver erro
-    }
   }
 }
 

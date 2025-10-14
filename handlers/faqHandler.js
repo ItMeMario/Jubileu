@@ -1,5 +1,6 @@
 // handlers/faqHandler.js
 const { isRequestingHelp, enviarFAQ } = require("../utils/triggers");
+const { sendSocialLinkIfExists } = require("../utils/socialLink");
 
 class faqHandler {
   shouldHandle(msg) {
@@ -9,6 +10,7 @@ class faqHandler {
 
   async process(client, msg) {
     await enviarFAQ(client, msg);
+    await sendSocialLinkIfExists(client, msg.from);
   }
 }
 
