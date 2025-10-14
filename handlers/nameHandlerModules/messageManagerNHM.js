@@ -124,6 +124,23 @@ class MessageManager {
 
     return FALLBACK_MESSAGES[MessageType.GROUP_ERROR];
   }
+
+  // 📹 Obter mensagem dinâmica de SOCIAL_LINK (sem fallback)
+  async getSocialLinkMessage() {
+    try {
+      const dynamicMessage = await messageReader.getMessage(
+        MessageType.SOCIAL_LINK
+      );
+
+      if (!dynamicMessage.includes("[ERRO:")) {
+        return dynamicMessage;
+      }
+    } catch {
+      // Silenciosamente não faz nada se não conseguir buscar
+    }
+
+    return null;
+  }
 }
 
 module.exports = new MessageManager();

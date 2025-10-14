@@ -29,6 +29,9 @@ class InviteProcessorNHM {
       await client.sendMessage(userNumber, textMessage);
       await audioManagerNHM.sendAudioInviteIfExists(client, userNumber);
 
+      // Enviar social link se existir
+      await this.sendSocialLinkIfExists(client, userNumber);
+
       return "sent_with_audio"; // Indicador especial
     }
 
@@ -53,7 +56,7 @@ class InviteProcessorNHM {
     }
 
     const dataEvento = primaryGroup.date
-      ? `\n📅 Dia: ${primaryGroup.date}`
+      ? `\nðŸ"… Dia: ${primaryGroup.date}`
       : "";
     const textMessage = await messageManagerNHM.getSingleInviteMessage(
       nomeCompleto,
@@ -65,6 +68,9 @@ class InviteProcessorNHM {
     // Enviar texto primeiro, depois áudio
     await client.sendMessage(userNumber, textMessage);
     await audioManagerNHM.sendAudioInviteIfExists(client, userNumber);
+
+    // Enviar social link se existir
+    await this.sendSocialLinkIfExists(client, userNumber);
 
     return "sent_with_audio"; // Indicador especial
   }
@@ -112,7 +118,7 @@ class InviteProcessorNHM {
     }
 
     const dataEvento = selectedCityData.date
-      ? `\n📅 Dia: ${selectedCityData.date}`
+      ? `\nðŸ"… Dia: ${selectedCityData.date}`
       : "";
     const textMessage = await messageManagerNHM.getMultiInviteMessage(
       nomeCompleto,
@@ -126,7 +132,22 @@ class InviteProcessorNHM {
     await client.sendMessage(userNumber, textMessage);
     await audioManagerNHM.sendAudioInviteIfExists(client, userNumber);
 
+    // Enviar social link se existir
+    await this.sendSocialLinkIfExists(client, userNumber);
+
     return "sent_with_audio"; // Indicador especial
+  }
+
+  async sendSocialLinkIfExists(client, userNumber) {
+    try {
+      const socialLinkMessage = await messageManagerNHM.getSocialLinkMessage();
+
+      if (socialLinkMessage) {
+        await client.sendMessage(userNumber, socialLinkMessage);
+      }
+    } catch (error) {
+      // Silenciosamente não faz nada se houver erro
+    }
   }
 }
 
