@@ -302,7 +302,7 @@ O ciclo se repete até que todas as mensagens cadastradas sejam enviadas.
 
 [Nenhuma correção registrada nesta versão]
 
-📅 Data de Lançamento: [13/10/2025]
+📅 Data de Lançamento: [02/10/2025]
 
 📌 Patch Notes - Versão 0.0.9
 
@@ -338,4 +338,24 @@ Removido o suporte a arquivos TXT na função Drone dentro da interface GUI.
 Removida a opção de adicionar números manualmente no GUI, mantendo agora apenas o fluxo via importação de arquivos CSV.
 
 
-📅 Data de Lançamento: 13/10/2025
+📅 Data de Lançamento: [13/10/2025]
+
+📌 Patch Notes - Versão 0.0.10
+
+✨ Novidades
+
+Novo tipo de mensagem: social_link
+Agora o sistema pode enviar mensagens do tipo social_link ao final do fluxo de processo ou junto ao FAQ.
+Caso nenhum link social esteja cadastrado, nenhuma mensagem será enviada.
+
+🛠️ Melhorias
+
+Modularização do nameHandler
+O componente nameHandler foi reestruturado e dividido em múltiplos módulos dentro da nova pasta nameHandlerModules.
+Essa mudança melhora a organização do código e facilita futuras manutenções e expansões.
+
+🐛 Correções
+
+Nenhuma correção registrada nesta versão.
+
+📅 Data de Lançamento: [15/10/2025]
