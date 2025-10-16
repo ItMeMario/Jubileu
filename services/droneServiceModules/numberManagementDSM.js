@@ -5,9 +5,15 @@ const {
 } = require("../../utils/validateNumber");
 const { parseCSV } = require("./csvParserDSM");
 const { aplicarTransformacoes } = require("./numberTransformDSM");
-
-// Array em memória para armazenar os números
-let numbersInMemory = [];
+const {
+  adicionarClientesEmLote,
+  listarClientesPorStatus,
+  listarClientesParaDisparo,
+  removerCliente,
+  limparClientes,
+  obterEstatisticas: obterEstatisticasDB,
+  buscarClientePorTel,
+} = require("./clientDatabaseDSM");
 
 /**
  * Adiciona números de arquivo CSV com opções de transformação
@@ -26,12 +32,11 @@ async function adicionarNumerosDeCSV(csvContent, opcoes = {}) {
         error: parseResult.error,
         added: [],
         errors: [],
-        totalNumbers: numbersInMemory.length,
       };
     }
 
     const { data } = parseResult;
-    const sucessos = [];
+    const clientesParaAdicionar = [];
     const erros = [];
 
     console.log(`Processando ${data.length} registros do CSV...`);
@@ -61,40 +66,16 @@ async function adicionarNumerosDeCSV(csvContent, opcoes = {}) {
           continue;
         }
 
-        // Verifica se número já existe
-        const numeroJaExiste = numbersInMemory.some(
-          (item) => item.whatsappFormat === result.whatsappFormat
-        );
-
-        if (numeroJaExiste) {
-          erros.push({
+        // Prepara cliente para adicionar ao banco
+        clientesParaAdicionar.push({
+          name: opcoes.usarNomesCSV ? registro.nome : "",
+          tel: result.whatsappFormat,
+          dadosOriginais: {
             linha: registro.linhaOriginal,
             nome: registro.nome,
             numeroOriginal: registro.numero,
-            numeroTransformado: numeroTransformado,
-            error: "Número já existe na lista",
-          });
-          continue;
-        }
-
-        // Adiciona à memória com nome personalizado
-        const numeroParaAdicionar = {
-          id: Date.now() + Math.random(),
-          originalNumber: result.originalNumber,
-          cleanedNumber: result.cleanedNumber,
-          finalNumber: result.finalNumber,
-          whatsappFormat: result.whatsappFormat,
-          numberType: result.numberType,
-          customName: opcoes.usarNomesCSV ? registro.nome : null,
-          addedAt: new Date().toISOString(),
-        };
-
-        numbersInMemory.push(numeroParaAdicionar);
-        sucessos.push({
-          linha: registro.linhaOriginal,
-          nome: registro.nome,
-          numeroOriginal: registro.numero,
-          numeroFinal: numeroParaAdicionar.whatsappFormat,
+            numeroFinal: result.whatsappFormat,
+          },
         });
       } catch (error) {
         erros.push({
@@ -106,27 +87,49 @@ async function adicionarNumerosDeCSV(csvContent, opcoes = {}) {
       }
     }
 
-    return {
-      success: true,
-      message: `CSV processado: ${sucessos.length} adicionados, ${erros.length} com erro`,
-      added: sucessos,
-      errors: erros,
-      totalNumbers: numbersInMemory.length,
-      opcoes: opcoes,
-    };
+    // Adiciona todos os clientes ao banco em lote
+    if (clientesParaAdicionar.length > 0) {
+      const resultadoBanco = await adicionarClientesEmLote(
+        clientesParaAdicionar
+      );
+
+      // Prepara lista de sucessos para retorno
+      const sucessos = clientesParaAdicionar
+        .slice(0, resultadoBanco.adicionados)
+        .map((c) => c.dadosOriginais);
+
+      // Estatísticas finais
+      const stats = await obterEstatisticasDB();
+
+      return {
+        success: true,
+        message: `CSV processado: ${resultadoBanco.adicionados} adicionados, ${resultadoBanco.jaExistiam} já existiam, ${erros.length} com erro`,
+        added: sucessos,
+        alreadyExisted: resultadoBanco.jaExistiam,
+        errors: erros,
+        totalNumbers: stats.success ? stats.stats.total : 0,
+        opcoes: opcoes,
+      };
+    } else {
+      return {
+        success: false,
+        error: "Nenhum número válido para adicionar",
+        added: [],
+        errors: erros,
+      };
+    }
   } catch (error) {
     return {
       success: false,
       error: "Erro ao processar CSV: " + error.message,
       added: [],
       errors: [],
-      totalNumbers: numbersInMemory.length,
     };
   }
 }
 
 /**
- * Adiciona um número à lista em memória (DEPRECATED - manter para compatibilidade)
+ * Adiciona um número à lista (DEPRECATED - manter para compatibilidade)
  * @param {string} phoneNumber - Número de telefone
  * @returns {Promise<Object>} - Resultado da operação
  */
@@ -142,12 +145,10 @@ async function adicionarNumero(phoneNumber) {
       };
     }
 
-    // Verifica se o número já existe na lista
-    const numeroJaExiste = numbersInMemory.some(
-      (item) => item.whatsappFormat === result.whatsappFormat
-    );
+    // Verifica se já existe
+    const existente = await buscarClientePorTel(result.whatsappFormat);
 
-    if (numeroJaExiste) {
+    if (existente.found) {
       return {
         success: false,
         error: "Número já está na lista",
@@ -156,26 +157,33 @@ async function adicionarNumero(phoneNumber) {
       };
     }
 
-    // Adiciona o número à lista com timestamp
-    const numeroParaAdicionar = {
-      id: Date.now(),
-      originalNumber: result.originalNumber,
-      cleanedNumber: result.cleanedNumber,
-      finalNumber: result.finalNumber,
-      whatsappFormat: result.whatsappFormat,
-      numberType: result.numberType,
-      customName: null,
-      addedAt: new Date().toISOString(),
-    };
+    // Adiciona ao banco usando a função em lote (mais eficiente)
+    const resultadoBanco = await adicionarClientesEmLote([
+      {
+        name: "",
+        tel: result.whatsappFormat,
+      },
+    ]);
 
-    numbersInMemory.push(numeroParaAdicionar);
+    if (resultadoBanco.success && resultadoBanco.adicionados > 0) {
+      const stats = await obterEstatisticasDB();
 
-    return {
-      success: true,
-      message: "Número adicionado com sucesso",
-      number: numeroParaAdicionar,
-      totalNumbers: numbersInMemory.length,
-    };
+      return {
+        success: true,
+        message: "Número adicionado com sucesso",
+        number: {
+          originalNumber: result.originalNumber,
+          whatsappFormat: result.whatsappFormat,
+        },
+        totalNumbers: stats.success ? stats.stats.total : 0,
+      };
+    } else {
+      return {
+        success: false,
+        error: "Não foi possível adicionar o número",
+        originalNumber: phoneNumber,
+      };
+    }
   } catch (error) {
     return {
       success: false,
@@ -193,36 +201,15 @@ async function adicionarNumero(phoneNumber) {
 async function adicionarMultiplosNumeros(phoneNumbers) {
   try {
     const results = await validateMultipleNumbers(phoneNumbers);
-    const sucessos = [];
+    const clientesParaAdicionar = [];
     const erros = [];
 
     // Processa números válidos
     for (const validResult of results.valid) {
-      // Verifica se já existe
-      const numeroJaExiste = numbersInMemory.some(
-        (item) => item.whatsappFormat === validResult.whatsappFormat
-      );
-
-      if (!numeroJaExiste) {
-        const numeroParaAdicionar = {
-          id: Date.now() + Math.random(),
-          originalNumber: validResult.originalNumber,
-          cleanedNumber: validResult.cleanedNumber,
-          finalNumber: validResult.finalNumber,
-          whatsappFormat: validResult.whatsappFormat,
-          numberType: validResult.numberType,
-          customName: null,
-          addedAt: new Date().toISOString(),
-        };
-
-        numbersInMemory.push(numeroParaAdicionar);
-        sucessos.push(numeroParaAdicionar);
-      } else {
-        erros.push({
-          originalNumber: validResult.originalNumber,
-          error: "Número já existe na lista",
-        });
-      }
+      clientesParaAdicionar.push({
+        name: "",
+        tel: validResult.whatsappFormat,
+      });
     }
 
     // Adiciona erros de validação
@@ -233,13 +220,29 @@ async function adicionarMultiplosNumeros(phoneNumbers) {
       });
     });
 
-    return {
-      success: true,
-      message: `Processamento concluído: ${sucessos.length} adicionados, ${erros.length} com erro`,
-      added: sucessos,
-      errors: erros,
-      totalNumbers: numbersInMemory.length,
-    };
+    // Adiciona ao banco
+    if (clientesParaAdicionar.length > 0) {
+      const resultadoBanco = await adicionarClientesEmLote(
+        clientesParaAdicionar
+      );
+
+      const stats = await obterEstatisticasDB();
+
+      return {
+        success: true,
+        message: `Processamento concluído: ${resultadoBanco.adicionados} adicionados, ${resultadoBanco.jaExistiam} já existiam, ${erros.length} com erro`,
+        added: resultadoBanco.adicionados,
+        alreadyExisted: resultadoBanco.jaExistiam,
+        errors: erros,
+        totalNumbers: stats.success ? stats.stats.total : 0,
+      };
+    } else {
+      return {
+        success: false,
+        error: "Nenhum número válido para adicionar",
+        errors: erros,
+      };
+    }
   } catch (error) {
     return {
       success: false,
@@ -249,15 +252,38 @@ async function adicionarMultiplosNumeros(phoneNumbers) {
 }
 
 /**
- * Lista todos os números em memória
- * @returns {Promise<Array>} - Lista de números
+ * Lista todos os números do banco
+ * @returns {Promise<Object>} - Lista de números
  */
 async function listarNumeros() {
   try {
+    const resultado = await listarClientesPorStatus(null);
+
+    if (!resultado.success) {
+      return {
+        success: false,
+        error: resultado.error,
+        numbers: [],
+        total: 0,
+      };
+    }
+
+    // Transforma o formato do banco para o formato esperado
+    const numbers = resultado.clients.map((client) => ({
+      id: client.id,
+      originalNumber: client.tel,
+      cleanedNumber: client.tel,
+      finalNumber: client.tel,
+      whatsappFormat: client.tel,
+      numberType: "stored", // Tipo genérico pois já está validado
+      customName: client.name || null,
+      status: client.status,
+    }));
+
     return {
       success: true,
-      numbers: [...numbersInMemory],
-      total: numbersInMemory.length,
+      numbers: numbers,
+      total: resultado.total,
     };
   } catch (error) {
     return {
@@ -276,24 +302,21 @@ async function listarNumeros() {
  */
 async function removerNumero(id) {
   try {
-    const indexToRemove = numbersInMemory.findIndex(
-      (item) => item.id == id || item.whatsappFormat === id
-    );
+    const resultado = await removerCliente(id);
 
-    if (indexToRemove === -1) {
+    if (!resultado.success) {
       return {
         success: false,
-        error: "Número não encontrado na lista",
+        error: resultado.message || "Número não encontrado na lista",
       };
     }
 
-    const numeroRemovido = numbersInMemory.splice(indexToRemove, 1)[0];
+    const stats = await obterEstatisticasDB();
 
     return {
       success: true,
       message: "Número removido com sucesso",
-      removedNumber: numeroRemovido,
-      totalNumbers: numbersInMemory.length,
+      totalNumbers: stats.success ? stats.stats.total : 0,
     };
   } catch (error) {
     return {
@@ -309,13 +332,19 @@ async function removerNumero(id) {
  */
 async function limparListaNumeros() {
   try {
-    const totalRemovidos = numbersInMemory.length;
-    numbersInMemory = [];
+    const resultado = await limparClientes();
+
+    if (!resultado.success) {
+      return {
+        success: false,
+        error: resultado.error,
+      };
+    }
 
     return {
       success: true,
-      message: `Lista limpa com sucesso. ${totalRemovidos} números removidos.`,
-      totalRemoved: totalRemovidos,
+      message: `Lista limpa com sucesso. ${resultado.totalRemoved} números removidos.`,
+      totalRemoved: resultado.totalRemoved,
     };
   } catch (error) {
     return {
@@ -331,44 +360,22 @@ async function limparListaNumeros() {
  */
 async function obterEstatisticas() {
   try {
-    const stats = {
-      total: numbersInMemory.length,
-      porTipo: {
-        brazilian: 0,
-        international: 0,
-        brazilian_assumed: 0,
-        unknown: 0,
-      },
-      comNomePersonalizado: 0,
-      semNomePersonalizado: 0,
-      maisRecente: null,
-      maisAntigo: null,
-    };
+    const resultado = await obterEstatisticasDB();
 
-    if (numbersInMemory.length > 0) {
-      // Conta por tipo e nomes
-      numbersInMemory.forEach((num) => {
-        if (stats.porTipo[num.numberType] !== undefined) {
-          stats.porTipo[num.numberType]++;
-        } else {
-          stats.porTipo.unknown++;
-        }
-
-        if (num.customName) {
-          stats.comNomePersonalizado++;
-        } else {
-          stats.semNomePersonalizado++;
-        }
-      });
-
-      // Encontra mais recente e mais antigo
-      const sorted = [...numbersInMemory].sort(
-        (a, b) => new Date(a.addedAt) - new Date(b.addedAt)
-      );
-
-      stats.maisAntigo = sorted[0];
-      stats.maisRecente = sorted[sorted.length - 1];
+    if (!resultado.success) {
+      return {
+        success: false,
+        error: resultado.error,
+      };
     }
+
+    // Adapta formato para manter compatibilidade
+    const stats = {
+      total: resultado.stats.total,
+      porStatus: resultado.stats.porStatus,
+      comNomePersonalizado: resultado.stats.comNome,
+      semNomePersonalizado: resultado.stats.semNome,
+    };
 
     return {
       success: true,
@@ -383,11 +390,34 @@ async function obterEstatisticas() {
 }
 
 /**
- * Obtém a lista de números em memória (para uso interno dos módulos)
- * @returns {Array} - Array de números
+ * Obtém a lista de números prontos para disparo (para uso interno dos módulos)
+ * Substitui o antigo getNumbersInMemory()
+ * @returns {Promise<Array>} - Array de números no formato esperado pelo disparo
  */
-function getNumbersInMemory() {
-  return numbersInMemory;
+async function getNumbersInMemory() {
+  try {
+    const resultado = await listarClientesParaDisparo();
+
+    if (!resultado.success) {
+      console.error("Erro ao buscar números para disparo:", resultado.error);
+      return [];
+    }
+
+    // Transforma para o formato esperado pelo messageDispatchDSM
+    return resultado.clients.map((client) => ({
+      id: client.id,
+      originalNumber: client.tel,
+      cleanedNumber: client.tel,
+      finalNumber: client.tel,
+      whatsappFormat: client.tel,
+      numberType: "stored",
+      customName: client.name || null,
+      status: client.status,
+    }));
+  } catch (error) {
+    console.error("Erro ao obter números para disparo:", error);
+    return [];
+  }
 }
 
 module.exports = {

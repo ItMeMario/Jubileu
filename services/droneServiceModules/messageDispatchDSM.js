@@ -5,6 +5,7 @@ const { processVariables } = require("../../utils/messageReader");
 const { getNumbersInMemory } = require("./numberManagementDSM");
 const { buscarMensagemPorId } = require("./messageDatabaseDSM");
 const { verificarStatusCliente } = require("./clientStatusDSM");
+const { atualizarStatusCliente } = require("./clientDatabaseDSM");
 
 /**
  * Executa disparo de mensagens para uma lista de números
@@ -83,6 +84,9 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
         // Envia mensagem personalizada
         await client.sendMessage(numero.whatsappFormat, mensagemPersonalizada);
 
+        // ✅ ATUALIZA STATUS NO BANCO COMO 'sent'
+        await atualizarStatusCliente(numero.whatsappFormat, "sent");
+
         resultados.enviados++;
         resultados.results.push({
           numero: numero.originalNumber,
@@ -107,6 +111,9 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
           await smartDelay({ minMs: 60000, maxMs: 180000 });
         }
       } catch (error) {
+        // ❌ ATUALIZA STATUS NO BANCO COMO 'failed'
+        await atualizarStatusCliente(numero.whatsappFormat, "failed");
+
         resultados.falhas++;
         resultados.results.push({
           numero: numero.originalNumber,
@@ -156,7 +163,8 @@ async function executarDisparoCompleto(
   onBatchComplete = null
 ) {
   try {
-    const numbersInMemory = getNumbersInMemory();
+    // 🔄 BUSCA NÚMEROS DO BANCO (pending + failed)
+    const numbersInMemory = await getNumbersInMemory();
 
     if (numbersInMemory.length === 0) {
       return {

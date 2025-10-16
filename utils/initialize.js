@@ -223,10 +223,11 @@ async function initializeDatabase() {
           cities: await checkTableExists(db, "cities"),
           indicators: await checkTableExists(db, "indicators"),
           messages: await checkTableExists(db, "messages"),
+          clients: await checkTableExists(db, "clients"),
         };
 
         await debug(
-          `📊 Status das tabelas: cities=${tablesExist.cities}, indicators=${tablesExist.indicators}, messages=${tablesExist.messages}`
+          `📊 Status das tabelas: cities=${tablesExist.cities}, indicators=${tablesExist.indicators}, messages=${tablesExist.messages}, clients=${tablesExist.clients}`
         );
 
         const queries = [
@@ -254,12 +255,20 @@ async function initializeDatabase() {
             message_content TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
           )`,
+          `CREATE TABLE IF NOT EXISTS clients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            tel TEXT NOT NULL UNIQUE,
+            status TEXT DEFAULT 'pending'
+          )`,
         ];
 
         for (let i = 0; i < queries.length; i++) {
           try {
             await runQuery(db, queries[i]);
-            const tableName = ["cities", "indicators", "messages"][i];
+            const tableName = ["cities", "indicators", "messages", "clients"][
+              i
+            ];
             await debug(`✅ Tabela '${tableName}' criada/verificada`);
           } catch (err) {
             console.error(`❌ Erro ao criar tabela ${i + 1}:`, err);
@@ -275,6 +284,7 @@ async function initializeDatabase() {
           `CREATE INDEX IF NOT EXISTS idx_messages_type ON messages(message_type)`,
           `CREATE INDEX IF NOT EXISTS idx_indicators_horario ON indicators(horario_escolhido)`,
           `CREATE INDEX IF NOT EXISTS idx_indicators_created_at ON indicators(created_at)`,
+          `CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_tel ON clients(tel)`,
         ];
 
         for (const indexQuery of indexes) {
@@ -321,16 +331,18 @@ async function initializeDatabase() {
           cities: await checkTableExists(db, "cities"),
           indicators: await checkTableExists(db, "indicators"),
           messages: await checkTableExists(db, "messages"),
+          clients: await checkTableExists(db, "clients"),
         };
 
         await debug(
-          `🔍 Verificação final das tabelas: cities=${finalCheck.cities}, indicators=${finalCheck.indicators}, messages=${finalCheck.messages}`
+          `🔍 Verificação final das tabelas: cities=${finalCheck.cities}, indicators=${finalCheck.indicators}, messages=${finalCheck.messages}, clients=${finalCheck.clients}`
         );
 
         if (
           !finalCheck.cities ||
           !finalCheck.indicators ||
-          !finalCheck.messages
+          !finalCheck.messages ||
+          !finalCheck.clients
         ) {
           const missingTables = Object.entries(finalCheck)
             .filter(([table, exists]) => !exists)
