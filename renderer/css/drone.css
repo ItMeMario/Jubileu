@@ -179,6 +179,199 @@ body {
 }
 
 /* ========================================
+   CARDS DE STATUS - NOVOS
+   ======================================== */
+
+.stat-card.status-pending-card {
+    border-left: 4px solid #f59e0b;
+}
+
+.stat-card.status-pending-card .stat-icon {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.stat-card.status-sent-card {
+    border-left: 4px solid #10b981;
+}
+
+.stat-card.status-sent-card .stat-icon {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+}
+
+.stat-card.status-failed-card {
+    border-left: 4px solid #ef4444;
+}
+
+.stat-card.status-failed-card .stat-icon {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+}
+
+.stat-percent {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+    font-weight: normal;
+}
+
+/* ========================================
+   BADGES DE STATUS NOS NÚMEROS
+   ======================================== */
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fbbf24;
+}
+
+.status-badge.status-sent {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.status-badge.status-failed {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+}
+
+/* ========================================
+   FILTRO E BOTÕES DE AÇÃO
+   ======================================== */
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.list-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-controls label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.status-filter {
+    padding: 8px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.3s;
+    min-width: 160px;
+}
+
+.status-filter:focus {
+    outline: none;
+    border-color: #25d366;
+}
+
+.status-filter:hover {
+    border-color: #25d366;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-warning {
+    background: #f59e0b;
+    color: white;
+}
+
+.btn-warning:hover {
+    background: #d97706;
+}
+
+/* ========================================
+   BREAKDOWN DE STATUS (SEÇÃO STATUS)
+   ======================================== */
+
+.status-breakdown {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 2px solid #f0f0f0;
+}
+
+.status-breakdown h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.breakdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    transition: background 0.3s;
+}
+
+.breakdown-item:hover {
+    background: #e9ecef;
+}
+
+.breakdown-icon {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+}
+
+.breakdown-label {
+    flex: 1;
+    color: #666;
+    font-size: 14px;
+}
+
+.breakdown-value {
+    color: #333;
+    font-weight: bold;
+    font-size: 16px;
+    min-width: 40px;
+    text-align: right;
+}
+
+.breakdown-percent {
+    color: #999;
+    font-size: 13px;
+    min-width: 50px;
+    text-align: right;
+}
+
+/* ========================================
    FORMULÁRIOS
    ======================================== */
 
@@ -480,18 +673,6 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.list-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.list-header h3 {
-    margin: 0;
-    color: #333;
-}
-
 /* Number Item */
 .number-item {
     display: flex;
@@ -532,6 +713,9 @@ body {
     font-size: 12px;
     color: #999;
     margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .number-type {
@@ -542,7 +726,6 @@ body {
     border-radius: 4px;
     font-size: 11px;
     font-weight: 500;
-    margin-right: 8px;
 }
 
 .btn-remove {
@@ -1062,5 +1245,23 @@ body {
         right: 10px;
         left: 10px;
         max-width: none;
+    }
+
+    .list-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .filter-controls,
+    .action-buttons {
+        width: 100%;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
     }
 }

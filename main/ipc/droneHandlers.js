@@ -81,12 +81,14 @@ class DroneHandlers {
   }
 
   /**
-   * Lista os números atualmente em memória
+   * Lista os números atualmente no banco
+   * @param {Object} event - Evento IPC
+   * @param {string} filtroStatus - Filtro de status (pending/sent/failed/all)
    */
-  async listarNumerosAtuais() {
+  async listarNumerosAtuais(event, filtroStatus = "all") {
     try {
-      console.log("Listando números atuais...");
-      return await droneControllerGui.listarNumerosAtuais();
+      console.log(`Listando números atuais com filtro: ${filtroStatus}`);
+      return await droneControllerGui.listarNumerosAtuais(filtroStatus);
     } catch (error) {
       console.error("Erro ao listar números atuais:", error);
       return { success: false, error: error.message };
@@ -117,6 +119,32 @@ class DroneHandlers {
       return await droneControllerGui.limparListaCompleta();
     } catch (error) {
       console.error("Erro ao limpar lista completa:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Limpa apenas números com status 'sent'
+   */
+  async limparEnviados() {
+    try {
+      console.log("Limpando números enviados...");
+      return await droneControllerGui.limparEnviados();
+    } catch (error) {
+      console.error("Erro ao limpar enviados:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Limpa apenas números com status 'failed'
+   */
+  async limparFalhas() {
+    try {
+      console.log("Limpando números com falha...");
+      return await droneControllerGui.limparFalhas();
+    } catch (error) {
+      console.error("Erro ao limpar falhas:", error);
       return { success: false, error: error.message };
     }
   }

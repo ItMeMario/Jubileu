@@ -355,6 +355,39 @@ async function limparListaNumeros() {
 }
 
 /**
+ * Limpa números por status específico
+ * @param {string} status - Status para filtrar ('pending', 'sent', 'failed')
+ * @returns {Promise<Object>} - Resultado da operação
+ */
+async function limparClientesPorStatus(status) {
+  try {
+    const {
+      limparClientesPorStatus: limparPorStatus,
+    } = require("./clientDatabaseDSM");
+    const resultado = await limparPorStatus(status);
+
+    if (!resultado.success) {
+      return {
+        success: false,
+        error: resultado.error,
+      };
+    }
+
+    return {
+      success: true,
+      message: resultado.message,
+      totalRemoved: resultado.totalRemoved,
+      status: resultado.status,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: "Erro ao limpar por status: " + error.message,
+    };
+  }
+}
+
+/**
  * Obtém estatísticas da lista de números
  * @returns {Promise<Object>} - Estatísticas
  */

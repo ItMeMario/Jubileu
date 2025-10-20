@@ -351,6 +351,14 @@ class IPCManager {
       this.handlers.drone.limparListaCompleta.bind(this.handlers.drone)
     );
     ipcMain.handle(
+      "drone-limpar-enviados",
+      this.handlers.drone.limparEnviados.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-limpar-falhas",
+      this.handlers.drone.limparFalhas.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
       "drone-obter-estatisticas-numeros",
       this.handlers.drone.obterEstatisticasNumeros.bind(this.handlers.drone)
     );
@@ -454,6 +462,8 @@ class IPCManager {
       "drone-listar-numeros-atuais",
       "drone-remover-numero",
       "drone-limpar-lista-completa",
+      "drone-limpar-enviados",
+      "drone-limpar-falhas",
       "drone-obter-estatisticas-numeros",
       "drone-obter-status-cliente",
       "drone-executar-disparo-drone",

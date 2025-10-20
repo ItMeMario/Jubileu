@@ -15,6 +15,7 @@ const {
   listarNumeros,
   removerNumero,
   limparListaNumeros,
+  limparClientesPorStatus,
   obterEstatisticas,
 } = require("./droneServiceModules/numberManagementDSM");
 
@@ -51,6 +52,7 @@ module.exports = {
   listarNumeros,
   removerNumero,
   limparListaNumeros,
+  limparClientesPorStatus,
   obterEstatisticas,
 
   // Funções de disparo

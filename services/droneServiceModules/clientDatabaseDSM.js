@@ -375,6 +375,57 @@ async function buscarClientePorTel(tel) {
   });
 }
 
+/**
+ * Limpa clientes por status específico
+ * @param {string} status - Status para filtrar ('pending', 'sent', 'failed')
+ * @returns {Promise<Object>} - Resultado da operação
+ */
+async function limparClientesPorStatus(status) {
+  const db = await getDatabaseConnection();
+
+  return new Promise((resolve, reject) => {
+    // Primeiro conta quantos existem com esse status
+    db.get(
+      "SELECT COUNT(*) as total FROM clients WHERE status = ?",
+      [status],
+      (err, row) => {
+        if (err) {
+          db.close();
+          reject({
+            success: false,
+            error: "Erro ao contar clientes: " + err.message,
+          });
+          return;
+        }
+
+        const total = row.total;
+
+        // Depois remove os clientes com esse status
+        db.run(
+          "DELETE FROM clients WHERE status = ?",
+          [status],
+          function (err) {
+            db.close();
+            if (err) {
+              reject({
+                success: false,
+                error: "Erro ao limpar clientes: " + err.message,
+              });
+            } else {
+              resolve({
+                success: true,
+                message: `${total} cliente(s) com status '${status}' removido(s)`,
+                totalRemoved: total,
+                status: status,
+              });
+            }
+          }
+        );
+      }
+    );
+  });
+}
+
 module.exports = {
   adicionarCliente,
   adicionarClientesEmLote,
@@ -383,6 +434,7 @@ module.exports = {
   atualizarStatusCliente,
   removerCliente,
   limparClientes,
+  limparClientesPorStatus,
   obterEstatisticas,
   buscarClientePorTel,
 };

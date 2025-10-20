@@ -128,14 +128,56 @@ export default class DroneDispatch {
     }
   }
 
-  updateDisparoSummary() {
-    const batchSize = parseInt(this.manager.batchSize.value) || 200;
-    const totalNumbers = this.manager.currentNumbers.length;
+  /**
+   * ATUALIZADO: Atualiza resumo com números a enviar (pending + failed)
+   */
+  async updateDisparoSummary() {
+    try {
+      const batchSize = parseInt(this.manager.batchSize.value) || 200;
+      const totalNumbers = this.manager.currentNumbers.length;
 
-    this.manager.summaryTotal.textContent = totalNumbers;
-    this.manager.summaryBatches.textContent = Math.ceil(
-      totalNumbers / batchSize
-    );
+      // Busca estatísticas para calcular pending + failed
+      const statsResult = await window.droneAPI.obterEstatisticasNumeros();
+
+      let numbersToSend = 0;
+      if (statsResult.success && statsResult.estatisticas) {
+        const pending = statsResult.estatisticas.porStatus?.pending || 0;
+        const failed = statsResult.estatisticas.porStatus?.failed || 0;
+        numbersToSend = pending + failed;
+      }
+
+      // Atualiza campos
+      this.manager.summaryTotal.textContent = totalNumbers;
+
+      // NOVO: Campo de números a enviar
+      if (this.manager.summaryToSend) {
+        this.manager.summaryToSend.textContent = numbersToSend;
+      }
+
+      // Calcula batches baseado em números a enviar (não no total)
+      const batches =
+        numbersToSend > 0 ? Math.ceil(numbersToSend / batchSize) : 0;
+      this.manager.summaryBatches.textContent = batches;
+
+      console.log("Resumo do disparo:", {
+        total: totalNumbers,
+        aEnviar: numbersToSend,
+        batches: batches,
+        batchSize: batchSize,
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar resumo:", error);
+      // Fallback: usa o total de números atual
+      const batchSize = parseInt(this.manager.batchSize.value) || 200;
+      const totalNumbers = this.manager.currentNumbers.length;
+      this.manager.summaryTotal.textContent = totalNumbers;
+      if (this.manager.summaryToSend) {
+        this.manager.summaryToSend.textContent = totalNumbers;
+      }
+      this.manager.summaryBatches.textContent = Math.ceil(
+        totalNumbers / batchSize
+      );
+    }
   }
 
   async executeDisparo() {
@@ -152,9 +194,27 @@ export default class DroneDispatch {
       return;
     }
 
+    // Busca estatísticas para mostrar confirmação correta
+    const statsResult = await window.droneAPI.obterEstatisticasNumeros();
+    let numbersToSend = this.manager.currentNumbers.length;
+
+    if (statsResult.success && statsResult.estatisticas) {
+      const pending = statsResult.estatisticas.porStatus?.pending || 0;
+      const failed = statsResult.estatisticas.porStatus?.failed || 0;
+      numbersToSend = pending + failed;
+    }
+
+    if (numbersToSend === 0) {
+      this.manager.utility.showStatus(
+        "Não há números pendentes ou com falha para enviar",
+        "error"
+      );
+      return;
+    }
+
     if (
       !confirm(
-        `Executar disparo para ${this.manager.currentNumbers.length} números?`
+        `Executar disparo para ${numbersToSend} números (Pendentes + Falhas)?`
       )
     ) {
       return;
@@ -177,6 +237,13 @@ export default class DroneDispatch {
       if (result.success) {
         this.showDisparoResults(result);
         this.manager.utility.showStatus("Disparo concluído", "success");
+
+        // Atualiza lista e estatísticas após disparo
+        await this.manager.numbers.loadNumbers(
+          this.manager.currentStatusFilter
+        );
+        await this.manager.numbers.loadStatistics();
+        await this.updateDisparoSummary();
       } else {
         this.manager.utility.showStatus(
           result.error || "Erro no disparo",

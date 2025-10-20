@@ -120,11 +120,13 @@ class DroneControllerGui {
         success: true,
         message: resultado.message,
         adicionados: adicionadosFormatados,
+        jaExistiam: resultado.alreadyExisted || 0,
         erros: errosFormatados,
         totalNumeros: resultado.totalNumbers,
         resumo: {
           totalProcessados: resultado.added.length + resultado.errors.length,
           totalAdicionados: resultado.added.length,
+          totalJaExistiam: resultado.alreadyExisted || 0,
           totalErros: resultado.errors.length,
           opcoesAplicadas: {
             prefixoPais: opcoesProcessamento.prefixoPais || "Nenhum",
@@ -230,12 +232,13 @@ class DroneControllerGui {
   }
 
   /**
-   * Lista os números atualmente em memória
+   * Lista os números atualmente no banco
+   * @param {string} filtroStatus - Status para filtrar (pending/sent/failed/all)
    * @returns {Promise<Object>} - Lista formatada
    */
-  async listarNumerosAtuais() {
+  async listarNumerosAtuais(filtroStatus = "all") {
     try {
-      console.log("Listando números atuais...");
+      console.log(`Listando números com filtro: ${filtroStatus}`);
       const resultado = await droneService.listarNumeros();
 
       if (!resultado.success) {
@@ -255,24 +258,34 @@ class DroneControllerGui {
         };
       }
 
+      // Aplica filtro de status se necessário
+      let numerosFiltrados = resultado.numbers;
+      if (filtroStatus !== "all") {
+        numerosFiltrados = resultado.numbers.filter(
+          (num) => num.status === filtroStatus
+        );
+      }
+
       // Formata números para exibição na GUI
-      const numerosFormatados = resultado.numbers.map((num, index) => ({
+      const numerosFormatados = numerosFiltrados.map((num, index) => ({
         indice: index + 1,
         id: num.id,
         numeroOriginal: num.originalNumber,
         numeroWhatsapp: num.whatsappFormat,
         nome: num.customName || "-",
         temNomePersonalizado: !!num.customName,
-        tipo: this.getTipoTexto(num.numberType),
-        tipoCompleto: num.numberType,
-        adicionadoEm: num.addedAt,
-        dataFormatada: new Date(num.addedAt).toLocaleString("pt-BR"),
+        status: num.status || "pending",
+        statusTexto: this.getStatusTexto(num.status),
+        statusIcon: this.getStatusIcon(num.status),
+        statusClass: this.getStatusClass(num.status),
       }));
 
       return {
         success: true,
         numeros: numerosFormatados,
-        total: resultado.total,
+        total: numerosFiltrados.length,
+        totalGeral: resultado.total,
+        filtroAplicado: filtroStatus,
       };
     } catch (error) {
       console.error("Erro ao listar números:", error);
@@ -294,41 +307,12 @@ class DroneControllerGui {
     try {
       console.log(`Removendo número: ${identificador}`);
 
-      // Se for um índice (número da lista exibida), precisa converter para ID
-      const listaAtual = await droneService.listarNumeros();
-
-      if (!listaAtual.success || listaAtual.numbers.length === 0) {
-        return {
-          success: false,
-          error: "Nenhum número disponível para remoção.",
-        };
-      }
-
-      let idParaRemover;
-
-      // Se identificador é um número e menor/igual ao total, trata como índice
-      if (
-        !isNaN(identificador) &&
-        identificador > 0 &&
-        identificador <= listaAtual.numbers.length
-      ) {
-        const indice = parseInt(identificador) - 1; // Converte para índice base 0
-        idParaRemover = listaAtual.numbers[indice].id;
-      } else {
-        // Caso contrário, trata como ID direto
-        idParaRemover = identificador;
-      }
-
-      const resultado = await droneService.removerNumero(idParaRemover);
+      const resultado = await droneService.removerNumero(identificador);
 
       if (resultado.success) {
         return {
           success: true,
-          message: `Número removido: ${resultado.removedNumber.originalNumber}`,
-          numeroRemovido: {
-            ...resultado.removedNumber,
-            nome: resultado.removedNumber.customName || "-",
-          },
+          message: "Número removido com sucesso",
           totalRestante: resultado.totalNumbers,
         };
       } else {
@@ -377,6 +361,66 @@ class DroneControllerGui {
   }
 
   /**
+   * Limpa apenas números com status 'sent'
+   * @returns {Promise<Object>} - Resultado da operação
+   */
+  async limparEnviados() {
+    try {
+      console.log("Limpando números enviados...");
+      const resultado = await droneService.limparClientesPorStatus("sent");
+
+      if (resultado.success) {
+        return {
+          success: true,
+          message: `${resultado.totalRemoved} número(s) enviado(s) removido(s)`,
+          totalRemovidos: resultado.totalRemoved,
+        };
+      } else {
+        return {
+          success: false,
+          error: resultado.error,
+        };
+      }
+    } catch (error) {
+      console.error("Erro ao limpar enviados:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Limpa apenas números com status 'failed'
+   * @returns {Promise<Object>} - Resultado da operação
+   */
+  async limparFalhas() {
+    try {
+      console.log("Limpando números com falha...");
+      const resultado = await droneService.limparClientesPorStatus("failed");
+
+      if (resultado.success) {
+        return {
+          success: true,
+          message: `${resultado.totalRemoved} número(s) com falha removido(s)`,
+          totalRemovidos: resultado.totalRemoved,
+        };
+      } else {
+        return {
+          success: false,
+          error: resultado.error,
+        };
+      }
+    } catch (error) {
+      console.error("Erro ao limpar falhas:", error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
    * Obtém estatísticas dos números cadastrados
    * @returns {Promise<Object>} - Estatísticas formatadas
    */
@@ -394,35 +438,53 @@ class DroneControllerGui {
 
       const stats = resultado.stats;
 
+      // Calcula percentuais
+      const total = stats.total;
+      const pending = stats.porStatus?.pending || 0;
+      const sent = stats.porStatus?.sent || 0;
+      const failed = stats.porStatus?.failed || 0;
+
       return {
         success: true,
         estatisticas: {
-          total: stats.total,
-          porTipo: stats.porTipo,
+          total: total,
+          porStatus: {
+            pending: pending,
+            sent: sent,
+            failed: failed,
+          },
+          percentuais: {
+            pending: total > 0 ? ((pending / total) * 100).toFixed(1) : 0,
+            sent: total > 0 ? ((sent / total) * 100).toFixed(1) : 0,
+            failed: total > 0 ? ((failed / total) * 100).toFixed(1) : 0,
+          },
           comNomePersonalizado: stats.comNomePersonalizado || 0,
           semNomePersonalizado: stats.semNomePersonalizado || 0,
           percentualComNome:
-            stats.total > 0
-              ? ((stats.comNomePersonalizado / stats.total) * 100).toFixed(1)
+            total > 0
+              ? ((stats.comNomePersonalizado / total) * 100).toFixed(1)
               : 0,
-          maisAntigo: stats.maisAntigo
-            ? {
-                ...stats.maisAntigo,
-                nome: stats.maisAntigo.customName || "-",
-                dataFormatada: new Date(
-                  stats.maisAntigo.addedAt
-                ).toLocaleString("pt-BR"),
-              }
-            : null,
-          maisRecente: stats.maisRecente
-            ? {
-                ...stats.maisRecente,
-                nome: stats.maisRecente.customName || "-",
-                dataFormatada: new Date(
-                  stats.maisRecente.addedAt
-                ).toLocaleString("pt-BR"),
-              }
-            : null,
+          // Status formatados para exibição
+          statusFormatados: {
+            pending: {
+              quantidade: pending,
+              texto: "Pendente",
+              icon: "⏳",
+              class: "status-pending",
+            },
+            sent: {
+              quantidade: sent,
+              texto: "Enviado",
+              icon: "✅",
+              class: "status-sent",
+            },
+            failed: {
+              quantidade: failed,
+              texto: "Falhou",
+              icon: "❌",
+              class: "status-failed",
+            },
+          },
         },
       };
     } catch (error) {
@@ -594,19 +656,45 @@ class DroneControllerGui {
   // Funções auxiliares
 
   /**
-   * Converte o tipo do número para texto legível
-   * @param {string} numberType - Tipo do número
-   * @returns {string} - Texto descritivo
+   * Retorna texto legível para o status
+   * @param {string} status - Status do cliente
+   * @returns {string} - Texto formatado
    */
-  getTipoTexto(numberType) {
-    const tipos = {
-      brazilian: "BR",
-      international: "INT",
-      brazilian_assumed: "BR*",
-      unknown: "?",
+  getStatusTexto(status) {
+    const textos = {
+      pending: "Pendente",
+      sent: "Enviado",
+      failed: "Falhou",
     };
+    return textos[status] || "Desconhecido";
+  }
 
-    return tipos[numberType] || "?";
+  /**
+   * Retorna ícone para o status
+   * @param {string} status - Status do cliente
+   * @returns {string} - Emoji/ícone
+   */
+  getStatusIcon(status) {
+    const icons = {
+      pending: "⏳",
+      sent: "✅",
+      failed: "❌",
+    };
+    return icons[status] || "❓";
+  }
+
+  /**
+   * Retorna classe CSS para o status
+   * @param {string} status - Status do cliente
+   * @returns {string} - Nome da classe
+   */
+  getStatusClass(status) {
+    const classes = {
+      pending: "status-pending",
+      sent: "status-sent",
+      failed: "status-failed",
+    };
+    return classes[status] || "status-unknown";
   }
 }
 

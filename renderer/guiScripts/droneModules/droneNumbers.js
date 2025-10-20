@@ -44,9 +44,13 @@ export default class DroneNumbers {
     }
   }
 
-  async loadNumbers() {
+  /**
+   * Carrega números com filtro de status opcional
+   * @param {string} filtroStatus - 'all', 'pending', 'sent', 'failed'
+   */
+  async loadNumbers(filtroStatus = "all") {
     try {
-      const result = await window.droneAPI.listarNumerosAtuais();
+      const result = await window.droneAPI.listarNumerosAtuais(filtroStatus);
 
       if (!result.success) {
         this.manager.utility.showStatus(
@@ -59,12 +63,22 @@ export default class DroneNumbers {
       this.manager.currentNumbers = result.numeros || [];
       this.renderNumbers(this.manager.currentNumbers);
       this.updateNumbersCount();
+
+      // Atualiza informação de filtro se necessário
+      if (filtroStatus !== "all" && result.total !== result.totalGeral) {
+        console.log(
+          `Mostrando ${result.total} de ${result.totalGeral} números (filtro: ${filtroStatus})`
+        );
+      }
     } catch (error) {
       console.error("Erro ao carregar números:", error);
       this.manager.utility.showStatus("Erro ao carregar números", "error");
     }
   }
 
+  /**
+   * Renderiza lista de números com badges de status
+   */
   renderNumbers(numeros) {
     if (!numeros || numeros.length === 0) {
       this.manager.numbersList.innerHTML =
@@ -79,13 +93,18 @@ export default class DroneNumbers {
             ? `<span class="number-name">${num.nome}</span>`
             : "";
 
+        // Badge de status
+        const statusBadge = num.statusIcon
+          ? `<span class="status-badge ${num.statusClass}">${num.statusIcon} ${num.statusTexto}</span>`
+          : "";
+
         return `
           <div class="number-item" data-id="${num.id}">
             <div class="number-info">
               <div class="number-value">${num.numeroWhatsapp}</div>
               ${nomeDisplay}
               <div class="number-meta">
-                <span class="number-type">${num.tipo}</span>
+                ${statusBadge}
               </div>
             </div>
             <button class="btn-remove" data-id="${num.id}">Remover</button>
@@ -278,6 +297,10 @@ export default class DroneNumbers {
         const resumo = result.resumo;
         let statusMsg = `✅ ${resumo.totalAdicionados} número(s) adicionado(s)`;
 
+        if (resumo.totalJaExistiam && resumo.totalJaExistiam > 0) {
+          statusMsg += `\n⚠️ ${resumo.totalJaExistiam} já existiam`;
+        }
+
         if (resumo.totalErros > 0) {
           statusMsg += `\n⚠️ ${resumo.totalErros} erro(s)`;
         }
@@ -293,7 +316,7 @@ export default class DroneNumbers {
 
         // Limpa o arquivo e atualiza a lista
         this.removeFile();
-        await this.loadNumbers();
+        await this.loadNumbers(this.manager.currentStatusFilter);
         await this.loadStatistics();
       } else {
         this.manager.utility.showStatus(
@@ -313,7 +336,7 @@ export default class DroneNumbers {
 
       if (result.success) {
         this.manager.utility.showStatus("Número removido", "success");
-        await this.loadNumbers();
+        await this.loadNumbers(this.manager.currentStatusFilter);
         await this.loadStatistics();
       } else {
         this.manager.utility.showStatus(
@@ -340,7 +363,7 @@ export default class DroneNumbers {
           `${result.totalRemovidos} número(s) removido(s)`,
           "success"
         );
-        await this.loadNumbers();
+        await this.loadNumbers(this.manager.currentStatusFilter);
         await this.loadStatistics();
       } else {
         this.manager.utility.showStatus(
@@ -354,15 +377,113 @@ export default class DroneNumbers {
     }
   }
 
+  /**
+   * NOVO: Limpa apenas números com status 'sent'
+   */
+  async clearSentNumbers() {
+    if (
+      !confirm(
+        "Tem certeza que deseja remover todos os números ENVIADOS com sucesso?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const result = await window.droneAPI.limparEnviados();
+
+      if (result.success) {
+        this.manager.utility.showStatus(
+          result.message || "Números enviados removidos",
+          "success"
+        );
+        await this.loadNumbers(this.manager.currentStatusFilter);
+        await this.loadStatistics();
+      } else {
+        this.manager.utility.showStatus(
+          result.error || "Erro ao limpar enviados",
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao limpar enviados:", error);
+      this.manager.utility.showStatus("Erro ao limpar enviados", "error");
+    }
+  }
+
+  /**
+   * NOVO: Limpa apenas números com status 'failed'
+   */
+  async clearFailedNumbers() {
+    if (
+      !confirm(
+        "Tem certeza que deseja remover todos os números que FALHARAM no envio?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const result = await window.droneAPI.limparFalhas();
+
+      if (result.success) {
+        this.manager.utility.showStatus(
+          result.message || "Números com falha removidos",
+          "success"
+        );
+        await this.loadNumbers(this.manager.currentStatusFilter);
+        await this.loadStatistics();
+      } else {
+        this.manager.utility.showStatus(
+          result.error || "Erro ao limpar falhas",
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao limpar falhas:", error);
+      this.manager.utility.showStatus("Erro ao limpar falhas", "error");
+    }
+  }
+
+  /**
+   * ATUALIZADO: Carrega estatísticas com status
+   */
   async loadStatistics() {
     try {
       const result = await window.droneAPI.obterEstatisticasNumeros();
 
       if (result.success && result.estatisticas) {
         const stats = result.estatisticas;
+
+        // Stats básicas
         this.manager.statTotal.textContent = stats.total || 0;
         this.manager.statBr.textContent = stats.porTipo?.brazilian || 0;
         this.manager.statInt.textContent = stats.porTipo?.international || 0;
+
+        // NOVO: Stats de status
+        if (this.manager.statPending) {
+          this.manager.statPending.textContent = stats.porStatus?.pending || 0;
+        }
+        if (this.manager.statSent) {
+          this.manager.statSent.textContent = stats.porStatus?.sent || 0;
+        }
+        if (this.manager.statFailed) {
+          this.manager.statFailed.textContent = stats.porStatus?.failed || 0;
+        }
+
+        // NOVO: Percentuais
+        if (this.manager.statPendingPercent) {
+          this.manager.statPendingPercent.textContent =
+            stats.percentuais?.pending + "%" || "0%";
+        }
+        if (this.manager.statSentPercent) {
+          this.manager.statSentPercent.textContent =
+            stats.percentuais?.sent + "%" || "0%";
+        }
+        if (this.manager.statFailedPercent) {
+          this.manager.statFailedPercent.textContent =
+            stats.percentuais?.failed + "%" || "0%";
+        }
 
         // Atualiza também o contador de nomes personalizados se existir
         if (stats.comNomePersonalizado !== undefined) {
@@ -370,6 +491,14 @@ export default class DroneNumbers {
             `Números com nomes: ${stats.comNomePersonalizado}/${stats.total} (${stats.percentualComNome}%)`
           );
         }
+
+        // Log de status para debug
+        console.log("Estatísticas por status:", {
+          pending: stats.porStatus?.pending || 0,
+          sent: stats.porStatus?.sent || 0,
+          failed: stats.porStatus?.failed || 0,
+          percentuais: stats.percentuais,
+        });
       }
     } catch (error) {
       console.error("Erro ao carregar estatísticas:", error);
