@@ -359,3 +359,37 @@ Essa mudança melhora a organização do código e facilita futuras manutençõe
 Nenhuma correção registrada nesta versão.
 
 📅 Data de Lançamento: [15/10/2025]
+
+📌 Patch Notes - Versão 0.0.11
+
+✨ Novidades
+
+Integração com banco de dados para o Drone
+O sistema agora utiliza um banco de dados para armazenar e gerenciar informações relacionadas aos disparos realizados.
+Foram adicionados novos recursos de resumo, incluindo:
+
+Quantidade de números a enviar
+
+Quantidade de números que falharam no envio
+
+Estimativa de batches
+
+Total de números adicionados
+
+Opção para limpar números já enviados ou que falharam
+
+Exibição percentual de números enviados, pendentes e com falha
+
+🛠️ Melhorias
+
+Novo diretório para ícone do Jubileu
+Criada uma pasta dedicada para armazenar o ícone do Jubileu, melhorando a organização dos recursos visuais.
+
+Ajustes no package.json
+Corrigidas e ajustadas as configurações do package.json para permitir a geração de build de forma adequada.
+
+🐛 Correções
+
+Nenhuma correção registrada nesta versão.
+
+📅 Data de Lançamento: [24/10/2025]
