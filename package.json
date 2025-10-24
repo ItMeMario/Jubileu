@@ -7,6 +7,7 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -24,8 +25,9 @@
     "electron-builder": "^26.0.12"
   },
   "build": {
-    "appId": "com.seuapp.whatsappbot",
+    "appId": "com.itmemario.jubileubot",
     "productName": "Jubileu Bot",
+    "asar": false,
     "directories": {
       "output": "dist"
     },
@@ -33,22 +35,46 @@
       "**/*",
       "!node_modules/.cache/**/*",
       "!dist/**/*",
-      "!node_modules/puppeteer-core/.local-chromium/**/*"
+      "!node_modules/puppeteer-core/.local-chromium/**/*",
+      "!data/**/*",
+      "!.wwebjs_auth/**/*",
+      "!*.log",
+      "!.git/**/*",
+      "!.gitignore",
+      "!README.md"
     ],
     "asarUnpack": [
-      "node_modules/whatsapp-web.js/**/*"
+      "node_modules/whatsapp-web.js/**/*",
+      "node_modules/sqlite3/**/*",
+      "services/**/*",
+      "config/**/*",
+      "utils/**/*",
+      "main/**/*",
+      "handlers/**/*",
+      "controllers/**/*",
+      "client/**/*"
     ],
     "win": {
-      "target": "nsis",
-      "requestedExecutionLevel": "asInvoker"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker",
+      "icon": "icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "installerHeaderIcon": "icon.ico"
+      "installerHeaderIcon": "icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "allowElevation": true
     },
-    "compression": "store"
+    "compression": "normal",
+    "npmRebuild": true,
+    "buildDependenciesFromSource": false
   }
 }
