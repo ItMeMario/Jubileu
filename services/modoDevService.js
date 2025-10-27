@@ -1,7 +1,7 @@
 const fs = require("fs").promises;
 const path = require("path");
 const { delay, randomDelay } = require("../utils/delay");
-const { initializeDevModeConfig } = require("../utils/initialize");
+const { initializeDevModeConfig } = require("../config/initialize");
 const Locale = require("../config/locale");
 
 const CONFIG_FILE = path.join(__dirname, "../data/devMode.json");

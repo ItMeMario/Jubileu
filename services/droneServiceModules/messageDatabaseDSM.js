@@ -1,5 +1,5 @@
 // services/droneServiceModules/messageDatabaseDSM.js
-const { getDatabaseConnection } = require("../../utils/initialize");
+const { getDatabaseConnection } = require("../../config/initialize");
 
 /**
  * Lista todas as mensagens disponíveis do tipo "drone"

@@ -1,7 +1,7 @@
 // util/scout.js
 const { getLastMenuTime } = require("../utils/lastActivity");
 const { debug } = require("../services/debugService");
-const { readJsonFile } = require("./initialize");
+const { readJsonFile } = require("../config/initialize");
 
 async function getDevModeConfig() {
   try {

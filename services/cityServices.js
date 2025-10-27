@@ -1,4 +1,4 @@
-const { getDatabaseConnection } = require("../utils/initialize");
+const { getDatabaseConnection } = require("../config/initialize");
 const { debug } = require("./debugService");
 
 class CityRepository {

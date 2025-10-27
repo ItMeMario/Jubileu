@@ -75,7 +75,7 @@ class DataBaseHandlers {
     try {
       console.log("Obtendo informações gerais do banco...");
 
-      const { DATABASE_PATH } = require("../../utils/initialize");
+      const { DATABASE_PATH } = require("../../config/initialize");
       const fs = require("fs").promises;
 
       const stats = await fs.stat(DATABASE_PATH);
@@ -144,7 +144,7 @@ class DataBaseHandlers {
       ]);
 
       // 🔧 CORREÇÃO: Obtendo informações do banco separadamente
-      const { DATABASE_PATH } = require("../../utils/initialize");
+      const { DATABASE_PATH } = require("../../config/initialize");
       const fs = require("fs").promises;
 
       const stats = await fs.stat(DATABASE_PATH);

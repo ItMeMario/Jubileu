@@ -36,7 +36,7 @@ class AudioManagerNHM {
       }
 
       // Construir o caminho completo do arquivo
-      const { DATA_DIR } = require("../../utils/initialize");
+      const { DATA_DIR } = require("../../config/initialize");
       const audioPath = path.join(DATA_DIR, "audio", audioFileName);
 
       // Verificar se o arquivo realmente existe

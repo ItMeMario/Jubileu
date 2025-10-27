@@ -1,5 +1,5 @@
 // app.js
-const { initializeAllConfigs } = require("./utils/initialize");
+const { initializeAllConfigs } = require("./config/initialize");
 const { client, startScout } = require("./client/client");
 const {
   initializeApp,

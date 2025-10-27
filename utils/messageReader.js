@@ -5,7 +5,7 @@ const Locale = require("../config/locale");
 const { debug } = require("../services/debugService");
 const path = require("path");
 const fs = require("fs");
-const { DATA_DIR } = require("../utils/initialize"); // Pega caminho da pasta data
+const { DATA_DIR } = require("../config/initialize"); // Pega caminho da pasta data
 
 // Cache com TTL (Time To Live)
 class MessageCache {

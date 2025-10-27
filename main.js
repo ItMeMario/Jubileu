@@ -3,7 +3,7 @@ const WindowManager = require("./main/windowManager");
 const ModuleLoader = require("./main/moduleLoader");
 const IPCManager = require("./main/ipcManager");
 const AppLifecycle = require("./main/AppLifecycle");
-const { initializeAllConfigs } = require("./utils/initialize");
+const { initializeAllConfigs } = require("./config/initialize");
 const ConsoleRedirect = require("./main/consoleRedirect");
 
 class Application {

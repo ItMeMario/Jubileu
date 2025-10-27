@@ -1,7 +1,7 @@
 const { handleConfigMenu } = require("../views/configViews");
 const { handleDroneMenu } = require("../views/droneViews");
 const { createInterface } = require("readline");
-const { initializeAllConfigs } = require("../utils/initialize");
+const { initializeAllConfigs } = require("../config/initialize");
 
 // Variável global para o readline persistente
 let persistentRl = null;

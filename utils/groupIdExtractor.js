@@ -1,4 +1,4 @@
-const { getDatabaseConnection } = require("../utils/initialize");
+const { getDatabaseConnection } = require("../config/initialize");
 const { debug } = require("../services/debugService");
 
 // Flag para evitar execução duplicada
@@ -79,7 +79,7 @@ async function dbOperation(operation) {
   }
 }
 
-// MUDANÇA: Busca TODAS as cidades com link (incluindo as que já têm link_id)
+// Busca TODAS as cidades com link (incluindo as que já têm link_id)
 async function getCitiesForProcessing() {
   return await dbOperation((db, callback) => {
     db.all(
@@ -106,7 +106,7 @@ async function updateCityLinkId(cityId, groupId) {
 }
 
 /**
- * MUDANÇA: Processa uma única cidade - sempre atualiza baseado no link atual
+ * Processa uma única cidade - sempre atualiza baseado no link atual
  */
 async function processSingleCity(client, city) {
   try {
@@ -149,7 +149,7 @@ async function processSingleCity(client, city) {
 }
 
 /**
- * MUDANÇA: Extrai IDs de grupos para todas as cidades (não só as sem link_id)
+ * Extrai IDs de grupos para todas as cidades (não só as sem link_id)
  */
 async function extractAllGroupIds(client) {
   if (isExtracting) {

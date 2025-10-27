@@ -1,4 +1,4 @@
-const { getDatabaseConnection } = require("../utils/initialize");
+const { getDatabaseConnection } = require("../config/initialize");
 
 class DatabaseService {
   // Obter informações de uma tabela

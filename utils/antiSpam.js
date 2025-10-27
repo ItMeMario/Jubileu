@@ -1,5 +1,5 @@
 // antiSpam.js - Sistema Anti-Spam para controle de tentativas inválidas
-const { readJsonFile, saveJsonFile } = require("./initialize");
+const { readJsonFile, saveJsonFile } = require("../config/initialize");
 const { enviarFAQ } = require("./triggers");
 const { debug } = require("../services/debugService");
 const { getMessage } = require("../utils/messageReader");

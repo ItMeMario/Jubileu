@@ -1,6 +1,6 @@
 const DatabaseService = require("../services/dataBaseService");
 const DatabaseView = require("../views/dataBaseView");
-const { DATABASE_PATH } = require("../utils/initialize");
+const { DATABASE_PATH } = require("../config/initialize");
 const fs = require("fs").promises;
 
 class DatabaseController {

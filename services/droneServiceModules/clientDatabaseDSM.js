@@ -1,5 +1,5 @@
 // services/droneServiceModules/clientDatabaseDSM.js
-const { getDatabaseConnection } = require("../../utils/initialize");
+const { getDatabaseConnection } = require("../../config/initialize");
 
 /**
  * Adiciona um cliente ao banco de dados

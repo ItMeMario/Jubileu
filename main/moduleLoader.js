@@ -51,7 +51,7 @@ class ModuleLoader {
 
   async loadInitializationUtils() {
     try {
-      const { initializeAllConfigs } = require("../utils/initialize");
+      const { initializeAllConfigs } = require("../config/initialize");
       this.modules.initializeAllConfigs = initializeAllConfigs;
 
       const { initializeApp } = require("../controllers/configController");
