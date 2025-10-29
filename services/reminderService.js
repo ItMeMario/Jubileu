@@ -1,19 +1,19 @@
-// reminderService.js
-// Sistema de lembretes para WhatsApp
-
-const path = require("path");
+// services/reminderService.js - VERSÃO CORRIGIDA
 const sqlite3 = require("sqlite3").verbose();
-const { debug } = require("../services/debugService");
+const { debug } = require("./debugService");
 
-const dbPath = path.join(__dirname, "..", "data", "database", "system.db");
-const db = new sqlite3.Database(dbPath);
+// 🔧 CORREÇÃO: Importa o caminho correto do banco
+const { DATABASE_PATH } = require("../config/initialize");
+
+console.log("📂 reminderService.js - Caminho do banco:", DATABASE_PATH);
+
+const db = new sqlite3.Database(DATABASE_PATH);
 
 class ReminderService {
   constructor() {
-    this.client = null; // Será definido pelo main.js
+    this.client = null;
   }
 
-  // Método para definir o cliente WhatsApp (chamado pelo app.js)
   setWhatsAppClient(client) {
     this.client = client;
     debug("📱 Cliente WhatsApp configurado no ReminderService");
@@ -43,7 +43,7 @@ class ReminderService {
   formatDateOffset(baseDate, days) {
     const d = new Date(baseDate);
     d.setDate(d.getDate() + days);
-    return d.toISOString().split("T")[0]; // YYYY-MM-DD
+    return d.toISOString().split("T")[0];
   }
 
   async checkCitiesForDate(targetDate) {
@@ -72,7 +72,6 @@ class ReminderService {
             try {
               const message = await this.getRandomReminderMessage();
               await this.executeReminder(city, message, targetDate);
-              // Aguarda 2 segundos entre mensagens para não sobrecarregar
               await this.sleep(2000);
             } catch (e) {
               console.error(
@@ -119,7 +118,6 @@ class ReminderService {
 
   async executeReminder(city, message, eventDate) {
     try {
-      // Verifica se a cidade tem link_id configurado
       if (!city.link_id || city.link_id === "0" || city.link_id === "") {
         console.error(
           `❌ Cidade ${city.name} não possui link_id válido (${city.link_id})`
@@ -127,14 +125,12 @@ class ReminderService {
         return;
       }
 
-      // Calcula quantos dias faltam para o evento
       const today = new Date();
       const targetDate = new Date(eventDate);
       const daysUntilEvent = Math.ceil(
         (targetDate - today) / (1000 * 60 * 60 * 24)
       );
 
-      // Substitui placeholders na mensagem
       const finalMessage = message
         .replace(/\{city\}/g, city.name)
         .replace(/\{days\}/g, daysUntilEvent)
@@ -145,14 +141,11 @@ class ReminderService {
       );
       await debug(`📤 Mensagem: ${finalMessage}`);
 
-      // Envia mensagem via WhatsApp
-      // whatsapp-web.js usa client.info para verificar se está pronto
       if (this.client && this.client.info) {
         await this.client.sendMessage(city.link_id, finalMessage);
         await debug(`✅ Lembrete enviado com sucesso para ${city.name}`);
       } else {
         console.error("❌ Cliente WhatsApp não está pronto!");
-        // Para teste, apenas loga
         await debug(
           `📱 TESTE - Mensagem seria enviada: "${finalMessage}" para ${city.link_id}`
         );
@@ -163,18 +156,15 @@ class ReminderService {
     }
   }
 
-  // Formata data no padrão brasileiro
   formatDateBR(dateStr) {
     const date = new Date(dateStr + "T00:00:00");
     return date.toLocaleDateString("pt-BR");
   }
 
-  // Utilitário para aguardar
   sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  // Método para testar a conexão com o banco
   async testDatabaseConnection() {
     return new Promise(async (resolve, reject) => {
       db.get("SELECT COUNT(*) as count FROM cities", async (err, row) => {
@@ -189,10 +179,8 @@ class ReminderService {
     });
   }
 
-  // Método para teste - verifica eventos nos próximos X dias
   async testRemindersForDays(days) {
     await debug(`🧪 TESTE: Verificando eventos em ${days} dias...`);
-
     const testDate = this.formatDateOffset(new Date(), days);
     await this.checkCitiesForDate(testDate);
   }

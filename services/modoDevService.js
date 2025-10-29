@@ -1,11 +1,41 @@
+// services/modoDevService.js - VERSÃO CORRIGIDA (INÍCIO)
 const fs = require("fs").promises;
 const path = require("path");
 const { delay, randomDelay } = require("../utils/delay");
-const { initializeDevModeConfig } = require("../config/initialize");
 const Locale = require("../config/locale");
 
-const CONFIG_FILE = path.join(__dirname, "../data/devMode.json");
-const SYSTEM_CONFIG_FILE = path.join(__dirname, "../data/config.json");
+// 🔧 CORREÇÃO: Função para obter caminhos corretos
+function getConfigPaths() {
+  let app;
+
+  try {
+    const electron = require("electron");
+    app = electron.app;
+  } catch (error) {
+    app = null;
+  }
+
+  if (app && app.isPackaged) {
+    const userDataPath = app.getPath("userData");
+    return {
+      CONFIG_FILE: path.join(userDataPath, "data", "devMode.json"),
+      SYSTEM_CONFIG_FILE: path.join(userDataPath, "data", "config.json"),
+    };
+  }
+
+  return {
+    CONFIG_FILE: path.join(__dirname, "../data/devMode.json"),
+    SYSTEM_CONFIG_FILE: path.join(__dirname, "../data/config.json"),
+  };
+}
+
+const paths = getConfigPaths();
+const CONFIG_FILE = paths.CONFIG_FILE;
+const SYSTEM_CONFIG_FILE = paths.SYSTEM_CONFIG_FILE;
+
+console.log("📂 modoDevService.js - Caminhos dos configs:");
+console.log("   CONFIG_FILE:", CONFIG_FILE);
+console.log("   SYSTEM_CONFIG_FILE:", SYSTEM_CONFIG_FILE);
 
 const DEFAULT_CONFIG = {
   isDevMode: false,
@@ -14,21 +44,18 @@ const DEFAULT_CONFIG = {
   lastDebugChanged: null,
   scoutConfig: {
     enabled: false,
-    timeSeconds: 300, // 5 minutos padrão
+    timeSeconds: 300,
     timeFormatted: "00:05:00",
     lastChanged: null,
   },
 };
 
-// ========== FUNÇÕES EXISTENTES ==========
-
+// Resto do código permanece igual...
 async function loadConfig() {
   try {
-    await initializeDevModeConfig();
     const data = await fs.readFile(CONFIG_FILE, "utf8");
     const config = JSON.parse(data);
 
-    // Garante que scoutConfig existe (migração automática)
     if (!config.scoutConfig) {
       config.scoutConfig = DEFAULT_CONFIG.scoutConfig;
       await saveConfig(config);
@@ -52,7 +79,6 @@ async function saveConfig(config) {
 }
 
 function parseTimeInput(timeInput) {
-  // Remove espaços e valida formato básico
   const cleanInput = timeInput.trim();
   const timeRegex = /^(\d{1,2}):(\d{1,2}):(\d{1,2})$/;
 
@@ -68,7 +94,6 @@ function parseTimeInput(timeInput) {
   const minutes = parseInt(match[2], 10);
   const seconds = parseInt(match[3], 10);
 
-  // Validações
   if (hours > 23) {
     return { valid: false, error: "Horas devem ser entre 00 e 23" };
   }
@@ -85,7 +110,6 @@ function parseTimeInput(timeInput) {
     return { valid: false, error: "O tempo total não pode ser zero" };
   }
 
-  // Formata com zeros à esquerda
   const formattedTime = `${hours.toString().padStart(2, "0")}:${minutes
     .toString()
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
@@ -236,8 +260,6 @@ async function getDetailedStatus() {
   }
 }
 
-// ========== FUNÇÕES PARA LOCALE - CORRIGIDAS ==========
-
 async function loadSystemConfig() {
   try {
     const data = await fs.readFile(SYSTEM_CONFIG_FILE, "utf8");
@@ -264,16 +286,13 @@ async function getCurrentLocale() {
     return config.locale;
   } catch (error) {
     console.error("Erro ao obter locale atual:", error);
-    return "en-US"; // fallback
+    return "en-US";
   }
 }
 
-// Função helper para formatar o nome do locale
 function formatLocaleName(localeKey) {
-  // Converte "English_US" para "English (United States)"
   const [language, country] = localeKey.split("_");
 
-  // Mapeamento de países para nomes mais legíveis
   const countryNames = {
     US: "United States",
     BR: "Brasil",
@@ -286,13 +305,12 @@ function formatLocaleName(localeKey) {
 
 function getAvailableLocales() {
   try {
-    // Com a nova estrutura, as chaves já são descritivas
     const locales = Object.entries(Locale);
 
     return locales.map(([key, code], index) => ({
       index: index + 1,
       code: code,
-      name: formatLocaleName(key), // Converte "English_US" para "English (United States)"
+      name: formatLocaleName(key),
     }));
   } catch (error) {
     console.error("Erro ao obter locales disponíveis:", error);
@@ -348,7 +366,6 @@ module.exports = {
   getScoutConfig,
   getCurrentMode,
   getDetailedStatus,
-  // Funções para locale - corrigidas
   getCurrentLocale,
   getAvailableLocales,
   setLocale,
