@@ -66,11 +66,17 @@ function hideButtonLoading(button, text) {
 // Função para atualizar estado dos botões
 function updateButtonsState(running) {
   isWhatsAppRunning = running;
-  btnStart.disabled = running;
-  btnStop.disabled = !running;
 
-  if (!running) {
+  if (running) {
+    // WhatsApp conectado - bloqueia botão iniciar, habilita parar
+    hideButtonLoading(btnStart, "✅ Conectado");
+    btnStart.disabled = true;
+    btnStop.disabled = false;
+  } else {
+    // WhatsApp desconectado - reseta para estado inicial
     hideButtonLoading(btnStart, "Iniciar WhatsApp");
+    btnStart.disabled = false;
+    btnStop.disabled = true;
   }
 }
 
@@ -85,7 +91,8 @@ btnStart.addEventListener("click", async () => {
 
     if (result.success) {
       showStatus("Aguardando QR Code...", "info");
-      updateButtonsState(true);
+      // Mantém o botão desabilitado até a conexão completa
+      btnStop.disabled = false;
     } else {
       showStatus(`Erro: ${result.message}`, "error");
       hideButtonLoading(btnStart, "Iniciar WhatsApp");
@@ -163,7 +170,7 @@ window.electronAPI.onWhatsAppReady((message) => {
   console.log("WhatsApp conectado:", message);
   showStatus(message, "success");
   qrContainer.classList.add("hidden");
-  updateButtonsState(true);
+  updateButtonsState(true); // Agora remove o loading corretamente!
 });
 
 window.electronAPI.onWhatsAppAuthenticated((message) => {
