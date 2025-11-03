@@ -393,3 +393,27 @@ Corrigidas e ajustadas as configurações do package.json para permitir a geraç
 Nenhuma correção registrada nesta versão.
 
 📅 Data de Lançamento: [24/10/2025]
+
+📌 Patch Notes - Versão 0.0.12
+
+✨ Novidades
+
+Nenhuma nova funcionalidade adicionada nesta versão.
+
+🛠️ Melhorias
+
+Modularização do initialize
+O processo de inicialização foi separado em módulos, facilitando a manutenção e o entendimento do fluxo de inicialização do sistema.
+
+Modularização do droneControllerGui
+O módulo responsável pela interface do drone foi reorganizado em componentes independentes, melhorando a legibilidade e a escalabilidade do código.
+
+Atualização do botão “Conectado”
+O botão agora reflete dinamicamente o estado real de conexão, garantindo um feedback visual mais preciso para o usuário.
+
+🐛 Correções
+
+Erro de banco de dados corrigido:
+Resolvido o problema SQLITE_CANTOPEN: unable to open database file, que impedia o acesso adequado ao banco de dados em alguns casos.
+
+📅 Data de Lançamento: [03/11/2025]
