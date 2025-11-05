@@ -1,0 +1,31 @@
+Copyright (c) 2025 [Mario].
+Todos os direitos reservados.
+
+Este software foi desenvolvido exclusivamente por [Mario].
+
+O código-fonte, sua estrutura, lógica e funcionalidades constituem propriedade intelectual do autor. É estritamente proibido copiar, modificar, redistribuir, comercializar, sublicenciar ou utilizar o software, total ou parcialmente, sem autorização expressa e por escrito do autor.
+
+Qualquer uso não autorizado deste software, inclusive para fins comerciais, educacionais ou de engenharia reversa, será considerado violação de direitos autorais e poderá sujeitar o infrator às sanções civis e penais cabíveis, conforme a legislação vigente.
+
+O acesso ao código-fonte por terceiros não implica cessão de direitos nem concessão de licença para uso, salvo mediante acordo formal e documentado.
+
+Contato do autor: [GitHub: https://github.com/ItMeMario]
+
+Versão inicial do projeto: 03/07/2025
+
+English ver.
+
+Copyright (c) 2025 [Mario].
+All rights reserved.
+
+This software was developed exclusively by [Mario].
+
+The source code, its structure, logic, and functionalities are the intellectual property of the author. It is strictly prohibited to copy, modify, redistribute, commercialize, sublicense, or use this software, in whole or in part, without the express written authorization of the author.
+
+Any unauthorized use of this software, including for commercial, educational, or reverse-engineering purposes, shall be considered a violation of copyright law and may subject the infringer to civil and criminal penalties under applicable law.
+
+Access to the source code by third parties does not imply the transfer of rights or the granting of any license to use it, except through a formal and documented agreement.
+
+Author contact: [GitHub: https://github.com/ItMeMario]
+
+Initial project version: 03/07/2025
