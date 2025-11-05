@@ -1,43 +1,74 @@
 // renderer/guiScripts/droneModules/droneNavigation.js
 
-export default class DroneNavigation {
+class DroneNavigation {
   constructor(manager) {
     this.manager = manager;
   }
 
-  switchSection(sectionName) {
-    this.manager.menuItems.forEach((item) => item.classList.remove("active"));
-    document
-      .querySelector(`[data-section="${sectionName}"]`)
-      .classList.add("active");
+  async switchSection(sectionName) {
+    try {
+      // Remove active de todos os menus e seções
+      this.manager.menuItems.forEach((item) => item.classList.remove("active"));
+      this.manager.sections.forEach((section) =>
+        section.classList.remove("active")
+      );
 
-    this.manager.sections.forEach((section) =>
-      section.classList.remove("active")
-    );
-    document.getElementById(`${sectionName}-section`).classList.add("active");
+      // Adiciona active no menu e seção selecionados
+      const activeMenuItem = document.querySelector(
+        `[data-section="${sectionName}"]`
+      );
+      const activeSection = document.getElementById(`${sectionName}-section`);
 
-    // Carrega dados específicos da seção
-    if (sectionName === "mensagens") {
-      this.manager.messages.loadMessages();
-    } else if (sectionName === "numeros") {
-      this.manager.numbers.loadNumbers();
-      this.manager.numbers.loadStatistics();
-    } else if (sectionName === "disparo") {
-      this.manager.dispatch.checkRequirements();
-      this.manager.dispatch.loadMessagesForSelect();
-      this.manager.dispatch.updateDisparoSummary();
-    } else if (sectionName === "status") {
-      this.manager.status.refreshStatus();
+      if (activeMenuItem) activeMenuItem.classList.add("active");
+      if (activeSection) activeSection.classList.add("active");
+
+      // Atualiza dados específicos de cada seção
+      await this.refreshSectionData(sectionName);
+    } catch (error) {
+      console.error("Erro ao trocar seção:", error);
     }
   }
 
-  switchTab(tabName) {
-    this.manager.tabBtns.forEach((btn) => btn.classList.remove("active"));
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add("active");
+  async refreshSectionData(sectionName) {
+    try {
+      switch (sectionName) {
+        case "mensagens":
+          // Recarrega mensagens
+          if (this.manager.messages) {
+            await this.manager.messages.loadMessages();
+          }
+          break;
 
-    this.manager.tabContents.forEach((content) =>
-      content.classList.remove("active")
-    );
-    document.getElementById(`${tabName}-tab`).classList.add("active");
+        case "numeros":
+          // Recarrega estatísticas e lista de números
+          if (this.manager.numbers) {
+            await this.manager.numbers.loadStatistics();
+            const currentFilter =
+              document.getElementById("status-filter")?.value || "all";
+            await this.manager.numbers.loadNumbers(currentFilter);
+          }
+          break;
+
+        case "disparo":
+          // Atualiza requisitos e resumo
+          if (this.manager.dispatch) {
+            await this.manager.dispatch.checkRequirements();
+            await this.manager.dispatch.updateDisparoSummary();
+            await this.manager.dispatch.loadMessagesForSelect();
+          }
+          break;
+
+        case "status":
+          // Atualiza status completo
+          if (this.manager.status) {
+            await this.manager.status.refreshStatus();
+          }
+          break;
+      }
+    } catch (error) {
+      console.error(`Erro ao atualizar dados da seção ${sectionName}:`, error);
+    }
   }
 }
+
+export default DroneNavigation;
