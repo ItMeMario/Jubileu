@@ -1,190 +1,326 @@
 // renderer/guiScripts/droneModules/droneNumbers.js
 
-class DroneNumbers {
+export default class DroneNumbers {
   constructor(manager) {
     this.manager = manager;
     this.setupEventListeners();
   }
 
   setupEventListeners() {
-    // Listener para filtro de status
-    const statusFilter = document.getElementById("status-filter");
-    if (statusFilter) {
-      statusFilter.addEventListener("change", (e) => {
-        this.loadNumbers(e.target.value);
-      });
-    }
-
-    // Listeners para botões de limpeza
-    const btnClearSent = document.getElementById("btn-clear-sent");
-    const btnClearFailed = document.getElementById("btn-clear-failed");
-
-    if (btnClearSent) {
-      btnClearSent.addEventListener("click", () => this.clearSentNumbers());
-    }
-
-    if (btnClearFailed) {
-      btnClearFailed.addEventListener("click", () => this.clearFailedNumbers());
-    }
-
-    // Listeners para checkboxes de opções
-    const checkboxDDD = document.getElementById("checkbox-ddd");
+    // Checkboxes que mostram/escondem campos
+    const checkboxDdd = document.getElementById("checkbox-ddd");
     const checkboxPrefixo = document.getElementById("checkbox-prefixo");
 
-    if (checkboxDDD) {
-      checkboxDDD.addEventListener("change", (e) => {
-        const wrapper = document.getElementById("ddd-input-wrapper");
-        if (wrapper) {
-          wrapper.style.display = e.target.checked ? "block" : "none";
-        }
+    if (checkboxDdd) {
+      checkboxDdd.addEventListener("change", () => {
+        this.toggleDddInput(checkboxDdd.checked);
       });
     }
 
     if (checkboxPrefixo) {
-      checkboxPrefixo.addEventListener("change", (e) => {
-        const wrapper = document.getElementById("prefixo-input-wrapper");
-        if (wrapper) {
-          wrapper.style.display = e.target.checked ? "block" : "none";
-        }
+      checkboxPrefixo.addEventListener("change", () => {
+        this.togglePrefixoInput(checkboxPrefixo.checked);
       });
     }
   }
 
-  async handleFileSelect(file) {
-    try {
-      if (!file.name.endsWith(".csv")) {
-        this.manager.utility.showStatus(
-          "Apenas arquivos CSV são permitidos",
-          "error"
-        );
-        return;
+  toggleDddInput(show) {
+    const wrapper = document.getElementById("ddd-input-wrapper");
+    if (wrapper) {
+      wrapper.style.display = show ? "flex" : "none";
+      if (!show) {
+        document.getElementById("ddd").value = "";
       }
+    }
+  }
 
-      const result = await window.fileAPI.readFile(file);
+  togglePrefixoInput(show) {
+    const wrapper = document.getElementById("prefixo-input-wrapper");
+    if (wrapper) {
+      wrapper.style.display = show ? "flex" : "none";
+      if (!show) {
+        document.getElementById("prefixo-pais").value = "";
+      }
+    }
+  }
+
+  /**
+   * Carrega números com filtro de status opcional
+   * @param {string} filtroStatus - 'all', 'pending', 'sent', 'failed'
+   */
+  async loadNumbers(filtroStatus = "all") {
+    try {
+      const result = await window.droneAPI.listarNumerosAtuais(filtroStatus);
 
       if (!result.success) {
         this.manager.utility.showStatus(
-          "Erro ao ler arquivo: " + result.error,
+          result.error || "Erro ao carregar números",
           "error"
         );
         return;
       }
 
-      this.manager.currentFile = {
-        name: file.name,
-        content: result.content,
-        size: result.size,
-      };
+      this.manager.currentNumbers = result.numeros || [];
+      this.renderNumbers(this.manager.currentNumbers);
+      this.updateNumbersCount();
 
-      // Gera preview
-      const preview = await window.droneAPI.previewCSV(result.content, 5);
-
-      if (preview.success) {
-        this.showFileInfo(file.name, preview.totalLinhas);
-        this.manager.utility.showStatus(
-          `Arquivo carregado: ${preview.totalLinhas} linha(s) detectada(s)`,
-          "success"
+      // Atualiza informação de filtro se necessário
+      if (filtroStatus !== "all" && result.total !== result.totalGeral) {
+        console.log(
+          `Mostrando ${result.total} de ${result.totalGeral} números (filtro: ${filtroStatus})`
         );
+      }
+    } catch (error) {
+      console.error("Erro ao carregar números:", error);
+      this.manager.utility.showStatus("Erro ao carregar números", "error");
+    }
+  }
+
+  /**
+   * Renderiza lista de números com badges de status
+   */
+  renderNumbers(numeros) {
+    if (!numeros || numeros.length === 0) {
+      this.manager.numbersList.innerHTML =
+        '<div class="empty-state">Nenhum número cadastrado</div>';
+      return;
+    }
+
+    this.manager.numbersList.innerHTML = numeros
+      .map((num) => {
+        const nomeDisplay =
+          num.nome && num.nome !== "-"
+            ? `<span class="number-name">${num.nome}</span>`
+            : "";
+
+        // Badge de status
+        const statusBadge = num.statusIcon
+          ? `<span class="status-badge ${num.statusClass}">${num.statusIcon} ${num.statusTexto}</span>`
+          : "";
+
+        return `
+          <div class="number-item" data-id="${num.id}">
+            <div class="number-info">
+              <div class="number-value">${num.numeroWhatsapp}</div>
+              ${nomeDisplay}
+              <div class="number-meta">
+                ${statusBadge}
+              </div>
+            </div>
+            <button class="btn-remove" data-id="${num.id}">Remover</button>
+          </div>
+        `;
+      })
+      .join("");
+
+    // Add remove listeners
+    document.querySelectorAll(".btn-remove").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        this.removeNumber(id);
+      });
+    });
+  }
+
+  handleFileSelect(file) {
+    if (!file) return;
+
+    // Aceita apenas CSV
+    const ext = "." + file.name.split(".").pop().toLowerCase();
+
+    if (ext !== ".csv") {
+      this.manager.utility.showStatus(
+        "Apenas arquivos CSV são aceitos",
+        "error"
+      );
+      return;
+    }
+
+    this.manager.currentFile = file;
+    this.manager.fileName.textContent = file.name;
+    this.manager.fileInfo.style.display = "block";
+    this.manager.processingOptions.style.display = "block";
+    this.manager.btnImportFile.disabled = false;
+
+    // Lê o arquivo e gera preview
+    this.previewCSV(file);
+  }
+
+  async previewCSV(file) {
+    try {
+      const fileResult = await window.fileAPI.readFile(file);
+
+      if (!fileResult.success) {
+        this.manager.utility.showStatus("Erro ao ler arquivo", "error");
+        return;
+      }
+
+      // Chama preview do backend
+      const previewResult = await window.droneAPI.previewCSV(
+        fileResult.content,
+        5
+      );
+
+      if (previewResult.success) {
+        const totalLinhas = previewResult.totalLinhas || 0;
+        this.manager.fileCount.textContent = `${totalLinhas} linha(s) encontrada(s)`;
+
+        // Mostra preview das primeiras linhas no console
+        if (previewResult.preview && previewResult.preview.length > 0) {
+          console.log("Preview do CSV:", previewResult.preview);
+        }
       } else {
         this.manager.utility.showStatus(
-          "Erro ao processar preview: " + preview.error,
+          "Erro ao gerar preview: " + previewResult.error,
           "error"
         );
       }
     } catch (error) {
-      console.error("Erro ao processar arquivo:", error);
-      this.manager.utility.showStatus("Erro ao processar arquivo", "error");
-    }
-  }
-
-  showFileInfo(fileName, count) {
-    const fileInfo = this.manager.fileInfo;
-    const fileNameEl = this.manager.fileName;
-    const fileCountEl = this.manager.fileCount;
-    const processingOptions = this.manager.processingOptions;
-    const btnImport = this.manager.btnImportFile;
-
-    if (fileInfo && fileNameEl && fileCountEl) {
-      fileNameEl.textContent = fileName;
-      fileCountEl.textContent = `${count} linha(s) detectada(s)`;
-      fileInfo.style.display = "block";
-
-      if (processingOptions) {
-        processingOptions.style.display = "block";
-      }
-
-      if (btnImport) {
-        btnImport.disabled = false;
-      }
+      console.error("Erro ao gerar preview:", error);
     }
   }
 
   removeFile() {
     this.manager.currentFile = null;
-
-    const fileInfo = this.manager.fileInfo;
-    const processingOptions = this.manager.processingOptions;
-    const btnImport = this.manager.btnImportFile;
-    const fileInput = this.manager.fileInput;
-
-    if (fileInfo) fileInfo.style.display = "none";
-    if (processingOptions) processingOptions.style.display = "none";
-    if (btnImport) btnImport.disabled = true;
-    if (fileInput) fileInput.value = "";
-
-    this.manager.utility.showStatus("Arquivo removido", "info");
+    this.manager.fileInfo.style.display = "none";
+    this.manager.processingOptions.style.display = "none";
+    this.manager.btnImportFile.disabled = true;
+    this.manager.fileInput.value = "";
+    this.resetProcessingOptions();
   }
 
+  resetProcessingOptions() {
+    document.getElementById("checkbox-ddd").checked = false;
+    document.getElementById("checkbox-prefixo").checked = false;
+    document.getElementById("adicionar-9-digito").checked = false;
+    document.getElementById("usar-nomes-csv").checked = true;
+
+    document.getElementById("ddd").value = "";
+    document.getElementById("prefixo-pais").value = "";
+
+    this.toggleDddInput(false);
+    this.togglePrefixoInput(false);
+  }
+
+  /**
+   * Captura as opções dos campos do formulário
+   */
+  getProcessingOptions() {
+    // Captura valores dos checkboxes
+    const usarDdd = document.getElementById("checkbox-ddd").checked;
+    const usarPrefixo = document.getElementById("checkbox-prefixo").checked;
+    const adicionar9Digito =
+      document.getElementById("adicionar-9-digito").checked;
+    const usarNomesCSV = document.getElementById("usar-nomes-csv").checked;
+
+    // Captura valores dos inputs (se os checkboxes estão marcados)
+    const ddd = usarDdd ? document.getElementById("ddd").value.trim() : "";
+    const prefixoPais = usarPrefixo
+      ? document.getElementById("prefixo-pais").value.trim()
+      : "";
+
+    return {
+      prefixoPais: prefixoPais,
+      ddd: ddd,
+      adicionar9Digito: adicionar9Digito,
+      usarNomesCSV: usarNomesCSV,
+    };
+  }
+
+  /**
+   * Constrói mensagem de confirmação com as opções aplicadas
+   */
+  buildConfirmationMessage(opcoes) {
+    let msg = "Confirmar importação do CSV?\n\n";
+    msg += "Opções aplicadas:\n";
+    msg += `• Prefixo país: ${opcoes.prefixoPais || "Nenhum"}\n`;
+    msg += `• DDD: ${opcoes.ddd || "Nenhum"}\n`;
+    msg += `• Adicionar 9º dígito: ${
+      opcoes.adicionar9Digito ? "Sim" : "Não"
+    }\n`;
+    msg += `• Usar nomes do CSV: ${opcoes.usarNomesCSV ? "Sim" : "Não"}`;
+
+    return msg;
+  }
+
+  /**
+   * Importa arquivo CSV com opções de transformação
+   */
   async importFile() {
-    if (!this.manager.currentFile) {
-      this.manager.utility.showStatus("Nenhum arquivo selecionado", "error");
-      return;
-    }
+    if (!this.manager.currentFile) return;
 
     try {
-      // Coleta opções
+      // Lê o conteúdo do arquivo
+      const fileResult = await window.fileAPI.readFile(
+        this.manager.currentFile
+      );
+
+      if (!fileResult.success) {
+        this.manager.utility.showStatus("Erro ao ler arquivo", "error");
+        return;
+      }
+
+      // Captura as opções dos campos do formulário
       const opcoes = this.getProcessingOptions();
 
-      // Valida opções
+      // Valida opções antes de processar
       const validacao = await window.droneAPI.validarOpcoes(opcoes);
 
       if (!validacao.valido) {
+        const errosMsg = validacao.erros.join("\n");
         this.manager.utility.showStatus(
-          "Opções inválidas: " + validacao.erros.join(", "),
+          `Opções inválidas:\n${errosMsg}`,
           "error"
         );
         return;
       }
 
-      if (validacao.avisos.length > 0) {
+      // Mostra avisos se houver
+      if (validacao.avisos && validacao.avisos.length > 0) {
         console.warn("Avisos:", validacao.avisos);
       }
 
-      // Processa arquivo
-      this.manager.utility.showStatus("Processando arquivo...", "info");
+      // Confirma com usuário antes de processar
+      const confirmMsg = this.buildConfirmationMessage(opcoes);
+      if (!confirm(confirmMsg)) {
+        return;
+      }
 
-      const resultado = await window.droneAPI.processarArquivoCSV(
-        this.manager.currentFile.content,
+      // Processa o CSV com as opções
+      const result = await window.droneAPI.processarArquivoCSV(
+        fileResult.content,
         opcoes
       );
 
-      if (resultado.success) {
-        const msg =
-          `✅ Importação concluída!\n` +
-          `Adicionados: ${resultado.resumo.totalAdicionados}\n` +
-          `Já existiam: ${resultado.resumo.totalJaExistiam}\n` +
-          `Erros: ${resultado.resumo.totalErros}`;
+      if (result.success) {
+        // Mostra resumo do processamento
+        const resumo = result.resumo;
+        let statusMsg = `✅ ${resumo.totalAdicionados} número(s) adicionado(s)`;
 
-        this.manager.utility.showStatus(msg, "success");
+        if (resumo.totalJaExistiam && resumo.totalJaExistiam > 0) {
+          statusMsg += `\n⚠️ ${resumo.totalJaExistiam} já existiam`;
+        }
 
-        // ATUALIZA TUDO
-        await this.refreshAllData();
+        if (resumo.totalErros > 0) {
+          statusMsg += `\n⚠️ ${resumo.totalErros} erro(s)`;
+        }
 
-        // Limpa arquivo
+        this.manager.utility.showStatus(statusMsg, "success");
+
+        // Mostra detalhes no console
+        console.log("Resultado do processamento:", result);
+
+        if (result.erros && result.erros.length > 0) {
+          console.warn("Erros encontrados:", result.erros);
+        }
+
+        // Limpa o arquivo e atualiza a lista
         this.removeFile();
+        await this.loadNumbers(this.manager.currentStatusFilter);
+        await this.loadStatistics();
       } else {
         this.manager.utility.showStatus(
-          "Erro ao importar: " + resultado.error,
+          result.error || "Erro ao processar CSV",
           "error"
         );
       }
@@ -194,94 +330,17 @@ class DroneNumbers {
     }
   }
 
-  getProcessingOptions() {
-    const checkboxDDD = document.getElementById("checkbox-ddd");
-    const checkboxPrefixo = document.getElementById("checkbox-prefixo");
-    const dddInput = document.getElementById("ddd");
-    const prefixoInput = document.getElementById("prefixo-pais");
-    const adicionar9 = document.getElementById("adicionar-9-digito");
-    const usarNomes = document.getElementById("usar-nomes-csv");
-
-    return {
-      prefixoPais:
-        checkboxPrefixo?.checked && prefixoInput?.value
-          ? prefixoInput.value.trim()
-          : "",
-      ddd: checkboxDDD?.checked && dddInput?.value ? dddInput.value.trim() : "",
-      adicionar9Digito: adicionar9?.checked || false,
-      usarNomesCSV: usarNomes?.checked || false,
-    };
-  }
-
-  async loadNumbers(filtro = "all") {
-    try {
-      const resultado = await window.droneAPI.listarNumerosAtuais(
-        filtro || "all"
-      );
-
-      if (!resultado.success) {
-        this.manager.utility.showStatus(
-          "Erro ao carregar números: " + resultado.error,
-          "error"
-        );
-        return;
-      }
-
-      this.manager.currentNumbers = resultado.numeros || [];
-      this.renderNumbersList(resultado.numeros || []);
-    } catch (error) {
-      console.error("Erro ao carregar números:", error);
-      this.manager.utility.showStatus("Erro ao carregar números", "error");
-    }
-  }
-
-  renderNumbersList(numeros) {
-    const list = this.manager.numbersList;
-    if (!list) return;
-
-    if (numeros.length === 0) {
-      list.innerHTML =
-        '<div class="empty-state">Nenhum número cadastrado</div>';
-      return;
-    }
-
-    list.innerHTML = numeros
-      .map(
-        (num) => `
-      <div class="number-item ${num.statusClass}">
-        <div class="number-info">
-          <div class="number-value">${num.numeroWhatsapp}</div>
-          <div class="number-name">${num.nome}</div>
-        </div>
-        <div class="number-status">
-          <span class="status-badge ${num.statusClass}">
-            ${num.statusIcon} ${num.statusTexto}
-          </span>
-          <button class="btn-remove" onclick="window.droneManager.numbers.removeNumber(${num.id})">
-            🗑️
-          </button>
-        </div>
-      </div>
-    `
-      )
-      .join("");
-  }
-
   async removeNumber(id) {
-    if (!confirm("Deseja remover este número?")) return;
-
     try {
-      const resultado = await window.droneAPI.removerNumero(id);
+      const result = await window.droneAPI.removerNumero(id);
 
-      if (resultado.success) {
-        this.manager.utility.showStatus(
-          "Número removido com sucesso",
-          "success"
-        );
-        await this.refreshAllData();
+      if (result.success) {
+        this.manager.utility.showStatus("Número removido", "success");
+        await this.loadNumbers(this.manager.currentStatusFilter);
+        await this.loadStatistics();
       } else {
         this.manager.utility.showStatus(
-          "Erro ao remover: " + resultado.error,
+          result.error || "Erro ao remover número",
           "error"
         );
       }
@@ -292,46 +351,57 @@ class DroneNumbers {
   }
 
   async clearAllNumbers() {
-    if (
-      !confirm(
-        "Deseja limpar TODOS os números? Esta ação não pode ser desfeita!"
-      )
-    )
+    if (!confirm("Tem certeza que deseja remover TODOS os números?")) {
       return;
+    }
 
     try {
-      const resultado = await window.droneAPI.limparListaCompleta();
+      const result = await window.droneAPI.limparListaCompleta();
 
-      if (resultado.success) {
+      if (result.success) {
         this.manager.utility.showStatus(
-          `${resultado.totalRemovidos} número(s) removido(s)`,
+          `${result.totalRemovidos} número(s) removido(s)`,
           "success"
         );
-        await this.refreshAllData();
+        await this.loadNumbers(this.manager.currentStatusFilter);
+        await this.loadStatistics();
       } else {
         this.manager.utility.showStatus(
-          "Erro ao limpar: " + resultado.error,
+          result.error || "Erro ao limpar lista",
           "error"
         );
       }
     } catch (error) {
-      console.error("Erro ao limpar números:", error);
-      this.manager.utility.showStatus("Erro ao limpar números", "error");
+      console.error("Erro ao limpar lista:", error);
+      this.manager.utility.showStatus("Erro ao limpar lista", "error");
     }
   }
 
+  /**
+   * NOVO: Limpa apenas números com status 'sent'
+   */
   async clearSentNumbers() {
-    if (!confirm("Deseja limpar todos os números ENVIADOS?")) return;
+    if (
+      !confirm(
+        "Tem certeza que deseja remover todos os números ENVIADOS com sucesso?"
+      )
+    ) {
+      return;
+    }
 
     try {
-      const resultado = await window.droneAPI.limparEnviados();
+      const result = await window.droneAPI.limparEnviados();
 
-      if (resultado.success) {
-        this.manager.utility.showStatus(resultado.message, "success");
-        await this.refreshAllData();
+      if (result.success) {
+        this.manager.utility.showStatus(
+          result.message || "Números enviados removidos",
+          "success"
+        );
+        await this.loadNumbers(this.manager.currentStatusFilter);
+        await this.loadStatistics();
       } else {
         this.manager.utility.showStatus(
-          "Erro ao limpar: " + resultado.error,
+          result.error || "Erro ao limpar enviados",
           "error"
         );
       }
@@ -341,18 +411,31 @@ class DroneNumbers {
     }
   }
 
+  /**
+   * NOVO: Limpa apenas números com status 'failed'
+   */
   async clearFailedNumbers() {
-    if (!confirm("Deseja limpar todos os números com FALHA?")) return;
+    if (
+      !confirm(
+        "Tem certeza que deseja remover todos os números que FALHARAM no envio?"
+      )
+    ) {
+      return;
+    }
 
     try {
-      const resultado = await window.droneAPI.limparFalhas();
+      const result = await window.droneAPI.limparFalhas();
 
-      if (resultado.success) {
-        this.manager.utility.showStatus(resultado.message, "success");
-        await this.refreshAllData();
+      if (result.success) {
+        this.manager.utility.showStatus(
+          result.message || "Números com falha removidos",
+          "success"
+        );
+        await this.loadNumbers(this.manager.currentStatusFilter);
+        await this.loadStatistics();
       } else {
         this.manager.utility.showStatus(
-          "Erro ao limpar: " + resultado.error,
+          result.error || "Erro ao limpar falhas",
           "error"
         );
       }
@@ -362,112 +445,73 @@ class DroneNumbers {
     }
   }
 
+  /**
+   * ATUALIZADO: Carrega estatísticas com status
+   */
   async loadStatistics() {
     try {
-      const resultado = await window.droneAPI.obterEstatisticasNumeros();
+      const result = await window.droneAPI.obterEstatisticasNumeros();
 
-      if (!resultado.success) {
-        console.error("Erro ao carregar estatísticas:", resultado.error);
-        return;
+      if (result.success && result.estatisticas) {
+        const stats = result.estatisticas;
+
+        // Stats básicas
+        this.manager.statTotal.textContent = stats.total || 0;
+        this.manager.statBr.textContent = stats.porTipo?.brazilian || 0;
+        this.manager.statInt.textContent = stats.porTipo?.international || 0;
+
+        // NOVO: Stats de status
+        if (this.manager.statPending) {
+          this.manager.statPending.textContent = stats.porStatus?.pending || 0;
+        }
+        if (this.manager.statSent) {
+          this.manager.statSent.textContent = stats.porStatus?.sent || 0;
+        }
+        if (this.manager.statFailed) {
+          this.manager.statFailed.textContent = stats.porStatus?.failed || 0;
+        }
+
+        // NOVO: Percentuais
+        if (this.manager.statPendingPercent) {
+          this.manager.statPendingPercent.textContent =
+            stats.percentuais?.pending + "%" || "0%";
+        }
+        if (this.manager.statSentPercent) {
+          this.manager.statSentPercent.textContent =
+            stats.percentuais?.sent + "%" || "0%";
+        }
+        if (this.manager.statFailedPercent) {
+          this.manager.statFailedPercent.textContent =
+            stats.percentuais?.failed + "%" || "0%";
+        }
+
+        // Atualiza também o contador de nomes personalizados se existir
+        if (stats.comNomePersonalizado !== undefined) {
+          console.log(
+            `Números com nomes: ${stats.comNomePersonalizado}/${stats.total} (${stats.percentualComNome}%)`
+          );
+        }
+
+        // Log de status para debug
+        console.log("Estatísticas por status:", {
+          pending: stats.porStatus?.pending || 0,
+          sent: stats.porStatus?.sent || 0,
+          failed: stats.porStatus?.failed || 0,
+          percentuais: stats.percentuais,
+        });
       }
-
-      const stats = resultado.estatisticas;
-      this.updateStatisticsUI(stats);
     } catch (error) {
       console.error("Erro ao carregar estatísticas:", error);
     }
   }
 
-  updateStatisticsUI(stats) {
-    // Total
-    const statTotal = document.getElementById("stat-total");
-    if (statTotal) statTotal.textContent = stats.total;
-
-    // BR e Internacional (calculado)
-    const statBr = document.getElementById("stat-br");
-    const statInt = document.getElementById("stat-int");
-    if (statBr) statBr.textContent = stats.porStatus.pending || 0;
-    if (statInt)
-      statInt.textContent = stats.total - (stats.porStatus.pending || 0);
-
-    // Status cards
-    const statPending = document.getElementById("stat-pending");
-    const statSent = document.getElementById("stat-sent");
-    const statFailed = document.getElementById("stat-failed");
-
-    if (statPending) statPending.textContent = stats.porStatus.pending;
-    if (statSent) statSent.textContent = stats.porStatus.sent;
-    if (statFailed) statFailed.textContent = stats.porStatus.failed;
-
-    // Percentuais
-    const statPendingPercent = document.getElementById("stat-pending-percent");
-    const statSentPercent = document.getElementById("stat-sent-percent");
-    const statFailedPercent = document.getElementById("stat-failed-percent");
-
-    if (statPendingPercent)
-      statPendingPercent.textContent = stats.percentuais.pending + "%";
-    if (statSentPercent)
-      statSentPercent.textContent = stats.percentuais.sent + "%";
-    if (statFailedPercent)
-      statFailedPercent.textContent = stats.percentuais.failed + "%";
-
-    // Atualiza também na seção de Status
-    const statusTotal = document.getElementById("status-total");
-    if (statusTotal) statusTotal.textContent = stats.total;
-
-    // Breakdown na seção Status
-    const breakdownPending = document.getElementById("breakdown-pending");
-    const breakdownSent = document.getElementById("breakdown-sent");
-    const breakdownFailed = document.getElementById("breakdown-failed");
-
-    if (breakdownPending)
-      breakdownPending.textContent = stats.porStatus.pending;
-    if (breakdownSent) breakdownSent.textContent = stats.porStatus.sent;
-    if (breakdownFailed) breakdownFailed.textContent = stats.porStatus.failed;
-
-    const breakdownPendingPercent = document.getElementById(
-      "breakdown-pending-percent"
-    );
-    const breakdownSentPercent = document.getElementById(
-      "breakdown-sent-percent"
-    );
-    const breakdownFailedPercent = document.getElementById(
-      "breakdown-failed-percent"
-    );
-
-    if (breakdownPendingPercent)
-      breakdownPendingPercent.textContent = `(${stats.percentuais.pending}%)`;
-    if (breakdownSentPercent)
-      breakdownSentPercent.textContent = `(${stats.percentuais.sent}%)`;
-    if (breakdownFailedPercent)
-      breakdownFailedPercent.textContent = `(${stats.percentuais.failed}%)`;
-  }
-
-  // MÉTODO CRÍTICO: Atualiza todos os dados
-  async refreshAllData() {
-    try {
-      // Atualiza estatísticas
-      await this.loadStatistics();
-
-      // Recarrega lista de números
-      const currentFilter =
-        document.getElementById("status-filter")?.value || "all";
-      await this.loadNumbers(currentFilter);
-
-      // Atualiza requisitos do disparo
-      if (this.manager.dispatch) {
-        await this.manager.dispatch.checkRequirements();
-        await this.manager.dispatch.updateDisparoSummary();
-      }
-
-      // Atualiza status geral
-      if (this.manager.status) {
-        await this.manager.status.refreshStatus();
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar dados:", error);
+  updateNumbersCount() {
+    if (this.manager.summaryTotal) {
+      this.manager.summaryTotal.textContent =
+        this.manager.currentNumbers.length;
+    }
+    if (this.manager.statusTotal) {
+      this.manager.statusTotal.textContent = this.manager.currentNumbers.length;
     }
   }
 }
-
-export default DroneNumbers;
