@@ -17,6 +17,7 @@ class DroneManager {
     this.currentNumbers = [];
     this.currentFile = null;
     this.isDisparoRunning = false;
+    this.currentStatusFilter = "all"; // NOVO: Armazena filtro atual
 
     // Inicializa elementos DOM
     this.initializeElements();
@@ -45,10 +46,20 @@ class DroneManager {
     this.previewLocale = document.getElementById("preview-locale");
     this.previewContent = document.getElementById("preview-content");
 
-    // Números - Stats
+    // Números - Stats básicas
     this.statTotal = document.getElementById("stat-total");
     this.statBr = document.getElementById("stat-br");
     this.statInt = document.getElementById("stat-int");
+
+    // NOVO: Números - Stats de status
+    this.statPending = document.getElementById("stat-pending");
+    this.statSent = document.getElementById("stat-sent");
+    this.statFailed = document.getElementById("stat-failed");
+
+    // NOVO: Números - Percentuais de status
+    this.statPendingPercent = document.getElementById("stat-pending-percent");
+    this.statSentPercent = document.getElementById("stat-sent-percent");
+    this.statFailedPercent = document.getElementById("stat-failed-percent");
 
     // Números - File
     this.fileUploadArea = document.getElementById("file-upload-area");
@@ -89,11 +100,25 @@ class DroneManager {
     this.disparoResults = document.getElementById("disparo-results");
     this.resultsContent = document.getElementById("results-content");
 
-    // Status
+    // Status - WhatsApp
     this.whatsappStatus = document.getElementById("whatsapp-status");
     this.statusTotal = document.getElementById("status-total");
     this.statusMessages = document.getElementById("status-messages");
     this.btnRefreshStatus = document.getElementById("btn-refresh-status");
+
+    // NOVO: Status - Breakdown
+    this.breakdownPending = document.getElementById("breakdown-pending");
+    this.breakdownSent = document.getElementById("breakdown-sent");
+    this.breakdownFailed = document.getElementById("breakdown-failed");
+    this.breakdownPendingPercent = document.getElementById(
+      "breakdown-pending-percent"
+    );
+    this.breakdownSentPercent = document.getElementById(
+      "breakdown-sent-percent"
+    );
+    this.breakdownFailedPercent = document.getElementById(
+      "breakdown-failed-percent"
+    );
   }
 
   initializeModules() {
@@ -163,6 +188,7 @@ class DroneManager {
     this.batchSize.addEventListener("input", () =>
       this.dispatch.updateDisparoSummary()
     );
+
     this.btnExecuteDisparo.addEventListener("click", () =>
       this.dispatch.executeDisparo()
     );
@@ -174,16 +200,58 @@ class DroneManager {
   }
 
   async loadInitialData() {
-    await this.messages.loadMessages();
-    await this.numbers.loadNumbers();
-    await this.numbers.loadStatistics();
-    await this.dispatch.loadMessagesForSelect();
-    await this.dispatch.checkRequirements();
+    try {
+      console.log("🔄 Carregando dados iniciais...");
+
+      // Carrega mensagens
+      await this.messages.loadMessages();
+
+      // Carrega números com filtro inicial
+      await this.numbers.loadNumbers(this.currentStatusFilter);
+
+      // Carrega estatísticas
+      await this.numbers.loadStatistics();
+
+      // Carrega mensagens para o select do disparo
+      await this.dispatch.loadMessagesForSelect();
+
+      // Verifica requisitos do disparo
+      await this.dispatch.checkRequirements();
+
+      // Atualiza resumo do disparo
+      await this.dispatch.updateDisparoSummary();
+
+      console.log("✅ Dados iniciais carregados");
+    } catch (error) {
+      console.error("❌ Erro ao carregar dados iniciais:", error);
+      this.utility.showStatus("Erro ao carregar dados iniciais", "error");
+    }
+  }
+
+  /**
+   * NOVO: Método para limpar recursos ao fechar a janela
+   */
+  cleanup() {
+    console.log("🧹 Limpando recursos do DroneManager...");
+
+    // Para o auto-refresh do status
+    if (this.status && this.status.destroy) {
+      this.status.destroy();
+    }
+
+    console.log("✅ Recursos limpos");
   }
 }
 
 // Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
   window.droneManager = new DroneManager();
-  console.log("DroneManager inicializado com módulos");
+  console.log("✅ DroneManager inicializado com módulos");
+});
+
+// NOVO: Cleanup ao fechar janela
+window.addEventListener("beforeunload", () => {
+  if (window.droneManager && window.droneManager.cleanup) {
+    window.droneManager.cleanup();
+  }
 });

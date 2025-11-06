@@ -13,10 +13,13 @@ contextBridge.exposeInMainWorld("droneAPI", {
     }
   },
 
-  // Listar números atuais
-  listarNumerosAtuais: async () => {
+  // CORRIGIDO: Listar números atuais com filtro opcional
+  listarNumerosAtuais: async (filtroStatus = "all") => {
     try {
-      return await ipcRenderer.invoke("drone-listar-numeros-atuais");
+      return await ipcRenderer.invoke(
+        "drone-listar-numeros-atuais",
+        filtroStatus
+      );
     } catch (error) {
       console.error("Erro ao listar números:", error);
       return { success: false, error: error.message };
@@ -39,6 +42,26 @@ contextBridge.exposeInMainWorld("droneAPI", {
       return await ipcRenderer.invoke("drone-limpar-lista-completa");
     } catch (error) {
       console.error("Erro ao limpar lista:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // NOVO: Limpar apenas números enviados (status 'sent')
+  limparEnviados: async () => {
+    try {
+      return await ipcRenderer.invoke("drone-limpar-enviados");
+    } catch (error) {
+      console.error("Erro ao limpar enviados:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // NOVO: Limpar apenas números com falha (status 'failed')
+  limparFalhas: async () => {
+    try {
+      return await ipcRenderer.invoke("drone-limpar-falhas");
+    } catch (error) {
+      console.error("Erro ao limpar falhas:", error);
       return { success: false, error: error.message };
     }
   },
