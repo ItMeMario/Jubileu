@@ -232,20 +232,6 @@ function isValidAudioFormat(filename) {
   return validExtensions.includes(ext);
 }
 
-/**
- * Função para garantir que a pasta data/audio existe
- */
-async function ensureAudioDirectoryExists() {
-  const audioDir = path.join(process.cwd(), "data", "audio");
-  try {
-    await fs.access(audioDir);
-  } catch (error) {
-    // Pasta não existe, criar
-    await fs.mkdir(audioDir, { recursive: true });
-    console.log("Pasta data/audio/ criada");
-  }
-  return audioDir;
-}
 
 async function handleAudioFileUpload(fileBuffer, originalName) {
   try {
@@ -258,8 +244,7 @@ async function handleAudioFileUpload(fileBuffer, originalName) {
       };
     }
 
-    // Garantir que a pasta existe
-    const audioDir = await ensureAudioDirectoryExists();
+  
 
     // Gerar nome único se arquivo já existir
     let finalFileName = originalName;
@@ -483,6 +468,5 @@ module.exports = {
   handleEditMessageWithAudioGUI,
   getExistingAudioFilesGUI,
   isValidAudioFormat,
-  ensureAudioDirectoryExists,
   handleAudioFileUpload,
 };
