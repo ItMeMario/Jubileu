@@ -1,222 +1,33 @@
-const messageService = require("../services/messageService");
 const fs = require("fs").promises;
 const path = require("path");
+const messageService = require("../services/messageService");
 
-async function handleListMessagesGUI() {
-  try {
-    const messages = await messageService.getMessages();
-    return {
-      success: true,
-      data: messages,
-    };
-  } catch (error) {
-    console.error("Erro ao listar mensagens:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
+// Importar todos os módulos
+const {
+  handleListMessagesGUI,
+} = require("./messageControllerGuiModules/listMessagesMCGM");
+const {
+  handleAddMessageGUI,
+} = require("./messageControllerGuiModules/addMessageMCGM");
+const {
+  handleEditMessageGUI,
+} = require("./messageControllerGuiModules/editMessageMCGM");
+const {
+  handleDeleteMessageGUI,
+} = require("./messageControllerGuiModules/deleteMessageMCGM");
+const {
+  handleShowLastMessageGUI,
+} = require("./messageControllerGuiModules/showLastMessageMCGM");
+const {
+  getAvailableOptionsGUI,
+} = require("./messageControllerGuiModules/availableOptionsMCGM");
+const {
+  handleCheckMessageCompletenessGUI,
+} = require("./messageControllerGuiModules/checkCompletenessMCGM");
 
-async function handleAddMessageGUI(messageData) {
-  try {
-    const { locale, message_type, message_content } = messageData;
-
-    if (!locale || !message_type || !message_content) {
-      return {
-        success: false,
-        error: "Todos os campos são obrigatórios",
-      };
-    }
-
-    const result = await messageService.addMessage({
-      locale,
-      message_type,
-      message_content,
-    });
-
-    return {
-      success: true,
-      data: result,
-      message: "Mensagem adicionada com sucesso",
-    };
-  } catch (error) {
-    console.error("Erro ao adicionar mensagem:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
-async function handleEditMessageGUI(id, messageData) {
-  try {
-    const { locale, message_type, message_content } = messageData;
-
-    if (!locale || !message_type || !message_content) {
-      return {
-        success: false,
-        error: "Todos os campos são obrigatórios",
-      };
-    }
-
-    const existing = await messageService.getMessageById(id);
-    if (!existing) {
-      return {
-        success: false,
-        error: "Mensagem não encontrada",
-      };
-    }
-
-    const success = await messageService.updateMessage(id, {
-      locale,
-      message_type,
-      message_content,
-    });
-
-    if (success) {
-      return {
-        success: true,
-        message: "Mensagem atualizada com sucesso",
-      };
-    } else {
-      return {
-        success: false,
-        error: "Erro ao atualizar mensagem",
-      };
-    }
-  } catch (error) {
-    console.error("Erro ao editar mensagem:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
-async function handleDeleteMessageGUI(id) {
-  try {
-    const success = await messageService.deleteMessage(id);
-
-    if (success) {
-      return {
-        success: true,
-        message: "Mensagem excluída com sucesso",
-      };
-    } else {
-      return {
-        success: false,
-        error: "Mensagem não encontrada ou erro ao excluir",
-      };
-    }
-  } catch (error) {
-    console.error("Erro ao excluir mensagem:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
-async function handleShowLastMessageGUI() {
-  try {
-    const last = await messageService.getLastMessage();
-
-    if (!last) {
-      return {
-        success: false,
-        error: "Nenhuma mensagem encontrada",
-      };
-    }
-
-    return {
-      success: true,
-      data: last,
-    };
-  } catch (error) {
-    console.error("Erro ao buscar última mensagem:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
-// Função para obter tipos de mensagem e locales disponíveis
-async function getAvailableOptionsGUI() {
-  try {
-    const messageTypes = messageService.getAvailableMessageTypes();
-    const locales = messageService.getAvailableLocales();
-
-    return {
-      success: true,
-      data: {
-        messageTypes,
-        locales,
-      },
-    };
-  } catch (error) {
-    console.error("Erro ao obter opções disponíveis:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
-
-async function handleCheckMessageCompletenessGUI(specificLocale = null) {
-  try {
-    const report = await messageService.checkMessageCompleteness();
-
-    // Melhorar validação do specificLocale
-    if (specificLocale && typeof specificLocale === "string") {
-      const cleanLocale = specificLocale.trim();
-
-      if (!cleanLocale) {
-        return {
-          success: false,
-          error: "Locale não pode estar vazio",
-        };
-      }
-
-      if (!report.byLocale[cleanLocale]) {
-        return {
-          success: false,
-          error: `Locale '${cleanLocale}' não encontrado. Locales disponíveis: ${Object.keys(
-            report.byLocale
-          ).join(", ")}`,
-        };
-      }
-
-      return {
-        success: true,
-        data: {
-          locale: cleanLocale,
-          stats: report.byLocale[cleanLocale],
-          messageTypes: messageService.getAvailableMessageTypes(),
-        },
-      };
-    }
-
-    // Retorna relatório completo se specificLocale for null/undefined
-    return {
-      success: true,
-      data: {
-        summary: report.summary,
-        byLocale: report.byLocale,
-        missing: report.missing,
-        locales: messageService.getAvailableLocales(),
-        messageTypes: messageService.getAvailableMessageTypes(),
-      },
-    };
-  } catch (error) {
-    console.error("Erro ao verificar completude das mensagens:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-}
+// ============================================
+// FUNÇÕES DE ÁUDIO (mantidas temporariamente)
+// ============================================
 
 function isValidAudioFormat(filename) {
   const validExtensions = [
@@ -232,7 +43,6 @@ function isValidAudioFormat(filename) {
   return validExtensions.includes(ext);
 }
 
-
 async function handleAudioFileUpload(fileBuffer, originalName) {
   try {
     // Validar formato
@@ -244,7 +54,7 @@ async function handleAudioFileUpload(fileBuffer, originalName) {
       };
     }
 
-  
+    const audioDir = path.join(process.cwd(), "data", "audio");
 
     // Gerar nome único se arquivo já existir
     let finalFileName = originalName;
@@ -456,7 +266,12 @@ async function getExistingAudioFilesGUI() {
   }
 }
 
+// ============================================
+// EXPORTAÇÕES
+// ============================================
+
 module.exports = {
+  // Funções dos módulos
   handleListMessagesGUI,
   handleAddMessageGUI,
   handleEditMessageGUI,
@@ -464,6 +279,8 @@ module.exports = {
   handleShowLastMessageGUI,
   getAvailableOptionsGUI,
   handleCheckMessageCompletenessGUI,
+
+  // Funções de áudio (temporariamente aqui)
   handleAddMessageWithAudioGUI,
   handleEditMessageWithAudioGUI,
   getExistingAudioFilesGUI,
