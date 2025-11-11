@@ -27,6 +27,28 @@ function getSessionPath() {
   }
 }
 
+// 🆕 Função para obter caminho do Chrome com fallbacks
+function getChromeExecutablePath() {
+  const platform = process.platform;
+
+  if (platform === "win32") {
+    // Windows - tenta múltiplos caminhos
+    const possiblePaths = [
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+      process.env.LOCALAPPDATA + "\\Google\\Chrome\\Application\\chrome.exe",
+    ];
+
+    // Retorna o primeiro que existir (será validado pelo puppeteer)
+    return possiblePaths[0]; // Deixa o puppeteer validar
+  } else if (platform === "darwin") {
+    return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  } else {
+    // Linux
+    return "/usr/bin/google-chrome";
+  }
+}
+
 // Configuração do cliente WhatsApp usando Chromium do sistema
 const client = new Client({
   authStrategy: new LocalAuth({
@@ -34,13 +56,7 @@ const client = new Client({
     dataPath: getSessionPath(),
   }),
   puppeteer: {
-    // Use o Chromium do sistema em vez do bundled
-    executablePath:
-      process.platform === "win32"
-        ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-        : process.platform === "darwin"
-        ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-        : "/usr/bin/google-chrome",
+    executablePath: getChromeExecutablePath(),
     headless: true,
     args: [
       "--no-sandbox",
@@ -61,7 +77,28 @@ const client = new Client({
       "--disable-translate",
       "--hide-scrollbars",
       "--mute-audio",
+      // 🆕 Argumentos adicionais para estabilidade
+      "--disable-software-rasterizer",
+      "--disable-dev-tools",
+      "--disable-webgl",
+      "--disable-threaded-animation",
+      "--disable-threaded-scrolling",
+      "--disable-in-process-stack-traces",
+      "--disable-histogram-customizer",
+      "--disable-gl-extensions",
+      "--disable-composited-antialiasing",
+      "--disable-canvas-aa",
+      "--disable-3d-apis",
+      "--disable-breakpad",
+      "--disable-component-update",
+      "--disable-print-preview",
+      "--disable-features=AudioServiceOutOfProcess",
+      "--disable-features=IsolateOrigins",
+      "--disable-features=site-per-process",
+      "--disable-blink-features=AutomationControlled",
     ],
+    // 🆕 Timeouts maiores para evitar erros de conexão
+    timeout: 60000, // 60 segundos
   },
 });
 
@@ -97,12 +134,24 @@ function setupClientEventListeners() {
 
   client.on("auth_failure", async (msg) => {
     await debug(`⚠️ Falha na autenticação: ${msg}`);
+    // Reset da flag quando falhar autenticação
+    extractionStarted = false;
   });
 
   client.on("disconnected", async (reason) => {
     await debug(`🔌 Cliente desconectado: ${reason}`);
     // Reset da flag quando desconectar
     extractionStarted = false;
+  });
+
+  // 🆕 Listener para erros do puppeteer
+  client.on("loading_screen", async (percent, message) => {
+    await debug(`⏳ Carregando WhatsApp Web: ${percent}% - ${message}`);
+  });
+
+  // 🆕 Listener para mudanças de estado
+  client.on("change_state", async (state) => {
+    await debug(`🔄 Estado do cliente mudou para: ${state}`);
   });
 }
 
@@ -131,4 +180,5 @@ module.exports = {
   startScout,
   initializeClient,
   setupClientEventListeners,
+  getSessionPath, // 🆕 Exporta função para uso externo
 };
