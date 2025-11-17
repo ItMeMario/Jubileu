@@ -17,7 +17,6 @@ class DroneManager {
     this.currentNumbers = [];
     this.currentFile = null;
     this.isDisparoRunning = false;
-    this.currentStatusFilter = "all";
 
     // Inicializa elementos DOM
     this.initializeElements();
@@ -46,6 +45,11 @@ class DroneManager {
     this.previewLocale = document.getElementById("preview-locale");
     this.previewContent = document.getElementById("preview-content");
 
+    // Números - Stats
+    this.statTotal = document.getElementById("stat-total");
+    this.statBr = document.getElementById("stat-br");
+    this.statInt = document.getElementById("stat-int");
+
     // Números - File
     this.fileUploadArea = document.getElementById("file-upload-area");
     this.fileInput = document.getElementById("file-input");
@@ -58,12 +62,9 @@ class DroneManager {
     // Números - Processing Options
     this.processingOptions = document.getElementById("processing-options");
 
-    // Números - Lista e controles
+    // Números - Lista
     this.numbersList = document.getElementById("numbers-list");
-    this.statusFilter = document.getElementById("status-filter");
     this.btnClearAll = document.getElementById("btn-clear-all");
-    this.btnClearSent = document.getElementById("btn-clear-sent");
-    this.btnClearFailed = document.getElementById("btn-clear-failed");
 
     // Disparo
     this.requirementsCheck = document.getElementById("requirements-check");
@@ -73,41 +74,24 @@ class DroneManager {
     this.messageSelect = document.getElementById("message-select");
     this.batchSize = document.getElementById("batch-size");
     this.summaryTotal = document.getElementById("summary-total");
-    this.summaryToSend = document.getElementById("summary-to-send");
     this.summaryBatches = document.getElementById("summary-batches");
     this.btnExecuteDisparo = document.getElementById("btn-execute-disparo");
 
-    // Disparo - Progress
-    this.disparoProgress = document.getElementById("disparo-progress");
-    this.progressFill = document.getElementById("progress-fill");
-    this.progressText = document.getElementById("progress-text");
-    this.progressSent = document.getElementById("progress-sent");
-    this.progressFailed = document.getElementById("progress-failed");
-    this.progressBatch = document.getElementById("progress-batch");
+    // ❌ REMOVIDO: Elementos de progresso e resultados
+    // this.disparoProgress = document.getElementById("disparo-progress");
+    // this.progressFill = document.getElementById("progress-fill");
+    // this.progressText = document.getElementById("progress-text");
+    // this.progressSent = document.getElementById("progress-sent");
+    // this.progressFailed = document.getElementById("progress-failed");
+    // this.progressBatch = document.getElementById("progress-batch");
+    // this.disparoResults = document.getElementById("disparo-results");
+    // this.resultsContent = document.getElementById("results-content");
 
-    // Disparo - Results
-    this.disparoResults = document.getElementById("disparo-results");
-    this.resultsContent = document.getElementById("results-content");
-
-    // Status - Elementos principais
+    // Status
     this.whatsappStatus = document.getElementById("whatsapp-status");
     this.statusTotal = document.getElementById("status-total");
     this.statusMessages = document.getElementById("status-messages");
     this.btnRefreshStatus = document.getElementById("btn-refresh-status");
-
-    // Status - Breakdown (ÚNICOS indicadores de status mantidos)
-    this.breakdownPending = document.getElementById("breakdown-pending");
-    this.breakdownSent = document.getElementById("breakdown-sent");
-    this.breakdownFailed = document.getElementById("breakdown-failed");
-    this.breakdownPendingPercent = document.getElementById(
-      "breakdown-pending-percent"
-    );
-    this.breakdownSentPercent = document.getElementById(
-      "breakdown-sent-percent"
-    );
-    this.breakdownFailedPercent = document.getElementById(
-      "breakdown-failed-percent"
-    );
   }
 
   initializeModules() {
@@ -164,21 +148,9 @@ class DroneManager {
       this.numbers.importFile()
     );
 
-    // Números - Filtro de status
-    this.statusFilter.addEventListener("change", (e) => {
-      this.currentStatusFilter = e.target.value;
-      this.numbers.loadNumbers(this.currentStatusFilter);
-    });
-
-    // Números - Botões de limpeza
+    // Números - Clear All
     this.btnClearAll.addEventListener("click", () =>
       this.numbers.clearAllNumbers()
-    );
-    this.btnClearSent.addEventListener("click", () =>
-      this.numbers.clearSentNumbers()
-    );
-    this.btnClearFailed.addEventListener("click", () =>
-      this.numbers.clearFailedNumbers()
     );
 
     // Disparo - Seleção de mensagem
@@ -202,9 +174,9 @@ class DroneManager {
   async loadInitialData() {
     await this.messages.loadMessages();
     await this.numbers.loadNumbers();
+    await this.numbers.loadStatistics();
     await this.dispatch.loadMessagesForSelect();
     await this.dispatch.checkRequirements();
-    await this.status.refreshStatus();
   }
 }
 

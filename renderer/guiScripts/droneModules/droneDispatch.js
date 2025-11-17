@@ -129,7 +129,7 @@ export default class DroneDispatch {
   }
 
   /**
-   * Atualiza resumo com números a enviar (pending + failed)
+   * ATUALIZADO: Atualiza resumo com números a enviar (pending + failed)
    */
   async updateDisparoSummary() {
     try {
@@ -149,7 +149,7 @@ export default class DroneDispatch {
       // Atualiza campos
       this.manager.summaryTotal.textContent = totalNumbers;
 
-      // Campo de números a enviar
+      // NOVO: Campo de números a enviar
       if (this.manager.summaryToSend) {
         this.manager.summaryToSend.textContent = numbersToSend;
       }
@@ -222,8 +222,6 @@ export default class DroneDispatch {
 
     this.manager.isDisparoRunning = true;
     this.manager.btnExecuteDisparo.disabled = true;
-    this.manager.disparoProgress.style.display = "block";
-    this.manager.disparoResults.style.display = "none";
 
     try {
       const result = await window.droneAPI.executarDisparoDrone(
@@ -235,15 +233,18 @@ export default class DroneDispatch {
       this.manager.btnExecuteDisparo.disabled = false;
 
       if (result.success) {
-        this.showDisparoResults(result);
-        this.manager.utility.showStatus("Disparo concluído", "success");
+        this.manager.utility.showStatus(
+          `Disparo concluído: ${
+            result.detalhes?.totalEnviados || 0
+          } enviados, ${result.detalhes?.totalFalhas || 0} falhas`,
+          "success"
+        );
 
         // Atualiza lista e estatísticas após disparo
         await this.manager.numbers.loadNumbers(
           this.manager.currentStatusFilter
         );
-        // Atualiza apenas a seção Status (único lugar com indicadores)
-        await this.manager.status.refreshStatus();
+        await this.manager.numbers.loadStatistics();
         await this.updateDisparoSummary();
       } else {
         this.manager.utility.showStatus(
@@ -256,36 +257,6 @@ export default class DroneDispatch {
       this.manager.utility.showStatus("Erro ao executar disparo", "error");
       this.manager.isDisparoRunning = false;
       this.manager.btnExecuteDisparo.disabled = false;
-    } finally {
-      this.manager.disparoProgress.style.display = "none";
     }
-  }
-
-  showDisparoResults(result) {
-    const details = result.detalhes;
-
-    this.manager.resultsContent.innerHTML = `
-      <div class="summary-grid">
-        <div class="summary-item">
-          <span class="summary-label">Total enviados:</span>
-          <span class="summary-value">${details.totalEnviados || 0}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">Total de falhas:</span>
-          <span class="summary-value">${details.totalFalhas || 0}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">Batches processados:</span>
-          <span class="summary-value">${details.batchesProcessados || 0}/${
-      details.totalBatches || 0
-    }</span>
-        </div>
-      </div>
-      <p style="margin-top: 15px; color: #666;">${
-        result.message || "Disparo finalizado"
-      }</p>
-    `;
-
-    this.manager.disparoResults.style.display = "block";
   }
 }
