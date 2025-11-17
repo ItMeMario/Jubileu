@@ -72,20 +72,8 @@ class DroneManager {
     this.reqMessage = document.getElementById("req-message");
     this.reqNumbers = document.getElementById("req-numbers");
     this.messageSelect = document.getElementById("message-select");
-    this.batchSize = document.getElementById("batch-size");
-    this.summaryTotal = document.getElementById("summary-total");
-    this.summaryBatches = document.getElementById("summary-batches");
     this.btnExecuteDisparo = document.getElementById("btn-execute-disparo");
 
-    // ❌ REMOVIDO: Elementos de progresso e resultados
-    // this.disparoProgress = document.getElementById("disparo-progress");
-    // this.progressFill = document.getElementById("progress-fill");
-    // this.progressText = document.getElementById("progress-text");
-    // this.progressSent = document.getElementById("progress-sent");
-    // this.progressFailed = document.getElementById("progress-failed");
-    // this.progressBatch = document.getElementById("progress-batch");
-    // this.disparoResults = document.getElementById("disparo-results");
-    // this.resultsContent = document.getElementById("results-content");
 
     // Status
     this.whatsappStatus = document.getElementById("whatsapp-status");
