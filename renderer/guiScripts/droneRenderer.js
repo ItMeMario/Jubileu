@@ -72,14 +72,28 @@ class DroneManager {
     this.reqMessage = document.getElementById("req-message");
     this.reqNumbers = document.getElementById("req-numbers");
     this.messageSelect = document.getElementById("message-select");
+    this.batchSize = document.getElementById("batch-size");
     this.btnExecuteDisparo = document.getElementById("btn-execute-disparo");
-
 
     // Status
     this.whatsappStatus = document.getElementById("whatsapp-status");
     this.statusTotal = document.getElementById("status-total");
     this.statusMessages = document.getElementById("status-messages");
     this.btnRefreshStatus = document.getElementById("btn-refresh-status");
+
+    // Status - Breakdown (ELEMENTOS ADICIONADOS)
+    this.breakdownPending = document.getElementById("breakdown-pending");
+    this.breakdownSent = document.getElementById("breakdown-sent");
+    this.breakdownFailed = document.getElementById("breakdown-failed");
+    this.breakdownPendingPercent = document.getElementById(
+      "breakdown-pending-percent"
+    );
+    this.breakdownSentPercent = document.getElementById(
+      "breakdown-sent-percent"
+    );
+    this.breakdownFailedPercent = document.getElementById(
+      "breakdown-failed-percent"
+    );
   }
 
   initializeModules() {
@@ -165,6 +179,7 @@ class DroneManager {
     await this.numbers.loadStatistics();
     await this.dispatch.loadMessagesForSelect();
     await this.dispatch.checkRequirements();
+    await this.status.updateStatusBreakdown(); // CHAMADA ADICIONADA
   }
 }
 

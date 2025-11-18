@@ -101,7 +101,6 @@ export default class DroneDispatch {
       this.manager.selectedMessageIndex = null;
       this.manager.selectedMessageData = null;
       this.checkRequirements();
-      this.updateDisparoSummary();
       return;
     }
 
@@ -119,64 +118,11 @@ export default class DroneDispatch {
         "success"
       );
 
-      // Atualiza os requisitos e resumo
+      // Atualiza os requisitos
       this.checkRequirements();
-      this.updateDisparoSummary();
     } else {
       console.error("Mensagem não encontrada:", selectedIndex);
       this.manager.utility.showStatus("Erro ao selecionar mensagem", "error");
-    }
-  }
-
-  /**
-   * ATUALIZADO: Atualiza resumo com números a enviar (pending + failed)
-   */
-  async updateDisparoSummary() {
-    try {
-      const batchSize = parseInt(this.manager.batchSize.value) || 200;
-      const totalNumbers = this.manager.currentNumbers.length;
-
-      // Busca estatísticas para calcular pending + failed
-      const statsResult = await window.droneAPI.obterEstatisticasNumeros();
-
-      let numbersToSend = 0;
-      if (statsResult.success && statsResult.estatisticas) {
-        const pending = statsResult.estatisticas.porStatus?.pending || 0;
-        const failed = statsResult.estatisticas.porStatus?.failed || 0;
-        numbersToSend = pending + failed;
-      }
-
-      // Atualiza campos
-      this.manager.summaryTotal.textContent = totalNumbers;
-
-      // NOVO: Campo de números a enviar
-      if (this.manager.summaryToSend) {
-        this.manager.summaryToSend.textContent = numbersToSend;
-      }
-
-      // Calcula batches baseado em números a enviar (não no total)
-      const batches =
-        numbersToSend > 0 ? Math.ceil(numbersToSend / batchSize) : 0;
-      this.manager.summaryBatches.textContent = batches;
-
-      console.log("Resumo do disparo:", {
-        total: totalNumbers,
-        aEnviar: numbersToSend,
-        batches: batches,
-        batchSize: batchSize,
-      });
-    } catch (error) {
-      console.error("Erro ao atualizar resumo:", error);
-      // Fallback: usa o total de números atual
-      const batchSize = parseInt(this.manager.batchSize.value) || 200;
-      const totalNumbers = this.manager.currentNumbers.length;
-      this.manager.summaryTotal.textContent = totalNumbers;
-      if (this.manager.summaryToSend) {
-        this.manager.summaryToSend.textContent = totalNumbers;
-      }
-      this.manager.summaryBatches.textContent = Math.ceil(
-        totalNumbers / batchSize
-      );
     }
   }
 
@@ -245,7 +191,7 @@ export default class DroneDispatch {
           this.manager.currentStatusFilter
         );
         await this.manager.numbers.loadStatistics();
-        await this.updateDisparoSummary();
+        await this.manager.status.updateStatusBreakdown(); // ATUALIZA O BREAKDOWN
       } else {
         this.manager.utility.showStatus(
           result.error || "Erro no disparo",
