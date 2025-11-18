@@ -417,3 +417,27 @@ Erro de banco de dados corrigido:
 Resolvido o problema SQLITE_CANTOPEN: unable to open database file, que impedia o acesso adequado ao banco de dados em alguns casos.
 
 📅 Data de Lançamento: [03/11/2025]
+
+📌 Patch Notes - Versão 0.0.13
+
+✨ Novidades
+
+Modularização do messageControllerGui, deixando o código mais organizado e fácil de manter.
+
+🛠️ Melhorias
+
+Removido código duplicado relacionado à criação da pasta de áudio, reduzindo redundância e prevenindo erros futuros.
+
+Sistema de conexão aprimorado para evitar falhas quando uma conta é desvinculada do sistema.
+
+Atualizada a lib do WhatsApp Web para garantir mais estabilidade na comunicação e no fluxo geral.
+
+Removido estatisticas redundantes no Drone, centralizando tudo na aba "Status"
+
+🐛 Correções
+
+Corrigido o problema que impedia o envio de mensagens de áudio.
+
+Ajustes internos na licença para manter o projeto alinhado com as normas de uso.
+
+📅 Data de Lançamento: [18/11/2025]
