@@ -273,15 +273,15 @@ class IPCManager {
       "modo-dev-get-scout-config",
       this.handlers.modoDev.getScoutConfig.bind(this.handlers.modoDev)
     );
+
+    // ✅ RESTAURADO - Obter modo atual (DEV/PRODUÇÃO)
     ipcMain.handle(
       "modo-dev-get-current-mode",
       this.handlers.modoDev.getCurrentMode.bind(this.handlers.modoDev)
     );
 
-    ipcMain.handle(
-      "modo-dev-toggle-group-mode",
-      this.handlers.modoDev.toggleGroupMode.bind(this.handlers.modoDev)
-    );
+    // ❌ REMOVIDO - Toggle entre SINGLE/MULTI
+    // ipcMain.handle("modo-dev-toggle-group-mode", ...)
 
     ipcMain.handle(
       "modo-dev-get-current-locale",
@@ -447,7 +447,6 @@ class IPCManager {
       "modo-dev-set-scout-time",
       "modo-dev-get-scout-config",
       "modo-dev-get-current-mode",
-      "modo-dev-toggle-group-mode",
       "modo-dev-get-current-locale",
       "modo-dev-get-available-locales",
       "modo-dev-set-locale",

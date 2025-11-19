@@ -27,7 +27,7 @@ class ModoDevHandlers {
     }
   }
 
-  // Configurar tempo do Scout - CORRIGIDO: removido parâmetro event desnecessário
+  // Configurar tempo do Scout
   async setScoutTime(event, timeInput) {
     try {
       console.log("Configurando tempo do Scout:", timeInput);
@@ -57,7 +57,7 @@ class ModoDevHandlers {
     }
   }
 
-  // Obter modo atual
+  // Obter modo atual (DEV/PRODUÇÃO) - ✅ RESTAURADO
   async getCurrentMode() {
     try {
       console.log("Obtendo modo atual...");
@@ -68,35 +68,7 @@ class ModoDevHandlers {
     }
   }
 
-  // Alternar modo de grupo (SINGLE/MULTI) - CORRIGIDO: melhor tratamento de erros
-  async toggleGroupMode() {
-    try {
-      console.log("Alternando modo de grupo...");
-      const result = await modoDevControllerGui.toggleGroupMode();
-
-      // Garantir que sempre retornamos uma estrutura consistente
-      if (result && result.success) {
-        return {
-          success: true,
-          data: {
-            previousMode: result.data.previousMode,
-            currentMode: result.data.currentMode,
-            message: result.data.message,
-          },
-        };
-      } else {
-        return {
-          success: false,
-          error: result?.error || "Erro desconhecido ao alternar modo de grupo",
-        };
-      }
-    } catch (error) {
-      console.error("Erro ao alternar modo de grupo:", error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  // ========== NOVOS MÉTODOS PARA LOCALE ==========
+  // ========== MÉTODOS PARA LOCALE ==========
 
   // Obter locale atual
   async getCurrentLocale() {
