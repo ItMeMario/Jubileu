@@ -1,7 +1,25 @@
 // renderer/configPreload.js
 const { contextBridge, ipcRenderer } = require("electron");
 
-// ✅ ADICIONADO: APIs de cidade
+/**
+ * Função auxiliar para criar handlers de API com tratamento de erro consistente
+ * @param {string} channel - Nome do canal IPC
+ * @param {string} errorPrefix - Prefixo da mensagem de erro
+ */
+const createIPCHandler = (channel, errorPrefix) => {
+  return async (...args) => {
+    try {
+      return await ipcRenderer.invoke(channel, ...args);
+    } catch (error) {
+      console.error(`${errorPrefix}:`, error);
+      return { success: false, error: error.message };
+    }
+  };
+};
+
+// ========================================
+// API de Cidades
+// ========================================
 contextBridge.exposeInMainWorld("cityAPI", {
   getCities: () => ipcRenderer.invoke("city-get-cities"),
   addCity: (cityData) => ipcRenderer.invoke("city-add-city", cityData),
@@ -13,224 +31,115 @@ contextBridge.exposeInMainWorld("cityAPI", {
   getCityById: (id) => ipcRenderer.invoke("city-get-by-id", id),
 });
 
-// ✅ ADICIONADO: APIs de indicadores
+// ========================================
+// API de Indicadores
+// ========================================
 contextBridge.exposeInMainWorld("indicadoresAPI", {
-  // Obter estatísticas completas
-  getStatistics: async () => {
-    try {
-      return await ipcRenderer.invoke("indicadores-get-statistics");
-    } catch (error) {
-      console.error("Erro ao obter estatísticas:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Obter estatísticas de horários
-  getHourlyStatistics: async () => {
-    try {
-      return await ipcRenderer.invoke("indicadores-get-hourly-statistics");
-    } catch (error) {
-      console.error("Erro ao obter estatísticas de horários:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Obter estatísticas resumidas
-  getSummaryStatistics: async () => {
-    try {
-      return await ipcRenderer.invoke("indicadores-get-summary-statistics");
-    } catch (error) {
-      console.error("Erro ao obter estatísticas resumidas:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Limpar estatísticas
-  clearStatistics: async () => {
-    try {
-      return await ipcRenderer.invoke("indicadores-clear-statistics");
-    } catch (error) {
-      console.error("Erro ao limpar estatísticas:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Exportar para TXT
-  exportToTxt: async () => {
-    try {
-      return await ipcRenderer.invoke("indicadores-export-to-txt");
-    } catch (error) {
-      console.error("Erro ao exportar para TXT:", error);
-      return { success: false, error: error.message };
-    }
-  },
+  getStatistics: createIPCHandler(
+    "indicadores-get-statistics",
+    "Erro ao obter estatísticas"
+  ),
+  getHourlyStatistics: createIPCHandler(
+    "indicadores-get-hourly-statistics",
+    "Erro ao obter estatísticas de horários"
+  ),
+  getSummaryStatistics: createIPCHandler(
+    "indicadores-get-summary-statistics",
+    "Erro ao obter estatísticas resumidas"
+  ),
+  clearStatistics: createIPCHandler(
+    "indicadores-clear-statistics",
+    "Erro ao limpar estatísticas"
+  ),
+  exportToTxt: createIPCHandler(
+    "indicadores-export-to-txt",
+    "Erro ao exportar para TXT"
+  ),
 });
 
-// ✅ ATUALIZADO: APIs de modo dev - COM LOCALE
+// ========================================
+// API de Modo Dev
+// ========================================
 contextBridge.exposeInMainWorld("modoDevAPI", {
   // Toggle modes
-  toggleDevMode: async () => {
-    try {
-      return await ipcRenderer.invoke("modo-dev-toggle-dev-mode");
-    } catch (error) {
-      console.error("Erro ao alternar modo dev:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  toggleDebugMode: async () => {
-    try {
-      return await ipcRenderer.invoke("modo-dev-toggle-debug-mode");
-    } catch (error) {
-      console.error("Erro ao alternar modo debug:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  toggleGroupMode: async () => {
-    try {
-      return await ipcRenderer.invoke("modo-dev-toggle-group-mode");
-    } catch (error) {
-      console.error("Erro ao alternar modo de grupo:", error);
-      return { success: false, error: error.message };
-    }
-  },
+  toggleDevMode: createIPCHandler(
+    "modo-dev-toggle-dev-mode",
+    "Erro ao alternar modo dev"
+  ),
+  toggleDebugMode: createIPCHandler(
+    "modo-dev-toggle-debug-mode",
+    "Erro ao alternar modo debug"
+  ),
+  toggleGroupMode: createIPCHandler(
+    "modo-dev-toggle-group-mode",
+    "Erro ao alternar modo de grupo"
+  ),
 
   // Scout configuration
-  setScoutTime: async (timeInput) => {
-    try {
-      return await ipcRenderer.invoke("modo-dev-set-scout-time", timeInput);
-    } catch (error) {
-      console.error("Erro ao configurar scout:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  getScoutConfig: async () => {
-    try {
-      return await ipcRenderer.invoke("modo-dev-get-scout-config");
-    } catch (error) {
-      console.error("Erro ao obter config do scout:", error);
-      return { success: false, error: error.message };
-    }
-  },
+  setScoutTime: createIPCHandler(
+    "modo-dev-set-scout-time",
+    "Erro ao configurar scout"
+  ),
+  getScoutConfig: createIPCHandler(
+    "modo-dev-get-scout-config",
+    "Erro ao obter config do scout"
+  ),
 
   // Status information
-  getCurrentMode: async () => {
-    try {
-      return await ipcRenderer.invoke("modo-dev-get-current-mode");
-    } catch (error) {
-      console.error("Erro ao obter modo atual:", error);
-      return { success: false, error: error.message };
-    }
-  },
+  getCurrentMode: createIPCHandler(
+    "modo-dev-get-current-mode",
+    "Erro ao obter modo atual"
+  ),
+  getDetailedStatus: createIPCHandler(
+    "modo-dev-get-detailed-status",
+    "Erro ao obter status detalhado"
+  ),
 
-  getDetailedStatus: async () => {
-    try {
-      return await ipcRenderer.invoke("modo-dev-get-detailed-status");
-    } catch (error) {
-      console.error("Erro ao obter status detalhado:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // ========== NOVAS APIs PARA LOCALE ==========
-
-  // Obter locale atual
-  getCurrentLocale: async () => {
-    try {
-      return await ipcRenderer.invoke("modo-dev-get-current-locale");
-    } catch (error) {
-      console.error("Erro ao obter locale atual:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Obter locales disponíveis
-  getAvailableLocales: async () => {
-    try {
-      return await ipcRenderer.invoke("modo-dev-get-available-locales");
-    } catch (error) {
-      console.error("Erro ao obter locales disponíveis:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Alterar locale
-  setLocale: async (selectedIndex) => {
-    try {
-      return await ipcRenderer.invoke("modo-dev-set-locale", selectedIndex);
-    } catch (error) {
-      console.error("Erro ao alterar locale:", error);
-      return { success: false, error: error.message };
-    }
-  },
+  // Locale configuration
+  getCurrentLocale: createIPCHandler(
+    "modo-dev-get-current-locale",
+    "Erro ao obter locale atual"
+  ),
+  getAvailableLocales: createIPCHandler(
+    "modo-dev-get-available-locales",
+    "Erro ao obter locales disponíveis"
+  ),
+  setLocale: createIPCHandler("modo-dev-set-locale", "Erro ao alterar locale"),
 });
 
-// ✅ NOVO: APIs de banco de dados
+// ========================================
+// API de Banco de Dados
+// ========================================
 contextBridge.exposeInMainWorld("databaseAPI", {
-  // Obter todas as tabelas do banco
-  getAllTables: async () => {
-    try {
-      return await ipcRenderer.invoke("database-get-all-tables");
-    } catch (error) {
-      console.error("Erro ao obter tabelas:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Obter informações de uma tabela específica
-  getTableInfo: async (tableName) => {
-    try {
-      return await ipcRenderer.invoke("database-get-table-info", tableName);
-    } catch (error) {
-      console.error("Erro ao obter informações da tabela:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Obter contagem de registros de todas as tabelas
-  getTableCounts: async () => {
-    try {
-      return await ipcRenderer.invoke("database-get-table-counts");
-    } catch (error) {
-      console.error("Erro ao obter contagens:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Obter informações gerais do banco
-  getDatabaseInfo: async () => {
-    try {
-      return await ipcRenderer.invoke("database-get-database-info");
-    } catch (error) {
-      console.error("Erro ao obter informações do banco:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Obter cidade primária
-  getPrimaryCity: async () => {
-    try {
-      return await ipcRenderer.invoke("database-get-primary-city");
-    } catch (error) {
-      console.error("Erro ao obter cidade primária:", error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Obter visão geral do banco (combinando várias informações)
-  getDatabaseOverview: async () => {
-    try {
-      return await ipcRenderer.invoke("database-get-overview");
-    } catch (error) {
-      console.error("Erro ao obter visão geral:", error);
-      return { success: false, error: error.message };
-    }
-  },
+  getAllTables: createIPCHandler(
+    "database-get-all-tables",
+    "Erro ao obter tabelas"
+  ),
+  getTableInfo: createIPCHandler(
+    "database-get-table-info",
+    "Erro ao obter informações da tabela"
+  ),
+  getTableCounts: createIPCHandler(
+    "database-get-table-counts",
+    "Erro ao obter contagens"
+  ),
+  getDatabaseInfo: createIPCHandler(
+    "database-get-database-info",
+    "Erro ao obter informações do banco"
+  ),
+  getPrimaryCity: createIPCHandler(
+    "database-get-primary-city",
+    "Erro ao obter cidade primária"
+  ),
+  getDatabaseOverview: createIPCHandler(
+    "database-get-overview",
+    "Erro ao obter visão geral"
+  ),
 });
 
-// ✅ MANTIDO: APIs de configuração existentes
+// ========================================
+// API de Configuração
+// ========================================
 contextBridge.exposeInMainWorld("configAPI", {
   // Configurações gerais do sistema
   getSystemConfig: () => ipcRenderer.invoke("config-get-system-config"),
@@ -248,14 +157,17 @@ contextBridge.exposeInMainWorld("configAPI", {
   // Navegação
   closeWindow: () => ipcRenderer.invoke("config-close-window"),
 
-  // Outras configurações
+  // Importação/Exportação
   exportSettings: () => ipcRenderer.invoke("config-export-settings"),
   importSettings: (settingsData) =>
     ipcRenderer.invoke("config-import-settings", settingsData),
 });
 
+// ========================================
+// API de Mensagens (UNIFICADA)
+// ========================================
 contextBridge.exposeInMainWorld("messageAPI", {
-  // Operações CRUD de mensagens (EXISTENTES - MANTER)
+  // Operações CRUD básicas
   getMessages: () => ipcRenderer.invoke("message-get-messages"),
   addMessage: (messageData) =>
     ipcRenderer.invoke("message-add-message", messageData),
@@ -264,61 +176,17 @@ contextBridge.exposeInMainWorld("messageAPI", {
   deleteMessage: (id) => ipcRenderer.invoke("message-delete-message", id),
   getLastMessage: () => ipcRenderer.invoke("message-get-last-message"),
 
-  // Verificação de completude (EXISTENTE - MANTER)
-  checkMessageCompleteness: (specificLocale) =>
-    ipcRenderer.invoke("message-check-completeness", specificLocale),
-
-  // Opções específicas para mensagens (EXISTENTES - MANTER)
-  getMessageTypes: () => ipcRenderer.invoke("message-get-types"),
-  getMessageLocales: () => ipcRenderer.invoke("message-get-locales"),
-  getAvailableOptions: () =>
-    ipcRenderer.invoke("message-get-available-options"),
-
-  // NOVAS: APIs para áudio
-  addMessageWithAudio: (messageData, audioFileData) =>
-    ipcRenderer.invoke(
-      "message-add-message-with-audio",
-      messageData,
-      audioFileData
-    ),
-  updateMessageWithAudio: (id, messageData, audioFileData) =>
-    ipcRenderer.invoke(
-      "message-update-message-with-audio",
-      id,
-      messageData,
-      audioFileData
-    ),
-  getExistingAudioFiles: () => ipcRenderer.invoke("message-get-audio-files"),
-  validateAudioFile: (filename) =>
-    ipcRenderer.invoke("message-validate-audio-file", filename),
-});
-
-// ADIÇÕES PARA messagePreload.js
-// Substitua o contextBridge.exposeInMainWorld("messageAPI", { ... }) existente por:
-
-contextBridge.exposeInMainWorld("messageAPI", {
-  // Operações CRUD de mensagens (EXISTENTES)
-  getMessages: () => ipcRenderer.invoke("message-get-messages"),
-  addMessage: (messageData) =>
-    ipcRenderer.invoke("message-add-message", messageData),
-  updateMessage: (id, messageData) =>
-    ipcRenderer.invoke("message-update-message", id, messageData),
-  deleteMessage: (id) => ipcRenderer.invoke("message-delete-message", id),
-  getLastMessage: () => ipcRenderer.invoke("message-get-last-message"),
-
-  // Opções específicas para mensagens (EXISTENTES)
-  getMessageTypes: () => ipcRenderer.invoke("message-get-types"),
-  getMessageLocales: () => ipcRenderer.invoke("message-get-locales"),
-
-  // Nova função: verificar completude das mensagens (EXISTENTE)
+  // Verificação de completude
   checkMessageCompleteness: (specificLocale = null) =>
     ipcRenderer.invoke("message-check-completeness", specificLocale),
 
-  // Método de compatibilidade (EXISTENTE)
+  // Opções específicas para mensagens
+  getMessageTypes: () => ipcRenderer.invoke("message-get-types"),
+  getMessageLocales: () => ipcRenderer.invoke("message-get-locales"),
   getAvailableOptions: () =>
     ipcRenderer.invoke("message-get-available-options"),
 
-  // NOVAS: APIs para áudio
+  // APIs para áudio
   addMessageWithAudio: (messageData, audioFileData) =>
     ipcRenderer.invoke(
       "message-add-message-with-audio",
@@ -337,35 +205,27 @@ contextBridge.exposeInMainWorld("messageAPI", {
     ipcRenderer.invoke("message-validate-audio-file", filename),
 });
 
-// ✅ ATUALIZADO: Debug helper para verificar se está funcionando
+// ========================================
+// API de Debug
+// ========================================
 contextBridge.exposeInMainWorld("debugAPI", {
   log: (message) => console.log("[ConfigPreload]", message),
   checkAPIs: () => {
-    console.log("🔋 APIs disponíveis na janela de configurações:");
-    console.log("- window.cityAPI:", typeof window.cityAPI);
-    console.log("- window.configAPI:", typeof window.configAPI);
-    console.log("- window.messageAPI:", typeof window.messageAPI);
-    console.log("- window.indicadoresAPI:", typeof window.indicadoresAPI);
-    console.log("- window.modoDevAPI:", typeof window.modoDevAPI);
-    console.log("- window.databaseAPI:", typeof window.databaseAPI);
+    const apis = {
+      cityAPI: window.cityAPI,
+      configAPI: window.configAPI,
+      messageAPI: window.messageAPI,
+      indicadoresAPI: window.indicadoresAPI,
+      modoDevAPI: window.modoDevAPI,
+      databaseAPI: window.databaseAPI,
+    };
 
-    if (window.cityAPI) {
-      console.log("🏙️ Métodos cityAPI:", Object.keys(window.cityAPI));
-    }
-    if (window.indicadoresAPI) {
-      console.log(
-        "📊 Métodos indicadoresAPI:",
-        Object.keys(window.indicadoresAPI)
-      );
-    }
-    if (window.modoDevAPI) {
-      console.log("🔧 Métodos modoDevAPI:", Object.keys(window.modoDevAPI));
-    }
-    if (window.databaseAPI) {
-      console.log("🗄️ Métodos databaseAPI:", Object.keys(window.databaseAPI));
-    }
-    if (window.messageAPI) {
-      console.log("💬 Métodos messageAPI:", Object.keys(window.messageAPI));
-    }
+    console.log("📋 APIs disponíveis na janela de configurações:");
+    Object.entries(apis).forEach(([name, api]) => {
+      console.log(`- window.${name}:`, typeof api);
+      if (api) {
+        console.log(`  Métodos:`, Object.keys(api));
+      }
+    });
   },
 });
