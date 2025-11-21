@@ -212,14 +212,6 @@ class IPCManager {
       this.handlers.city.deleteCity.bind(this.handlers.city)
     );
     ipcMain.handle(
-      "city-set-primary",
-      this.handlers.city.setPrimaryCity.bind(this.handlers.city)
-    );
-    ipcMain.handle(
-      "city-get-primary",
-      this.handlers.city.getPrimaryCity.bind(this.handlers.city)
-    );
-    ipcMain.handle(
       "city-get-by-id",
       this.handlers.city.getCityById.bind(this.handlers.city)
     );
@@ -434,8 +426,6 @@ class IPCManager {
       "city-add-city",
       "city-update-city",
       "city-delete-city",
-      "city-set-primary",
-      "city-get-primary",
       "city-get-by-id",
       "indicadores-get-statistics",
       "indicadores-get-hourly-statistics",

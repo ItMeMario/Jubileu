@@ -16,12 +16,6 @@ contextBridge.exposeInMainWorld("cityAPI", {
   // Excluir cidade
   deleteCity: (id) => ipcRenderer.invoke("city-delete-city", id),
 
-  // Definir cidade primária
-  setPrimaryCity: (id) => ipcRenderer.invoke("city-set-primary", id),
-
-  // Buscar cidade primária
-  getPrimaryCity: () => ipcRenderer.invoke("city-get-primary"),
-
   // Buscar cidade por ID
   getCityById: (id) => ipcRenderer.invoke("city-get-by-id", id),
 });

@@ -65,32 +65,6 @@ class CityHandlers {
     }
   }
 
-  async setPrimaryCity(_, id) {
-    try {
-      const controller = this.getCityController();
-      return await controller.handleSetPrimaryCityGUI(id);
-    } catch (error) {
-      console.error("Erro em city-set-primary:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
-
-  async getPrimaryCity() {
-    try {
-      const controller = this.getCityController();
-      return await controller.handleGetPrimaryCityGUI();
-    } catch (error) {
-      console.error("Erro em city-get-primary:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
-
   async getCityById(_, id) {
     try {
       const controller = this.getCityController();
