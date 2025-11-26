@@ -1,4 +1,4 @@
-// renderer/guiScripts/cityRenderer.js (MODIFIED: confirm removido)
+// renderer/guiScripts/cityRenderer.js
 class CitiesManager {
   constructor() {
     this.currentCity = null;
@@ -175,6 +175,12 @@ class CitiesManager {
 
   async deleteCity() {
     if (!this.currentCity) return;
+
+    const confirmed = await window.customConfirm(
+      `Tem certeza que deseja excluir a cidade "${this.currentCity.name}"?`
+    );
+
+    if (!confirmed) return;
 
     try {
       this.showButtonLoading(this.btnDeleteCity);
