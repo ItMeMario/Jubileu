@@ -1,4 +1,5 @@
 // renderer/guiScripts/messageRenderer.js
+
 class MessagesManager {
   constructor() {
     this.currentMessage = null;
@@ -830,17 +831,15 @@ class MessagesManager {
       this.hideButtonLoading(this.btnSaveMessage);
     }
   }
-  
+
   async deleteMessage() {
     if (!this.currentMessage) return;
 
-    if (
-      !confirm(
-        `Tem certeza que deseja excluir a mensagem #${this.currentMessage.id}?`
-      )
-    ) {
-      return;
-    }
+    const confirmed = await window.customConfirm(
+      `Tem certeza que deseja excluir a mensagem #${this.currentMessage.id}?`
+    );
+
+    if (!confirmed) return;
 
     try {
       this.showButtonLoading(this.btnDeleteMessage);

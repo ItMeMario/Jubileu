@@ -1,4 +1,4 @@
-// renderer/guiScripts/cityRenderer.js
+// renderer/guiScripts/cityRenderer.js (MODIFIED: confirm removido)
 class CitiesManager {
   constructor() {
     this.currentCity = null;
@@ -89,7 +89,6 @@ class CitiesManager {
 
     this.citiesList.querySelectorAll(".city-item").forEach((item) => {
       item.addEventListener("click", (e) => {
-        // Evitar que links sejam interceptados
         if (e.target.tagName === "A") return;
 
         const cityId = parseInt(item.dataset.id);
@@ -177,14 +176,6 @@ class CitiesManager {
   async deleteCity() {
     if (!this.currentCity) return;
 
-    if (
-      !confirm(
-        `Tem certeza que deseja excluir a cidade "${this.currentCity.name}"?`
-      )
-    ) {
-      return;
-    }
-
     try {
       this.showButtonLoading(this.btnDeleteCity);
       const result = await window.cityAPI.deleteCity(this.currentCity.id);
@@ -236,9 +227,7 @@ class CitiesManager {
   }
 }
 
-// Inicializa quando o DOM estiver pronto
 document.addEventListener("DOMContentLoaded", () => {
-  // Só inicializa se estivermos na seção de cidades
   if (document.getElementById("cities-section")) {
     window.citiesManager = new CitiesManager();
   }
