@@ -16,7 +16,7 @@ class CitiesManager {
     this.cityMessageTextarea = document.getElementById("city-message");
     this.cityDateInput = document.getElementById("city-date");
     this.btnSaveCity = document.getElementById("btn-save-city");
-    this.btnClearForm = document.getElementById("btn-clear-form");
+    this.btnClearForm = document.getElementById("btn-clear-city-form");
     this.btnDeleteCity = document.getElementById("btn-delete-city");
     this.statusDiv = document.getElementById("status");
   }
