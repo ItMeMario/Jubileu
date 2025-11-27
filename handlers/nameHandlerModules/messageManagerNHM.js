@@ -17,6 +17,16 @@ const FALLBACK_MESSAGES = {
     "⚠️ Ocorreu um erro ao enviar o(s) link(s) do grupo. Por favor, tente novamente mais tarde.",
 };
 
+/**
+ * Extrai o primeiro nome de um nome completo
+ * @param {string} nomeCompleto - Nome completo (ex: "João Silva")
+ * @returns {string} Primeiro nome (ex: "João")
+ */
+function getPrimeiroNome(nomeCompleto) {
+  if (!nomeCompleto || typeof nomeCompleto !== "string") return "";
+  return nomeCompleto.trim().split(/\s+/)[0];
+}
+
 class MessageManager {
   // 📹 Obter mensagem dinâmica de GROUP_SINGLE_INVITE com fallback
   async getSingleInviteMessage(
@@ -25,10 +35,18 @@ class MessageManager {
     groupLink,
     dataEvento = ""
   ) {
+    const primeiroNome = getPrimeiroNome(nomeCompleto);
+
     try {
       const dynamicMessage = await messageReader.getMessage(
         MessageType.GROUP_SINGLE_INVITE,
-        { nomeCompleto, horarioSelecionado, groupLink, dataEvento }
+        {
+          nomeCompleto,
+          primeiroNome,
+          horarioSelecionado,
+          groupLink,
+          dataEvento,
+        }
       );
 
       if (!dynamicMessage.includes("[ERRO:")) {
@@ -44,6 +62,7 @@ class MessageManager {
 
     return FALLBACK_MESSAGES[MessageType.GROUP_SINGLE_INVITE]
       .replace("{{nomeCompleto}}", nomeCompleto)
+      .replace("{{primeiroNome}}", primeiroNome)
       .replace("{{horarioSelecionado}}", horarioSelecionado)
       .replace("{{groupLink}}", groupLink)
       .replace("{{dataEvento}}", dataEvento);
@@ -57,10 +76,19 @@ class MessageManager {
     cityName,
     dataEvento = ""
   ) {
+    const primeiroNome = getPrimeiroNome(nomeCompleto);
+
     try {
       const dynamicMessage = await messageReader.getMessage(
         MessageType.GROUP_MULTI_INVITE,
-        { nomeCompleto, horarioSelecionado, groupLink, cityName, dataEvento }
+        {
+          nomeCompleto,
+          primeiroNome,
+          horarioSelecionado,
+          groupLink,
+          cityName,
+          dataEvento,
+        }
       );
 
       if (!dynamicMessage.includes("[ERRO:")) {
@@ -76,6 +104,7 @@ class MessageManager {
 
     return FALLBACK_MESSAGES[MessageType.GROUP_MULTI_INVITE]
       .replace("{{nomeCompleto}}", nomeCompleto)
+      .replace("{{primeiroNome}}", primeiroNome)
       .replace("{{horarioSelecionado}}", horarioSelecionado)
       .replace("{{groupLink}}", groupLink)
       .replace("{{cityName}}", cityName)
@@ -84,10 +113,12 @@ class MessageManager {
 
   // 📹 Obter mensagem dinâmica de ALREADY_IN_GROUP com fallback
   async getAlreadyInGroupMessage(nomeCompleto, cityName = "") {
+    const primeiroNome = getPrimeiroNome(nomeCompleto);
+
     try {
       const dynamicMessage = await messageReader.getMessage(
         MessageType.ALREADY_IN_GROUP,
-        { nomeCompleto, cityName }
+        { nomeCompleto, primeiroNome, cityName }
       );
 
       if (!dynamicMessage.includes("[ERRO:")) {
@@ -103,6 +134,7 @@ class MessageManager {
 
     return FALLBACK_MESSAGES[MessageType.ALREADY_IN_GROUP]
       .replace("{{nomeCompleto}}", nomeCompleto)
+      .replace("{{primeiroNome}}", primeiroNome)
       .replace("{{cityName}}", cityName);
   }
 
