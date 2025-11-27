@@ -162,13 +162,14 @@ class CitiesManager {
         this.showStatus(result.message, "success");
         await this.loadCities();
         this.clearForm();
+        this.hideButtonLoading(this.btnSaveCity, true);
       } else {
         this.showStatus(result.error || "Erro ao salvar cidade", "error");
+        this.hideButtonLoading(this.btnSaveCity);
       }
     } catch (error) {
       console.error("Error saving city:", error);
       this.showStatus("Erro ao salvar cidade", "error");
-    } finally {
       this.hideButtonLoading(this.btnSaveCity);
     }
   }
@@ -190,13 +191,14 @@ class CitiesManager {
         this.showStatus(result.message, "success");
         await this.loadCities();
         this.clearForm();
+        this.hideButtonLoading(this.btnDeleteCity, true);
       } else {
         this.showStatus(result.error || "Erro ao excluir cidade", "error");
+        this.hideButtonLoading(this.btnDeleteCity);
       }
     } catch (error) {
       console.error("Error deleting city:", error);
       this.showStatus("Erro ao excluir cidade", "error");
-    } finally {
       this.hideButtonLoading(this.btnDeleteCity);
     }
   }
@@ -213,9 +215,12 @@ class CitiesManager {
     button.dataset.originalText = originalText;
   }
 
-  hideButtonLoading(button) {
-    button.textContent = button.dataset.originalText || button.textContent;
+  hideButtonLoading(button, preserveCurrentText = false) {
+    if (!preserveCurrentText && button.dataset.originalText) {
+      button.textContent = button.dataset.originalText;
+    }
     button.disabled = false;
+    delete button.dataset.originalText;
   }
 
   showStatus(message, type) {
