@@ -7,6 +7,7 @@ const IndicadoresHandlers = require("./ipc/indicadoresHandlers");
 const ModoDevHandlers = require("./ipc/modoDevHandlers");
 const DataBaseHandlers = require("./ipc/dataBaseHandlers");
 const DroneHandlers = require("./ipc/droneHandlers");
+const InstanceHandlers = require("./ipc/instanceHandlers");
 
 class IPCManager {
   constructor() {
@@ -19,6 +20,7 @@ class IPCManager {
       modoDev: null,
       dataBase: null,
       drone: null,
+      instance: null,
     };
   }
 
@@ -33,6 +35,7 @@ class IPCManager {
       this.handlers.modoDev = new ModoDevHandlers();
       this.handlers.dataBase = new DataBaseHandlers();
       this.handlers.drone = new DroneHandlers(modules.windowManager);
+      this.handlers.instance = new InstanceHandlers(modules);
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -57,6 +60,9 @@ class IPCManager {
 
       // Registra handlers de drone
       this.registerDroneHandlers();
+
+      // Registra handlers de instâncias
+      this.registerInstanceHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -396,6 +402,88 @@ class IPCManager {
     }
   }
 
+  // ========================================
+  // NOVO: Handlers de Instâncias
+  // ========================================
+  registerInstanceHandlers() {
+    // Inicialização
+    ipcMain.handle(
+      "instance-initialize",
+      this.handlers.instance.initialize.bind(this.handlers.instance)
+    );
+
+    // CRUD de instâncias
+    ipcMain.handle(
+      "instance-list",
+      this.handlers.instance.listInstances.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-create",
+      this.handlers.instance.createInstance.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-remove",
+      this.handlers.instance.removeInstance.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-rename",
+      this.handlers.instance.renameInstance.bind(this.handlers.instance)
+    );
+
+    // Controle de conexão
+    ipcMain.handle(
+      "instance-start",
+      this.handlers.instance.startInstance.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-stop",
+      this.handlers.instance.stopInstance.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-reconnect",
+      this.handlers.instance.reconnectInstance.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-stop-all",
+      this.handlers.instance.stopAllInstances.bind(this.handlers.instance)
+    );
+
+    // Status
+    ipcMain.handle(
+      "instance-status",
+      this.handlers.instance.getInstanceStatus.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-status-all",
+      this.handlers.instance.getAllInstancesStatus.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-client-info",
+      this.handlers.instance.getClientInfo.bind(this.handlers.instance)
+    );
+
+    // Mensagens
+    ipcMain.handle(
+      "instance-send-message",
+      this.handlers.instance.sendMessage.bind(this.handlers.instance)
+    );
+
+    // Configuração
+    ipcMain.handle(
+      "instance-get-config",
+      this.handlers.instance.getConfig.bind(this.handlers.instance)
+    );
+
+    console.log("Handlers de instâncias registrados");
+  }
+
+  // ========================================
+  // Getter para InstanceHandlers (útil para inicialização)
+  // ========================================
+  getInstanceHandler() {
+    return this.handlers.instance;
+  }
+
   removeAllHandlers() {
     const events = [
       "start-whatsapp",
@@ -460,6 +548,21 @@ class IPCManager {
       "drone-preview-csv",
       "drone-validar-opcoes",
       "drone-gerar-relatorio-nomes",
+      // Novos eventos de instâncias
+      "instance-initialize",
+      "instance-list",
+      "instance-create",
+      "instance-remove",
+      "instance-rename",
+      "instance-start",
+      "instance-stop",
+      "instance-reconnect",
+      "instance-stop-all",
+      "instance-status",
+      "instance-status-all",
+      "instance-client-info",
+      "instance-send-message",
+      "instance-get-config",
     ];
 
     events.forEach((event) => {

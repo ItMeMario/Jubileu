@@ -1,0 +1,501 @@
+/* ========================================
+   CSS para Cards de Instâncias WhatsApp
+   ======================================== */
+
+/* Container principal das instâncias */
+.instances-section {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #e0e0e0;
+}
+
+.instances-section h2 {
+    color: #333;
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.instances-section h2 .instance-count {
+    background-color: #25d366;
+    color: white;
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+/* Header com botão de adicionar */
+.instances-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.btn-add-instance {
+    background-color: #25d366;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn-add-instance:hover {
+    background-color: #128c7e;
+    transform: translateY(-1px);
+}
+
+.btn-add-instance:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Grid de cards */
+.instances-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* Card individual */
+.instance-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: box-shadow 0.3s, transform 0.2s;
+}
+
+.instance-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Header do card */
+.instance-card-header {
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.instance-card-header .instance-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.instance-card-header .instance-name input {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    width: 150px;
+}
+
+.instance-card-header .btn-edit-name {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    padding: 4px;
+}
+
+.instance-card-header .btn-edit-name:hover {
+    opacity: 1;
+}
+
+/* Status badge */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.disconnected {
+    background-color: #f0f0f0;
+    color: #666;
+}
+
+.status-badge.connecting {
+    background-color: #fff3cd;
+    color: #856404;
+    animation: pulse 1.5s infinite;
+}
+
+.status-badge.qr_pending {
+    background-color: #cce5ff;
+    color: #004085;
+    animation: pulse 1.5s infinite;
+}
+
+.status-badge.connected {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-badge.auth_failure {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* Corpo do card */
+.instance-card-body {
+    padding: 15px;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* QR Code no card */
+.instance-qr-container {
+    text-align: center;
+    width: 100%;
+}
+
+.instance-qr-container img {
+    max-width: 180px;
+    height: auto;
+    border: 2px solid #25d366;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.instance-qr-container .qr-hint {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+/* Info quando conectado */
+.instance-info {
+    text-align: center;
+    width: 100%;
+}
+
+.instance-info .phone-number {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #25d366;
+    margin-bottom: 5px;
+}
+
+.instance-info .connection-status {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+/* Placeholder quando desconectado */
+.instance-placeholder {
+    text-align: center;
+    color: #999;
+}
+
+.instance-placeholder .placeholder-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.instance-placeholder .placeholder-text {
+    font-size: 0.9rem;
+}
+
+/* Loading no card */
+.instance-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.instance-loading .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #25d366;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.instance-loading .loading-text {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+/* Footer do card com botões */
+.instance-card-footer {
+    padding: 12px 15px;
+    background-color: #f8f9fa;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.instance-card-footer button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background-color 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.instance-card-footer button:hover {
+    transform: translateY(-1px);
+}
+
+.instance-card-footer button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-start-instance {
+    background-color: #25d366;
+    color: white;
+}
+
+.btn-start-instance:hover:not(:disabled) {
+    background-color: #128c7e;
+}
+
+.btn-stop-instance {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-stop-instance:hover:not(:disabled) {
+    background-color: #c82333;
+}
+
+.btn-reconnect-instance {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.btn-reconnect-instance:hover:not(:disabled) {
+    background-color: #e0a800;
+}
+
+.btn-remove-instance {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-remove-instance:hover:not(:disabled) {
+    background-color: #5a6268;
+}
+
+/* Card vazio - adicionar nova instância */
+.instance-card.add-new {
+    border: 2px dashed #ccc;
+    background-color: #fafafa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    transition: border-color 0.3s, background-color 0.3s;
+}
+
+.instance-card.add-new:hover {
+    border-color: #25d366;
+    background-color: #f0fff4;
+}
+
+.instance-card.add-new .add-content {
+    text-align: center;
+    color: #999;
+}
+
+.instance-card.add-new .add-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    color: #ccc;
+    transition: color 0.3s;
+}
+
+.instance-card.add-new:hover .add-icon {
+    color: #25d366;
+}
+
+.instance-card.add-new .add-text {
+    font-size: 1rem;
+}
+
+/* Modal para criar instância */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transform: translateY(-20px);
+    transition: transform 0.3s;
+}
+
+.modal-overlay.show .modal-content {
+    transform: translateY(0);
+}
+
+.modal-content h3 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.modal-content .form-group {
+    margin-bottom: 20px;
+}
+
+.modal-content label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #555;
+}
+
+.modal-content input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.modal-content input[type="text"]:focus {
+    outline: none;
+    border-color: #25d366;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.modal-buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background-color 0.2s;
+}
+
+.modal-buttons .btn-cancel {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.modal-buttons .btn-cancel:hover {
+    background-color: #d0d0d0;
+}
+
+.modal-buttons .btn-confirm {
+    background-color: #25d366;
+    color: white;
+}
+
+.modal-buttons .btn-confirm:hover {
+    background-color: #128c7e;
+}
+
+/* Mensagem quando não há instâncias */
+.no-instances {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.no-instances .no-instances-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.no-instances .no-instances-text {
+    font-size: 1rem;
+    margin-bottom: 20px;
+}
+
+/* Responsividade */
+@media (max-width: 600px) {
+    .instances-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+
+    .btn-add-instance {
+        justify-content: center;
+    }
+
+    .instances-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .instance-card-footer {
+        flex-direction: column;
+    }
+
+    .instance-card-footer button {
+        width: 100%;
+        justify-content: center;
+    }
+}

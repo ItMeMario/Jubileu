@@ -1,3 +1,5 @@
+const { instanceManager } = require("../services/instanceManager");
+
 class ModuleLoader {
   constructor() {
     this.modules = {};
@@ -6,7 +8,7 @@ class ModuleLoader {
 
   async loadAll() {
     try {
-      // Carrega módulo do cliente WhatsApp
+      // Carrega módulo do cliente WhatsApp (legado)
       await this.loadClientModule();
 
       // Carrega handler de mensagens
@@ -15,13 +17,16 @@ class ModuleLoader {
       // Carrega utilitários de inicialização
       await this.loadInitializationUtils();
 
-      // NOVO: Carrega módulos do sistema de lembretes
+      // Carrega módulos do sistema de lembretes
       await this.loadReminderModules();
 
+      // NOVO: Carrega e inicializa o InstanceManager
+      await this.loadInstanceManager();
+
       this.isLoaded = true;
-      console.log("Todos os módulos carregados com sucesso");
+      console.log("✅ Todos os módulos carregados com sucesso");
     } catch (error) {
-      console.error("Erro ao carregar módulos:", error);
+      console.error("❌ Erro ao carregar módulos:", error);
       throw error;
     }
   }
@@ -32,9 +37,9 @@ class ModuleLoader {
       this.modules.client = clientModule.client;
       this.modules.startScout = clientModule.startScout;
 
-      console.log("Módulo client carregado");
+      console.log("✅ Módulo client carregado (legado)");
     } catch (error) {
-      console.error("Erro ao carregar módulo client:", error);
+      console.error("❌ Erro ao carregar módulo client:", error);
       throw new Error("Falha ao carregar cliente WhatsApp");
     }
   }
@@ -42,9 +47,9 @@ class ModuleLoader {
   async loadMessageHandler() {
     try {
       this.modules.messageHandler = require("../handlers/message");
-      console.log("Handler de mensagens carregado");
+      console.log("✅ Handler de mensagens carregado");
     } catch (error) {
-      console.error("Erro ao carregar message handler:", error);
+      console.error("❌ Erro ao carregar message handler:", error);
       throw new Error("Falha ao carregar handler de mensagens");
     }
   }
@@ -57,14 +62,13 @@ class ModuleLoader {
       const { initializeApp } = require("../controllers/configController");
       this.modules.initializeApp = initializeApp;
 
-      console.log("Utilitários de inicialização carregados");
+      console.log("✅ Utilitários de inicialização carregados");
     } catch (error) {
-      console.error("Erro ao carregar utilitários:", error);
+      console.error("❌ Erro ao carregar utilitários:", error);
       throw new Error("Falha ao carregar utilitários de inicialização");
     }
   }
 
-  // NOVO MÉTODO: Carrega módulos de lembrete
   async loadReminderModules() {
     try {
       // Carrega ReminderService
@@ -74,11 +78,28 @@ class ModuleLoader {
       const ReminderScheduler = require("../utils/reminderScheduler");
       this.modules.ReminderScheduler = ReminderScheduler;
 
-      console.log("Módulos de lembrete carregados");
+      console.log("✅ Módulos de lembrete carregados");
     } catch (error) {
-      console.error("Erro ao carregar módulos de lembrete:", error);
+      console.error("⚠️ Erro ao carregar módulos de lembrete:", error);
       // Não quebra a aplicação se os lembretes não carregarem
-      console.warn("Sistema de lembretes não disponível");
+      console.warn("⚠️ Sistema de lembretes não disponível");
+    }
+  }
+
+  // NOVO: Carrega e inicializa o InstanceManager
+  async loadInstanceManager() {
+    try {
+      // Armazena referência do instanceManager
+      this.modules.instanceManager = instanceManager;
+
+      // Inicializa o manager (carrega instâncias do banco)
+      await instanceManager.initialize();
+
+      console.log("✅ InstanceManager carregado e inicializado");
+    } catch (error) {
+      console.error("❌ Erro ao carregar InstanceManager:", error);
+      // Não quebra a aplicação, mas registra o erro
+      console.warn("⚠️ Sistema de múltiplas instâncias não disponível");
     }
   }
 
@@ -90,10 +111,10 @@ class ModuleLoader {
     try {
       if (this.modules.initializeAllConfigs) {
         await this.modules.initializeAllConfigs();
-        console.log("Configurações inicializadas");
+        console.log("✅ Configurações inicializadas");
       }
     } catch (error) {
-      console.error("Erro na inicialização das configurações:", error);
+      console.error("❌ Erro na inicialização das configurações:", error);
       throw error;
     }
   }
@@ -120,6 +141,16 @@ class ModuleLoader {
     }
 
     return true;
+  }
+
+  // NOVO: Verifica se o sistema de instâncias está disponível
+  isInstanceManagerAvailable() {
+    return !!this.modules.instanceManager;
+  }
+
+  // NOVO: Obtém o InstanceManager
+  getInstanceManager() {
+    return this.modules.instanceManager;
   }
 }
 
