@@ -1,5 +1,5 @@
 // services/droneServiceModules/messageDispatchDSM.js
-const { client } = require("../../client/client");
+const { instanceManager } = require("../instanceManager");
 const { smartDelay } = require("../../utils/delay");
 const { processVariables } = require("../../utils/messageReader");
 const { getNumbersInMemory } = require("./numberManagementDSM");
@@ -8,21 +8,48 @@ const { verificarStatusCliente } = require("./clientStatusDSM");
 const { atualizarStatusCliente } = require("./clientDatabaseDSM");
 
 /**
+ * Obtém o cliente de uma instância específica
+ * @param {string} instanceId - ID da instância
+ * @returns {Object|null} - Cliente WhatsApp ou null
+ */
+function getClient(instanceId) {
+  return instanceManager.getClient(instanceId);
+}
+
+/**
  * Executa disparo de mensagens para uma lista de números
+ * @param {string} instanceId - ID da instância a ser usada
  * @param {number} mensagemId - ID da mensagem no banco
  * @param {Array} numeros - Array de números para disparo
  * @param {Function} onProgress - Callback para atualizar progresso
  * @returns {Promise<Object>} - Resultado do disparo
  */
-async function executarDisparo(mensagemId, numeros, onProgress = null) {
+async function executarDisparo(
+  instanceId,
+  mensagemId,
+  numeros,
+  onProgress = null
+) {
   try {
     // Verifica se cliente está conectado
-    const status = await verificarStatusCliente();
+    const status = await verificarStatusCliente(instanceId);
     if (!status.connected) {
       return {
         success: false,
         error: `Cliente WhatsApp não está conectado. Status: ${status.state}`,
         results: [],
+        instanceId: instanceId,
+      };
+    }
+
+    // Obtém o cliente da instância
+    const client = getClient(instanceId);
+    if (!client) {
+      return {
+        success: false,
+        error: "Cliente não encontrado para a instância selecionada",
+        results: [],
+        instanceId: instanceId,
       };
     }
 
@@ -33,6 +60,7 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
         success: false,
         error: "Mensagem não encontrada",
         results: [],
+        instanceId: instanceId,
       };
     }
 
@@ -43,6 +71,7 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
       enviados: 0,
       falhas: 0,
       results: [],
+      instanceId: instanceId,
     };
 
     // Executa disparo para cada número
@@ -57,6 +86,7 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
             total: numeros.length,
             numero: numero.originalNumber,
             status: "enviando",
+            instanceId: instanceId,
           });
         }
 
@@ -70,7 +100,7 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
             name = contact.pushname?.split(" ")[0] || "";
           } catch (contactError) {
             console.warn(
-              `Não foi possível obter contato para ${numero.whatsappFormat}:`,
+              `[${instanceId}] Não foi possível obter contato para ${numero.whatsappFormat}:`,
               contactError.message
             );
           }
@@ -94,6 +124,7 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
           customName: numero.customName || null,
           status: "enviado",
           timestamp: new Date().toISOString(),
+          instanceId: instanceId,
         });
 
         // Atualiza progresso como enviado
@@ -103,6 +134,7 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
             total: numeros.length,
             numero: numero.originalNumber,
             status: "enviado",
+            instanceId: instanceId,
           });
         }
 
@@ -122,6 +154,7 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
           status: "falha",
           error: error.message,
           timestamp: new Date().toISOString(),
+          instanceId: instanceId,
         });
 
         // Atualiza progresso como falha
@@ -132,6 +165,7 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
             numero: numero.originalNumber,
             status: "falha",
             error: error.message,
+            instanceId: instanceId,
           });
         }
       }
@@ -144,12 +178,14 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
       success: false,
       error: "Erro interno durante disparo: " + error.message,
       results: [],
+      instanceId: instanceId,
     };
   }
 }
 
 /**
  * Executa disparo completo com divisão em batches
+ * @param {string} instanceId - ID da instância a ser usada
  * @param {number} mensagemId - ID da mensagem
  * @param {number} batchSize - Tamanho do batch (padrão 200)
  * @param {Function} onProgress - Callback de progresso
@@ -157,12 +193,24 @@ async function executarDisparo(mensagemId, numeros, onProgress = null) {
  * @returns {Promise<Object>} - Resultado completo
  */
 async function executarDisparoCompleto(
+  instanceId,
   mensagemId,
   batchSize = 200,
   onProgress = null,
   onBatchComplete = null
 ) {
   try {
+    // Verifica se a instância está conectada antes de começar
+    const status = await verificarStatusCliente(instanceId);
+    if (!status.connected) {
+      return {
+        success: false,
+        error: `Instância não está conectada. Status: ${status.state}`,
+        results: [],
+        instanceId: instanceId,
+      };
+    }
+
     // 🔄 BUSCA NÚMEROS DO BANCO (pending + failed)
     const numbersInMemory = await getNumbersInMemory();
 
@@ -171,6 +219,7 @@ async function executarDisparoCompleto(
         success: false,
         error: "Nenhum número cadastrado para disparo",
         results: [],
+        instanceId: instanceId,
       };
     }
 
@@ -186,22 +235,35 @@ async function executarDisparoCompleto(
       totalEnviados: 0,
       totalFalhas: 0,
       batches: [],
+      instanceId: instanceId,
     };
 
     // Processa cada batch
     for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      // Verifica se a instância ainda está conectada antes de cada batch
+      const statusAtual = await verificarStatusCliente(instanceId);
+      if (!statusAtual.connected) {
+        resultadoFinal.success = false;
+        resultadoFinal.message = `Disparo interrompido: instância desconectada no batch ${
+          batchIndex + 1
+        }`;
+        resultadoFinal.error = `Instância desconectou. Status: ${statusAtual.state}`;
+        break;
+      }
+
       const inicio = batchIndex * batchSize;
       const fim = Math.min(inicio + batchSize, totalNumeros);
       const numerosBatch = numbersInMemory.slice(inicio, fim);
 
       console.log(
-        `\n🚀 Processando batch ${batchIndex + 1}/${totalBatches} (${
-          numerosBatch.length
-        } números)`
+        `\n[${instanceId}] 🚀 Processando batch ${
+          batchIndex + 1
+        }/${totalBatches} (${numerosBatch.length} números)`
       );
 
       // Executa disparo do batch
       const resultadoBatch = await executarDisparo(
+        instanceId,
         mensagemId,
         numerosBatch,
         (progress) => {
@@ -215,6 +277,7 @@ async function executarDisparoCompleto(
                 atual: resultadoFinal.totalEnviados + progress.atual,
                 total: totalNumeros,
               },
+              instanceId: instanceId,
             });
           }
         }
@@ -229,6 +292,7 @@ async function executarDisparoCompleto(
         numeros: numerosBatch.length,
         enviados: resultadoBatch.enviados,
         falhas: resultadoBatch.falhas,
+        instanceId: instanceId,
       });
 
       // Callback de batch completo
@@ -238,6 +302,7 @@ async function executarDisparoCompleto(
           totalBatches: totalBatches,
           resultado: resultadoBatch,
           temProximo: batchIndex + 1 < totalBatches,
+          instanceId: instanceId,
         });
 
         if (!continuarProximo) {
@@ -250,7 +315,9 @@ async function executarDisparoCompleto(
 
       // Delay entre batches (exceto no último) - 24 a 26 horas
       if (batchIndex < totalBatches - 1) {
-        console.log("⏳ Aguardando delay entre batches (24-26 horas)...");
+        console.log(
+          `[${instanceId}] ⏳ Aguardando delay entre batches (24-26 horas)...`
+        );
         // 24 horas = 86400000 ms, 26 horas = 93600000 ms
         await smartDelay({ minMs: 86400000, maxMs: 93600000 });
       }
@@ -263,6 +330,7 @@ async function executarDisparoCompleto(
       success: false,
       error: "Erro durante disparo completo: " + error.message,
       results: [],
+      instanceId: instanceId,
     };
   }
 }

@@ -3,6 +3,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 // Expõe APIs do Drone para o renderer
 contextBridge.exposeInMainWorld("droneAPI", {
+  // ==================== MENSAGENS ====================
+
   // Listar mensagens disponíveis
   listarMensagens: async () => {
     try {
@@ -13,7 +15,9 @@ contextBridge.exposeInMainWorld("droneAPI", {
     }
   },
 
-  // CORRIGIDO: Listar números atuais com filtro opcional
+  // ==================== NÚMEROS ====================
+
+  // Listar números atuais com filtro opcional
   listarNumerosAtuais: async (filtroStatus = "all") => {
     try {
       return await ipcRenderer.invoke(
@@ -46,7 +50,7 @@ contextBridge.exposeInMainWorld("droneAPI", {
     }
   },
 
-  // NOVO: Limpar apenas números enviados (status 'sent')
+  // Limpar apenas números enviados (status 'sent')
   limparEnviados: async () => {
     try {
       return await ipcRenderer.invoke("drone-limpar-enviados");
@@ -56,7 +60,7 @@ contextBridge.exposeInMainWorld("droneAPI", {
     }
   },
 
-  // NOVO: Limpar apenas números com falha (status 'failed')
+  // Limpar apenas números com falha (status 'failed')
   limparFalhas: async () => {
     try {
       return await ipcRenderer.invoke("drone-limpar-falhas");
@@ -76,21 +80,54 @@ contextBridge.exposeInMainWorld("droneAPI", {
     }
   },
 
-  // Obter status do cliente WhatsApp
-  obterStatusCliente: async () => {
+  // ==================== STATUS DO CLIENTE ====================
+
+  // Obter status do cliente WhatsApp de uma instância
+  obterStatusCliente: async (instanceId = null) => {
     try {
-      return await ipcRenderer.invoke("drone-obter-status-cliente");
+      return await ipcRenderer.invoke("drone-obter-status-cliente", instanceId);
     } catch (error) {
       console.error("Erro ao obter status:", error);
       return { success: false, error: error.message };
     }
   },
 
-  // Executar disparo
-  executarDisparoDrone: async (mensagemIndex, batchSize) => {
+  // ==================== INSTÂNCIAS (NOVO) ====================
+
+  // Obter status de todas as instâncias
+  obterStatusTodasInstancias: async () => {
+    try {
+      return await ipcRenderer.invoke("drone-obter-status-todas-instancias");
+    } catch (error) {
+      console.error("Erro ao obter status das instâncias:", error);
+      return {
+        success: false,
+        error: error.message,
+        instances: [],
+        total: 0,
+        connected: 0,
+      };
+    }
+  },
+
+  // Listar apenas instâncias conectadas (para dropdown)
+  listarInstanciasConectadas: async () => {
+    try {
+      return await ipcRenderer.invoke("drone-listar-instancias-conectadas");
+    } catch (error) {
+      console.error("Erro ao listar instâncias conectadas:", error);
+      return { success: false, error: error.message, instances: [], total: 0 };
+    }
+  },
+
+  // ==================== DISPARO ====================
+
+  // Executar disparo com instância selecionada
+  executarDisparoDrone: async (instanceId, mensagemIndex, batchSize) => {
     try {
       return await ipcRenderer.invoke(
         "drone-executar-disparo-drone",
+        instanceId,
         mensagemIndex,
         batchSize
       );
@@ -99,6 +136,8 @@ contextBridge.exposeInMainWorld("droneAPI", {
       return { success: false, error: error.message };
     }
   },
+
+  // ==================== CSV ====================
 
   // Processar arquivo CSV com opções de transformação
   processarArquivoCSV: async (csvContent, opcoes = {}) => {
@@ -137,6 +176,8 @@ contextBridge.exposeInMainWorld("droneAPI", {
       };
     }
   },
+
+  // ==================== RELATÓRIOS ====================
 
   // Gerar relatório de nomes personalizados
   gerarRelatorioNomes: async () => {
@@ -217,4 +258,4 @@ contextBridge.exposeInMainWorld("debugAPI", {
   },
 });
 
-console.log("DronePreload carregado com sucesso!");
+console.log("🚁 DronePreload carregado com suporte a múltiplas instâncias!");

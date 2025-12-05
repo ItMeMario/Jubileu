@@ -12,6 +12,22 @@
 <body>
     <div class="sidebar">
         <h2>🚀 Drone</h2>
+
+        <!-- Seletor de Instância -->
+        <div class="instance-selector">
+            <label for="instance-select">📱 Instância:</label>
+            <select id="instance-select" class="instance-select">
+                <option value="">Carregando...</option>
+            </select>
+            <div id="instance-status" class="instance-status">
+                <span class="status-dot">⚪</span>
+                <span class="status-text">Selecione uma instância</span>
+            </div>
+            <button id="btn-refresh-instances" class="btn-refresh-instances" title="Atualizar lista">
+                🔄
+            </button>
+        </div>
+
         <button class="menu-item active" data-section="mensagens">
             📨 Mensagens
         </button>
@@ -28,6 +44,15 @@
 
     <div class="content">
         <div id="status" class="status-message"></div>
+
+        <!-- Aviso de instância não selecionada -->
+        <div id="no-instance-warning" class="no-instance-warning">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-text">
+                <strong>Nenhuma instância selecionada</strong>
+                <p>Selecione uma instância conectada no menu lateral para usar o Drone.</p>
+            </div>
+        </div>
 
         <!-- Seção de Mensagens -->
         <div id="mensagens-section" class="section active">
@@ -176,9 +201,22 @@
                 <p>Configure e execute o disparo de mensagens</p>
             </div>
 
+            <!-- Instância selecionada para disparo -->
+            <div class="disparo-instance-info" id="disparo-instance-info">
+                <div class="instance-badge">
+                    <span class="badge-icon">📱</span>
+                    <span class="badge-name" id="disparo-instance-name">Nenhuma instância</span>
+                    <span class="badge-phone" id="disparo-instance-phone"></span>
+                </div>
+            </div>
+
             <!-- Verificação de Requisitos -->
             <div class="requirements-check" id="requirements-check">
                 <h3>Verificação de Requisitos</h3>
+                <div class="requirement-item" id="req-instance">
+                    <span class="req-icon">⏳</span>
+                    <span class="req-text">Instância selecionada</span>
+                </div>
                 <div class="requirement-item" id="req-whatsapp">
                     <span class="req-icon">⏳</span>
                     <span class="req-text">WhatsApp conectado</span>
@@ -227,15 +265,15 @@
             </div>
 
             <div class="status-grid">
-                <div class="status-card">
+                <!-- Card de Instâncias -->
+                <div class="status-card status-card-wide">
                     <div class="status-header">
                         <span class="status-icon">📱</span>
-                        <h3>WhatsApp</h3>
+                        <h3>Instâncias WhatsApp</h3>
                     </div>
                     <div class="status-content">
-                        <div class="status-indicator" id="whatsapp-status">
-                            <span class="indicator-dot">⚫</span>
-                            <span class="indicator-text">Verificando...</span>
+                        <div id="instances-status-list" class="instances-status-list">
+                            <div class="loading-instances">Carregando instâncias...</div>
                         </div>
                         <button id="btn-refresh-status" class="btn btn-secondary">🔄 Atualizar</button>
                     </div>

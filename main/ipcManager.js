@@ -387,6 +387,18 @@ class IPCManager {
       "drone-gerar-relatorio-nomes"
     );
 
+    // ========================================
+    // NOVO: Handlers de instâncias para o Drone
+    // ========================================
+    ipcMain.handle(
+      "drone-obter-status-todas-instancias",
+      this.handlers.drone.obterStatusTodasInstancias.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-listar-instancias-conectadas",
+      this.handlers.drone.listarInstanciasConectadas.bind(this.handlers.drone)
+    );
+
     console.log("Handlers de drone registrados");
   }
 
@@ -548,6 +560,8 @@ class IPCManager {
       "drone-preview-csv",
       "drone-validar-opcoes",
       "drone-gerar-relatorio-nomes",
+      "drone-obter-status-todas-instancias",
+      "drone-listar-instancias-conectadas",
       // Novos eventos de instâncias
       "instance-initialize",
       "instance-list",

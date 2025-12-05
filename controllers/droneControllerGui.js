@@ -115,22 +115,41 @@ class DroneControllerGui {
 
   // ==================== STATUS DO CLIENTE ====================
   /**
-   * Obtém status de conexão do WhatsApp
+   * Obtém status de conexão do WhatsApp de uma instância
+   * @param {string} instanceId - ID da instância (opcional)
    * @returns {Promise<Object>} - Status formatado
    */
-  async obterStatusCliente() {
-    return await clientStatusDCGM.obterStatusCliente();
+  async obterStatusCliente(instanceId = null) {
+    return await clientStatusDCGM.obterStatusCliente(instanceId);
+  }
+
+  /**
+   * Obtém status de todas as instâncias
+   * @returns {Promise<Object>} - Status de todas as instâncias
+   */
+  async obterStatusTodasInstancias() {
+    return await clientStatusDCGM.obterStatusTodasInstancias();
+  }
+
+  /**
+   * Lista apenas instâncias conectadas (para dropdown do Drone)
+   * @returns {Promise<Object>} - Lista de instâncias conectadas
+   */
+  async listarInstanciasConectadas() {
+    return await clientStatusDCGM.listarInstanciasConectadas();
   }
 
   // ==================== DISPARO DE DRONE ====================
   /**
    * Executa disparo de drone com mensagem selecionada
+   * @param {string} instanceId - ID da instância a ser usada
    * @param {number} mensagemIndex - Índice da mensagem (baseado em 1)
    * @param {number} batchSize - Tamanho do batch
    * @returns {Promise<Object>} - Resultado do disparo
    */
-  async executarDisparoDrone(mensagemIndex, batchSize = 200) {
+  async executarDisparoDrone(instanceId, mensagemIndex, batchSize = 200) {
     return await droneDispatchDCGM.executarDisparoDrone(
+      instanceId,
       mensagemIndex,
       batchSize
     );

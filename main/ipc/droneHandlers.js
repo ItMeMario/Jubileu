@@ -163,12 +163,18 @@ class DroneHandlers {
   }
 
   /**
-   * Obtém status de conexão do WhatsApp
+   * Obtém status de conexão do WhatsApp de uma instância
+   * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância (opcional)
    */
-  async obterStatusCliente() {
+  async obterStatusCliente(event, instanceId = null) {
     try {
-      console.log("Obtendo status do cliente WhatsApp...");
-      return await droneControllerGui.obterStatusCliente();
+      console.log(
+        `Obtendo status do cliente WhatsApp${
+          instanceId ? ` (${instanceId})` : ""
+        }...`
+      );
+      return await droneControllerGui.obterStatusCliente(instanceId);
     } catch (error) {
       console.error("Erro ao obter status do cliente:", error);
       return { success: false, error: error.message };
@@ -176,17 +182,56 @@ class DroneHandlers {
   }
 
   /**
+   * Obtém status de todas as instâncias
+   */
+  async obterStatusTodasInstancias() {
+    try {
+      console.log("Obtendo status de todas as instâncias...");
+      return await droneControllerGui.obterStatusTodasInstancias();
+    } catch (error) {
+      console.error("Erro ao obter status das instâncias:", error);
+      return {
+        success: false,
+        error: error.message,
+        instances: [],
+        total: 0,
+        connected: 0,
+      };
+    }
+  }
+
+  /**
+   * Lista apenas instâncias conectadas
+   */
+  async listarInstanciasConectadas() {
+    try {
+      console.log("Listando instâncias conectadas...");
+      return await droneControllerGui.listarInstanciasConectadas();
+    } catch (error) {
+      console.error("Erro ao listar instâncias conectadas:", error);
+      return { success: false, error: error.message, instances: [], total: 0 };
+    }
+  }
+
+  /**
    * Executa disparo de drone com mensagem selecionada
    * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância a ser usada
    * @param {number} mensagemIndex - Índice da mensagem (baseado em 1)
    * @param {number} batchSize - Tamanho do batch (padrão: 200)
    */
-  async executarDisparoDrone(event, mensagemIndex, batchSize = 200) {
+  async executarDisparoDrone(
+    event,
+    instanceId,
+    mensagemIndex,
+    batchSize = 200
+  ) {
     try {
       console.log(
-        `Executando disparo - Mensagem: ${mensagemIndex}, Batch: ${batchSize}`
+        `Executando disparo - Instância: ${instanceId}, Mensagem: ${mensagemIndex}, Batch: ${batchSize}`
       );
       return await droneControllerGui.executarDisparoDrone(
+        instanceId,
         mensagemIndex,
         batchSize
       );
@@ -197,7 +242,7 @@ class DroneHandlers {
   }
 
   /**
-   * Gera relatório de números com nomes personalizados
+   * Gera relatório de nomes personalizados
    */
   async gerarRelatorioNomes() {
     try {
