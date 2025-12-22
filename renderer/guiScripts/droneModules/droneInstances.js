@@ -81,7 +81,7 @@ export default class DroneInstances {
    * Gerencia mudança de instância selecionada
    * @param {string} instanceId - ID da instância selecionada
    */
-  handleInstanceChange(instanceId) {
+  async handleInstanceChange(instanceId) {
     this.manager.selectedInstanceId = instanceId || null;
 
     if (instanceId) {
@@ -93,9 +93,13 @@ export default class DroneInstances {
       this.manager.selectedInstanceInfo = null;
     }
 
+    // Atualiza elementos visuais
     this.updateInstanceStatus();
     this.updateInstanceWarning();
     this.updateDisparoInstanceInfo();
+
+    // Recarrega dados da instância selecionada
+    await this.reloadInstanceData();
 
     // Atualiza requisitos do disparo
     if (this.manager.dispatch) {
@@ -107,6 +111,28 @@ export default class DroneInstances {
       this.manager.selectedInstanceId,
       this.manager.selectedInstanceInfo
     );
+  }
+
+  /**
+   * Recarrega números e estatísticas da instância selecionada
+   */
+  async reloadInstanceData() {
+    try {
+      // Recarrega lista de números
+      if (this.manager.numbers) {
+        await this.manager.numbers.loadNumbers(
+          this.manager.currentStatusFilter || "all"
+        );
+      }
+
+      // Recarrega estatísticas
+      if (this.manager.status) {
+        await this.manager.status.updateGeneralStats();
+        await this.manager.status.updateStatusBreakdown();
+      }
+    } catch (error) {
+      console.error("Erro ao recarregar dados da instância:", error);
+    }
   }
 
   /**
