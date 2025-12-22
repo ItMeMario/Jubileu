@@ -2,10 +2,13 @@
 const { instanceManager } = require("../instanceManager");
 const { smartDelay } = require("../../utils/delay");
 const { processVariables } = require("../../utils/messageReader");
-const { getNumbersInMemory } = require("./numberManagementDSM");
+const { getNumbersForDispatch } = require("./numberManagementDSM");
 const { buscarMensagemPorId } = require("./messageDatabaseDSM");
 const { verificarStatusCliente } = require("./clientStatusDSM");
-const { atualizarStatusCliente } = require("./clientDatabaseDSM");
+const {
+  atualizarStatusCliente,
+  atualizarStatusClientePorId,
+} = require("./clientDatabaseDSM");
 
 /**
  * Obtém o cliente de uma instância específica
@@ -31,6 +34,15 @@ async function executarDisparo(
   onProgress = null
 ) {
   try {
+    // Valida instanceId
+    if (!instanceId) {
+      return {
+        success: false,
+        error: "instanceId é obrigatório para executar disparo",
+        results: [],
+      };
+    }
+
     // Verifica se cliente está conectado
     const status = await verificarStatusCliente(instanceId);
     if (!status.connected) {
@@ -114,8 +126,16 @@ async function executarDisparo(
         // Envia mensagem personalizada
         await client.sendMessage(numero.whatsappFormat, mensagemPersonalizada);
 
-        // ✅ ATUALIZA STATUS NO BANCO COMO 'sent'
-        await atualizarStatusCliente(numero.whatsappFormat, "sent");
+        // ✅ ATUALIZA STATUS NO BANCO COMO 'sent' (usando ID para garantir instância correta)
+        if (numero.id) {
+          await atualizarStatusClientePorId(numero.id, "sent");
+        } else {
+          await atualizarStatusCliente(
+            instanceId,
+            numero.whatsappFormat,
+            "sent"
+          );
+        }
 
         resultados.enviados++;
         resultados.results.push({
@@ -143,8 +163,16 @@ async function executarDisparo(
           await smartDelay({ minMs: 60000, maxMs: 180000 });
         }
       } catch (error) {
-        // ❌ ATUALIZA STATUS NO BANCO COMO 'failed'
-        await atualizarStatusCliente(numero.whatsappFormat, "failed");
+        // ❌ ATUALIZA STATUS NO BANCO COMO 'failed' (usando ID para garantir instância correta)
+        if (numero.id) {
+          await atualizarStatusClientePorId(numero.id, "failed");
+        } else {
+          await atualizarStatusCliente(
+            instanceId,
+            numero.whatsappFormat,
+            "failed"
+          );
+        }
 
         resultados.falhas++;
         resultados.results.push({
@@ -200,6 +228,15 @@ async function executarDisparoCompleto(
   onBatchComplete = null
 ) {
   try {
+    // Valida instanceId
+    if (!instanceId) {
+      return {
+        success: false,
+        error: "instanceId é obrigatório para executar disparo",
+        results: [],
+      };
+    }
+
     // Verifica se a instância está conectada antes de começar
     const status = await verificarStatusCliente(instanceId);
     if (!status.connected) {
@@ -211,20 +248,24 @@ async function executarDisparoCompleto(
       };
     }
 
-    // 🔄 BUSCA NÚMEROS DO BANCO (pending + failed)
-    const numbersInMemory = await getNumbersInMemory();
+    // 🔄 BUSCA NÚMEROS DO BANCO DA INSTÂNCIA (pending + failed)
+    const numbersForDispatch = await getNumbersForDispatch(instanceId);
 
-    if (numbersInMemory.length === 0) {
+    if (numbersForDispatch.length === 0) {
       return {
         success: false,
-        error: "Nenhum número cadastrado para disparo",
+        error: "Nenhum número cadastrado para disparo nesta instância",
         results: [],
         instanceId: instanceId,
       };
     }
 
-    const totalNumeros = numbersInMemory.length;
+    const totalNumeros = numbersForDispatch.length;
     const totalBatches = Math.ceil(totalNumeros / batchSize);
+
+    console.log(
+      `[${instanceId}] 📊 Iniciando disparo: ${totalNumeros} números em ${totalBatches} batch(es)`
+    );
 
     const resultadoFinal = {
       success: true,
@@ -253,7 +294,7 @@ async function executarDisparoCompleto(
 
       const inicio = batchIndex * batchSize;
       const fim = Math.min(inicio + batchSize, totalNumeros);
-      const numerosBatch = numbersInMemory.slice(inicio, fim);
+      const numerosBatch = numbersForDispatch.slice(inicio, fim);
 
       console.log(
         `\n[${instanceId}] 🚀 Processando batch ${

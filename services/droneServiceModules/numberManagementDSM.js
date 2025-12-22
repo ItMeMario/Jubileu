@@ -11,17 +11,28 @@ const {
   listarClientesParaDisparo,
   removerCliente,
   limparClientes,
+  limparClientesPorStatus: limparClientesPorStatusDB,
   obterEstatisticas: obterEstatisticasDB,
   buscarClientePorTel,
 } = require("./clientDatabaseDSM");
 
 /**
  * Adiciona números de arquivo CSV com opções de transformação
+ * @param {string} instanceId - ID da instância
  * @param {string} csvContent - Conteúdo do CSV
  * @param {Object} opcoes - Opções de processamento
  * @returns {Promise<Object>} - Resultado do processamento
  */
-async function adicionarNumerosDeCSV(csvContent, opcoes = {}) {
+async function adicionarNumerosDeCSV(instanceId, csvContent, opcoes = {}) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+      added: [],
+      errors: [],
+    };
+  }
+
   try {
     // Parse do CSV
     const parseResult = parseCSV(csvContent);
@@ -39,8 +50,10 @@ async function adicionarNumerosDeCSV(csvContent, opcoes = {}) {
     const clientesParaAdicionar = [];
     const erros = [];
 
-    console.log(`Processando ${data.length} registros do CSV...`);
-    console.log("Opções:", opcoes);
+    console.log(
+      `[${instanceId}] Processando ${data.length} registros do CSV...`
+    );
+    console.log(`[${instanceId}] Opções:`, opcoes);
 
     // Processa cada linha do CSV
     for (const registro of data) {
@@ -90,6 +103,7 @@ async function adicionarNumerosDeCSV(csvContent, opcoes = {}) {
     // Adiciona todos os clientes ao banco em lote
     if (clientesParaAdicionar.length > 0) {
       const resultadoBanco = await adicionarClientesEmLote(
+        instanceId,
         clientesParaAdicionar
       );
 
@@ -99,7 +113,7 @@ async function adicionarNumerosDeCSV(csvContent, opcoes = {}) {
         .map((c) => c.dadosOriginais);
 
       // Estatísticas finais
-      const stats = await obterEstatisticasDB();
+      const stats = await obterEstatisticasDB(instanceId);
 
       return {
         success: true,
@@ -109,6 +123,7 @@ async function adicionarNumerosDeCSV(csvContent, opcoes = {}) {
         errors: erros,
         totalNumbers: stats.success ? stats.stats.total : 0,
         opcoes: opcoes,
+        instanceId: instanceId,
       };
     } else {
       return {
@@ -116,6 +131,7 @@ async function adicionarNumerosDeCSV(csvContent, opcoes = {}) {
         error: "Nenhum número válido para adicionar",
         added: [],
         errors: erros,
+        instanceId: instanceId,
       };
     }
   } catch (error) {
@@ -124,16 +140,26 @@ async function adicionarNumerosDeCSV(csvContent, opcoes = {}) {
       error: "Erro ao processar CSV: " + error.message,
       added: [],
       errors: [],
+      instanceId: instanceId,
     };
   }
 }
 
 /**
- * Adiciona um número à lista (DEPRECATED - manter para compatibilidade)
+ * Adiciona um número à lista
+ * @param {string} instanceId - ID da instância
  * @param {string} phoneNumber - Número de telefone
  * @returns {Promise<Object>} - Resultado da operação
  */
-async function adicionarNumero(phoneNumber) {
+async function adicionarNumero(instanceId, phoneNumber) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+      originalNumber: phoneNumber,
+    };
+  }
+
   try {
     const result = await convertToWhatsAppFormat(phoneNumber);
 
@@ -145,20 +171,24 @@ async function adicionarNumero(phoneNumber) {
       };
     }
 
-    // Verifica se já existe
-    const existente = await buscarClientePorTel(result.whatsappFormat);
+    // Verifica se já existe nesta instância
+    const existente = await buscarClientePorTel(
+      instanceId,
+      result.whatsappFormat
+    );
 
     if (existente.found) {
       return {
         success: false,
-        error: "Número já está na lista",
+        error: "Número já está na lista desta instância",
         originalNumber: phoneNumber,
         whatsappFormat: result.whatsappFormat,
+        instanceId: instanceId,
       };
     }
 
-    // Adiciona ao banco usando a função em lote (mais eficiente)
-    const resultadoBanco = await adicionarClientesEmLote([
+    // Adiciona ao banco
+    const resultadoBanco = await adicionarClientesEmLote(instanceId, [
       {
         name: "",
         tel: result.whatsappFormat,
@@ -166,7 +196,7 @@ async function adicionarNumero(phoneNumber) {
     ]);
 
     if (resultadoBanco.success && resultadoBanco.adicionados > 0) {
-      const stats = await obterEstatisticasDB();
+      const stats = await obterEstatisticasDB(instanceId);
 
       return {
         success: true,
@@ -176,12 +206,14 @@ async function adicionarNumero(phoneNumber) {
           whatsappFormat: result.whatsappFormat,
         },
         totalNumbers: stats.success ? stats.stats.total : 0,
+        instanceId: instanceId,
       };
     } else {
       return {
         success: false,
         error: "Não foi possível adicionar o número",
         originalNumber: phoneNumber,
+        instanceId: instanceId,
       };
     }
   } catch (error) {
@@ -189,16 +221,25 @@ async function adicionarNumero(phoneNumber) {
       success: false,
       error: "Erro interno ao adicionar número: " + error.message,
       originalNumber: phoneNumber,
+      instanceId: instanceId,
     };
   }
 }
 
 /**
- * Adiciona múltiplos números à lista (DEPRECATED - usar adicionarNumerosDeCSV)
+ * Adiciona múltiplos números à lista
+ * @param {string} instanceId - ID da instância
  * @param {Array<string>} phoneNumbers - Array de números de telefone
  * @returns {Promise<Object>} - Resultado da operação em lote
  */
-async function adicionarMultiplosNumeros(phoneNumbers) {
+async function adicionarMultiplosNumeros(instanceId, phoneNumbers) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   try {
     const results = await validateMultipleNumbers(phoneNumbers);
     const clientesParaAdicionar = [];
@@ -223,10 +264,11 @@ async function adicionarMultiplosNumeros(phoneNumbers) {
     // Adiciona ao banco
     if (clientesParaAdicionar.length > 0) {
       const resultadoBanco = await adicionarClientesEmLote(
+        instanceId,
         clientesParaAdicionar
       );
 
-      const stats = await obterEstatisticasDB();
+      const stats = await obterEstatisticasDB(instanceId);
 
       return {
         success: true,
@@ -235,29 +277,43 @@ async function adicionarMultiplosNumeros(phoneNumbers) {
         alreadyExisted: resultadoBanco.jaExistiam,
         errors: erros,
         totalNumbers: stats.success ? stats.stats.total : 0,
+        instanceId: instanceId,
       };
     } else {
       return {
         success: false,
         error: "Nenhum número válido para adicionar",
         errors: erros,
+        instanceId: instanceId,
       };
     }
   } catch (error) {
     return {
       success: false,
       error: "Erro interno ao processar múltiplos números: " + error.message,
+      instanceId: instanceId,
     };
   }
 }
 
 /**
- * Lista todos os números do banco
+ * Lista todos os números de uma instância
+ * @param {string} instanceId - ID da instância
+ * @param {string|null} status - Filtro de status (opcional)
  * @returns {Promise<Object>} - Lista de números
  */
-async function listarNumeros() {
+async function listarNumeros(instanceId, status = null) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+      numbers: [],
+      total: 0,
+    };
+  }
+
   try {
-    const resultado = await listarClientesPorStatus(null);
+    const resultado = await listarClientesPorStatus(instanceId, status);
 
     if (!resultado.success) {
       return {
@@ -265,6 +321,7 @@ async function listarNumeros() {
         error: resultado.error,
         numbers: [],
         total: 0,
+        instanceId: instanceId,
       };
     }
 
@@ -275,15 +332,18 @@ async function listarNumeros() {
       cleanedNumber: client.tel,
       finalNumber: client.tel,
       whatsappFormat: client.tel,
-      numberType: "stored", // Tipo genérico pois já está validado
+      numberType: "stored",
       customName: client.name || null,
       status: client.status,
+      createdAt: client.created_at,
+      updatedAt: client.updated_at,
     }));
 
     return {
       success: true,
       numbers: numbers,
       total: resultado.total,
+      instanceId: instanceId,
     };
   } catch (error) {
     return {
@@ -291,53 +351,74 @@ async function listarNumeros() {
       error: "Erro ao listar números: " + error.message,
       numbers: [],
       total: 0,
+      instanceId: instanceId,
     };
   }
 }
 
 /**
- * Remove um número específico da lista
+ * Remove um número específico da lista de uma instância
+ * @param {string} instanceId - ID da instância
  * @param {number|string} id - ID do número ou número em formato WhatsApp
  * @returns {Promise<Object>} - Resultado da operação
  */
-async function removerNumero(id) {
+async function removerNumero(instanceId, id) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   try {
-    const resultado = await removerCliente(id);
+    const resultado = await removerCliente(instanceId, id);
 
     if (!resultado.success) {
       return {
         success: false,
         error: resultado.message || "Número não encontrado na lista",
+        instanceId: instanceId,
       };
     }
 
-    const stats = await obterEstatisticasDB();
+    const stats = await obterEstatisticasDB(instanceId);
 
     return {
       success: true,
       message: "Número removido com sucesso",
       totalNumbers: stats.success ? stats.stats.total : 0,
+      instanceId: instanceId,
     };
   } catch (error) {
     return {
       success: false,
       error: "Erro ao remover número: " + error.message,
+      instanceId: instanceId,
     };
   }
 }
 
 /**
- * Limpa toda a lista de números
+ * Limpa toda a lista de números de uma instância
+ * @param {string} instanceId - ID da instância
  * @returns {Promise<Object>} - Resultado da operação
  */
-async function limparListaNumeros() {
+async function limparListaNumeros(instanceId) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   try {
-    const resultado = await limparClientes();
+    const resultado = await limparClientes(instanceId);
 
     if (!resultado.success) {
       return {
         success: false,
         error: resultado.error,
+        instanceId: instanceId,
       };
     }
 
@@ -345,31 +426,39 @@ async function limparListaNumeros() {
       success: true,
       message: `Lista limpa com sucesso. ${resultado.totalRemoved} números removidos.`,
       totalRemoved: resultado.totalRemoved,
+      instanceId: instanceId,
     };
   } catch (error) {
     return {
       success: false,
       error: "Erro ao limpar lista: " + error.message,
+      instanceId: instanceId,
     };
   }
 }
 
 /**
- * Limpa números por status específico
+ * Limpa números por status específico de uma instância
+ * @param {string} instanceId - ID da instância
  * @param {string} status - Status para filtrar ('pending', 'sent', 'failed')
  * @returns {Promise<Object>} - Resultado da operação
  */
-async function limparClientesPorStatus(status) {
+async function limparNumerosPorStatus(instanceId, status) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   try {
-    const {
-      limparClientesPorStatus: limparPorStatus,
-    } = require("./clientDatabaseDSM");
-    const resultado = await limparPorStatus(status);
+    const resultado = await limparClientesPorStatusDB(instanceId, status);
 
     if (!resultado.success) {
       return {
         success: false,
         error: resultado.error,
+        instanceId: instanceId,
       };
     }
 
@@ -378,34 +467,63 @@ async function limparClientesPorStatus(status) {
       message: resultado.message,
       totalRemoved: resultado.totalRemoved,
       status: resultado.status,
+      instanceId: instanceId,
     };
   } catch (error) {
     return {
       success: false,
       error: "Erro ao limpar por status: " + error.message,
+      instanceId: instanceId,
     };
   }
 }
 
 /**
- * Obtém estatísticas da lista de números
+ * Obtém estatísticas da lista de números de uma instância
+ * @param {string} instanceId - ID da instância
  * @returns {Promise<Object>} - Estatísticas
  */
-async function obterEstatisticas() {
+async function obterEstatisticas(instanceId) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   try {
-    const resultado = await obterEstatisticasDB();
+    const resultado = await obterEstatisticasDB(instanceId);
 
     if (!resultado.success) {
       return {
         success: false,
         error: resultado.error,
+        instanceId: instanceId,
       };
     }
+
+    // Calcula percentuais
+    const total = resultado.stats.total || 0;
+    const percentuais = {
+      pending:
+        total > 0
+          ? ((resultado.stats.porStatus.pending / total) * 100).toFixed(1)
+          : 0,
+      sent:
+        total > 0
+          ? ((resultado.stats.porStatus.sent / total) * 100).toFixed(1)
+          : 0,
+      failed:
+        total > 0
+          ? ((resultado.stats.porStatus.failed / total) * 100).toFixed(1)
+          : 0,
+    };
 
     // Adapta formato para manter compatibilidade
     const stats = {
       total: resultado.stats.total,
       porStatus: resultado.stats.porStatus,
+      percentuais: percentuais,
       comNomePersonalizado: resultado.stats.comNome,
       semNomePersonalizado: resultado.stats.semNome,
     };
@@ -413,23 +531,30 @@ async function obterEstatisticas() {
     return {
       success: true,
       stats,
+      instanceId: instanceId,
     };
   } catch (error) {
     return {
       success: false,
       error: "Erro ao obter estatísticas: " + error.message,
+      instanceId: instanceId,
     };
   }
 }
 
 /**
- * Obtém a lista de números prontos para disparo (para uso interno dos módulos)
- * Substitui o antigo getNumbersInMemory()
+ * Obtém a lista de números prontos para disparo de uma instância
+ * @param {string} instanceId - ID da instância
  * @returns {Promise<Array>} - Array de números no formato esperado pelo disparo
  */
-async function getNumbersInMemory() {
+async function getNumbersForDispatch(instanceId) {
+  if (!instanceId) {
+    console.error("getNumbersForDispatch: instanceId é obrigatório");
+    return [];
+  }
+
   try {
-    const resultado = await listarClientesParaDisparo();
+    const resultado = await listarClientesParaDisparo(instanceId);
 
     if (!resultado.success) {
       console.error("Erro ao buscar números para disparo:", resultado.error);
@@ -453,6 +578,16 @@ async function getNumbersInMemory() {
   }
 }
 
+/**
+ * @deprecated Use getNumbersForDispatch(instanceId) em vez disso
+ */
+async function getNumbersInMemory() {
+  console.warn(
+    "DEPRECATED: getNumbersInMemory() está obsoleto. Use getNumbersForDispatch(instanceId)"
+  );
+  return [];
+}
+
 module.exports = {
   adicionarNumerosDeCSV,
   adicionarNumero,
@@ -460,6 +595,8 @@ module.exports = {
   listarNumeros,
   removerNumero,
   limparListaNumeros,
+  limparNumerosPorStatus,
   obterEstatisticas,
-  getNumbersInMemory,
+  getNumbersForDispatch,
+  getNumbersInMemory, // Mantido para compatibilidade (deprecated)
 };

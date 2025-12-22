@@ -8,14 +8,27 @@ class CsvProcessorDCGM {
 
   /**
    * Processa arquivo CSV e adiciona números com opções de transformação
+   * @param {string} instanceId - ID da instância
    * @param {string} csvContent - Conteúdo do arquivo CSV
    * @param {Object} opcoes - Opções de processamento
    * @returns {Promise<Object>} - Resultado formatado
    */
-  async processarArquivoCSV(csvContent, opcoes = {}) {
+  async processarArquivoCSV(instanceId, csvContent, opcoes = {}) {
     try {
-      console.log("Processando arquivo CSV...");
-      console.log("Opções recebidas:", opcoes);
+      // Valida instanceId
+      if (!instanceId) {
+        return {
+          success: false,
+          error:
+            "Nenhuma instância selecionada. Selecione uma instância antes de importar.",
+          adicionados: [],
+          erros: [],
+          totalNumeros: 0,
+        };
+      }
+
+      console.log(`[${instanceId}] Processando arquivo CSV...`);
+      console.log(`[${instanceId}] Opções recebidas:`, opcoes);
 
       // Valida conteúdo
       if (!csvContent || csvContent.trim().length === 0) {
@@ -25,6 +38,7 @@ class CsvProcessorDCGM {
           adicionados: [],
           erros: [],
           totalNumeros: 0,
+          instanceId: instanceId,
         };
       }
 
@@ -36,10 +50,14 @@ class CsvProcessorDCGM {
         usarNomesCSV: opcoes.usarNomesCSV === true,
       };
 
-      console.log("Opções de processamento:", opcoesProcessamento);
+      console.log(
+        `[${instanceId}] Opções de processamento:`,
+        opcoesProcessamento
+      );
 
-      // Processa CSV através do service
+      // Processa CSV através do service (passa instanceId)
       const resultado = await droneService.adicionarNumerosDeCSV(
+        instanceId,
         csvContent,
         opcoesProcessamento
       );
@@ -51,6 +69,7 @@ class CsvProcessorDCGM {
           adicionados: [],
           erros: [],
           totalNumeros: resultado.totalNumbers || 0,
+          instanceId: instanceId,
         };
       }
 
@@ -79,6 +98,7 @@ class CsvProcessorDCGM {
         jaExistiam: resultado.alreadyExisted || 0,
         erros: errosFormatados,
         totalNumeros: resultado.totalNumbers,
+        instanceId: instanceId,
         resumo: {
           totalProcessados: resultado.added.length + resultado.errors.length,
           totalAdicionados: resultado.added.length,
@@ -95,13 +115,14 @@ class CsvProcessorDCGM {
         },
       };
     } catch (error) {
-      console.error("Erro ao processar CSV:", error);
+      console.error(`[${instanceId}] Erro ao processar CSV:`, error);
       return {
         success: false,
         error: error.message,
         adicionados: [],
         erros: [],
         totalNumeros: 0,
+        instanceId: instanceId,
       };
     }
   }

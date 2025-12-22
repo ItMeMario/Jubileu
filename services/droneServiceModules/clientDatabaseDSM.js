@@ -3,17 +3,25 @@ const { getDatabaseConnection } = require("../../config/initialize");
 
 /**
  * Adiciona um cliente ao banco de dados
+ * @param {string} instanceId - ID da instância
  * @param {string} name - Nome do cliente
  * @param {string} tel - Telefone no formato WhatsApp
  * @returns {Promise<Object>} - Resultado da operação
  */
-async function adicionarCliente(name, tel) {
+async function adicionarCliente(instanceId, name, tel) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   const db = await getDatabaseConnection();
 
   return new Promise((resolve, reject) => {
     db.run(
-      "INSERT OR IGNORE INTO clients (name, tel, status) VALUES (?, ?, ?)",
-      [name || "", tel, "pending"],
+      "INSERT OR IGNORE INTO clients (instance_id, name, tel, status) VALUES (?, ?, ?, ?)",
+      [instanceId, name || "", tel, "pending"],
       function (err) {
         db.close();
         if (err) {
@@ -22,14 +30,13 @@ async function adicionarCliente(name, tel) {
             error: "Erro ao adicionar cliente: " + err.message,
           });
         } else {
-          // this.changes indica quantas linhas foram afetadas
-          // Se for 0, o cliente já existia (IGNORE)
           if (this.changes === 0) {
             resolve({
               success: true,
               existed: true,
-              message: "Cliente já existe no banco",
+              message: "Cliente já existe no banco para esta instância",
               tel: tel,
+              instanceId: instanceId,
             });
           } else {
             resolve({
@@ -38,6 +45,7 @@ async function adicionarCliente(name, tel) {
               message: "Cliente adicionado com sucesso",
               id: this.lastID,
               tel: tel,
+              instanceId: instanceId,
             });
           }
         }
@@ -48,10 +56,18 @@ async function adicionarCliente(name, tel) {
 
 /**
  * Adiciona múltiplos clientes em lote
+ * @param {string} instanceId - ID da instância
  * @param {Array<Object>} clientes - Array de objetos {name, tel}
  * @returns {Promise<Object>} - Resultado da operação em lote
  */
-async function adicionarClientesEmLote(clientes) {
+async function adicionarClientesEmLote(instanceId, clientes) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   const db = await getDatabaseConnection();
 
   return new Promise((resolve, reject) => {
@@ -59,30 +75,32 @@ async function adicionarClientesEmLote(clientes) {
     let jaExistiam = 0;
     let erros = [];
 
-    // Inicia transação para melhor performance
     db.serialize(() => {
       db.run("BEGIN TRANSACTION");
 
       const stmt = db.prepare(
-        "INSERT OR IGNORE INTO clients (name, tel, status) VALUES (?, ?, ?)"
+        "INSERT OR IGNORE INTO clients (instance_id, name, tel, status) VALUES (?, ?, ?, ?)"
       );
 
       for (const cliente of clientes) {
-        stmt.run([cliente.name || "", cliente.tel, "pending"], function (err) {
-          if (err) {
-            erros.push({
-              tel: cliente.tel,
-              name: cliente.name,
-              error: err.message,
-            });
-          } else {
-            if (this.changes === 0) {
-              jaExistiam++;
+        stmt.run(
+          [instanceId, cliente.name || "", cliente.tel, "pending"],
+          function (err) {
+            if (err) {
+              erros.push({
+                tel: cliente.tel,
+                name: cliente.name,
+                error: err.message,
+              });
             } else {
-              adicionados++;
+              if (this.changes === 0) {
+                jaExistiam++;
+              } else {
+                adicionados++;
+              }
             }
           }
-        });
+        );
       }
 
       stmt.finalize((err) => {
@@ -109,6 +127,7 @@ async function adicionarClientesEmLote(clientes) {
                 jaExistiam: jaExistiam,
                 erros: erros,
                 total: clientes.length,
+                instanceId: instanceId,
               });
             }
           });
@@ -119,21 +138,32 @@ async function adicionarClientesEmLote(clientes) {
 }
 
 /**
- * Lista clientes por status
+ * Lista clientes por status de uma instância específica
+ * @param {string} instanceId - ID da instância
  * @param {string|null} status - Status para filtrar ('pending', 'sent', 'failed', null para todos)
  * @returns {Promise<Object>} - Lista de clientes
  */
-async function listarClientesPorStatus(status = null) {
+async function listarClientesPorStatus(instanceId, status = null) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+      clients: [],
+    };
+  }
+
   const db = await getDatabaseConnection();
 
   return new Promise((resolve, reject) => {
-    let query = "SELECT * FROM clients";
-    let params = [];
+    let query = "SELECT * FROM clients WHERE instance_id = ?";
+    let params = [instanceId];
 
     if (status) {
-      query += " WHERE status = ?";
+      query += " AND status = ?";
       params.push(status);
     }
+
+    query += " ORDER BY id DESC";
 
     db.all(query, params, (err, rows) => {
       db.close();
@@ -148,6 +178,7 @@ async function listarClientesPorStatus(status = null) {
           success: true,
           clients: rows || [],
           total: rows ? rows.length : 0,
+          instanceId: instanceId,
         });
       }
     });
@@ -155,16 +186,25 @@ async function listarClientesPorStatus(status = null) {
 }
 
 /**
- * Lista clientes prontos para disparo (pending + failed)
+ * Lista clientes prontos para disparo (pending + failed) de uma instância
+ * @param {string} instanceId - ID da instância
  * @returns {Promise<Object>} - Lista de clientes
  */
-async function listarClientesParaDisparo() {
+async function listarClientesParaDisparo(instanceId) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+      clients: [],
+    };
+  }
+
   const db = await getDatabaseConnection();
 
   return new Promise((resolve, reject) => {
     db.all(
-      "SELECT * FROM clients WHERE status IN (?, ?)",
-      ["pending", "failed"],
+      "SELECT * FROM clients WHERE instance_id = ? AND status IN (?, ?) ORDER BY id ASC",
+      [instanceId, "pending", "failed"],
       (err, rows) => {
         db.close();
         if (err) {
@@ -178,6 +218,7 @@ async function listarClientesParaDisparo() {
             success: true,
             clients: rows || [],
             total: rows ? rows.length : 0,
+            instanceId: instanceId,
           });
         }
       }
@@ -187,17 +228,68 @@ async function listarClientesParaDisparo() {
 
 /**
  * Atualiza o status de um cliente
+ * @param {string} instanceId - ID da instância
  * @param {string} tel - Telefone do cliente
  * @param {string} status - Novo status ('pending', 'sent', 'failed')
  * @returns {Promise<Object>} - Resultado da operação
  */
-async function atualizarStatusCliente(tel, status) {
+async function atualizarStatusCliente(instanceId, tel, status) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   const db = await getDatabaseConnection();
 
   return new Promise((resolve, reject) => {
     db.run(
-      "UPDATE clients SET status = ? WHERE tel = ?",
-      [status, tel],
+      "UPDATE clients SET status = ? WHERE instance_id = ? AND tel = ?",
+      [status, instanceId, tel],
+      function (err) {
+        db.close();
+        if (err) {
+          reject({
+            success: false,
+            error: "Erro ao atualizar status: " + err.message,
+          });
+        } else {
+          if (this.changes === 0) {
+            resolve({
+              success: false,
+              message: "Cliente não encontrado nesta instância",
+              tel: tel,
+              instanceId: instanceId,
+            });
+          } else {
+            resolve({
+              success: true,
+              message: "Status atualizado com sucesso",
+              tel: tel,
+              status: status,
+              instanceId: instanceId,
+            });
+          }
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Atualiza o status de um cliente por ID
+ * @param {number} id - ID do cliente
+ * @param {string} status - Novo status ('pending', 'sent', 'failed')
+ * @returns {Promise<Object>} - Resultado da operação
+ */
+async function atualizarStatusClientePorId(id, status) {
+  const db = await getDatabaseConnection();
+
+  return new Promise((resolve, reject) => {
+    db.run(
+      "UPDATE clients SET status = ? WHERE id = ?",
+      [status, id],
       function (err) {
         db.close();
         if (err) {
@@ -210,13 +302,13 @@ async function atualizarStatusCliente(tel, status) {
             resolve({
               success: false,
               message: "Cliente não encontrado",
-              tel: tel,
+              id: id,
             });
           } else {
             resolve({
               success: true,
               message: "Status atualizado com sucesso",
-              tel: tel,
+              id: id,
               status: status,
             });
           }
@@ -227,18 +319,26 @@ async function atualizarStatusCliente(tel, status) {
 }
 
 /**
- * Remove um cliente específico
+ * Remove um cliente específico de uma instância
+ * @param {string} instanceId - ID da instância
  * @param {number|string} idOuTel - ID ou telefone do cliente
  * @returns {Promise<Object>} - Resultado da operação
  */
-async function removerCliente(idOuTel) {
+async function removerCliente(instanceId, idOuTel) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   const db = await getDatabaseConnection();
 
   return new Promise((resolve, reject) => {
-    // Tenta remover por ID ou por telefone
-    const query = "DELETE FROM clients WHERE id = ? OR tel = ?";
+    const query =
+      "DELETE FROM clients WHERE instance_id = ? AND (id = ? OR tel = ?)";
 
-    db.run(query, [idOuTel, idOuTel], function (err) {
+    db.run(query, [instanceId, idOuTel, idOuTel], function (err) {
       db.close();
       if (err) {
         reject({
@@ -249,13 +349,14 @@ async function removerCliente(idOuTel) {
         if (this.changes === 0) {
           resolve({
             success: false,
-            message: "Cliente não encontrado",
+            message: "Cliente não encontrado nesta instância",
           });
         } else {
           resolve({
             success: true,
             message: "Cliente removido com sucesso",
             removed: this.changes,
+            instanceId: instanceId,
           });
         }
       }
@@ -264,51 +365,74 @@ async function removerCliente(idOuTel) {
 }
 
 /**
- * Limpa todos os clientes da tabela
+ * Limpa todos os clientes de uma instância
+ * @param {string} instanceId - ID da instância
  * @returns {Promise<Object>} - Resultado da operação
  */
-async function limparClientes() {
+async function limparClientes(instanceId) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   const db = await getDatabaseConnection();
 
   return new Promise((resolve, reject) => {
-    // Primeiro conta quantos existem
-    db.get("SELECT COUNT(*) as total FROM clients", (err, row) => {
-      if (err) {
-        db.close();
-        reject({
-          success: false,
-          error: "Erro ao contar clientes: " + err.message,
-        });
-        return;
-      }
-
-      const total = row.total;
-
-      // Depois limpa a tabela
-      db.run("DELETE FROM clients", function (err) {
-        db.close();
+    db.get(
+      "SELECT COUNT(*) as total FROM clients WHERE instance_id = ?",
+      [instanceId],
+      (err, row) => {
         if (err) {
+          db.close();
           reject({
             success: false,
-            error: "Erro ao limpar clientes: " + err.message,
+            error: "Erro ao contar clientes: " + err.message,
           });
-        } else {
-          resolve({
-            success: true,
-            message: `${total} cliente(s) removido(s)`,
-            totalRemoved: total,
-          });
+          return;
         }
-      });
-    });
+
+        const total = row.total;
+
+        db.run(
+          "DELETE FROM clients WHERE instance_id = ?",
+          [instanceId],
+          function (err) {
+            db.close();
+            if (err) {
+              reject({
+                success: false,
+                error: "Erro ao limpar clientes: " + err.message,
+              });
+            } else {
+              resolve({
+                success: true,
+                message: `${total} cliente(s) removido(s)`,
+                totalRemoved: total,
+                instanceId: instanceId,
+              });
+            }
+          }
+        );
+      }
+    );
   });
 }
 
 /**
- * Obtém estatísticas dos clientes
+ * Obtém estatísticas dos clientes de uma instância
+ * @param {string} instanceId - ID da instância
  * @returns {Promise<Object>} - Estatísticas
  */
-async function obterEstatisticas() {
+async function obterEstatisticas(instanceId) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   const db = await getDatabaseConnection();
 
   return new Promise((resolve, reject) => {
@@ -320,7 +444,9 @@ async function obterEstatisticas() {
         SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
         SUM(CASE WHEN name IS NOT NULL AND name != '' THEN 1 ELSE 0 END) as comNome,
         SUM(CASE WHEN name IS NULL OR name = '' THEN 1 ELSE 0 END) as semNome
-      FROM clients`,
+      FROM clients
+      WHERE instance_id = ?`,
+      [instanceId],
       (err, row) => {
         db.close();
         if (err) {
@@ -341,6 +467,7 @@ async function obterEstatisticas() {
               comNome: row.comNome || 0,
               semNome: row.semNome || 0,
             },
+            instanceId: instanceId,
           });
         }
       }
@@ -349,45 +476,65 @@ async function obterEstatisticas() {
 }
 
 /**
- * Busca um cliente específico por telefone
+ * Busca um cliente específico por telefone em uma instância
+ * @param {string} instanceId - ID da instância
  * @param {string} tel - Telefone do cliente
  * @returns {Promise<Object>} - Cliente encontrado ou null
  */
-async function buscarClientePorTel(tel) {
+async function buscarClientePorTel(instanceId, tel) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   const db = await getDatabaseConnection();
 
   return new Promise((resolve, reject) => {
-    db.get("SELECT * FROM clients WHERE tel = ?", [tel], (err, row) => {
-      db.close();
-      if (err) {
-        reject({
-          success: false,
-          error: "Erro ao buscar cliente: " + err.message,
-        });
-      } else {
-        resolve({
-          success: true,
-          client: row || null,
-          found: !!row,
-        });
+    db.get(
+      "SELECT * FROM clients WHERE instance_id = ? AND tel = ?",
+      [instanceId, tel],
+      (err, row) => {
+        db.close();
+        if (err) {
+          reject({
+            success: false,
+            error: "Erro ao buscar cliente: " + err.message,
+          });
+        } else {
+          resolve({
+            success: true,
+            client: row || null,
+            found: !!row,
+            instanceId: instanceId,
+          });
+        }
       }
-    });
+    );
   });
 }
 
 /**
- * Limpa clientes por status específico
+ * Limpa clientes por status específico de uma instância
+ * @param {string} instanceId - ID da instância
  * @param {string} status - Status para filtrar ('pending', 'sent', 'failed')
  * @returns {Promise<Object>} - Resultado da operação
  */
-async function limparClientesPorStatus(status) {
+async function limparClientesPorStatus(instanceId, status) {
+  if (!instanceId) {
+    return {
+      success: false,
+      error: "instanceId é obrigatório",
+    };
+  }
+
   const db = await getDatabaseConnection();
 
   return new Promise((resolve, reject) => {
-    // Primeiro conta quantos existem com esse status
     db.get(
-      "SELECT COUNT(*) as total FROM clients WHERE status = ?",
-      [status],
+      "SELECT COUNT(*) as total FROM clients WHERE instance_id = ? AND status = ?",
+      [instanceId, status],
       (err, row) => {
         if (err) {
           db.close();
@@ -400,10 +547,9 @@ async function limparClientesPorStatus(status) {
 
         const total = row.total;
 
-        // Depois remove os clientes com esse status
         db.run(
-          "DELETE FROM clients WHERE status = ?",
-          [status],
+          "DELETE FROM clients WHERE instance_id = ? AND status = ?",
+          [instanceId, status],
           function (err) {
             db.close();
             if (err) {
@@ -417,6 +563,7 @@ async function limparClientesPorStatus(status) {
                 message: `${total} cliente(s) com status '${status}' removido(s)`,
                 totalRemoved: total,
                 status: status,
+                instanceId: instanceId,
               });
             }
           }
@@ -432,6 +579,7 @@ module.exports = {
   listarClientesPorStatus,
   listarClientesParaDisparo,
   atualizarStatusCliente,
+  atualizarStatusClientePorId,
   removerCliente,
   limparClientes,
   limparClientesPorStatus,

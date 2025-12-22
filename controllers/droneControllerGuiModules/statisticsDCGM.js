@@ -7,28 +7,47 @@ class StatisticsDCGM {
   }
 
   /**
-   * Obtém estatísticas dos números cadastrados
+   * Obtém estatísticas dos números cadastrados de uma instância
+   * @param {string} instanceId - ID da instância
    * @returns {Promise<Object>} - Estatísticas formatadas
    */
-  async obterEstatisticasNumeros() {
+  async obterEstatisticasNumeros(instanceId) {
     try {
-      console.log("Obtendo estatísticas dos números...");
-      const resultado = await droneService.obterEstatisticas();
+      // Valida instanceId
+      if (!instanceId) {
+        return {
+          success: false,
+          error:
+            "Nenhuma instância selecionada. Selecione uma instância para ver as estatísticas.",
+        };
+      }
+
+      console.log(`[${instanceId}] Obtendo estatísticas dos números...`);
+
+      const resultado = await droneService.obterEstatisticas(instanceId);
 
       if (!resultado.success) {
         return {
           success: false,
           error: resultado.error,
+          instanceId: instanceId,
         };
       }
 
       const stats = resultado.stats;
 
-      // Calcula percentuais
-      const total = stats.total;
+      // Valores
+      const total = stats.total || 0;
       const pending = stats.porStatus?.pending || 0;
       const sent = stats.porStatus?.sent || 0;
       const failed = stats.porStatus?.failed || 0;
+
+      // Percentuais (já vem calculado do service, mas recalcula para garantir)
+      const percentuais = stats.percentuais || {
+        pending: total > 0 ? ((pending / total) * 100).toFixed(1) : 0,
+        sent: total > 0 ? ((sent / total) * 100).toFixed(1) : 0,
+        failed: total > 0 ? ((failed / total) * 100).toFixed(1) : 0,
+      };
 
       return {
         success: true,
@@ -39,11 +58,7 @@ class StatisticsDCGM {
             sent: sent,
             failed: failed,
           },
-          percentuais: {
-            pending: total > 0 ? ((pending / total) * 100).toFixed(1) : 0,
-            sent: total > 0 ? ((sent / total) * 100).toFixed(1) : 0,
-            failed: total > 0 ? ((failed / total) * 100).toFixed(1) : 0,
-          },
+          percentuais: percentuais,
           comNomePersonalizado: stats.comNomePersonalizado || 0,
           semNomePersonalizado: stats.semNomePersonalizado || 0,
           percentualComNome:
@@ -72,28 +87,43 @@ class StatisticsDCGM {
             },
           },
         },
+        instanceId: instanceId,
       };
     } catch (error) {
-      console.error("Erro ao obter estatísticas:", error);
+      console.error(`[${instanceId}] Erro ao obter estatísticas:`, error);
       return {
         success: false,
         error: error.message,
+        instanceId: instanceId,
       };
     }
   }
 
   /**
-   * Gera relatório de números com nomes personalizados
+   * Gera relatório de números com nomes personalizados de uma instância
+   * @param {string} instanceId - ID da instância
    * @returns {Promise<Object>} - Relatório formatado
    */
-  async gerarRelatorioNomes() {
+  async gerarRelatorioNomes(instanceId) {
     try {
-      const lista = await droneService.listarNumeros();
+      // Valida instanceId
+      if (!instanceId) {
+        return {
+          success: false,
+          error:
+            "Nenhuma instância selecionada. Selecione uma instância para gerar o relatório.",
+        };
+      }
+
+      console.log(`[${instanceId}] Gerando relatório de nomes...`);
+
+      const lista = await droneService.listarNumeros(instanceId, null);
 
       if (!lista.success) {
         return {
           success: false,
           error: lista.error,
+          instanceId: instanceId,
         };
       }
 
@@ -116,11 +146,14 @@ class StatisticsDCGM {
             numero: n.whatsappFormat,
           })),
         },
+        instanceId: instanceId,
       };
     } catch (error) {
+      console.error(`[${instanceId}] Erro ao gerar relatório:`, error);
       return {
         success: false,
         error: error.message,
+        instanceId: instanceId,
       };
     }
   }

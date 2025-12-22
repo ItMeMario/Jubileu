@@ -25,12 +25,17 @@ class DroneControllerGui {
   // ==================== CSV PROCESSOR ====================
   /**
    * Processa arquivo CSV e adiciona números com opções de transformação
+   * @param {string} instanceId - ID da instância
    * @param {string} csvContent - Conteúdo do arquivo CSV
    * @param {Object} opcoes - Opções de processamento
    * @returns {Promise<Object>} - Resultado formatado
    */
-  async processarArquivoCSV(csvContent, opcoes = {}) {
-    return await csvProcessorDCGM.processarArquivoCSV(csvContent, opcoes);
+  async processarArquivoCSV(instanceId, csvContent, opcoes = {}) {
+    return await csvProcessorDCGM.processarArquivoCSV(
+      instanceId,
+      csvContent,
+      opcoes
+    );
   }
 
   /**
@@ -54,63 +59,70 @@ class DroneControllerGui {
 
   // ==================== LISTAGEM DE NÚMEROS ====================
   /**
-   * Lista os números atualmente no banco
+   * Lista os números atualmente no banco de uma instância
+   * @param {string} instanceId - ID da instância
    * @param {string} filtroStatus - Status para filtrar (pending/sent/failed/all)
    * @returns {Promise<Object>} - Lista formatada
    */
-  async listarNumerosAtuais(filtroStatus = "all") {
-    return await numbersListDCGM.listarNumerosAtuais(filtroStatus);
+  async listarNumerosAtuais(instanceId, filtroStatus = "all") {
+    return await numbersListDCGM.listarNumerosAtuais(instanceId, filtroStatus);
   }
 
   // ==================== REMOÇÃO DE NÚMEROS ====================
   /**
-   * Remove um número específico da lista
+   * Remove um número específico da lista de uma instância
+   * @param {string} instanceId - ID da instância
    * @param {number|string} identificador - ID do número ou índice da lista
    * @returns {Promise<Object>} - Resultado da remoção
    */
-  async removerNumero(identificador) {
-    return await numbersRemovalDCGM.removerNumero(identificador);
+  async removerNumero(instanceId, identificador) {
+    return await numbersRemovalDCGM.removerNumero(instanceId, identificador);
   }
 
   /**
-   * Limpa toda a lista de números
+   * Limpa toda a lista de números de uma instância
+   * @param {string} instanceId - ID da instância
    * @returns {Promise<Object>} - Resultado da operação
    */
-  async limparListaCompleta() {
-    return await numbersRemovalDCGM.limparListaCompleta();
+  async limparListaCompleta(instanceId) {
+    return await numbersRemovalDCGM.limparListaCompleta(instanceId);
   }
 
   /**
-   * Limpa apenas números com status 'sent'
+   * Limpa apenas números com status 'sent' de uma instância
+   * @param {string} instanceId - ID da instância
    * @returns {Promise<Object>} - Resultado da operação
    */
-  async limparEnviados() {
-    return await numbersRemovalDCGM.limparEnviados();
+  async limparEnviados(instanceId) {
+    return await numbersRemovalDCGM.limparEnviados(instanceId);
   }
 
   /**
-   * Limpa apenas números com status 'failed'
+   * Limpa apenas números com status 'failed' de uma instância
+   * @param {string} instanceId - ID da instância
    * @returns {Promise<Object>} - Resultado da operação
    */
-  async limparFalhas() {
-    return await numbersRemovalDCGM.limparFalhas();
+  async limparFalhas(instanceId) {
+    return await numbersRemovalDCGM.limparFalhas(instanceId);
   }
 
   // ==================== ESTATÍSTICAS ====================
   /**
-   * Obtém estatísticas dos números cadastrados
+   * Obtém estatísticas dos números cadastrados de uma instância
+   * @param {string} instanceId - ID da instância
    * @returns {Promise<Object>} - Estatísticas formatadas
    */
-  async obterEstatisticasNumeros() {
-    return await statisticsDCGM.obterEstatisticasNumeros();
+  async obterEstatisticasNumeros(instanceId) {
+    return await statisticsDCGM.obterEstatisticasNumeros(instanceId);
   }
 
   /**
-   * Gera relatório de números com nomes personalizados
+   * Gera relatório de números com nomes personalizados de uma instância
+   * @param {string} instanceId - ID da instância
    * @returns {Promise<Object>} - Relatório formatado
    */
-  async gerarRelatorioNomes() {
-    return await statisticsDCGM.gerarRelatorioNomes();
+  async gerarRelatorioNomes(instanceId) {
+    return await statisticsDCGM.gerarRelatorioNomes(instanceId);
   }
 
   // ==================== STATUS DO CLIENTE ====================

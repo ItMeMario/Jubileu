@@ -6,11 +6,19 @@ export default class DroneStatus {
   }
 
   /**
+   * Retorna o instanceId selecionado
+   * @returns {string|null} - instanceId ou null se não selecionado
+   */
+  getSelectedInstanceId() {
+    return this.manager.selectedInstanceId || null;
+  }
+
+  /**
    * Atualiza todo o status do sistema
    */
   async refreshStatus() {
     try {
-      // Atualiza instâncias conectadas (NOVO)
+      // Atualiza instâncias conectadas
       if (this.manager.instances) {
         await this.manager.instances.loadInstances();
         await this.manager.instances.loadAllInstancesStatus();
@@ -47,7 +55,7 @@ export default class DroneStatus {
 
       if (!indicator || !text) return;
 
-      // Verifica se há instância selecionada (NOVO)
+      // Verifica se há instância selecionada
       if (this.manager.instances?.isInstanceReady()) {
         const instanceInfo = this.manager.selectedInstanceInfo;
         indicator.textContent = "🟢";
@@ -56,7 +64,7 @@ export default class DroneStatus {
       }
 
       // Fallback: verifica status via API
-      const instanceId = this.manager.selectedInstanceId || null;
+      const instanceId = this.getSelectedInstanceId();
       const statusResult = await window.droneAPI.obterStatusCliente(instanceId);
 
       if (statusResult.conectado) {
@@ -76,7 +84,18 @@ export default class DroneStatus {
    */
   async updateGeneralStats() {
     try {
-      const result = await window.droneAPI.obterEstatisticasNumeros();
+      const instanceId = this.getSelectedInstanceId();
+
+      // Se não há instância selecionada, zera os contadores
+      if (!instanceId) {
+        if (this.manager.statusTotal) {
+          this.manager.statusTotal.textContent = "0";
+        }
+        console.log("Estatísticas: nenhuma instância selecionada");
+        return;
+      }
+
+      const result = await window.droneAPI.obterEstatisticasNumeros(instanceId);
 
       if (result.success && result.estatisticas) {
         const stats = result.estatisticas;
@@ -86,15 +105,8 @@ export default class DroneStatus {
           this.manager.statusTotal.textContent = stats.total || 0;
         }
 
-        // Atualiza total de mensagens
-        if (this.manager.statusMessages && this.manager.allMessages) {
-          this.manager.statusMessages.textContent =
-            this.manager.allMessages.length;
-        }
-
-        console.log("Estatísticas gerais atualizadas:", {
+        console.log(`[${instanceId}] Estatísticas gerais atualizadas:`, {
           total: stats.total,
-          mensagens: this.manager.allMessages?.length || 0,
         });
       }
     } catch (error) {
@@ -107,7 +119,15 @@ export default class DroneStatus {
    */
   async updateStatusBreakdown() {
     try {
-      const result = await window.droneAPI.obterEstatisticasNumeros();
+      const instanceId = this.getSelectedInstanceId();
+
+      // Se não há instância selecionada, zera o breakdown
+      if (!instanceId) {
+        this.clearBreakdown();
+        return;
+      }
+
+      const result = await window.droneAPI.obterEstatisticasNumeros(instanceId);
 
       if (result.success && result.estatisticas) {
         const stats = result.estatisticas;
@@ -146,7 +166,7 @@ export default class DroneStatus {
           }%)`;
         }
 
-        console.log("Breakdown de status atualizado:", {
+        console.log(`[${instanceId}] Breakdown de status atualizado:`, {
           pending: stats.porStatus?.pending || 0,
           sent: stats.porStatus?.sent || 0,
           failed: stats.porStatus?.failed || 0,
@@ -159,7 +179,33 @@ export default class DroneStatus {
   }
 
   /**
-   * Atualiza contadores de instâncias na seção de status (NOVO)
+   * Limpa o breakdown quando não há instância selecionada
+   */
+  clearBreakdown() {
+    if (this.manager.breakdownPending) {
+      this.manager.breakdownPending.textContent = "0";
+    }
+    if (this.manager.breakdownSent) {
+      this.manager.breakdownSent.textContent = "0";
+    }
+    if (this.manager.breakdownFailed) {
+      this.manager.breakdownFailed.textContent = "0";
+    }
+    if (this.manager.breakdownPendingPercent) {
+      this.manager.breakdownPendingPercent.textContent = "(0%)";
+    }
+    if (this.manager.breakdownSentPercent) {
+      this.manager.breakdownSentPercent.textContent = "(0%)";
+    }
+    if (this.manager.breakdownFailedPercent) {
+      this.manager.breakdownFailedPercent.textContent = "(0%)";
+    }
+
+    console.log("Breakdown zerado: nenhuma instância selecionada");
+  }
+
+  /**
+   * Atualiza contadores de instâncias na seção de status
    */
   async updateInstancesCount() {
     try {
@@ -188,13 +234,17 @@ export default class DroneStatus {
   }
 
   /**
-   * Retorna resumo do status atual do sistema (NOVO)
+   * Retorna resumo do status atual do sistema
    * @returns {Object} - Resumo do status
    */
   async getStatusSummary() {
     try {
+      const instanceId = this.getSelectedInstanceId();
+
       const [statsResult, instancesResult] = await Promise.all([
-        window.droneAPI.obterEstatisticasNumeros(),
+        instanceId
+          ? window.droneAPI.obterEstatisticasNumeros(instanceId)
+          : Promise.resolve({ success: false }),
         window.droneAPI.obterStatusTodasInstancias(),
       ]);
 
@@ -210,7 +260,7 @@ export default class DroneStatus {
           connected: instancesResult.connected || 0,
         },
         messages: this.manager.allMessages?.length || 0,
-        selectedInstance: this.manager.selectedInstanceId || null,
+        selectedInstance: instanceId,
         selectedMessage: this.manager.selectedMessageIndex || null,
       };
     } catch (error) {

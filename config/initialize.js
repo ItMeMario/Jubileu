@@ -1,3 +1,4 @@
+// config/initialize.js
 const { debug } = require("../services/debugService");
 
 // Importa módulos de diretórios
@@ -56,6 +57,13 @@ const {
   resetAllInstancesStatus,
 } = require("./initializeModules/instancesIM");
 
+// Importa módulo de clientes do Drone (NOVO)
+const {
+  initializeDroneClientsTable,
+  getDroneClientsStats,
+  clearClientsByInstance,
+} = require("./initializeModules/droneClientsIM");
+
 /**
  * Inicializa todos os arquivos, pastas e banco de dados do sistema
  * @returns {Promise<{success: number, errors: number}>}
@@ -82,6 +90,15 @@ async function initializeAllConfigs() {
     debug("✅ Status das instâncias resetado para 'disconnected'");
   } catch (error) {
     console.error("❌ Erro ao inicializar tabela de instâncias:", error);
+    throw error;
+  }
+
+  // Inicializa tabela de clientes do Drone (NOVO)
+  try {
+    await initializeDroneClientsTable();
+    debug("✅ Tabela de clientes do Drone inicializada");
+  } catch (error) {
+    console.error("❌ Erro ao inicializar tabela de clientes do Drone:", error);
     throw error;
   }
 
@@ -184,6 +201,11 @@ module.exports = {
   deleteInstance,
   hardDeleteInstance,
   resetAllInstancesStatus,
+
+  // Funções de clientes do Drone (NOVO)
+  initializeDroneClientsTable,
+  getDroneClientsStats,
+  clearClientsByInstance,
 
   // Função principal
   initializeAllConfigs,

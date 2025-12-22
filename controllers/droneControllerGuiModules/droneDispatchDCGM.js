@@ -28,16 +28,20 @@ class DroneDispatchDCGM {
         `[${instanceId}] Executando disparo - Mensagem: ${mensagemIndex}, Batch: ${batchSize}`
       );
 
-      // Verifica se há números cadastrados
-      const listaNumeros = await droneService.listarNumeros();
+      // Verifica se há números cadastrados PARA ESTA INSTÂNCIA
+      const listaNumeros = await droneService.listarNumeros(instanceId, null);
       if (!listaNumeros.success || listaNumeros.numbers.length === 0) {
         return {
           success: false,
           error:
-            "Nenhum número cadastrado para disparo. Adicione números primeiro.",
+            "Nenhum número cadastrado para disparo nesta instância. Adicione números primeiro.",
           instanceId: instanceId,
         };
       }
+
+      console.log(
+        `[${instanceId}] Números encontrados para disparo: ${listaNumeros.numbers.length}`
+      );
 
       // Busca mensagens disponíveis
       const mensagens = await droneService.listarMensagensDisponiveis();
