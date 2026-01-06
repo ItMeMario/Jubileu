@@ -1,17 +1,20 @@
 const { app } = require("electron");
+const { instanceManager } = require("../services/instanceManager");
 
 class AppLifecycle {
   constructor() {
     this.windowManager = null;
-    this.client = null;
+    this.client = null; // Mantido para compatibilidade legada
+    this.isCleaningUp = false;
   }
 
-  setup(windowManager, client) {
+  setup(windowManager, client = null) {
     this.windowManager = windowManager;
     this.client = client;
 
     this.setupActivateHandler();
     this.setupWindowAllClosedHandler();
+    this.setupBeforeQuitHandler();
   }
 
   setupActivateHandler() {
@@ -32,19 +35,62 @@ class AppLifecycle {
     });
   }
 
-  async cleanup() {
-    try {
-      console.log("Iniciando cleanup da aplicação...");
-      
-      // Cleanup do cliente WhatsApp
-      if (this.client && this.client.pupPage) {
-        console.log("Destruindo cliente WhatsApp...");
-        await this.client.destroy();
+  setupBeforeQuitHandler() {
+    app.on("before-quit", async (event) => {
+      if (this.isCleaningUp) {
+        return; // Já está fazendo cleanup, deixa sair
       }
-      
-      console.log("Cleanup concluído");
+
+      // Previne saída imediata para fazer cleanup
+      event.preventDefault();
+
+      await this.cleanup();
+
+      // Agora permite sair
+      app.exit(0);
+    });
+  }
+
+  async cleanup() {
+    // Previne múltiplos cleanups simultâneos
+    if (this.isCleaningUp) {
+      console.log("⏳ Cleanup já em andamento...");
+      return;
+    }
+
+    this.isCleaningUp = true;
+
+    try {
+      console.log("🧹 Iniciando cleanup da aplicação...");
+
+      // 1. Para todas as instâncias do novo sistema
+      try {
+        console.log("🛑 Parando todas as instâncias WhatsApp...");
+        await instanceManager.stopAll();
+        console.log("✅ Todas as instâncias paradas");
+      } catch (error) {
+        console.error("⚠️ Erro ao parar instâncias:", error.message);
+      }
+
+      // 2. Cleanup do cliente legado (se existir)
+      if (this.client && this.client.pupPage) {
+        try {
+          console.log("🛑 Destruindo cliente WhatsApp legado...");
+          await this.client.destroy();
+          console.log("✅ Cliente legado destruído");
+        } catch (error) {
+          console.error("⚠️ Erro ao destruir cliente legado:", error.message);
+        }
+      }
+
+      // 3. Aguarda um pouco para garantir que tudo fechou
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      console.log("✅ Cleanup concluído");
     } catch (error) {
-      console.error("Erro durante cleanup:", error.message);
+      console.error("❌ Erro durante cleanup:", error.message);
+    } finally {
+      this.isCleaningUp = false;
     }
   }
 
@@ -72,6 +118,11 @@ class AppLifecycle {
 
   getName() {
     return app.getName();
+  }
+
+  // Novo: Verifica se está em processo de cleanup
+  isInCleanup() {
+    return this.isCleaningUp;
   }
 }
 

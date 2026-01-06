@@ -1,5 +1,5 @@
-// message.js - Versão Refatorada e Modular
-const { client } = require("../client/client");
+// handlers/message.js - Versão Multi-Instância
+const { instanceManager } = require("../services/instanceManager");
 const {
   shouldIgnoreMessage,
   getChatInfo,
@@ -17,8 +17,40 @@ const TimeHandler = require("../handlers/timeHandler");
 const NameHandler = require("../handlers/nameHandler");
 const FaqHandler = require("../handlers/faqHandler");
 
-// Estado global dos usuários
-const userStates = {};
+// Estado global dos usuários (agora por instância)
+// Estrutura: { instanceId: { userNumber: { step, data, ... } } }
+const instanceUserStates = {};
+
+/**
+ * Obtém o estado dos usuários para uma instância específica
+ * @param {string} instanceId - ID da instância
+ * @returns {Object} Estado dos usuários da instância
+ */
+function getUserStates(instanceId) {
+  if (!instanceUserStates[instanceId]) {
+    instanceUserStates[instanceId] = {};
+  }
+  return instanceUserStates[instanceId];
+}
+
+/**
+ * Limpa o estado de um usuário em uma instância
+ * @param {string} instanceId - ID da instância
+ * @param {string} userNumber - Número do usuário
+ */
+function clearUserState(instanceId, userNumber) {
+  const userStates = getUserStates(instanceId);
+  delete userStates[userNumber];
+}
+
+/**
+ * Obtém o cliente de uma instância
+ * @param {string} instanceId - ID da instância
+ * @returns {Client|null} Cliente WhatsApp
+ */
+function getClient(instanceId) {
+  return instanceManager.getClient(instanceId);
+}
 
 // 🔎 Identifica erros esperados (com fallback) para não acionar o handler geral
 function isExpectedFallbackError(err) {
@@ -28,9 +60,9 @@ function isExpectedFallbackError(err) {
 
     // Padrões que representam "erro esperado" vindo do messageReader ou templates
     const fallbackPatterns = [
-      /\[ERRO:/, // seu sistema antigo que marca erros de template com [ERRO:
-      /Mensagem do tipo .*n(?:ã|a)o encontrada/i, // "Mensagem do tipo '...' não encontrada ..." (pt-BR)
-      /n.?o encontrada.*fallback/i, // versão com possível quebra/encoding: "n├úo encontrada ... fallback"
+      /\[ERRO:/,
+      /Mensagem do tipo .*n(?:ã|a)o encontrada/i,
+      /n.?o encontrada.*fallback/i,
       /MESSAGE(_| )?NOT(_| )?FOUND/i,
       /NO(_| )?TEMPLATE/i,
       /NO(_| )?MESSAGE/i,
@@ -52,39 +84,54 @@ function isExpectedFallbackError(err) {
 
 /**
  * Handler principal de mensagens - Orquestrador
+ * @param {Message} msg - Mensagem recebida
+ * @param {string} instanceId - ID da instância que recebeu a mensagem
  */
-module.exports = async function messageHandler(msg) {
+async function messageHandler(msg, instanceId) {
+  // Obtém o cliente da instância
+  const client = getClient(instanceId);
+
+  if (!client) {
+    console.error(
+      `[${instanceId}] Cliente não encontrado para processar mensagem`
+    );
+    return;
+  }
+
+  // Obtém o estado dos usuários desta instância
+  const userStates = getUserStates(instanceId);
+
   try {
     // 🛡️ Verificação 1: Filtro de grupos
     if (await shouldIgnoreGroups(msg)) return;
 
     // 📱 Verificação 2: Tipos de mensagem não suportados
-    if (await handleUnsupportedMessages(msg)) return;
+    if (await handleUnsupportedMessages(msg, client, instanceId)) return;
 
     // 🚫 Verificação 3: Anti-spam
-    if (await handleAntiSpam(msg)) return;
+    if (await handleAntiSpam(msg, client)) return;
 
     // 📋 Verificação 4: FAQ/Ajuda
-    if (await handleFAQ(msg)) return;
+    if (await handleFAQ(msg, client, instanceId, userStates)) return;
 
     // 🔄 Verificação 5: Menu/Reinício
-    if (await handleMenuTrigger(msg)) return;
+    if (await handleMenuTrigger(msg, client, instanceId, userStates)) return;
 
     // 🎯 Roteamento baseado no estado do usuário
-    await routeByUserState(msg);
+    await routeByUserState(msg, client, instanceId, userStates);
   } catch (error) {
-    // ⛑️ Não notifica usuário nem limpa estado em erros com fallback esperado
+    // ⛒️ Não notifica usuário nem limpa estado em erros com fallback esperado
     if (isExpectedFallbackError(error)) {
       await debug(
-        "ℹ️ Erro esperado com fallback aplicado; não notificar usuário."
+        `[${instanceId}] ℹ️ Erro esperado com fallback aplicado; não notificar usuário.`
       );
       return;
     }
 
-    console.error("Erro no messageHandler:", error);
-    await handleError(msg, error);
+    console.error(`[${instanceId}] Erro no messageHandler:`, error);
+    await handleError(msg, error, instanceId, userStates);
   }
-};
+}
 
 /**
  * Verifica e ignora mensagens de grupos
@@ -104,7 +151,7 @@ async function shouldIgnoreGroups(msg) {
 /**
  * Trata mensagens de tipos não suportados
  */
-async function handleUnsupportedMessages(msg) {
+async function handleUnsupportedMessages(msg, client, instanceId) {
   const unsupportedResult = await messageTypeHandler.processMessage(
     client,
     msg
@@ -112,7 +159,7 @@ async function handleUnsupportedMessages(msg) {
 
   if (unsupportedResult.handled) {
     await debug(
-      `📱 Mensagem não suportada tratada: ${unsupportedResult.action}`
+      `[${instanceId}] 📱 Mensagem não suportada tratada: ${unsupportedResult.action}`
     );
 
     if (unsupportedResult.action === "suspended") {
@@ -127,7 +174,7 @@ async function handleUnsupportedMessages(msg) {
 /**
  * Verifica e trata anti-spam
  */
-async function handleAntiSpam(msg) {
+async function handleAntiSpam(msg, client) {
   const userNumber = msg.from;
 
   if (antiSpamManager.isUserSuspended(userNumber)) {
@@ -144,7 +191,7 @@ async function handleAntiSpam(msg) {
 /**
  * Verifica e trata solicitações de FAQ
  */
-async function handleFAQ(msg) {
+async function handleFAQ(msg, client, instanceId, userStates) {
   const faqHandlerInstance = new FaqHandler();
 
   if (await faqHandlerInstance.shouldHandle(msg)) {
@@ -160,7 +207,7 @@ async function handleFAQ(msg) {
 /**
  * Verifica triggers de menu/reinício
  */
-async function handleMenuTrigger(msg) {
+async function handleMenuTrigger(msg, client, instanceId, userStates) {
   const menuHandlerInstance = new MenuHandler();
   const userNumber = msg.from;
 
@@ -177,7 +224,7 @@ async function handleMenuTrigger(msg) {
 /**
  * Roteia mensagem baseado no estado atual do usuário
  */
-async function routeByUserState(msg) {
+async function routeByUserState(msg, client, instanceId, userStates) {
   const userNumber = msg.from;
   const currentState = userStates[userNumber];
 
@@ -190,19 +237,33 @@ async function routeByUserState(msg) {
 
   switch (currentState.step) {
     case "awaiting_city":
-      await handleCitySelection(msg, userNumber, chat, name);
+      await handleCitySelection(
+        msg,
+        client,
+        userNumber,
+        chat,
+        name,
+        userStates
+      );
       break;
 
     case "awaiting_time":
-      await handleTimeSelection(msg, userNumber, chat, name);
+      await handleTimeSelection(
+        msg,
+        client,
+        userNumber,
+        chat,
+        name,
+        userStates
+      );
       break;
 
     case "awaiting_name":
-      await handleNameInput(msg, userNumber, chat, name);
+      await handleNameInput(msg, client, userNumber, chat, name, userStates);
       break;
 
     default:
-      console.warn(`Estado desconhecido: ${currentState.step}`);
+      console.warn(`[${instanceId}] Estado desconhecido: ${currentState.step}`);
       break;
   }
 }
@@ -210,7 +271,14 @@ async function routeByUserState(msg) {
 /**
  * Trata seleção de cidade
  */
-async function handleCitySelection(msg, userNumber, chat, name) {
+async function handleCitySelection(
+  msg,
+  client,
+  userNumber,
+  chat,
+  name,
+  userStates
+) {
   const cityHandlerInstance = new CityHandler();
 
   await cityHandlerInstance.process(
@@ -227,7 +295,14 @@ async function handleCitySelection(msg, userNumber, chat, name) {
 /**
  * Trata seleção de horário
  */
-async function handleTimeSelection(msg, userNumber, chat, name) {
+async function handleTimeSelection(
+  msg,
+  client,
+  userNumber,
+  chat,
+  name,
+  userStates
+) {
   const timeHandlerInstance = new TimeHandler();
 
   await timeHandlerInstance.process(
@@ -244,7 +319,14 @@ async function handleTimeSelection(msg, userNumber, chat, name) {
 /**
  * Trata entrada do nome
  */
-async function handleNameInput(msg, userNumber, chat, name) {
+async function handleNameInput(
+  msg,
+  client,
+  userNumber,
+  chat,
+  name,
+  userStates
+) {
   const nameHandlerInstance = new NameHandler();
 
   await nameHandlerInstance.process(
@@ -273,12 +355,14 @@ async function getBasicMessageInfo(msg) {
 /**
  * Trata erros gerais
  */
-async function handleError(msg, error) {
+async function handleError(msg, error, instanceId, userStates) {
   const userNumber = msg.from;
 
   // 🚧 Não tratar como erro fatal se for de fallback esperado
   if (isExpectedFallbackError(error)) {
-    await debug("⚠️ handleError ignorado: erro com fallback reconhecido.");
+    await debug(
+      `[${instanceId}] ⚠️ handleError ignorado: erro com fallback reconhecido.`
+    );
     return;
   }
 
@@ -287,10 +371,24 @@ async function handleError(msg, error) {
       "⚠️ Ocorreu um erro inesperado. Por favor, tente novamente digitando *MENU* ou *AJUDA*."
     );
   } catch (replyError) {
-    console.error("Erro ao enviar mensagem de erro:", replyError);
+    console.error(
+      `[${instanceId}] Erro ao enviar mensagem de erro:`,
+      replyError
+    );
   }
 
   // Limpa estados em caso de erro
   timeout.cancelTimeout(userNumber);
   delete userStates[userNumber];
 }
+
+// ========================================
+// Exportações
+// ========================================
+
+module.exports = messageHandler;
+
+// Exporta funções auxiliares para uso externo se necessário
+module.exports.getUserStates = getUserStates;
+module.exports.clearUserState = clearUserState;
+module.exports.instanceUserStates = instanceUserStates;

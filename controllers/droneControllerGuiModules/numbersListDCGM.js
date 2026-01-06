@@ -8,14 +8,35 @@ class NumbersListDCGM {
   }
 
   /**
-   * Lista os números atualmente no banco
+   * Lista os números atualmente no banco de uma instância
+   * @param {string} instanceId - ID da instância
    * @param {string} filtroStatus - Status para filtrar (pending/sent/failed/all)
    * @returns {Promise<Object>} - Lista formatada
    */
-  async listarNumerosAtuais(filtroStatus = "all") {
+  async listarNumerosAtuais(instanceId, filtroStatus = "all") {
     try {
-      console.log(`Listando números com filtro: ${filtroStatus}`);
-      const resultado = await droneService.listarNumeros();
+      // Valida instanceId
+      if (!instanceId) {
+        return {
+          success: false,
+          error:
+            "Nenhuma instância selecionada. Selecione uma instância para ver os números.",
+          numeros: [],
+          total: 0,
+        };
+      }
+
+      console.log(
+        `[${instanceId}] Listando números com filtro: ${filtroStatus}`
+      );
+
+      // Passa instanceId e filtro para o service
+      // Se filtroStatus é 'all', passa null para buscar todos
+      const statusParaBusca = filtroStatus === "all" ? null : filtroStatus;
+      const resultado = await droneService.listarNumeros(
+        instanceId,
+        statusParaBusca
+      );
 
       if (!resultado.success) {
         return {
@@ -23,6 +44,7 @@ class NumbersListDCGM {
           error: resultado.error,
           numeros: [],
           total: 0,
+          instanceId: instanceId,
         };
       }
 
@@ -31,19 +53,14 @@ class NumbersListDCGM {
           success: true,
           numeros: [],
           total: 0,
+          totalGeral: 0,
+          filtroAplicado: filtroStatus,
+          instanceId: instanceId,
         };
       }
 
-      // Aplica filtro de status se necessário
-      let numerosFiltrados = resultado.numbers;
-      if (filtroStatus !== "all") {
-        numerosFiltrados = resultado.numbers.filter(
-          (num) => num.status === filtroStatus
-        );
-      }
-
       // Formata números para exibição na GUI
-      const numerosFormatados = numerosFiltrados.map((num, index) => ({
+      const numerosFormatados = resultado.numbers.map((num, index) => ({
         indice: index + 1,
         id: num.id,
         numeroOriginal: num.originalNumber,
@@ -54,22 +71,38 @@ class NumbersListDCGM {
         statusTexto: statusFormatHelpers.getStatusTexto(num.status),
         statusIcon: statusFormatHelpers.getStatusIcon(num.status),
         statusClass: statusFormatHelpers.getStatusClass(num.status),
+        createdAt: num.createdAt,
+        updatedAt: num.updatedAt,
       }));
+
+      // Se filtrou, busca o total geral para referência
+      let totalGeral = resultado.total;
+      if (statusParaBusca !== null) {
+        const resultadoGeral = await droneService.listarNumeros(
+          instanceId,
+          null
+        );
+        totalGeral = resultadoGeral.success
+          ? resultadoGeral.total
+          : resultado.total;
+      }
 
       return {
         success: true,
         numeros: numerosFormatados,
-        total: numerosFiltrados.length,
-        totalGeral: resultado.total,
+        total: numerosFormatados.length,
+        totalGeral: totalGeral,
         filtroAplicado: filtroStatus,
+        instanceId: instanceId,
       };
     } catch (error) {
-      console.error("Erro ao listar números:", error);
+      console.error(`[${instanceId}] Erro ao listar números:`, error);
       return {
         success: false,
         error: error.message,
         numeros: [],
         total: 0,
+        instanceId: instanceId,
       };
     }
   }

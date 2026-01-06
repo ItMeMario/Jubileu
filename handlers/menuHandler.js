@@ -2,7 +2,6 @@
 const { enviarMensagemMenu, chatContext } = require("./menuMessage");
 const { hasTriggerText } = require("../utils/triggers");
 const { updateLastMenuTime } = require("../utils/lastActivity");
-const groupService = require("../services/groupService");
 const timeout = require("../utils/timeout");
 
 class menuHandler {
@@ -30,30 +29,12 @@ class menuHandler {
     await enviarMensagemMenu(client, msg, chat);
     updateLastMenuTime();
 
-    // Define próximo estado baseado no modo
-    const currentMode = groupService.getCurrentMode();
-
-    if (currentMode === "SINGLE") {
-      const primaryGroup = (await groupService.getAllGroups()).find(
-        (group) => group.isPrimary
-      );
-
-      if (primaryGroup) {
-        chatContext[userNumber] = { selectedCityData: primaryGroup };
-      }
-
-      userStates[userNumber] = {
-        step: "awaiting_time",
-        started: true,
-        forceSingle: true,
-      };
-    } else {
-      userStates[userNumber] = {
-        step: "awaiting_city",
-        started: true,
-        forceSingle: false,
-      };
-    }
+    // Define próximo estado sempre como MULTI (aguardando cidade)
+    userStates[userNumber] = {
+      step: "awaiting_city",
+      started: true,
+      forceSingle: false,
+    };
   }
 }
 

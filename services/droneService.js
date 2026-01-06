@@ -15,8 +15,9 @@ const {
   listarNumeros,
   removerNumero,
   limparListaNumeros,
-  limparClientesPorStatus,
+  limparNumerosPorStatus,
   obterEstatisticas,
+  getNumbersForDispatch,
 } = require("./droneServiceModules/numberManagementDSM");
 
 // Importa módulo de disparo de mensagens
@@ -34,6 +35,8 @@ const {
 // Importa módulo de status do cliente
 const {
   verificarStatusCliente,
+  verificarStatusTodasInstancias,
+  listarInstanciasConectadas,
 } = require("./droneServiceModules/clientStatusDSM");
 
 // ========================================
@@ -45,18 +48,23 @@ module.exports = {
   listarMensagensDisponiveis,
   buscarMensagemPorId,
 
-  // Funções de gerenciamento de números
-  adicionarNumero, // DEPRECATED - manter para compatibilidade
-  adicionarMultiplosNumeros, // DEPRECATED - manter para compatibilidade
-  adicionarNumerosDeCSV, // NOVA FUNÇÃO PRINCIPAL
+  // Funções de gerenciamento de números (todas recebem instanceId)
+  adicionarNumero,
+  adicionarMultiplosNumeros,
+  adicionarNumerosDeCSV,
   listarNumeros,
   removerNumero,
   limparListaNumeros,
-  limparClientesPorStatus,
+  limparNumerosPorStatus,
   obterEstatisticas,
+  getNumbersForDispatch,
 
-  // Funções de disparo
+  // Funções de status do cliente
   verificarStatusCliente,
+  verificarStatusTodasInstancias,
+  listarInstanciasConectadas,
+
+  // Funções de disparo (recebem instanceId como primeiro parâmetro)
   executarDisparo,
   executarDisparoCompleto,
 

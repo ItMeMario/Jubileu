@@ -2,13 +2,15 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 // Expõe APIs seguras para o renderer
 contextBridge.exposeInMainWorld("electronAPI", {
-  // Métodos para comunicação com o processo principal
+  // ========================================
+  // APIs legadas (WhatsApp single instance)
+  // ========================================
   startWhatsApp: () => ipcRenderer.invoke("start-whatsapp"),
+  stopWhatsApp: () => ipcRenderer.invoke("stop-whatsapp"),
   openConfig: () => ipcRenderer.invoke("open-config"),
   openDrone: () => ipcRenderer.invoke("open-drone"),
-  stopWhatsApp: () => ipcRenderer.invoke("stop-whatsapp"),
 
-  // Listeners para eventos do processo principal
+  // Listeners legados
   onQRGenerated: (callback) => {
     ipcRenderer.on("qr-generated", (event, data) => callback(data));
   },
@@ -33,24 +35,162 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("error", (event, message) => callback(message));
   },
 
-  // 🆕 NOVO MÉTODO PARA LOGS DO PROCESSO PRINCIPAL
+  // Console redirect
   onConsoleMessage: (callback) => {
     ipcRenderer.on("console-message", (event, data) => {
       callback(data);
     });
   },
 
-  // Método para remover listeners (cleanup)
+  // ========================================
+  // APIs de Instâncias (Multi-instance)
+  // ========================================
+  instances: {
+    // Inicialização
+    initialize: () => ipcRenderer.invoke("instance-initialize"),
+
+    // CRUD
+    list: () => ipcRenderer.invoke("instance-list"),
+    create: (name) => ipcRenderer.invoke("instance-create", { name }),
+    remove: (instanceId) =>
+      ipcRenderer.invoke("instance-remove", { instanceId }),
+    rename: (instanceId, name) =>
+      ipcRenderer.invoke("instance-rename", { instanceId, name }),
+
+    // Controle de conexão
+    start: (instanceId) => ipcRenderer.invoke("instance-start", { instanceId }),
+    stop: (instanceId) => ipcRenderer.invoke("instance-stop", { instanceId }),
+    reconnect: (instanceId) =>
+      ipcRenderer.invoke("instance-reconnect", { instanceId }),
+    stopAll: () => ipcRenderer.invoke("instance-stop-all"),
+
+    // Status
+    getStatus: (instanceId) =>
+      ipcRenderer.invoke("instance-status", { instanceId }),
+    getAllStatus: () => ipcRenderer.invoke("instance-status-all"),
+    getClientInfo: (instanceId) =>
+      ipcRenderer.invoke("instance-client-info", { instanceId }),
+
+    // Mensagens
+    sendMessage: (instanceId, to, message) =>
+      ipcRenderer.invoke("instance-send-message", { instanceId, to, message }),
+
+    // Configuração
+    getConfig: () => ipcRenderer.invoke("instance-get-config"),
+
+    // ========================================
+    // Listeners de eventos de instâncias
+    // ========================================
+    onQR: (callback) => {
+      ipcRenderer.on("instance-qr", (event, data) => callback(data));
+    },
+
+    onAuthenticated: (callback) => {
+      ipcRenderer.on("instance-authenticated", (event, data) => callback(data));
+    },
+
+    onReady: (callback) => {
+      ipcRenderer.on("instance-ready", (event, data) => callback(data));
+    },
+
+    onAuthFailure: (callback) => {
+      ipcRenderer.on("instance-auth-failure", (event, data) => callback(data));
+    },
+
+    onDisconnected: (callback) => {
+      ipcRenderer.on("instance-disconnected", (event, data) => callback(data));
+    },
+
+    onLoading: (callback) => {
+      ipcRenderer.on("instance-loading", (event, data) => callback(data));
+    },
+
+    onStateChange: (callback) => {
+      ipcRenderer.on("instance-state-change", (event, data) => callback(data));
+    },
+
+    onCreated: (callback) => {
+      ipcRenderer.on("instance-created", (event, data) => callback(data));
+    },
+
+    onRemoved: (callback) => {
+      ipcRenderer.on("instance-removed", (event, data) => callback(data));
+    },
+
+    onRenamed: (callback) => {
+      ipcRenderer.on("instance-renamed", (event, data) => callback(data));
+    },
+
+    onStopped: (callback) => {
+      ipcRenderer.on("instance-stopped", (event, data) => callback(data));
+    },
+
+    onReconnecting: (callback) => {
+      ipcRenderer.on("instance-reconnecting", (event, data) => callback(data));
+    },
+
+    onAllStopped: (callback) => {
+      ipcRenderer.on("all-instances-stopped", (event, data) => callback(data));
+    },
+
+    // Remove todos os listeners de instâncias
+    removeAllListeners: () => {
+      const instanceEvents = [
+        "instance-qr",
+        "instance-authenticated",
+        "instance-ready",
+        "instance-auth-failure",
+        "instance-disconnected",
+        "instance-loading",
+        "instance-state-change",
+        "instance-created",
+        "instance-removed",
+        "instance-renamed",
+        "instance-stopped",
+        "instance-reconnecting",
+        "all-instances-stopped",
+      ];
+
+      instanceEvents.forEach((event) => {
+        ipcRenderer.removeAllListeners(event);
+      });
+    },
+  },
+
+  // ========================================
+  // Cleanup geral
+  // ========================================
   removeAllListeners: () => {
+    // Listeners legados
     ipcRenderer.removeAllListeners("qr-generated");
     ipcRenderer.removeAllListeners("whatsapp-ready");
     ipcRenderer.removeAllListeners("whatsapp-authenticated");
     ipcRenderer.removeAllListeners("whatsapp-disconnected");
     ipcRenderer.removeAllListeners("error");
-    // 🆕 ADICIONA REMOÇÃO DO NOVO LISTENER
     ipcRenderer.removeAllListeners("console-message");
+
+    // Listeners de instâncias
+    const instanceEvents = [
+      "instance-qr",
+      "instance-authenticated",
+      "instance-ready",
+      "instance-auth-failure",
+      "instance-disconnected",
+      "instance-loading",
+      "instance-state-change",
+      "instance-created",
+      "instance-removed",
+      "instance-renamed",
+      "instance-stopped",
+      "instance-reconnecting",
+      "all-instances-stopped",
+    ];
+
+    instanceEvents.forEach((event) => {
+      ipcRenderer.removeAllListeners(event);
+    });
   },
 });
 
-// Debug simples sem acessar arguments
-console.log("🔧 Preload carregado - console redirect disponível!");
+// Debug
+console.log("🔧 Preload carregado - APIs de instâncias disponíveis!");

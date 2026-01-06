@@ -179,15 +179,6 @@ class CityControllerGui {
         };
       }
 
-      // Verificar se é cidade primária
-      if (city.isPrimary) {
-        return {
-          success: false,
-          error:
-            "Não é possível excluir a cidade primária. Defina outra cidade como primária primeiro.",
-        };
-      }
-
       await this.cityRepository.delete(id);
 
       return {
@@ -196,60 +187,6 @@ class CityControllerGui {
       };
     } catch (error) {
       console.error("Erro ao excluir cidade (GUI):", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
-
-  async handleSetPrimaryCityGUI(id) {
-    try {
-      // Buscar cidade
-      const city = await this.cityRepository.findById(id);
-      if (!city) {
-        return {
-          success: false,
-          error: "Cidade não encontrada",
-        };
-      }
-
-      // Verificar se já é primária
-      if (city.isPrimary) {
-        return {
-          success: false,
-          error: "Esta cidade já é a primária",
-        };
-      }
-
-      await this.cityRepository.setPrimary(id);
-
-      return {
-        success: true,
-        message: "Cidade primária definida com sucesso",
-      };
-    } catch (error) {
-      console.error("Erro ao definir cidade primária (GUI):", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
-
-  async handleGetPrimaryCityGUI() {
-    try {
-      const primaryCity = await this.cityRepository.getPrimary();
-
-      return {
-        success: true,
-        data: primaryCity,
-        message: primaryCity
-          ? "Cidade primária encontrada"
-          : "Nenhuma cidade primária definida",
-      };
-    } catch (error) {
-      console.error("Erro ao buscar cidade primária (GUI):", error);
       return {
         success: false,
         error: error.message,
@@ -280,11 +217,6 @@ class CityControllerGui {
         error: error.message,
       };
     }
-  }
-
-  // Método utilitário para obter cidade primária
-  async getPrimaryCity() {
-    return await this.cityRepository.getPrimary();
   }
 
   // Método utilitário para buscar cidade por ID

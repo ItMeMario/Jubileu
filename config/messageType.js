@@ -12,7 +12,6 @@ const MessageType = {
   // Fluxo
   SEND_FAQ: "send_faq",
   WELCOME: "welcome",
-  GROUP_SINGLE_INVITE: "group_SINGLE_invite",
   GROUP_MULTI_INVITE: "group_MULTI_invite",
   ALREADY_IN_GROUP: "already_in_group",
   TIME_MENU: "time_menu",

@@ -19,7 +19,7 @@ class ModoDevRenderer {
     // Toggle buttons
     const toggleDevBtn = document.getElementById("btn-toggle-dev-mode");
     const toggleDebugBtn = document.getElementById("btn-toggle-debug-mode");
-    const toggleGroupBtn = document.getElementById("btn-toggle-group-mode");
+    // ❌ REMOVIDO: const toggleGroupBtn = document.getElementById("btn-toggle-group-mode");
 
     // Scout configuration
     const scoutForm = document.getElementById("scout-form");
@@ -38,11 +38,7 @@ class ModoDevRenderer {
       );
     }
 
-    if (toggleGroupBtn) {
-      toggleGroupBtn.addEventListener("click", () =>
-        this.handleToggleGroupMode()
-      );
-    }
+    // ❌ REMOVIDO: Event listener do toggleGroupBtn
 
     if (scoutForm) {
       scoutForm.addEventListener("submit", (e) =>
@@ -62,8 +58,6 @@ class ModoDevRenderer {
         this.handleLocaleSelectChange()
       );
     }
-
-    // REMOVIDO: refreshStatusBtn - não será mais usado
   }
 
   async loadInitialData() {
@@ -72,19 +66,11 @@ class ModoDevRenderer {
       await Promise.all([
         this.loadCurrentStatus(),
         this.loadScoutConfig(),
-        this.loadLocaleData(), // ========== NOVO ==========
+        this.loadLocaleData(),
       ]);
-
-      // ADICIONADO: Fallback para garantir que o modo de grupo seja carregado
-      if (!this.currentStatus?.groupMode) {
-        await this.loadGroupModeOnly();
-      }
     } catch (error) {
       console.error("Erro ao carregar dados iniciais:", error);
       this.showError("Erro ao carregar configurações do modo dev");
-
-      // Tentar carregar pelo menos o modo de grupo como fallback
-      await this.loadGroupModeOnly();
     } finally {
       this.showLoading(false);
     }
@@ -96,7 +82,6 @@ class ModoDevRenderer {
         throw new Error("modoDevAPI não está disponível");
       }
 
-      // CORRIGIDO: Removido getDetailedStatus, usando apenas getCurrentMode
       const modeResult = await window.modoDevAPI.getCurrentMode();
 
       if (modeResult.success) {
@@ -137,12 +122,10 @@ class ModoDevRenderer {
       ]);
 
       if (currentResult.success) {
-        // currentResult.data é uma string como "en-US"
         this.currentLocale = currentResult.data;
       }
 
       if (availableResult.success) {
-        // availableResult.data é um array de objetos como [{name: "English", code: "en-US"}, ...]
         this.availableLocales = availableResult.data;
         this.updateLocaleSelectOptions();
       }
@@ -164,11 +147,9 @@ class ModoDevRenderer {
     // Adicionar opções disponíveis
     this.availableLocales.forEach((locale, index) => {
       const option = document.createElement("option");
-      option.value = (index + 1).toString(); // Índice baseado em 1, como no CLI
+      option.value = (index + 1).toString();
       option.textContent = `${locale.name} (${locale.code})`;
 
-      // Marcar como selecionado se for o locale atual
-      // this.currentLocale é uma string como "en-US", então comparamos com locale.code
       if (this.currentLocale && locale.code === this.currentLocale) {
         option.selected = true;
       }
@@ -181,8 +162,6 @@ class ModoDevRenderer {
     const currentLocaleInfo = document.getElementById("current-locale-info");
     if (currentLocaleInfo) {
       if (this.currentLocale) {
-        // this.currentLocale é uma string como "en-US"
-        // Vamos buscar o nome correspondente no array de availableLocales
         let displayName = this.currentLocale;
 
         if (this.availableLocales) {
@@ -223,7 +202,7 @@ class ModoDevRenderer {
 
       if (result.success) {
         this.showSuccess(`Idioma alterado para ${result.locale.name}`);
-        await this.loadLocaleData(); // Recarregar dados de locale
+        await this.loadLocaleData();
       } else {
         this.showError(result.error || "Erro ao alterar idioma");
       }
@@ -251,31 +230,7 @@ class ModoDevRenderer {
     }
   }
 
-  async loadGroupModeOnly() {
-    try {
-      // Como não temos um método específico, vamos fazer um toggle e voltar
-      // para descobrir o modo atual - isso é um hack, mas funciona
-      const result = await window.modoDevAPI.getCurrentMode();
-      if (result.success && result.data.groupMode) {
-        if (!this.currentStatus) {
-          this.currentStatus = {};
-        }
-        this.currentStatus.groupMode = result.data.groupMode;
-
-        const groupBtn = document.getElementById("btn-toggle-group-mode");
-        if (groupBtn) {
-          groupBtn.textContent = `Modo: ${result.data.groupMode}`;
-        }
-      }
-    } catch (error) {
-      console.error("Erro ao carregar modo de grupo:", error);
-      // Se falhar, definir um valor padrão
-      const groupBtn = document.getElementById("btn-toggle-group-mode");
-      if (groupBtn) {
-        groupBtn.textContent = "Alternar Modo de Grupo";
-      }
-    }
-  }
+  // ❌ REMOVIDO: método loadGroupModeOnly()
 
   updateStatusDisplay() {
     if (!this.currentStatus) return;
@@ -299,12 +254,7 @@ class ModoDevRenderer {
       this.currentStatus.debugEnabled ? "Debug: ATIVO" : "Debug: INATIVO"
     );
 
-    if (this.currentStatus.groupMode) {
-      this.updateToggleButtonText(
-        "btn-toggle-group-mode",
-        `Modo: ${this.currentStatus.groupMode}`
-      );
-    }
+    // ❌ REMOVIDO: Atualização do groupMode
   }
 
   updateStatusIndicator(elementId, isActive) {
@@ -411,37 +361,7 @@ class ModoDevRenderer {
     }
   }
 
-  async handleToggleGroupMode() {
-    if (this.isLoading) return;
-
-    try {
-      this.isLoading = true;
-      this.showLoading(true, "Alternando modo de grupo...");
-
-      const result = await window.modoDevAPI.toggleGroupMode();
-
-      if (result.success) {
-        const { previousMode, currentMode } = result.data;
-        this.showSuccess(
-          `Modo alterado de ${previousMode} para ${currentMode}`
-        );
-        await this.loadCurrentStatus();
-
-        const groupBtn = document.getElementById("btn-toggle-group-mode");
-        if (groupBtn) {
-          groupBtn.textContent = `Modo: ${currentMode}`;
-        }
-      } else {
-        this.showError(result.error || "Erro ao alternar modo de grupo");
-      }
-    } catch (error) {
-      console.error("Erro ao alternar modo de grupo:", error);
-      this.showError("Erro interno ao alternar modo de grupo");
-    } finally {
-      this.isLoading = false;
-      this.showLoading(false);
-    }
-  }
+  // ❌ REMOVIDO: método handleToggleGroupMode()
 
   async handleScoutFormSubmit(event) {
     event.preventDefault();

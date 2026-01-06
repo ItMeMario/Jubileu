@@ -1,3 +1,4 @@
+// config/initialize.js
 const { debug } = require("../services/debugService");
 
 // Importa módulos de diretórios
@@ -40,6 +41,29 @@ const {
   initializeDatabase,
 } = require("./initializeModules/databaseIM");
 
+// Importa módulo de instâncias
+const {
+  MAX_INSTANCES,
+  INSTANCE_STATUS,
+  initializeInstancesTable,
+  getAllInstances,
+  getInstanceById,
+  countActiveInstances,
+  createInstance,
+  updateInstanceStatus,
+  updateInstanceName,
+  deleteInstance,
+  hardDeleteInstance,
+  resetAllInstancesStatus,
+} = require("./initializeModules/instancesIM");
+
+// Importa módulo de clientes do Drone (NOVO)
+const {
+  initializeDroneClientsTable,
+  getDroneClientsStats,
+  clearClientsByInstance,
+} = require("./initializeModules/droneClientsIM");
+
 /**
  * Inicializa todos os arquivos, pastas e banco de dados do sistema
  * @returns {Promise<{success: number, errors: number}>}
@@ -53,6 +77,28 @@ async function initializeAllConfigs() {
     debug(`✅ Banco de dados inicializado: ${dbPath}`);
   } catch (error) {
     console.error("❌ Erro crítico ao inicializar banco de dados:", error);
+    throw error;
+  }
+
+  // Inicializa tabela de instâncias
+  try {
+    await initializeInstancesTable();
+    debug("✅ Tabela de instâncias inicializada");
+
+    // Reseta status de todas as instâncias na inicialização
+    await resetAllInstancesStatus();
+    debug("✅ Status das instâncias resetado para 'disconnected'");
+  } catch (error) {
+    console.error("❌ Erro ao inicializar tabela de instâncias:", error);
+    throw error;
+  }
+
+  // Inicializa tabela de clientes do Drone (NOVO)
+  try {
+    await initializeDroneClientsTable();
+    debug("✅ Tabela de clientes do Drone inicializada");
+  } catch (error) {
+    console.error("❌ Erro ao inicializar tabela de clientes do Drone:", error);
     throw error;
   }
 
@@ -139,6 +185,27 @@ module.exports = {
 
   // Funções de migração
   migrateDevModeIfNeeded,
+
+  // Constantes de instâncias
+  MAX_INSTANCES,
+  INSTANCE_STATUS,
+
+  // Funções de instâncias
+  initializeInstancesTable,
+  getAllInstances,
+  getInstanceById,
+  countActiveInstances,
+  createInstance,
+  updateInstanceStatus,
+  updateInstanceName,
+  deleteInstance,
+  hardDeleteInstance,
+  resetAllInstancesStatus,
+
+  // Funções de clientes do Drone (NOVO)
+  initializeDroneClientsTable,
+  getDroneClientsStats,
+  clearClientsByInstance,
 
   // Função principal
   initializeAllConfigs,

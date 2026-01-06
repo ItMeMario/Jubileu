@@ -1,5 +1,4 @@
 const { chatContext } = require("./menuMessage");
-const groupService = require("../services/groupService");
 const indicadores = require("../utils/indicadores");
 const delay = require("../utils/delay");
 const timeout = require("../utils/timeout");
@@ -22,8 +21,7 @@ class NameHandler {
         client,
         userNumber,
         nomeCompleto,
-        horarioSelecionado,
-        userStates
+        horarioSelecionado
       );
 
       if (result === null) {
@@ -68,32 +66,15 @@ class NameHandler {
     client,
     userNumber,
     nomeCompleto,
-    horarioSelecionado,
-    userStates
+    horarioSelecionado
   ) {
-    const currentMode = groupService.getCurrentMode();
-    const allGroups = await groupService.getAllGroups();
-
-    if (allGroups.length === 0) {
-      throw new Error("Nenhum grupo configurado");
-    }
-
-    if (currentMode === "SINGLE" || userStates[userNumber].forceSingle) {
-      return await inviteProcessorNHM.handleSingleMode(
-        client,
-        userNumber,
-        nomeCompleto,
-        horarioSelecionado,
-        allGroups
-      );
-    } else {
-      return await inviteProcessorNHM.handleMultiMode(
-        client,
-        userNumber,
-        nomeCompleto,
-        horarioSelecionado
-      );
-    }
+    // Sempre usa modo MULTI
+    return await inviteProcessorNHM.handleMultiMode(
+      client,
+      userNumber,
+      nomeCompleto,
+      horarioSelecionado
+    );
   }
 
   async updateCounters() {

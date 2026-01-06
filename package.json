@@ -18,10 +18,10 @@
     "qrcode-terminal": "^0.12.0",
     "sqlite3": "^5.1.7",
     "string-similarity": "^4.0.4",
-    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#main"
+    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#auto-wa-web-update/patch"
   },
   "devDependencies": {
-    "electron": "^37.4.0",
+    "electron": "^39.2.3",
     "electron-builder": "^26.0.12"
   },
   "build": {

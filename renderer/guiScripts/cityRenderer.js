@@ -16,9 +16,8 @@ class CitiesManager {
     this.cityMessageTextarea = document.getElementById("city-message");
     this.cityDateInput = document.getElementById("city-date");
     this.btnSaveCity = document.getElementById("btn-save-city");
-    this.btnClearForm = document.getElementById("btn-clear-form");
+    this.btnClearForm = document.getElementById("btn-clear-city-form");
     this.btnDeleteCity = document.getElementById("btn-delete-city");
-    this.btnSetPrimary = document.getElementById("btn-set-primary");
     this.statusDiv = document.getElementById("status");
   }
 
@@ -26,7 +25,6 @@ class CitiesManager {
     this.btnSaveCity.addEventListener("click", () => this.saveCity());
     this.btnClearForm.addEventListener("click", () => this.clearForm());
     this.btnDeleteCity.addEventListener("click", () => this.deleteCity());
-    this.btnSetPrimary.addEventListener("click", () => this.setPrimaryCity());
   }
 
   async loadInitialData() {
@@ -66,15 +64,10 @@ class CitiesManager {
 
     this.citiesList.innerHTML = this.cities
       .map((city) => {
-        const primaryClass = city.isPrimary ? "primary" : "";
-        const primaryBadge = city.isPrimary
-          ? '<span class="primary-badge">PRIMÁRIA</span>'
-          : "";
-
         return `
-          <div class="city-item ${primaryClass}" data-id="${city.id}">
+          <div class="city-item" data-id="${city.id}">
             <div class="city-header">
-              <div class="city-name">${city.name}${primaryBadge}</div>
+              <div class="city-name">${city.name}</div>
             </div>
             <div class="city-meta">#${city.id}${
           city.link
@@ -96,7 +89,6 @@ class CitiesManager {
 
     this.citiesList.querySelectorAll(".city-item").forEach((item) => {
       item.addEventListener("click", (e) => {
-        // Evitar que links sejam interceptados
         if (e.target.tagName === "A") return;
 
         const cityId = parseInt(item.dataset.id);
@@ -118,9 +110,6 @@ class CitiesManager {
       this.currentCity = city;
       this.loadCityToForm(city);
       this.btnDeleteCity.style.display = "inline-block";
-      this.btnSetPrimary.style.display = city.isPrimary
-        ? "none"
-        : "inline-block";
       this.btnSaveCity.textContent = "Atualizar Cidade";
     }
   }
@@ -139,7 +128,6 @@ class CitiesManager {
     this.cityMessageTextarea.value = "";
     this.cityDateInput.value = "";
     this.btnDeleteCity.style.display = "none";
-    this.btnSetPrimary.style.display = "none";
     this.btnSaveCity.textContent = "Salvar Cidade";
 
     this.citiesList.querySelectorAll(".city-item").forEach((item) => {
@@ -174,13 +162,14 @@ class CitiesManager {
         this.showStatus(result.message, "success");
         await this.loadCities();
         this.clearForm();
+        this.hideButtonLoading(this.btnSaveCity, true);
       } else {
         this.showStatus(result.error || "Erro ao salvar cidade", "error");
+        this.hideButtonLoading(this.btnSaveCity);
       }
     } catch (error) {
       console.error("Error saving city:", error);
       this.showStatus("Erro ao salvar cidade", "error");
-    } finally {
       this.hideButtonLoading(this.btnSaveCity);
     }
   }
@@ -188,18 +177,11 @@ class CitiesManager {
   async deleteCity() {
     if (!this.currentCity) return;
 
-    if (this.currentCity.isPrimary) {
-      this.showStatus("Não é possível excluir a cidade primária", "error");
-      return;
-    }
+    const confirmed = await window.customConfirm(
+      `Tem certeza que deseja excluir a cidade "${this.currentCity.name}"?`
+    );
 
-    if (
-      !confirm(
-        `Tem certeza que deseja excluir a cidade "${this.currentCity.name}"?`
-      )
-    ) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       this.showButtonLoading(this.btnDeleteCity);
@@ -209,55 +191,15 @@ class CitiesManager {
         this.showStatus(result.message, "success");
         await this.loadCities();
         this.clearForm();
+        this.hideButtonLoading(this.btnDeleteCity, true);
       } else {
         this.showStatus(result.error || "Erro ao excluir cidade", "error");
+        this.hideButtonLoading(this.btnDeleteCity);
       }
     } catch (error) {
       console.error("Error deleting city:", error);
       this.showStatus("Erro ao excluir cidade", "error");
-    } finally {
       this.hideButtonLoading(this.btnDeleteCity);
-    }
-  }
-
-  async setPrimaryCity() {
-    if (!this.currentCity) return;
-
-    if (this.currentCity.isPrimary) {
-      this.showStatus("Esta cidade já é a primária", "info");
-      return;
-    }
-
-    if (
-      !confirm(
-        `Tem certeza que deseja definir "${this.currentCity.name}" como cidade primária?`
-      )
-    ) {
-      return;
-    }
-
-    try {
-      this.showButtonLoading(this.btnSetPrimary);
-      const result = await window.cityAPI.setPrimaryCity(this.currentCity.id);
-
-      if (result.success) {
-        this.showStatus(result.message, "success");
-        await this.loadCities();
-        // Mantém a seleção atual após atualizar
-        if (this.currentCity) {
-          setTimeout(() => this.selectCity(this.currentCity.id), 100);
-        }
-      } else {
-        this.showStatus(
-          result.error || "Erro ao definir cidade primária",
-          "error"
-        );
-      }
-    } catch (error) {
-      console.error("Error setting primary city:", error);
-      this.showStatus("Erro ao definir cidade primária", "error");
-    } finally {
-      this.hideButtonLoading(this.btnSetPrimary);
     }
   }
 
@@ -273,9 +215,12 @@ class CitiesManager {
     button.dataset.originalText = originalText;
   }
 
-  hideButtonLoading(button) {
-    button.textContent = button.dataset.originalText || button.textContent;
+  hideButtonLoading(button, preserveCurrentText = false) {
+    if (!preserveCurrentText && button.dataset.originalText) {
+      button.textContent = button.dataset.originalText;
+    }
     button.disabled = false;
+    delete button.dataset.originalText;
   }
 
   showStatus(message, type) {
@@ -293,9 +238,7 @@ class CitiesManager {
   }
 }
 
-// Inicializa quando o DOM estiver pronto
 document.addEventListener("DOMContentLoaded", () => {
-  // Só inicializa se estivermos na seção de cidades
   if (document.getElementById("cities-section")) {
     window.citiesManager = new CitiesManager();
   }

@@ -5,14 +5,47 @@ export default class DroneDispatch {
     this.manager = manager;
   }
 
+  /**
+   * Retorna o instanceId selecionado
+   * @returns {string|null} - instanceId ou null se não selecionado
+   */
+  getSelectedInstanceId() {
+    return this.manager.selectedInstanceId || null;
+  }
+
+  /**
+   * Verifica todos os requisitos para disparo
+   */
   async checkRequirements() {
     try {
-      // Check WhatsApp
-      const statusResult = await window.droneAPI.obterStatusCliente();
+      // Check Instance
+      const hasInstance = this.manager.instances?.isInstanceReady() || false;
+      this.updateRequirement(
+        this.manager.reqInstance,
+        hasInstance,
+        hasInstance ? "Instância selecionada" : "Selecione uma instância"
+      );
+
+      // Check WhatsApp (baseado na instância)
+      let whatsappConnected = false;
+      let whatsappText = "Verificando...";
+
+      if (hasInstance) {
+        whatsappConnected = true;
+        whatsappText = "WhatsApp conectado";
+      } else {
+        const instanceId = this.getSelectedInstanceId();
+        const statusResult = await window.droneAPI.obterStatusCliente(
+          instanceId
+        );
+        whatsappConnected = statusResult.conectado;
+        whatsappText = statusResult.statusTexto || "Verificando...";
+      }
+
       this.updateRequirement(
         this.manager.reqWhatsapp,
-        statusResult.conectado,
-        statusResult.statusTexto || "Verificando..."
+        whatsappConnected,
+        whatsappText
       );
 
       // Check Message
@@ -23,26 +56,44 @@ export default class DroneDispatch {
         hasMessage ? "Mensagem selecionada" : "Selecione uma mensagem"
       );
 
-      // Check Numbers
-      const numbersResult = await window.droneAPI.listarNumerosAtuais();
-      const hasNumbers = numbersResult.success && numbersResult.total > 0;
-      this.updateRequirement(
-        this.manager.reqNumbers,
-        hasNumbers,
-        hasNumbers
+      // Check Numbers (da instância selecionada)
+      let hasNumbers = false;
+      let numbersText = "Adicione números";
+
+      const instanceId = this.getSelectedInstanceId();
+      if (instanceId) {
+        const numbersResult = await window.droneAPI.listarNumerosAtuais(
+          instanceId,
+          "all"
+        );
+        hasNumbers = numbersResult.success && numbersResult.total > 0;
+        numbersText = hasNumbers
           ? `${numbersResult.total} número(s) cadastrado(s)`
-          : "Adicione números"
-      );
+          : "Adicione números";
+      }
+
+      this.updateRequirement(this.manager.reqNumbers, hasNumbers, numbersText);
 
       // Enable/disable execute button
-      const canExecute = statusResult.conectado && hasMessage && hasNumbers;
-      this.manager.btnExecuteDisparo.disabled = !canExecute;
+      const canExecute =
+        hasInstance && whatsappConnected && hasMessage && hasNumbers;
+      if (this.manager.btnExecuteDisparo) {
+        this.manager.btnExecuteDisparo.disabled = !canExecute;
+      }
     } catch (error) {
       console.error("Erro ao verificar requisitos:", error);
     }
   }
 
+  /**
+   * Atualiza visual de um requisito
+   * @param {HTMLElement} element - Elemento do requisito
+   * @param {boolean} isValid - Se está válido
+   * @param {string} text - Texto a exibir
+   */
   updateRequirement(element, isValid, text) {
+    if (!element) return;
+
     const icon = element.querySelector(".req-icon");
     const textEl = element.querySelector(".req-text");
 
@@ -56,9 +107,14 @@ export default class DroneDispatch {
       element.classList.remove("valid");
     }
 
-    textEl.textContent = text;
+    if (textEl) {
+      textEl.textContent = text;
+    }
   }
 
+  /**
+   * Carrega mensagens para o select de disparo
+   */
   async loadMessagesForSelect() {
     try {
       const result = await window.droneAPI.listarMensagens();
@@ -93,6 +149,9 @@ export default class DroneDispatch {
     }
   }
 
+  /**
+   * Seleciona mensagem a partir do dropdown de disparo
+   */
   selectMessageFromDisparo() {
     const selectedIndex = parseInt(this.manager.messageSelect.value);
 
@@ -126,9 +185,32 @@ export default class DroneDispatch {
     }
   }
 
+  /**
+   * Atualiza resumo do disparo
+   */
+  updateDisparoSummary() {
+    // Atualiza informações da instância selecionada
+    if (this.manager.instances) {
+      this.manager.instances.updateDisparoInstanceInfo();
+    }
+  }
+
+  /**
+   * Executa o disparo de mensagens
+   */
   async executeDisparo() {
     if (this.manager.isDisparoRunning) {
       this.manager.utility.showStatus("Disparo já em andamento", "error");
+      return;
+    }
+
+    // Verifica instância selecionada
+    const instanceId = this.getSelectedInstanceId();
+    if (!instanceId) {
+      this.manager.utility.showStatus(
+        "Selecione uma instância antes de disparar",
+        "error"
+      );
       return;
     }
 
@@ -140,9 +222,11 @@ export default class DroneDispatch {
       return;
     }
 
-    // Busca estatísticas para mostrar confirmação correta
-    const statsResult = await window.droneAPI.obterEstatisticasNumeros();
-    let numbersToSend = this.manager.currentNumbers.length;
+    // Busca estatísticas da instância para mostrar confirmação correta
+    const statsResult = await window.droneAPI.obterEstatisticasNumeros(
+      instanceId
+    );
+    let numbersToSend = this.manager.currentNumbers?.length || 0;
 
     if (statsResult.success && statsResult.estatisticas) {
       const pending = statsResult.estatisticas.porStatus?.pending || 0;
@@ -158,29 +242,43 @@ export default class DroneDispatch {
       return;
     }
 
-    if (
-      !confirm(
-        `Executar disparo para ${numbersToSend} números (Pendentes + Falhas)?`
-      )
-    ) {
+    // Monta mensagem de confirmação com info da instância
+    const instanceName = this.manager.selectedInstanceInfo?.name || instanceId;
+    const instancePhone =
+      this.manager.selectedInstanceInfo?.phoneFormatted || "";
+
+    let confirmMsg = `Confirma o disparo?\n\n`;
+    confirmMsg += `📱 Instância: ${instanceName}`;
+    if (instancePhone) {
+      confirmMsg += ` (${instancePhone})`;
+    }
+    confirmMsg += `\n📨 Mensagem: #${selectedIndex}`;
+    confirmMsg += `\n📦 Batch: ${batchSize} números por lote`;
+    confirmMsg += `\n📊 Total a enviar: ${numbersToSend} números (Pendentes + Falhas)`;
+
+    if (!confirm(confirmMsg)) {
       return;
     }
 
     this.manager.isDisparoRunning = true;
     this.manager.btnExecuteDisparo.disabled = true;
+    this.manager.btnExecuteDisparo.textContent = "🚀 Disparando...";
 
     try {
+      // Executa disparo com instanceId
       const result = await window.droneAPI.executarDisparoDrone(
+        instanceId,
         selectedIndex,
         batchSize
       );
 
       this.manager.isDisparoRunning = false;
       this.manager.btnExecuteDisparo.disabled = false;
+      this.manager.btnExecuteDisparo.textContent = "🚀 Executar Disparo";
 
       if (result.success) {
         this.manager.utility.showStatus(
-          `Disparo concluído: ${
+          `✅ Disparo concluído: ${
             result.detalhes?.totalEnviados || 0
           } enviados, ${result.detalhes?.totalFalhas || 0} falhas`,
           "success"
@@ -190,8 +288,7 @@ export default class DroneDispatch {
         await this.manager.numbers.loadNumbers(
           this.manager.currentStatusFilter
         );
-        await this.manager.numbers.loadStatistics();
-        await this.manager.status.updateStatusBreakdown(); // ATUALIZA O BREAKDOWN
+        await this.manager.status.updateStatusBreakdown();
       } else {
         this.manager.utility.showStatus(
           result.error || "Erro no disparo",
@@ -199,10 +296,11 @@ export default class DroneDispatch {
         );
       }
     } catch (error) {
-      console.error("Erro ao executar disparo:", error);
+      console.error(`[${instanceId}] Erro ao executar disparo:`, error);
       this.manager.utility.showStatus("Erro ao executar disparo", "error");
       this.manager.isDisparoRunning = false;
       this.manager.btnExecuteDisparo.disabled = false;
+      this.manager.btnExecuteDisparo.textContent = "🚀 Executar Disparo";
     }
   }
 }

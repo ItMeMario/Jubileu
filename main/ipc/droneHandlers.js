@@ -36,16 +36,21 @@ class DroneHandlers {
   /**
    * Processa arquivo CSV com opções de transformação
    * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância
    * @param {string} csvContent - Conteúdo do arquivo CSV
    * @param {Object} opcoes - Opções de processamento
    */
-  async processarArquivoCSV(event, csvContent, opcoes = {}) {
+  async processarArquivoCSV(event, instanceId, csvContent, opcoes = {}) {
     try {
-      console.log("Processando arquivo CSV...");
-      return await droneControllerGui.processarArquivoCSV(csvContent, opcoes);
+      console.log(`[${instanceId}] Processando arquivo CSV...`);
+      return await droneControllerGui.processarArquivoCSV(
+        instanceId,
+        csvContent,
+        opcoes
+      );
     } catch (error) {
-      console.error("Erro ao processar CSV:", error);
-      return { success: false, error: error.message };
+      console.error(`[${instanceId}] Erro ao processar CSV:`, error);
+      return { success: false, error: error.message, instanceId };
     }
   }
 
@@ -81,94 +86,115 @@ class DroneHandlers {
   }
 
   /**
-   * Lista os números atualmente no banco
+   * Lista os números atualmente no banco de uma instância
    * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância
    * @param {string} filtroStatus - Filtro de status (pending/sent/failed/all)
    */
-  async listarNumerosAtuais(event, filtroStatus = "all") {
+  async listarNumerosAtuais(event, instanceId, filtroStatus = "all") {
     try {
-      console.log(`Listando números atuais com filtro: ${filtroStatus}`);
-      return await droneControllerGui.listarNumerosAtuais(filtroStatus);
+      console.log(
+        `[${instanceId}] Listando números com filtro: ${filtroStatus}`
+      );
+      return await droneControllerGui.listarNumerosAtuais(
+        instanceId,
+        filtroStatus
+      );
     } catch (error) {
-      console.error("Erro ao listar números atuais:", error);
-      return { success: false, error: error.message };
+      console.error(`[${instanceId}] Erro ao listar números:`, error);
+      return { success: false, error: error.message, instanceId };
     }
   }
 
   /**
-   * Remove um número específico da lista
+   * Remove um número específico da lista de uma instância
    * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância
    * @param {number|string} identificador - ID do número ou índice da lista
    */
-  async removerNumero(event, identificador) {
+  async removerNumero(event, instanceId, identificador) {
     try {
-      console.log(`Removendo número: ${identificador}`);
-      return await droneControllerGui.removerNumero(identificador);
+      console.log(`[${instanceId}] Removendo número: ${identificador}`);
+      return await droneControllerGui.removerNumero(instanceId, identificador);
     } catch (error) {
-      console.error("Erro ao remover número:", error);
-      return { success: false, error: error.message };
+      console.error(`[${instanceId}] Erro ao remover número:`, error);
+      return { success: false, error: error.message, instanceId };
     }
   }
 
   /**
-   * Limpa toda a lista de números
+   * Limpa toda a lista de números de uma instância
+   * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância
    */
-  async limparListaCompleta() {
+  async limparListaCompleta(event, instanceId) {
     try {
-      console.log("Limpando lista completa...");
-      return await droneControllerGui.limparListaCompleta();
+      console.log(`[${instanceId}] Limpando lista completa...`);
+      return await droneControllerGui.limparListaCompleta(instanceId);
     } catch (error) {
-      console.error("Erro ao limpar lista completa:", error);
-      return { success: false, error: error.message };
+      console.error(`[${instanceId}] Erro ao limpar lista:`, error);
+      return { success: false, error: error.message, instanceId };
     }
   }
 
   /**
-   * Limpa apenas números com status 'sent'
+   * Limpa apenas números com status 'sent' de uma instância
+   * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância
    */
-  async limparEnviados() {
+  async limparEnviados(event, instanceId) {
     try {
-      console.log("Limpando números enviados...");
-      return await droneControllerGui.limparEnviados();
+      console.log(`[${instanceId}] Limpando números enviados...`);
+      return await droneControllerGui.limparEnviados(instanceId);
     } catch (error) {
-      console.error("Erro ao limpar enviados:", error);
-      return { success: false, error: error.message };
+      console.error(`[${instanceId}] Erro ao limpar enviados:`, error);
+      return { success: false, error: error.message, instanceId };
     }
   }
 
   /**
-   * Limpa apenas números com status 'failed'
+   * Limpa apenas números com status 'failed' de uma instância
+   * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância
    */
-  async limparFalhas() {
+  async limparFalhas(event, instanceId) {
     try {
-      console.log("Limpando números com falha...");
-      return await droneControllerGui.limparFalhas();
+      console.log(`[${instanceId}] Limpando números com falha...`);
+      return await droneControllerGui.limparFalhas(instanceId);
     } catch (error) {
-      console.error("Erro ao limpar falhas:", error);
-      return { success: false, error: error.message };
+      console.error(`[${instanceId}] Erro ao limpar falhas:`, error);
+      return { success: false, error: error.message, instanceId };
     }
   }
 
   /**
-   * Obtém estatísticas dos números cadastrados
+   * Obtém estatísticas dos números cadastrados de uma instância
+   * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância
    */
-  async obterEstatisticasNumeros() {
+  async obterEstatisticasNumeros(event, instanceId) {
     try {
-      console.log("Obtendo estatísticas dos números...");
-      return await droneControllerGui.obterEstatisticasNumeros();
+      console.log(`[${instanceId}] Obtendo estatísticas dos números...`);
+      return await droneControllerGui.obterEstatisticasNumeros(instanceId);
     } catch (error) {
-      console.error("Erro ao obter estatísticas:", error);
-      return { success: false, error: error.message };
+      console.error(`[${instanceId}] Erro ao obter estatísticas:`, error);
+      return { success: false, error: error.message, instanceId };
     }
   }
 
   /**
-   * Obtém status de conexão do WhatsApp
+   * Obtém status de conexão do WhatsApp de uma instância
+   * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância (opcional)
    */
-  async obterStatusCliente() {
+  async obterStatusCliente(event, instanceId = null) {
     try {
-      console.log("Obtendo status do cliente WhatsApp...");
-      return await droneControllerGui.obterStatusCliente();
+      console.log(
+        `Obtendo status do cliente WhatsApp${
+          instanceId ? ` (${instanceId})` : ""
+        }...`
+      );
+      return await droneControllerGui.obterStatusCliente(instanceId);
     } catch (error) {
       console.error("Erro ao obter status do cliente:", error);
       return { success: false, error: error.message };
@@ -176,36 +202,77 @@ class DroneHandlers {
   }
 
   /**
-   * Executa disparo de drone com mensagem selecionada
-   * @param {Object} event - Evento IPC
-   * @param {number} mensagemIndex - Índice da mensagem (baseado em 1)
-   * @param {number} batchSize - Tamanho do batch (padrão: 200)
+   * Obtém status de todas as instâncias
    */
-  async executarDisparoDrone(event, mensagemIndex, batchSize = 200) {
+  async obterStatusTodasInstancias() {
     try {
-      console.log(
-        `Executando disparo - Mensagem: ${mensagemIndex}, Batch: ${batchSize}`
-      );
-      return await droneControllerGui.executarDisparoDrone(
-        mensagemIndex,
-        batchSize
-      );
+      console.log("Obtendo status de todas as instâncias...");
+      return await droneControllerGui.obterStatusTodasInstancias();
     } catch (error) {
-      console.error("Erro ao executar disparo:", error);
-      return { success: false, error: error.message };
+      console.error("Erro ao obter status das instâncias:", error);
+      return {
+        success: false,
+        error: error.message,
+        instances: [],
+        total: 0,
+        connected: 0,
+      };
     }
   }
 
   /**
-   * Gera relatório de números com nomes personalizados
+   * Lista apenas instâncias conectadas
    */
-  async gerarRelatorioNomes() {
+  async listarInstanciasConectadas() {
     try {
-      console.log("Gerando relatório de nomes...");
-      return await droneControllerGui.gerarRelatorioNomes();
+      console.log("Listando instâncias conectadas...");
+      return await droneControllerGui.listarInstanciasConectadas();
     } catch (error) {
-      console.error("Erro ao gerar relatório:", error);
-      return { success: false, error: error.message };
+      console.error("Erro ao listar instâncias conectadas:", error);
+      return { success: false, error: error.message, instances: [], total: 0 };
+    }
+  }
+
+  /**
+   * Executa disparo de drone com mensagem selecionada
+   * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância a ser usada
+   * @param {number} mensagemIndex - Índice da mensagem (baseado em 1)
+   * @param {number} batchSize - Tamanho do batch (padrão: 200)
+   */
+  async executarDisparoDrone(
+    event,
+    instanceId,
+    mensagemIndex,
+    batchSize = 200
+  ) {
+    try {
+      console.log(
+        `[${instanceId}] Executando disparo - Mensagem: ${mensagemIndex}, Batch: ${batchSize}`
+      );
+      return await droneControllerGui.executarDisparoDrone(
+        instanceId,
+        mensagemIndex,
+        batchSize
+      );
+    } catch (error) {
+      console.error(`[${instanceId}] Erro ao executar disparo:`, error);
+      return { success: false, error: error.message, instanceId };
+    }
+  }
+
+  /**
+   * Gera relatório de nomes personalizados de uma instância
+   * @param {Object} event - Evento IPC
+   * @param {string} instanceId - ID da instância
+   */
+  async gerarRelatorioNomes(event, instanceId) {
+    try {
+      console.log(`[${instanceId}] Gerando relatório de nomes...`);
+      return await droneControllerGui.gerarRelatorioNomes(instanceId);
+    } catch (error) {
+      console.error(`[${instanceId}] Erro ao gerar relatório:`, error);
+      return { success: false, error: error.message, instanceId };
     }
   }
 }

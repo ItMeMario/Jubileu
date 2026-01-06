@@ -7,6 +7,7 @@ const IndicadoresHandlers = require("./ipc/indicadoresHandlers");
 const ModoDevHandlers = require("./ipc/modoDevHandlers");
 const DataBaseHandlers = require("./ipc/dataBaseHandlers");
 const DroneHandlers = require("./ipc/droneHandlers");
+const InstanceHandlers = require("./ipc/instanceHandlers");
 
 class IPCManager {
   constructor() {
@@ -19,6 +20,7 @@ class IPCManager {
       modoDev: null,
       dataBase: null,
       drone: null,
+      instance: null,
     };
   }
 
@@ -33,6 +35,7 @@ class IPCManager {
       this.handlers.modoDev = new ModoDevHandlers();
       this.handlers.dataBase = new DataBaseHandlers();
       this.handlers.drone = new DroneHandlers(modules.windowManager);
+      this.handlers.instance = new InstanceHandlers(modules);
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -57,6 +60,9 @@ class IPCManager {
 
       // Registra handlers de drone
       this.registerDroneHandlers();
+
+      // Registra handlers de instâncias
+      this.registerInstanceHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -212,14 +218,6 @@ class IPCManager {
       this.handlers.city.deleteCity.bind(this.handlers.city)
     );
     ipcMain.handle(
-      "city-set-primary",
-      this.handlers.city.setPrimaryCity.bind(this.handlers.city)
-    );
-    ipcMain.handle(
-      "city-get-primary",
-      this.handlers.city.getPrimaryCity.bind(this.handlers.city)
-    );
-    ipcMain.handle(
       "city-get-by-id",
       this.handlers.city.getCityById.bind(this.handlers.city)
     );
@@ -273,15 +271,15 @@ class IPCManager {
       "modo-dev-get-scout-config",
       this.handlers.modoDev.getScoutConfig.bind(this.handlers.modoDev)
     );
+
+    // ✅ RESTAURADO - Obter modo atual (DEV/PRODUÇÃO)
     ipcMain.handle(
       "modo-dev-get-current-mode",
       this.handlers.modoDev.getCurrentMode.bind(this.handlers.modoDev)
     );
 
-    ipcMain.handle(
-      "modo-dev-toggle-group-mode",
-      this.handlers.modoDev.toggleGroupMode.bind(this.handlers.modoDev)
-    );
+    // ❌ REMOVIDO - Toggle entre SINGLE/MULTI
+    // ipcMain.handle("modo-dev-toggle-group-mode", ...)
 
     ipcMain.handle(
       "modo-dev-get-current-locale",
@@ -389,6 +387,18 @@ class IPCManager {
       "drone-gerar-relatorio-nomes"
     );
 
+    // ========================================
+    // NOVO: Handlers de instâncias para o Drone
+    // ========================================
+    ipcMain.handle(
+      "drone-obter-status-todas-instancias",
+      this.handlers.drone.obterStatusTodasInstancias.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-listar-instancias-conectadas",
+      this.handlers.drone.listarInstanciasConectadas.bind(this.handlers.drone)
+    );
+
     console.log("Handlers de drone registrados");
   }
 
@@ -402,6 +412,88 @@ class IPCManager {
     } else {
       console.warn(`Método ${methodName} não encontrado em DroneHandlers`);
     }
+  }
+
+  // ========================================
+  // NOVO: Handlers de Instâncias
+  // ========================================
+  registerInstanceHandlers() {
+    // Inicialização
+    ipcMain.handle(
+      "instance-initialize",
+      this.handlers.instance.initialize.bind(this.handlers.instance)
+    );
+
+    // CRUD de instâncias
+    ipcMain.handle(
+      "instance-list",
+      this.handlers.instance.listInstances.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-create",
+      this.handlers.instance.createInstance.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-remove",
+      this.handlers.instance.removeInstance.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-rename",
+      this.handlers.instance.renameInstance.bind(this.handlers.instance)
+    );
+
+    // Controle de conexão
+    ipcMain.handle(
+      "instance-start",
+      this.handlers.instance.startInstance.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-stop",
+      this.handlers.instance.stopInstance.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-reconnect",
+      this.handlers.instance.reconnectInstance.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-stop-all",
+      this.handlers.instance.stopAllInstances.bind(this.handlers.instance)
+    );
+
+    // Status
+    ipcMain.handle(
+      "instance-status",
+      this.handlers.instance.getInstanceStatus.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-status-all",
+      this.handlers.instance.getAllInstancesStatus.bind(this.handlers.instance)
+    );
+    ipcMain.handle(
+      "instance-client-info",
+      this.handlers.instance.getClientInfo.bind(this.handlers.instance)
+    );
+
+    // Mensagens
+    ipcMain.handle(
+      "instance-send-message",
+      this.handlers.instance.sendMessage.bind(this.handlers.instance)
+    );
+
+    // Configuração
+    ipcMain.handle(
+      "instance-get-config",
+      this.handlers.instance.getConfig.bind(this.handlers.instance)
+    );
+
+    console.log("Handlers de instâncias registrados");
+  }
+
+  // ========================================
+  // Getter para InstanceHandlers (útil para inicialização)
+  // ========================================
+  getInstanceHandler() {
+    return this.handlers.instance;
   }
 
   removeAllHandlers() {
@@ -434,8 +526,6 @@ class IPCManager {
       "city-add-city",
       "city-update-city",
       "city-delete-city",
-      "city-set-primary",
-      "city-get-primary",
       "city-get-by-id",
       "indicadores-get-statistics",
       "indicadores-get-hourly-statistics",
@@ -447,7 +537,6 @@ class IPCManager {
       "modo-dev-set-scout-time",
       "modo-dev-get-scout-config",
       "modo-dev-get-current-mode",
-      "modo-dev-toggle-group-mode",
       "modo-dev-get-current-locale",
       "modo-dev-get-available-locales",
       "modo-dev-set-locale",
@@ -471,6 +560,23 @@ class IPCManager {
       "drone-preview-csv",
       "drone-validar-opcoes",
       "drone-gerar-relatorio-nomes",
+      "drone-obter-status-todas-instancias",
+      "drone-listar-instancias-conectadas",
+      // Novos eventos de instâncias
+      "instance-initialize",
+      "instance-list",
+      "instance-create",
+      "instance-remove",
+      "instance-rename",
+      "instance-start",
+      "instance-stop",
+      "instance-reconnect",
+      "instance-stop-all",
+      "instance-status",
+      "instance-status-all",
+      "instance-client-info",
+      "instance-send-message",
+      "instance-get-config",
     ];
 
     events.forEach((event) => {

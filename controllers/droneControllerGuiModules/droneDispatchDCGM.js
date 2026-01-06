@@ -8,25 +8,40 @@ class DroneDispatchDCGM {
 
   /**
    * Executa disparo de drone com mensagem selecionada
+   * @param {string} instanceId - ID da instância a ser usada
    * @param {number} mensagemIndex - Índice da mensagem (baseado em 1)
    * @param {number} batchSize - Tamanho do batch
    * @returns {Promise<Object>} - Resultado do disparo
    */
-  async executarDisparoDrone(mensagemIndex, batchSize = 200) {
+  async executarDisparoDrone(instanceId, mensagemIndex, batchSize = 200) {
     try {
+      // Valida instanceId
+      if (!instanceId) {
+        return {
+          success: false,
+          error:
+            "Nenhuma instância selecionada. Selecione uma instância conectada.",
+        };
+      }
+
       console.log(
-        `Executando disparo - Mensagem: ${mensagemIndex}, Batch: ${batchSize}`
+        `[${instanceId}] Executando disparo - Mensagem: ${mensagemIndex}, Batch: ${batchSize}`
       );
 
-      // Verifica se há números cadastrados
-      const listaNumeros = await droneService.listarNumeros();
+      // Verifica se há números cadastrados PARA ESTA INSTÂNCIA
+      const listaNumeros = await droneService.listarNumeros(instanceId, null);
       if (!listaNumeros.success || listaNumeros.numbers.length === 0) {
         return {
           success: false,
           error:
-            "Nenhum número cadastrado para disparo. Adicione números primeiro.",
+            "Nenhum número cadastrado para disparo nesta instância. Adicione números primeiro.",
+          instanceId: instanceId,
         };
       }
+
+      console.log(
+        `[${instanceId}] Números encontrados para disparo: ${listaNumeros.numbers.length}`
+      );
 
       // Busca mensagens disponíveis
       const mensagens = await droneService.listarMensagensDisponiveis();
@@ -34,6 +49,7 @@ class DroneDispatchDCGM {
         return {
           success: false,
           error: "Nenhuma mensagem disponível para disparo.",
+          instanceId: instanceId,
         };
       }
 
@@ -43,13 +59,15 @@ class DroneDispatchDCGM {
         return {
           success: false,
           error: "Mensagem selecionada inválida.",
+          instanceId: instanceId,
         };
       }
 
       const mensagemSelecionada = mensagens[mensagemIndex0];
 
-      // Executa disparo completo
+      // Executa disparo completo passando instanceId
       const resultado = await droneService.executarDisparoCompleto(
+        instanceId,
         mensagemSelecionada.id,
         batchSize
       );
@@ -58,6 +76,7 @@ class DroneDispatchDCGM {
         success: resultado.success,
         message: resultado.message || "Disparo finalizado",
         detalhes: {
+          instanceId: instanceId,
           mensagemUsada: {
             id: mensagemSelecionada.id,
             conteudo: mensagemSelecionada.message_content,
@@ -71,12 +90,14 @@ class DroneDispatchDCGM {
           batches: resultado.batches,
         },
         error: resultado.error,
+        instanceId: instanceId,
       };
     } catch (error) {
-      console.error("Erro ao executar disparo:", error);
+      console.error(`[${instanceId}] Erro ao executar disparo:`, error);
       return {
         success: false,
         error: error.message,
+        instanceId: instanceId,
       };
     }
   }

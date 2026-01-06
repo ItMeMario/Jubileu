@@ -45,12 +45,40 @@ export default class DroneNumbers {
   }
 
   /**
+   * Retorna o instanceId selecionado ou exibe erro
+   * @returns {string|null} - instanceId ou null se não selecionado
+   */
+  getSelectedInstanceId() {
+    const instanceId = this.manager.selectedInstanceId;
+    if (!instanceId) {
+      this.manager.utility.showStatus(
+        "Selecione uma instância antes de continuar",
+        "error"
+      );
+      return null;
+    }
+    return instanceId;
+  }
+
+  /**
    * Carrega números com filtro de status opcional
    * @param {string} filtroStatus - 'all', 'pending', 'sent', 'failed'
    */
   async loadNumbers(filtroStatus = "all") {
     try {
-      const result = await window.droneAPI.listarNumerosAtuais(filtroStatus);
+      const instanceId = this.getSelectedInstanceId();
+      if (!instanceId) {
+        // Limpa lista se não há instância selecionada
+        this.manager.currentNumbers = [];
+        this.renderNumbers([]);
+        this.updateNumbersCount();
+        return;
+      }
+
+      const result = await window.droneAPI.listarNumerosAtuais(
+        instanceId,
+        filtroStatus
+      );
 
       if (!result.success) {
         this.manager.utility.showStatus(
@@ -67,7 +95,7 @@ export default class DroneNumbers {
       // Atualiza informação de filtro se necessário
       if (filtroStatus !== "all" && result.total !== result.totalGeral) {
         console.log(
-          `Mostrando ${result.total} de ${result.totalGeral} números (filtro: ${filtroStatus})`
+          `[${instanceId}] Mostrando ${result.total} de ${result.totalGeral} números (filtro: ${filtroStatus})`
         );
       }
     } catch (error) {
@@ -81,8 +109,12 @@ export default class DroneNumbers {
    */
   renderNumbers(numeros) {
     if (!numeros || numeros.length === 0) {
-      this.manager.numbersList.innerHTML =
-        '<div class="empty-state">Nenhum número cadastrado</div>';
+      const instanceId = this.manager.selectedInstanceId;
+      const message = instanceId
+        ? "Nenhum número cadastrado para esta instância"
+        : "Selecione uma instância para ver os números";
+
+      this.manager.numbersList.innerHTML = `<div class="empty-state">${message}</div>`;
       return;
     }
 
@@ -124,6 +156,15 @@ export default class DroneNumbers {
 
   handleFileSelect(file) {
     if (!file) return;
+
+    // Verifica se há instância selecionada
+    if (!this.manager.selectedInstanceId) {
+      this.manager.utility.showStatus(
+        "Selecione uma instância antes de importar números",
+        "error"
+      );
+      return;
+    }
 
     // Aceita apenas CSV
     const ext = "." + file.name.split(".").pop().toLowerCase();
@@ -231,8 +272,13 @@ export default class DroneNumbers {
    * Constrói mensagem de confirmação com as opções aplicadas
    */
   buildConfirmationMessage(opcoes) {
-    let msg = "Confirmar importação do CSV?\n\n";
-    msg += "Opções aplicadas:\n";
+    const instanceName =
+      this.manager.selectedInstanceInfo?.name ||
+      this.manager.selectedInstanceId;
+
+    let msg = `Confirmar importação do CSV?\n\n`;
+    msg += `📱 Instância: ${instanceName}\n\n`;
+    msg += `Opções aplicadas:\n`;
     msg += `• Prefixo país: ${opcoes.prefixoPais || "Nenhum"}\n`;
     msg += `• DDD: ${opcoes.ddd || "Nenhum"}\n`;
     msg += `• Adicionar 9º dígito: ${
@@ -248,6 +294,10 @@ export default class DroneNumbers {
    */
   async importFile() {
     if (!this.manager.currentFile) return;
+
+    // Verifica instância selecionada
+    const instanceId = this.getSelectedInstanceId();
+    if (!instanceId) return;
 
     try {
       // Lê o conteúdo do arquivo
@@ -286,8 +336,9 @@ export default class DroneNumbers {
         return;
       }
 
-      // Processa o CSV com as opções
+      // Processa o CSV com as opções (passa instanceId)
       const result = await window.droneAPI.processarArquivoCSV(
+        instanceId,
         fileResult.content,
         opcoes
       );
@@ -308,16 +359,15 @@ export default class DroneNumbers {
         this.manager.utility.showStatus(statusMsg, "success");
 
         // Mostra detalhes no console
-        console.log("Resultado do processamento:", result);
+        console.log(`[${instanceId}] Resultado do processamento:`, result);
 
         if (result.erros && result.erros.length > 0) {
-          console.warn("Erros encontrados:", result.erros);
+          console.warn(`[${instanceId}] Erros encontrados:`, result.erros);
         }
 
         // Limpa o arquivo e atualiza a lista
         this.removeFile();
         await this.loadNumbers(this.manager.currentStatusFilter);
-        // Não chama loadStatistics() - seção Números não tem mais estatísticas
       } else {
         this.manager.utility.showStatus(
           result.error || "Erro ao processar CSV",
@@ -332,12 +382,14 @@ export default class DroneNumbers {
 
   async removeNumber(id) {
     try {
-      const result = await window.droneAPI.removerNumero(id);
+      const instanceId = this.getSelectedInstanceId();
+      if (!instanceId) return;
+
+      const result = await window.droneAPI.removerNumero(instanceId, id);
 
       if (result.success) {
         this.manager.utility.showStatus("Número removido", "success");
         await this.loadNumbers(this.manager.currentStatusFilter);
-        // Não chama loadStatistics() - seção Números não tem mais estatísticas
       } else {
         this.manager.utility.showStatus(
           result.error || "Erro ao remover número",
@@ -351,12 +403,21 @@ export default class DroneNumbers {
   }
 
   async clearAllNumbers() {
-    if (!confirm("Tem certeza que deseja remover TODOS os números?")) {
+    const instanceId = this.getSelectedInstanceId();
+    if (!instanceId) return;
+
+    const instanceName = this.manager.selectedInstanceInfo?.name || instanceId;
+
+    if (
+      !confirm(
+        `Tem certeza que deseja remover TODOS os números da instância "${instanceName}"?`
+      )
+    ) {
       return;
     }
 
     try {
-      const result = await window.droneAPI.limparListaCompleta();
+      const result = await window.droneAPI.limparListaCompleta(instanceId);
 
       if (result.success) {
         this.manager.utility.showStatus(
@@ -364,7 +425,6 @@ export default class DroneNumbers {
           "success"
         );
         await this.loadNumbers(this.manager.currentStatusFilter);
-        // Não chama loadStatistics() - seção Números não tem mais estatísticas
       } else {
         this.manager.utility.showStatus(
           result.error || "Erro ao limpar lista",
@@ -381,16 +441,21 @@ export default class DroneNumbers {
    * Limpa apenas números com status 'sent'
    */
   async clearSentNumbers() {
+    const instanceId = this.getSelectedInstanceId();
+    if (!instanceId) return;
+
+    const instanceName = this.manager.selectedInstanceInfo?.name || instanceId;
+
     if (
       !confirm(
-        "Tem certeza que deseja remover todos os números ENVIADOS com sucesso?"
+        `Tem certeza que deseja remover todos os números ENVIADOS da instância "${instanceName}"?`
       )
     ) {
       return;
     }
 
     try {
-      const result = await window.droneAPI.limparEnviados();
+      const result = await window.droneAPI.limparEnviados(instanceId);
 
       if (result.success) {
         this.manager.utility.showStatus(
@@ -398,7 +463,6 @@ export default class DroneNumbers {
           "success"
         );
         await this.loadNumbers(this.manager.currentStatusFilter);
-        // Não chama loadStatistics() - seção Números não tem mais estatísticas
       } else {
         this.manager.utility.showStatus(
           result.error || "Erro ao limpar enviados",
@@ -415,16 +479,21 @@ export default class DroneNumbers {
    * Limpa apenas números com status 'failed'
    */
   async clearFailedNumbers() {
+    const instanceId = this.getSelectedInstanceId();
+    if (!instanceId) return;
+
+    const instanceName = this.manager.selectedInstanceInfo?.name || instanceId;
+
     if (
       !confirm(
-        "Tem certeza que deseja remover todos os números que FALHARAM no envio?"
+        `Tem certeza que deseja remover todos os números que FALHARAM da instância "${instanceName}"?`
       )
     ) {
       return;
     }
 
     try {
-      const result = await window.droneAPI.limparFalhas();
+      const result = await window.droneAPI.limparFalhas(instanceId);
 
       if (result.success) {
         this.manager.utility.showStatus(
@@ -432,7 +501,6 @@ export default class DroneNumbers {
           "success"
         );
         await this.loadNumbers(this.manager.currentStatusFilter);
-        // Não chama loadStatistics() - seção Números não tem mais estatísticas
       } else {
         this.manager.utility.showStatus(
           result.error || "Erro ao limpar falhas",

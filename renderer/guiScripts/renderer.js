@@ -1,16 +1,15 @@
+// ========================================
+// Renderer Principal - WhatsApp Bot
+// ========================================
+
 // Elementos do DOM
-const btnStart = document.getElementById("btn-start");
-const btnStop = document.getElementById("btn-stop");
 const btnConfig = document.getElementById("btn-config");
 const btnDrone = document.getElementById("btn-drone");
 const statusDiv = document.getElementById("status");
-const qrContainer = document.getElementById("qr-container");
-const qrImage = document.getElementById("qr-image");
 
-// Estado da aplicação
-let isWhatsAppRunning = false;
-
-// 🆕 CONFIGURAÇÃO DO CONSOLE REDIRECT - ADICIONE NO INÍCIO
+// ========================================
+// Configuração do Console Redirect
+// ========================================
 if (window.electronAPI && window.electronAPI.onConsoleMessage) {
   window.electronAPI.onConsoleMessage((data) => {
     const { level, message, timestamp } = data;
@@ -37,118 +36,81 @@ if (window.electronAPI && window.electronAPI.onConsoleMessage) {
   );
 }
 
-// Função para mostrar status
+// ========================================
+// Funções de Status
+// ========================================
+
 function showStatus(message, type = "info") {
   statusDiv.textContent = message;
   statusDiv.className = `status ${type}`;
   statusDiv.classList.remove("hidden");
+
+  // Auto-esconde após 5 segundos para mensagens de sucesso
+  if (type === "success") {
+    setTimeout(() => {
+      hideStatus();
+    }, 5000);
+  }
 }
 
-// Função para esconder status
 function hideStatus() {
   statusDiv.classList.add("hidden");
 }
 
-// Função para mostrar loading no botão
+// ========================================
+// Funções de Loading para Botões
+// ========================================
+
 function showButtonLoading(button, text = "") {
-  const btnText = button.querySelector(".btn-text") || button;
-  btnText.innerHTML = `<span class="loading"></span>${text}`;
+  const originalText = button.textContent;
+  button.dataset.originalText = originalText;
+  button.innerHTML = `<span class="loading"></span>${text}`;
   button.disabled = true;
 }
 
-// Função para esconder loading no botão
-function hideButtonLoading(button, text) {
-  const btnText = button.querySelector(".btn-text") || button;
-  btnText.textContent = text;
+function hideButtonLoading(button, text = null) {
+  const originalText = text || button.dataset.originalText || "Botão";
+  button.textContent = originalText;
   button.disabled = false;
 }
 
-// Função para atualizar estado dos botões
-function updateButtonsState(running) {
-  isWhatsAppRunning = running;
+// ========================================
+// Event Listeners dos Botões Globais
+// ========================================
 
-  if (running) {
-    // WhatsApp conectado - bloqueia botão iniciar, habilita parar
-    hideButtonLoading(btnStart, "✅ Conectado");
-    btnStart.disabled = true;
-    btnStop.disabled = false;
-  } else {
-    // WhatsApp desconectado - reseta para estado inicial
-    hideButtonLoading(btnStart, "Iniciar WhatsApp");
-    btnStart.disabled = false;
-    btnStop.disabled = true;
-  }
-}
-
-// Event listeners dos botões
-btnStart.addEventListener("click", async () => {
-  try {
-    showButtonLoading(btnStart, "Iniciando...");
-    showStatus("Inicializando WhatsApp...", "info");
-    qrContainer.classList.add("hidden");
-
-    const result = await window.electronAPI.startWhatsApp();
-
-    if (result.success) {
-      showStatus("Aguardando QR Code...", "info");
-      // Mantém o botão desabilitado até a conexão completa
-      btnStop.disabled = false;
-    } else {
-      showStatus(`Erro: ${result.message}`, "error");
-      hideButtonLoading(btnStart, "Iniciar WhatsApp");
-    }
-  } catch (error) {
-    console.error("Erro ao iniciar WhatsApp:", error);
-    showStatus("Erro ao iniciar WhatsApp", "error");
-    hideButtonLoading(btnStart, "Iniciar WhatsApp");
-  }
-});
-
-btnStop.addEventListener("click", async () => {
-  try {
-    showButtonLoading(btnStop, "Parando...");
-    showStatus("Desconectando WhatsApp...", "info");
-
-    const result = await window.electronAPI.stopWhatsApp();
-
-    if (result.success) {
-      showStatus(result.message, "success");
-      updateButtonsState(false);
-      qrContainer.classList.add("hidden");
-    } else {
-      showStatus(`Erro: ${result.message}`, "error");
-    }
-
-    hideButtonLoading(btnStop, "Parar WhatsApp");
-  } catch (error) {
-    console.error("Erro ao parar WhatsApp:", error);
-    showStatus("Erro ao parar WhatsApp", "error");
-    hideButtonLoading(btnStop, "Parar WhatsApp");
-  }
-});
-
+// Botão Configurações
 btnConfig.addEventListener("click", async () => {
   try {
     showButtonLoading(btnConfig, "Abrindo...");
 
     const result = await window.electronAPI.openConfig();
-    showStatus(result.message, result.success ? "success" : "error");
 
-    hideButtonLoading(btnConfig, "Configurações");
+    if (result.success) {
+      showStatus(result.message, "success");
+    } else {
+      showStatus(result.message, "error");
+    }
+
+    hideButtonLoading(btnConfig, "⚙️ Configurações");
   } catch (error) {
     console.error("Erro ao abrir configurações:", error);
     showStatus("Erro ao abrir configurações", "error");
-    hideButtonLoading(btnConfig, "Configurações");
+    hideButtonLoading(btnConfig, "⚙️ Configurações");
   }
 });
 
-// 🆕 EVENT LISTENER DO BOTÃO DRONE
+// Botão Drone
 btnDrone.addEventListener("click", async () => {
   try {
     showButtonLoading(btnDrone, "Abrindo...");
 
     const result = await window.electronAPI.openDrone();
-    showStatus(result.message, result.success ? "success" : "error");
+
+    if (result.success) {
+      showStatus(result.message, "success");
+    } else {
+      showStatus(result.message, "error");
+    }
 
     hideButtonLoading(btnDrone, "🚁 Drone");
   } catch (error) {
@@ -158,50 +120,70 @@ btnDrone.addEventListener("click", async () => {
   }
 });
 
-// Event listeners para eventos do WhatsApp
-window.electronAPI.onQRGenerated((data) => {
-  console.log("QR Code recebido");
-  qrImage.src = data.qrImage;
-  qrContainer.classList.remove("hidden");
-  showStatus("QR Code gerado! Escaneie com seu WhatsApp", "info");
-});
+// ========================================
+// Inicialização
+// ========================================
 
-window.electronAPI.onWhatsAppReady((message) => {
-  console.log("WhatsApp conectado:", message);
-  showStatus(message, "success");
-  qrContainer.classList.add("hidden");
-  updateButtonsState(true); // Agora remove o loading corretamente!
-});
+async function initializeApp() {
+  console.log("🚀 Inicializando aplicação...");
 
-window.electronAPI.onWhatsAppAuthenticated((message) => {
-  console.log("WhatsApp autenticado:", message);
-  showStatus(message, "success");
-});
+  try {
+    // Inicializa o gerenciador de instâncias
+    if (window.instancesManager) {
+      await window.instancesManager.init();
+      console.log("✅ Gerenciador de instâncias inicializado");
+    } else {
+      console.error("❌ instancesManager não encontrado");
+    }
 
-window.electronAPI.onWhatsAppDisconnected((message) => {
-  console.log("WhatsApp desconectado:", message);
-  showStatus(message, "error");
-  updateButtonsState(false);
-  qrContainer.classList.add("hidden");
-});
+    console.log("✅ Aplicação inicializada com sucesso!");
+  } catch (error) {
+    console.error("❌ Erro ao inicializar aplicação:", error);
+    showStatus("Erro ao inicializar aplicação", "error");
+  }
+}
 
-window.electronAPI.onError((message) => {
-  console.error("Erro do WhatsApp:", message);
-  showStatus(message, "error");
-  updateButtonsState(false);
-  qrContainer.classList.add("hidden");
-});
+// ========================================
+// Cleanup
+// ========================================
 
-// Cleanup ao fechar a janela
 window.addEventListener("beforeunload", () => {
+  // Remove listeners legados
   window.electronAPI.removeAllListeners();
+
+  // Cleanup do gerenciador de instâncias
+  if (window.instancesManager) {
+    window.instancesManager.destroy();
+  }
+
+  console.log("🧹 Cleanup realizado");
 });
 
-console.log("🔧 Testando console redirect...");
+// ========================================
+// Inicia a aplicação quando o DOM estiver pronto
+// ========================================
 
-// Testa se a função existe
-if (window.electronAPI && window.electronAPI.onConsoleMessage) {
-  console.log("✅ onConsoleMessage está disponível");
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeApp);
 } else {
-  console.log("❌ onConsoleMessage NÃO está disponível");
+  initializeApp();
+}
+
+// ========================================
+// Debug
+// ========================================
+
+console.log("🔧 Renderer.js carregado");
+
+// Testa se as APIs estão disponíveis
+if (window.electronAPI) {
+  console.log("✅ electronAPI disponível");
+
+  if (window.electronAPI.instances) {
+    console.log("✅ API de instâncias disponível");
+  } else {
+    console.warn("⚠️ API de instâncias NÃO disponível");
+  }
+} else {
+  console.error("❌ electronAPI NÃO disponível");
 }

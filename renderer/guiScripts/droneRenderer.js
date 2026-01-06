@@ -1,56 +1,86 @@
 // renderer/guiScripts/droneRenderer.js
 
-// Importa todos os módulos necessários
-import DroneUtility from "./droneModules/droneUtility.js";
 import DroneNavigation from "./droneModules/droneNavigation.js";
 import DroneMessage from "./droneModules/droneMessage.js";
 import DroneNumbers from "./droneModules/droneNumbers.js";
 import DroneDispatch from "./droneModules/droneDispatch.js";
 import DroneStatus from "./droneModules/droneStatus.js";
+import DroneUtility from "./droneModules/droneUtility.js";
+import DroneInstances from "./droneModules/droneInstances.js";
 
-class DroneManager {
+class DroneRenderer {
   constructor() {
-    // Estado centralizado
+    // Estado da aplicação
     this.selectedMessageIndex = null;
     this.selectedMessageData = null;
+    this.selectedInstanceId = null;
+    this.selectedInstanceInfo = null;
     this.allMessages = [];
     this.currentNumbers = [];
+    this.connectedInstances = [];
+    this.currentStatusFilter = "all";
     this.currentFile = null;
     this.isDisparoRunning = false;
 
-    // Inicializa elementos DOM
-    this.initializeElements();
+    // Inicializa quando o DOM estiver pronto
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => this.init());
+    } else {
+      this.init();
+    }
+  }
+
+  async init() {
+    console.log("🚁 Inicializando DroneRenderer...");
+
+    // Cache dos elementos do DOM
+    this.cacheElements();
 
     // Inicializa módulos
-    this.initializeModules();
+    this.initModules();
 
     // Configura event listeners
     this.setupEventListeners();
 
     // Carrega dados iniciais
-    this.loadInitialData();
+    await this.loadInitialData();
+
+    console.log(
+      "✅ DroneRenderer inicializado com suporte a múltiplas instâncias"
+    );
   }
 
-  initializeElements() {
-    // Menu items
-    this.menuItems = document.querySelectorAll(".menu-item");
-    this.sections = document.querySelectorAll(".section");
-
+  /**
+   * Cache de todos os elementos do DOM
+   */
+  cacheElements() {
     // Status message
     this.statusDiv = document.getElementById("status");
 
-    // Mensagens
+    // Instance Selector (NOVO)
+    this.instanceSelect = document.getElementById("instance-select");
+    this.instanceStatus = document.getElementById("instance-status");
+    this.btnRefreshInstances = document.getElementById("btn-refresh-instances");
+    this.noInstanceWarning = document.getElementById("no-instance-warning");
+
+    // Disparo - Instance Info (NOVO)
+    this.disparoInstanceInfo = document.getElementById("disparo-instance-info");
+    this.disparoInstanceName = document.getElementById("disparo-instance-name");
+    this.disparoInstancePhone = document.getElementById(
+      "disparo-instance-phone"
+    );
+
+    // Navigation
+    this.menuItems = document.querySelectorAll(".menu-item");
+    this.sections = document.querySelectorAll(".section");
+    this.tabBtns = document.querySelectorAll(".tab-btn");
+    this.tabContents = document.querySelectorAll(".tab-content");
+
+    // Messages
     this.messagesList = document.getElementById("messages-list");
-    this.selectedMessageInfo = document.getElementById("selected-message-info");
-    this.previewLocale = document.getElementById("preview-locale");
-    this.previewContent = document.getElementById("preview-content");
 
-    // Números - Stats
-    this.statTotal = document.getElementById("stat-total");
-    this.statBr = document.getElementById("stat-br");
-    this.statInt = document.getElementById("stat-int");
-
-    // Números - File
+    // Numbers
+    this.numbersList = document.getElementById("numbers-list");
     this.fileUploadArea = document.getElementById("file-upload-area");
     this.fileInput = document.getElementById("file-input");
     this.fileInfo = document.getElementById("file-info");
@@ -58,16 +88,14 @@ class DroneManager {
     this.fileCount = document.getElementById("file-count");
     this.btnRemoveFile = document.getElementById("btn-remove-file");
     this.btnImportFile = document.getElementById("btn-import-file");
-
-    // Números - Processing Options
     this.processingOptions = document.getElementById("processing-options");
-
-    // Números - Lista
-    this.numbersList = document.getElementById("numbers-list");
+    this.statusFilter = document.getElementById("status-filter");
     this.btnClearAll = document.getElementById("btn-clear-all");
+    this.btnClearSent = document.getElementById("btn-clear-sent");
+    this.btnClearFailed = document.getElementById("btn-clear-failed");
 
     // Disparo
-    this.requirementsCheck = document.getElementById("requirements-check");
+    this.reqInstance = document.getElementById("req-instance");
     this.reqWhatsapp = document.getElementById("req-whatsapp");
     this.reqMessage = document.getElementById("req-message");
     this.reqNumbers = document.getElementById("req-numbers");
@@ -81,110 +109,190 @@ class DroneManager {
     this.statusMessages = document.getElementById("status-messages");
     this.btnRefreshStatus = document.getElementById("btn-refresh-status");
 
-    // Status - Breakdown (ELEMENTOS ADICIONADOS)
+    // Status Breakdown
     this.breakdownPending = document.getElementById("breakdown-pending");
-    this.breakdownSent = document.getElementById("breakdown-sent");
-    this.breakdownFailed = document.getElementById("breakdown-failed");
     this.breakdownPendingPercent = document.getElementById(
       "breakdown-pending-percent"
     );
+    this.breakdownSent = document.getElementById("breakdown-sent");
     this.breakdownSentPercent = document.getElementById(
       "breakdown-sent-percent"
     );
+    this.breakdownFailed = document.getElementById("breakdown-failed");
     this.breakdownFailedPercent = document.getElementById(
       "breakdown-failed-percent"
     );
+
+    // Instances Status List (NOVO)
+    this.instancesStatusList = document.getElementById("instances-status-list");
+    this.instancesConnectedCount = document.getElementById(
+      "instances-connected-count"
+    );
+    this.instancesTotalCount = document.getElementById("instances-total-count");
   }
 
-  initializeModules() {
-    // Instancia todos os módulos passando o manager (this)
+  /**
+   * Inicializa todos os módulos
+   */
+  initModules() {
     this.utility = new DroneUtility(this);
     this.navigation = new DroneNavigation(this);
     this.messages = new DroneMessage(this);
     this.numbers = new DroneNumbers(this);
     this.dispatch = new DroneDispatch(this);
     this.status = new DroneStatus(this);
+    this.instances = new DroneInstances(this);
+
+    console.log("📦 Módulos inicializados:", [
+      "utility",
+      "navigation",
+      "messages",
+      "numbers",
+      "dispatch",
+      "status",
+      "instances",
+    ]);
   }
 
+  /**
+   * Configura todos os event listeners
+   */
   setupEventListeners() {
-    // Menu navigation
+    // Navigation
     this.menuItems.forEach((item) => {
-      item.addEventListener("click", (e) => {
-        const section = e.target.dataset.section;
+      item.addEventListener("click", () => {
+        const section = item.dataset.section;
         this.navigation.switchSection(section);
       });
     });
 
-    // Números - File Upload
-    this.fileUploadArea.addEventListener("click", () => {
-      this.fileInput.click();
+    // Tabs (se existirem)
+    this.tabBtns?.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tab = btn.dataset.tab;
+        this.navigation.switchTab(tab);
+      });
     });
 
-    this.fileInput.addEventListener("change", (e) => {
-      if (e.target.files.length > 0) {
-        this.numbers.handleFileSelect(e.target.files[0]);
-      }
+    // Instance Selector (NOVO)
+    this.instanceSelect?.addEventListener("change", (e) => {
+      this.instances.handleInstanceChange(e.target.value);
     });
 
-    this.fileUploadArea.addEventListener("dragover", (e) => {
+    // Refresh Instances (NOVO)
+    this.btnRefreshInstances?.addEventListener("click", () => {
+      this.instances.loadInstances();
+    });
+
+    // File Upload
+    this.fileUploadArea?.addEventListener("click", () => {
+      this.fileInput?.click();
+    });
+
+    this.fileUploadArea?.addEventListener("dragover", (e) => {
       e.preventDefault();
       this.fileUploadArea.classList.add("dragover");
     });
 
-    this.fileUploadArea.addEventListener("dragleave", () => {
+    this.fileUploadArea?.addEventListener("dragleave", () => {
       this.fileUploadArea.classList.remove("dragover");
     });
 
-    this.fileUploadArea.addEventListener("drop", (e) => {
+    this.fileUploadArea?.addEventListener("drop", (e) => {
       e.preventDefault();
       this.fileUploadArea.classList.remove("dragover");
-      if (e.dataTransfer.files.length > 0) {
-        this.numbers.handleFileSelect(e.dataTransfer.files[0]);
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        this.numbers.handleFileSelect(file);
       }
     });
 
-    this.btnRemoveFile.addEventListener("click", () =>
-      this.numbers.removeFile()
-    );
-    this.btnImportFile.addEventListener("click", () =>
-      this.numbers.importFile()
-    );
+    this.fileInput?.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        this.numbers.handleFileSelect(file);
+      }
+    });
 
-    // Números - Clear All
-    this.btnClearAll.addEventListener("click", () =>
-      this.numbers.clearAllNumbers()
-    );
+    this.btnRemoveFile?.addEventListener("click", () => {
+      this.numbers.removeFile();
+    });
 
-    // Disparo - Seleção de mensagem
-    this.messageSelect.addEventListener("change", () => {
+    this.btnImportFile?.addEventListener("click", () => {
+      this.numbers.importFile();
+    });
+
+    // Status Filter
+    this.statusFilter?.addEventListener("change", (e) => {
+      this.currentStatusFilter = e.target.value;
+      this.numbers.loadNumbers(this.currentStatusFilter);
+    });
+
+    // Clear buttons
+    this.btnClearAll?.addEventListener("click", () => {
+      this.numbers.clearAllNumbers();
+    });
+
+    this.btnClearSent?.addEventListener("click", () => {
+      this.numbers.clearSentNumbers();
+    });
+
+    this.btnClearFailed?.addEventListener("click", () => {
+      this.numbers.clearFailedNumbers();
+    });
+
+    // Disparo
+    this.messageSelect?.addEventListener("change", () => {
       this.dispatch.selectMessageFromDisparo();
     });
 
-    this.batchSize.addEventListener("input", () =>
-      this.dispatch.updateDisparoSummary()
-    );
-    this.btnExecuteDisparo.addEventListener("click", () =>
-      this.dispatch.executeDisparo()
-    );
+    this.btnExecuteDisparo?.addEventListener("click", () => {
+      this.dispatch.executeDisparo();
+    });
 
-    // Status
-    this.btnRefreshStatus.addEventListener("click", () =>
-      this.status.refreshStatus()
-    );
+    // Status refresh
+    this.btnRefreshStatus?.addEventListener("click", () => {
+      this.status.refreshStatus();
+    });
   }
 
+  /**
+   * Carrega dados iniciais da aplicação
+   */
   async loadInitialData() {
-    await this.messages.loadMessages();
-    await this.numbers.loadNumbers();
-    await this.numbers.loadStatistics();
-    await this.dispatch.loadMessagesForSelect();
-    await this.dispatch.checkRequirements();
-    await this.status.updateStatusBreakdown(); // CHAMADA ADICIONADA
+    try {
+      // Carrega instâncias primeiro (NOVO)
+      await this.instances.loadInstances();
+
+      // Carrega mensagens
+      await this.messages.loadMessages();
+
+      // Carrega números
+      await this.numbers.loadNumbers(this.currentStatusFilter);
+
+      // Atualiza status
+      await this.status.updateStatusBreakdown();
+
+      // Verifica requisitos do disparo
+      await this.dispatch.checkRequirements();
+
+      console.log("📊 Dados iniciais carregados");
+    } catch (error) {
+      console.error("Erro ao carregar dados iniciais:", error);
+      this.utility.showStatus("Erro ao carregar dados iniciais", "error");
+    }
+  }
+
+  /**
+   * Recarrega todos os dados
+   */
+  async reloadAll() {
+    await this.loadInitialData();
+    this.utility.showStatus("Dados recarregados", "success");
   }
 }
 
-// Initialize when DOM is ready
-document.addEventListener("DOMContentLoaded", () => {
-  window.droneManager = new DroneManager();
-  console.log("DroneManager inicializado com módulos");
-});
+// Inicializa o renderer
+const droneRenderer = new DroneRenderer();
+
+export default droneRenderer;

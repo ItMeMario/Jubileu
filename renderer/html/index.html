@@ -7,36 +7,140 @@
     <title>WhatsApp Bot</title>
     <link rel="stylesheet" href="../css/globalCss.css">
     <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="../css/instances.css">
 </head>
 
 <body>
     <div class="container">
         <h1>🤖 Jubileu</h1>
 
+        <!-- Botões de ação global -->
         <div class="button-group">
-            <button id="btn-start">
-                <span class="btn-text">Iniciar WhatsApp</span>
-            </button>
-            <button id="btn-stop" class="stop-btn" disabled>Parar WhatsApp</button>
-            <button id="btn-config" class="config-btn">Configurações</button>
+            <button id="btn-config" class="config-btn">⚙️ Configurações</button>
             <button id="btn-drone" class="drone-btn">🚁 Drone</button>
         </div>
 
+        <!-- Status global -->
         <div id="status" class="hidden"></div>
 
-        <div id="qr-container" class="qr-container hidden">
-            <h3>Escaneie o QR Code com seu WhatsApp</h3>
-            <img id="qr-image" class="qr-code" alt="QR Code">
-            <div class="qr-instructions">
-                <strong>Como conectar:</strong><br>
-                1. Abra o WhatsApp no seu celular<br>
-                2. Toque em "Configurações" > "Aparelhos conectados"<br>
-                3. Toque em "Conectar um aparelho"<br>
-                4. Escaneie este QR Code
+        <!-- Seção de Instâncias WhatsApp -->
+        <section class="instances-section">
+            <div class="instances-header">
+                <h2>
+                    📱 Instâncias WhatsApp
+                    <span id="instance-count" class="instance-count">0/5</span>
+                </h2>
+                <button id="btn-add-instance" class="btn-add-instance">
+                    ➕ Nova Instância
+                </button>
+            </div>
+
+            <!-- Grid de cards das instâncias -->
+            <div id="instances-grid" class="instances-grid">
+                <!-- Cards serão inseridos dinamicamente via JavaScript -->
+
+                <!-- Mensagem quando não há instâncias -->
+                <div id="no-instances" class="no-instances">
+                    <div class="no-instances-icon">📭</div>
+                    <div class="no-instances-text">Nenhuma instância criada</div>
+                    <button id="btn-add-first" class="btn-add-instance">
+                        ➕ Criar primeira instância
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal para criar nova instância -->
+    <div id="modal-create-instance" class="modal-overlay">
+        <div class="modal-content">
+            <h3>➕ Nova Instância</h3>
+            <div class="form-group">
+                <label for="instance-name">Nome da instância:</label>
+                <input type="text" id="instance-name" placeholder="Ex: WhatsApp Vendas" maxlength="50"
+                    autocomplete="off">
+            </div>
+            <div class="modal-buttons">
+                <button id="btn-modal-cancel" class="btn-cancel">Cancelar</button>
+                <button id="btn-modal-confirm" class="btn-confirm">Criar</button>
             </div>
         </div>
     </div>
 
+    <!-- Modal de confirmação para remover instância -->
+    <div id="modal-remove-instance" class="modal-overlay">
+        <div class="modal-content">
+            <h3>🗑️ Remover Instância</h3>
+            <p id="remove-instance-message" style="margin-bottom: 20px; color: #666;">
+                Tem certeza que deseja remover esta instância?
+            </p>
+            <div class="modal-buttons">
+                <button id="btn-remove-cancel" class="btn-cancel">Cancelar</button>
+                <button id="btn-remove-confirm" class="btn-confirm" style="background-color: #dc3545;">
+                    Remover
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template do card de instância (será clonado via JS) -->
+    <template id="instance-card-template">
+        <div class="instance-card" data-instance-id="">
+            <!-- Header -->
+            <div class="instance-card-header">
+                <div class="instance-name">
+                    <span class="name-text"></span>
+                    <button class="btn-edit-name" title="Editar nome">✏️</button>
+                </div>
+                <span class="status-badge disconnected">Desconectado</span>
+            </div>
+
+            <!-- Body -->
+            <div class="instance-card-body">
+                <!-- Placeholder (quando desconectado) -->
+                <div class="instance-placeholder">
+                    <div class="placeholder-icon">📴</div>
+                    <div class="placeholder-text">Clique em Iniciar para conectar</div>
+                </div>
+
+                <!-- QR Code (quando aguardando scan) -->
+                <div class="instance-qr-container" style="display: none;">
+                    <img class="qr-image" src="" alt="QR Code">
+                    <div class="qr-hint">Escaneie com seu WhatsApp</div>
+                </div>
+
+                <!-- Loading (quando conectando) -->
+                <div class="instance-loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Conectando...</div>
+                </div>
+
+                <!-- Info (quando conectado) -->
+                <div class="instance-info" style="display: none;">
+                    <div class="phone-number"></div>
+                    <div class="connection-status">✅ Conectado</div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="instance-card-footer">
+                <button class="btn-start-instance" title="Iniciar">
+                    ▶️ Iniciar
+                </button>
+                <button class="btn-stop-instance" title="Parar" style="display: none;">
+                    ⏹️ Parar
+                </button>
+                <button class="btn-reconnect-instance" title="Reconectar" style="display: none;">
+                    🔄 Reconectar
+                </button>
+                <button class="btn-remove-instance" title="Remover">
+                    🗑️
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <script src="../guiScripts/instancesManager.js"></script>
     <script src="../guiScripts/renderer.js"></script>
 </body>
 

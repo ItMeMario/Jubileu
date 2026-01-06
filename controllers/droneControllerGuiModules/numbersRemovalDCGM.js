@@ -7,123 +7,187 @@ class NumbersRemovalDCGM {
   }
 
   /**
-   * Remove um número específico da lista
+   * Remove um número específico da lista de uma instância
+   * @param {string} instanceId - ID da instância
    * @param {number|string} identificador - ID do número ou índice da lista
    * @returns {Promise<Object>} - Resultado da remoção
    */
-  async removerNumero(identificador) {
+  async removerNumero(instanceId, identificador) {
     try {
-      console.log(`Removendo número: ${identificador}`);
+      // Valida instanceId
+      if (!instanceId) {
+        return {
+          success: false,
+          error:
+            "Nenhuma instância selecionada. Selecione uma instância antes de remover.",
+        };
+      }
 
-      const resultado = await droneService.removerNumero(identificador);
+      console.log(`[${instanceId}] Removendo número: ${identificador}`);
+
+      const resultado = await droneService.removerNumero(
+        instanceId,
+        identificador
+      );
 
       if (resultado.success) {
         return {
           success: true,
           message: "Número removido com sucesso",
           totalRestante: resultado.totalNumbers,
+          instanceId: instanceId,
         };
       } else {
         return {
           success: false,
           error: resultado.error,
+          instanceId: instanceId,
         };
       }
     } catch (error) {
-      console.error("Erro ao remover número:", error);
+      console.error(`[${instanceId}] Erro ao remover número:`, error);
       return {
         success: false,
         error: error.message,
+        instanceId: instanceId,
       };
     }
   }
 
   /**
-   * Limpa toda a lista de números
+   * Limpa toda a lista de números de uma instância
+   * @param {string} instanceId - ID da instância
    * @returns {Promise<Object>} - Resultado da operação
    */
-  async limparListaCompleta() {
+  async limparListaCompleta(instanceId) {
     try {
-      console.log("Limpando lista completa de números...");
-      const resultado = await droneService.limparListaNumeros();
+      // Valida instanceId
+      if (!instanceId) {
+        return {
+          success: false,
+          error:
+            "Nenhuma instância selecionada. Selecione uma instância antes de limpar.",
+        };
+      }
+
+      console.log(`[${instanceId}] Limpando lista completa de números...`);
+
+      const resultado = await droneService.limparListaNumeros(instanceId);
 
       if (resultado.success) {
         return {
           success: true,
           message: resultado.message,
           totalRemovidos: resultado.totalRemoved,
+          instanceId: instanceId,
         };
       } else {
         return {
           success: false,
           error: resultado.error,
+          instanceId: instanceId,
         };
       }
     } catch (error) {
-      console.error("Erro ao limpar lista:", error);
+      console.error(`[${instanceId}] Erro ao limpar lista:`, error);
       return {
         success: false,
         error: error.message,
+        instanceId: instanceId,
       };
     }
   }
 
   /**
-   * Limpa apenas números com status 'sent'
+   * Limpa apenas números com status 'sent' de uma instância
+   * @param {string} instanceId - ID da instância
    * @returns {Promise<Object>} - Resultado da operação
    */
-  async limparEnviados() {
+  async limparEnviados(instanceId) {
     try {
-      console.log("Limpando números enviados...");
-      const resultado = await droneService.limparClientesPorStatus("sent");
+      // Valida instanceId
+      if (!instanceId) {
+        return {
+          success: false,
+          error:
+            "Nenhuma instância selecionada. Selecione uma instância antes de limpar.",
+        };
+      }
+
+      console.log(`[${instanceId}] Limpando números enviados...`);
+
+      const resultado = await droneService.limparNumerosPorStatus(
+        instanceId,
+        "sent"
+      );
 
       if (resultado.success) {
         return {
           success: true,
           message: `${resultado.totalRemoved} número(s) enviado(s) removido(s)`,
           totalRemovidos: resultado.totalRemoved,
+          instanceId: instanceId,
         };
       } else {
         return {
           success: false,
           error: resultado.error,
+          instanceId: instanceId,
         };
       }
     } catch (error) {
-      console.error("Erro ao limpar enviados:", error);
+      console.error(`[${instanceId}] Erro ao limpar enviados:`, error);
       return {
         success: false,
         error: error.message,
+        instanceId: instanceId,
       };
     }
   }
 
   /**
-   * Limpa apenas números com status 'failed'
+   * Limpa apenas números com status 'failed' de uma instância
+   * @param {string} instanceId - ID da instância
    * @returns {Promise<Object>} - Resultado da operação
    */
-  async limparFalhas() {
+  async limparFalhas(instanceId) {
     try {
-      console.log("Limpando números com falha...");
-      const resultado = await droneService.limparClientesPorStatus("failed");
+      // Valida instanceId
+      if (!instanceId) {
+        return {
+          success: false,
+          error:
+            "Nenhuma instância selecionada. Selecione uma instância antes de limpar.",
+        };
+      }
+
+      console.log(`[${instanceId}] Limpando números com falha...`);
+
+      const resultado = await droneService.limparNumerosPorStatus(
+        instanceId,
+        "failed"
+      );
 
       if (resultado.success) {
         return {
           success: true,
           message: `${resultado.totalRemoved} número(s) com falha removido(s)`,
           totalRemovidos: resultado.totalRemoved,
+          instanceId: instanceId,
         };
       } else {
         return {
           success: false,
           error: resultado.error,
+          instanceId: instanceId,
         };
       }
     } catch (error) {
-      console.error("Erro ao limpar falhas:", error);
+      console.error(`[${instanceId}] Erro ao limpar falhas:`, error);
       return {
         success: false,
         error: error.message,
+        instanceId: instanceId,
       };
     }
   }
