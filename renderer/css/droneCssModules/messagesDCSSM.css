@@ -1,0 +1,89 @@
+/* droneCssModules/messagesDCSSM.css */
+/* Messages - Lista de mensagens e preview */
+
+/* ==================== MESSAGES LIST ==================== */
+.messages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.message-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+.message-item:hover {
+    border-color: var(--accent-color);
+    transform: translateX(5px);
+}
+
+.message-item.selected {
+    border-color: var(--accent-color);
+    background: rgba(37, 211, 102, 0.1);
+}
+
+.message-item .message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.message-item .message-id {
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+.message-item .message-locale {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.message-item .message-content {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    line-height: 1.5;
+    max-height: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ==================== SELECTED MESSAGE INFO ==================== */
+.selected-message-info {
+    background: var(--bg-secondary);
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.selected-message-info h3 {
+    margin: 0 0 15px 0;
+    color: var(--accent-color);
+}
+
+.message-preview {
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    padding: 15px;
+}
+
+.message-preview .message-locale {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.message-preview .message-content {
+    color: var(--text-primary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+}

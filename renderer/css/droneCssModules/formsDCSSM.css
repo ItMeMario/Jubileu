@@ -1,0 +1,109 @@
+/* droneCssModules/formsDCSSM.css */
+/* Forms - Processing options e form groups */
+
+/* ==================== PROCESSING OPTIONS ==================== */
+.processing-options {
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
+.processing-options h4 {
+    margin: 0 0 15px 0;
+    font-size: 1em;
+}
+
+.option-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-top: 3px;
+    cursor: pointer;
+}
+
+.checkbox-item label {
+    cursor: pointer;
+    flex: 1;
+}
+
+.checkbox-label {
+    display: block;
+    font-weight: 500;
+}
+
+.checkbox-hint {
+    display: block;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.ddd-section,
+.prefixo-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+.ddd-input-wrapper,
+.prefixo-input-wrapper {
+    margin-top: 10px;
+    margin-left: 25px;
+}
+
+.ddd-input-wrapper input,
+.prefixo-input-wrapper input {
+    width: 80px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.input-hint {
+    display: block;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* ==================== FORM GROUP ==================== */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.form-group select,
+.form-group input {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.95em;
+}
+
+.form-group .hint {
+    margin-top: 6px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+}

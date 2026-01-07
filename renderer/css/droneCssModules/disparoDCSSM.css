@@ -1,0 +1,95 @@
+/* droneCssModules/disparoDCSSM.css */
+/* Disparo - Seção de disparo, instance badge e requirements */
+
+/* ==================== DISPARO SECTION ==================== */
+.disparo-instance-info {
+    margin-bottom: 20px;
+}
+
+.instance-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+.instance-badge .badge-icon {
+    font-size: 1.2em;
+}
+
+.instance-badge .badge-name {
+    font-weight: 600;
+}
+
+.instance-badge .badge-phone {
+    color: var(--text-muted);
+    font-size: 0.9em;
+}
+
+.instance-badge.no-instance {
+    border-color: var(--warning-color);
+    background: rgba(255, 193, 7, 0.1);
+}
+
+.instance-badge.connected {
+    border-color: var(--success-color);
+    background: rgba(40, 167, 69, 0.1);
+}
+
+/* ==================== REQUIREMENTS CHECK ==================== */
+.requirements-check {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.requirements-check h3 {
+    margin: 0 0 15px 0;
+}
+
+.requirement-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.requirement-item:last-child {
+    border-bottom: none;
+}
+
+.requirement-item .req-icon {
+    font-size: 1.2em;
+}
+
+.requirement-item .req-text {
+    flex: 1;
+}
+
+.requirement-item.success .req-icon {
+    color: var(--success-color);
+}
+
+.requirement-item.error .req-icon {
+    color: var(--error-color);
+}
+
+.requirement-item.pending .req-icon {
+    color: var(--warning-color);
+}
+
+/* ==================== DISPARO CONFIG ==================== */
+.disparo-config {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.disparo-config h3 {
+    margin: 0 0 20px 0;
+}
