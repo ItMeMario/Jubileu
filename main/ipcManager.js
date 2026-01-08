@@ -8,6 +8,7 @@ const ModoDevHandlers = require("./ipc/modoDevHandlers");
 const DataBaseHandlers = require("./ipc/dataBaseHandlers");
 const DroneHandlers = require("./ipc/droneHandlers");
 const InstanceHandlers = require("./ipc/instanceHandlers");
+const CacheHandlers = require("./ipc/cacheHandlers");
 
 class IPCManager {
   constructor() {
@@ -21,6 +22,7 @@ class IPCManager {
       dataBase: null,
       drone: null,
       instance: null,
+      cache: null,
     };
   }
 
@@ -36,6 +38,7 @@ class IPCManager {
       this.handlers.dataBase = new DataBaseHandlers();
       this.handlers.drone = new DroneHandlers(modules.windowManager);
       this.handlers.instance = new InstanceHandlers(modules);
+      this.handlers.cache = new CacheHandlers();
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -63,6 +66,9 @@ class IPCManager {
 
       // Registra handlers de instâncias
       this.registerInstanceHandlers();
+
+      // Registra handlers de cache
+      this.registerCacheHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -489,6 +495,14 @@ class IPCManager {
     console.log("Handlers de instâncias registrados");
   }
 
+  registerCacheHandlers() {
+    ipcMain.handle(
+      "clear-cache",
+      this.handlers.cache.clearCache.bind(this.handlers.cache)
+    );
+    console.log("Handlers de cache registrados");
+  }
+
   // ========================================
   // Getter para InstanceHandlers (útil para inicialização)
   // ========================================
@@ -577,6 +591,7 @@ class IPCManager {
       "instance-client-info",
       "instance-send-message",
       "instance-get-config",
+      "clear-cache",
     ];
 
     events.forEach((event) => {

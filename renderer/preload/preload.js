@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   stopWhatsApp: () => ipcRenderer.invoke("stop-whatsapp"),
   openConfig: () => ipcRenderer.invoke("open-config"),
   openDrone: () => ipcRenderer.invoke("open-drone"),
+  clearCache: () => ipcRenderer.invoke("clear-cache"),
 
   // Listeners legados
   onQRGenerated: (callback) => {
