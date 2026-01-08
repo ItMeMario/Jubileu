@@ -1,12 +1,29 @@
 const fs = require('fs').promises;
 const path = require('path');
 const pathHelper = require('../../utils/pathHelper');
+const { instanceManager } = require('../../services/instanceManager');
 
 class CacheHandlers {
     async clearCache() {
         try {
             const authPath = path.resolve(process.cwd(), '.wwebjs_auth');
             const cachePath = path.resolve(process.cwd(), '.wwebjs_cache');
+
+            // 1. Parar todas as instâncias
+            console.log('Parando todas as instâncias...');
+            await instanceManager.stopAll();
+
+            // 2. Listar e remover todas as instâncias do banco
+            console.log('Removendo registros de instâncias...');
+            const instances = await instanceManager.listInstances();
+            for (const instance of instances) {
+                try {
+                    await instanceManager.removeInstance(instance.instance_id);
+                    console.log(`Instância removida: ${instance.instance_id}`);
+                } catch (err) {
+                    console.error(`Erro ao remover instância ${instance.instance_id}:`, err);
+                }
+            }
 
             const results = {
                 auth: false,
