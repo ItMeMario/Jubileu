@@ -178,11 +178,31 @@ async function handleAntiSpam(msg, client) {
   const userNumber = msg.from;
 
   if (antiSpamManager.isUserSuspended(userNumber)) {
+    // Verifica quantas vezes já enviou a mensagem de suspenso
+    const timeoutInfo = timeout.getTimeoutInfo(userNumber);
+
+    // Se já enviou 2 ou mais mensagens, não envia mais nada
+    if (timeoutInfo && timeoutInfo.count >= 2) {
+      await debug(`[ANTI-SPAM] Usuário ${userNumber} em silêncio (limite atingido)`);
+      return true; // Retorna true para bloquear o processamento, mas não envia mensagem
+    }
+
     const remainingMinutes =
       antiSpamManager.getSuspensionTimeRemaining(userNumber);
     await antiSpamManager.handleSpamAction(client, msg, "suspended", {
       remainingMinutes,
     });
+
+    // Incrementa o contador de mensagens enviadas
+    const currentInfo = timeout.getTimeoutInfo(userNumber);
+    if (currentInfo) {
+      currentInfo.count++;
+    } else {
+      // Cria entrada se não existir (usando a estrutura interna do timeout.js)
+      // Vamos criar uma função no timeout.js para isso
+      timeout.incrementTimeoutCount(userNumber);
+    }
+
     return true;
   }
   return false;
@@ -212,6 +232,9 @@ async function handleMenuTrigger(msg, client, instanceId, userStates) {
   const userNumber = msg.from;
 
   if (await menuHandlerInstance.shouldHandle(msg, userStates[userNumber])) {
+    // Reset do contador de timeout quando usuário interage
+    timeout.resetTimeoutCount(userNumber);
+
     await menuHandlerInstance.process(client, msg, userStates, userNumber);
 
     const { chat, name } = await getBasicMessageInfo(msg);
@@ -281,6 +304,9 @@ async function handleCitySelection(
 ) {
   const cityHandlerInstance = new CityHandler();
 
+  // Reset do contador de timeout quando usuário interage
+  timeout.resetTimeoutCount(userNumber);
+
   await cityHandlerInstance.process(
     client,
     msg,
@@ -305,6 +331,9 @@ async function handleTimeSelection(
 ) {
   const timeHandlerInstance = new TimeHandler();
 
+  // Reset do contador de timeout quando usuário interage
+  timeout.resetTimeoutCount(userNumber);
+
   await timeHandlerInstance.process(
     client,
     msg,
@@ -328,6 +357,9 @@ async function handleNameInput(
   userStates
 ) {
   const nameHandlerInstance = new NameHandler();
+
+  // Reset do contador de timeout quando usuário interage
+  timeout.resetTimeoutCount(userNumber);
 
   await nameHandlerInstance.process(
     client,
