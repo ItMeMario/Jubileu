@@ -178,12 +178,12 @@ class DeeJayService {
 
         this.isRunning = true;
         this.emit('loop-status', { active: true });
-        this.scheduleNextMessage();
+        this.runConversationLoop();
     }
 
     stopLoop() {
         this.isRunning = false;
-        if (this.loopInterval) clearTimeout(this.loopInterval);
+        // No timer to clear, the loop will check isRunning after await
         this.emit('loop-status', { active: false });
     }
 
@@ -205,85 +205,100 @@ class DeeJayService {
         return this.config;
     }
 
-    scheduleNextMessage() {
-        if (!this.isRunning) return;
+    async runConversationLoop() {
+        const { smartDelay } = require("../utils/delay");
 
-        const minMs = this.config.minIntervalMinutes * 60 * 1000;
-        const maxMs = this.config.maxIntervalMinutes * 60 * 1000;
-        const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+        while (this.isRunning) {
+            const connected = this.getConnectedInstances();
+            if (connected.length < 2) {
+                this.stopLoop();
+                break;
+            }
 
-        console.log(`Dee Jay: Próxima mensagem em ${delay/1000} segundos.`);
+            // --- Conversation Logic ---
 
-        this.loopInterval = setTimeout(async () => {
-            await this.executeExchange();
-            this.scheduleNextMessage();
-        }, delay);
+            // 1. Pick Pair
+            const senderIdx = Math.floor(Math.random() * connected.length);
+            const sender = connected[senderIdx];
+
+            let receiverIdx;
+            do {
+                receiverIdx = Math.floor(Math.random() * connected.length);
+            } while (receiverIdx === senderIdx);
+            const receiver = connected[receiverIdx];
+
+            // 2. Sender -> Receiver
+            await this.sendSingleMessage(sender, receiver);
+
+            if (!this.isRunning) break;
+
+            // 3. Wait interval (1-3 min by default/config) before reply
+            const minMs = this.config.minIntervalMinutes * 60 * 1000;
+            const maxMs = this.config.maxIntervalMinutes * 60 * 1000;
+            
+            console.log(`Dee Jay: Aguardando resposta...`);
+            await smartDelay({ minMs, maxMs });
+
+            if (!this.isRunning) break;
+
+            // 4. Receiver -> Sender (Reply)
+            await this.sendSingleMessage(receiver, sender);
+
+            if (!this.isRunning) break;
+
+            // 5. Wait before next conversation
+            console.log(`Dee Jay: Aguardando próxima conversa...`);
+            await smartDelay({ minMs, maxMs });
+        }
     }
 
-    async executeExchange() {
-        if (!this.isRunning) return;
-        
-        const connected = this.getConnectedInstances();
-        if (connected.length < 2) {
-            this.stopLoop();
-            return;
-        }
-
-        // Pick Sender
-        const senderIdx = Math.floor(Math.random() * connected.length);
-        const sender = connected[senderIdx];
-
-        // Pick Receiver (must be different)
-        let receiverIdx;
-        do {
-            receiverIdx = Math.floor(Math.random() * connected.length);
-        } while (receiverIdx === senderIdx);
-        const receiver = connected[receiverIdx];
-
-        // Pick Message
+    async sendSingleMessage(from, to) {
         const message = await this.getRandomDeeJayMessage();
         if (!message) {
             console.log("Dee Jay: Nenhuma mensagem do tipo 'dee_jay' encontrada.");
             return;
         }
 
-        // Send
         try {
-            const receiverNumber = receiver.client.info.wid.user + "@c.us"; // Simple construction
-            // Or use getNumberId if needed, but usually user + @c.us works for standard numbers
-            
-            await sender.client.sendMessage(receiverNumber, message);
+            const receiverNumber = to.client.info.wid.user + "@c.us";
+            await from.client.sendMessage(receiverNumber, message);
             
             this.emit('log', {
                 timestamp: new Date(),
-                sender: sender.name,
-                receiver: receiver.name,
+                sender: from.name,
+                receiver: to.name,
                 message: message
             });
-            console.log(`Dee Jay: ${sender.name} enviou para ${receiver.name}: ${message}`);
-
+            console.log(`Dee Jay: ${from.name} enviou para ${to.name}: ${message}`);
         } catch (error) {
-            console.error("Dee Jay: Erro ao enviar mensagem:", error);
+            console.error(`Dee Jay: Erro ao enviar de ${from.name} para ${to.name}:`, error);
         }
     }
 
     async getRandomDeeJayMessage() {
-        // Read messages.json directly or via some service. 
-        // initializeModules/messagesIM.js implies messages.json
-        // Let's read messages.json
+        let db;
         try {
-            const filePath = path.join(__dirname, "../data/messages.json");
-            const data = await fs.readFile(filePath, 'utf-8');
-            const messages = JSON.parse(data);
-            const deeJayMessages = messages.filter(m => m.type === MessageType.DEE_JAY);
+            db = await getDatabaseConnection();
             
-            if (deeJayMessages.length === 0) return null;
-            
-            const randomMsg = deeJayMessages[Math.floor(Math.random() * deeJayMessages.length)];
-            return randomMsg.content; // Assuming structure { type, content, ... }
+            return new Promise((resolve, reject) => {
+                const query = `SELECT message_content FROM messages WHERE message_type = ? ORDER BY RANDOM() LIMIT 1`;
+                db.get(query, [MessageType.DEE_JAY], (err, row) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(row ? row.message_content : null);
+                    }
+                });
+            });
         } catch (e) {
-            console.error(e);
+            console.error("Dee Jay: Erro ao buscar mensagem do banco:", e);
             return null;
+        } finally {
+            if (db) {
+                db.close((err) => {
+                    if (err) console.error("Dee Jay: Erro ao fechar conexão com banco:", err);
+                });
+            }
         }
     }
 }
