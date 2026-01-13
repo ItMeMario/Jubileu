@@ -8,10 +8,25 @@ class CacheHandlers {
         try {
             const authPath = path.resolve(process.cwd(), '.wwebjs_auth');
             const cachePath = path.resolve(process.cwd(), '.wwebjs_cache');
+            const deeJayAuthPath = path.resolve(process.cwd(), '.wwebjs_auth_deejay');
 
-            // 1. Parar todas as instâncias
+            // 1. Parar todas as instâncias (Main + Dee Jay)
             console.log('Parando todas as instâncias...');
             await instanceManager.stopAll();
+            
+            // Stop and Remove Dee Jay Instances
+            try {
+                const deeJayService = require('../../services/deeJayService');
+                deeJayService.stopLoop();
+                const djInstances = deeJayService.getInstances();
+                for (const dj of djInstances) {
+                    // removeInstance stops, deletes from DB, and cleans memory
+                    await deeJayService.removeInstance(dj.instanceId);
+                    console.log(`Instância Dee Jay removida: ${dj.instanceId}`);
+                }
+            } catch (e) {
+                console.error("Erro ao remover Dee Jay instances:", e);
+            }
 
             // 2. Listar e remover todas as instâncias do banco
             console.log('Removendo registros de instâncias...');
@@ -28,6 +43,7 @@ class CacheHandlers {
             const results = {
                 auth: false,
                 cache: false,
+                deeJay: false,
                 message: ''
             };
 
@@ -47,9 +63,17 @@ class CacheHandlers {
                 console.error(`Erro ao remover .wwebjs_cache: ${err.message}`);
             }
 
-            if (results.auth || results.cache) {
+            // Remove .wwebjs_auth_deejay
+            try {
+                await fs.rm(deeJayAuthPath, { recursive: true, force: true });
+                results.deeJay = true;
+            } catch (err) {
+                console.error(`Erro ao remover .wwebjs_auth_deejay: ${err.message}`);
+            }
+
+            if (results.auth || results.cache || results.deeJay) {
                 console.log('Cache limpo com sucesso');
-                return { success: true, message: 'Cache e sessão limpos com sucesso! Reinicie o aplicativo para efetivar as mudanças.' };
+                return { success: true, message: 'Cache e sessão (incluindo Dee Jay) limpos com sucesso! Reinicie o aplicativo para efetivar as mudanças.' };
             } else {
                 return { success: false, message: 'Não foi possível limpar o cache ou ele já estava vazio.' };
             }
