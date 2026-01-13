@@ -42,6 +42,11 @@ class Application {
       };
       this.ipcManager.registerAllHandlers(modules);
 
+      // Inicializa o serviço Dee Jay
+      console.log("🎧 Inicializando Dee Jay Service...");
+      const deeJayService = require("./services/deeJayService");
+      await deeJayService.initialize();
+
       console.log("🪟 Criando janela principal...");
       // Cria janela principal
       this.windowManager.createMainWindow();

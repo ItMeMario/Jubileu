@@ -6,6 +6,7 @@
 const btnConfig = document.getElementById("btn-config");
 const btnDrone = document.getElementById("btn-drone");
 const btnClearCache = document.getElementById("btn-clear-cache");
+const btnDeeJay = document.getElementById("btn-dee-jay"); // Adicionado: Botão Dee Jay
 const statusDiv = document.getElementById("status");
 
 // ========================================
@@ -120,6 +121,29 @@ btnDrone.addEventListener("click", async () => {
     hideButtonLoading(btnDrone, "🚁 Drone");
   }
 });
+
+// Botão Dee Jay
+if (btnDeeJay) {
+    btnDeeJay.addEventListener("click", async () => {
+      try {
+        showButtonLoading(btnDeeJay, "Abrindo...");
+    
+        const result = await window.electronAPI.openDeeJayWindow();
+    
+        if (result.success) {
+          showStatus(result.message, "success");
+        } else {
+          showStatus(result.message, "error");
+        }
+    
+        hideButtonLoading(btnDeeJay, "🎧 Dee Jay");
+      } catch (error) {
+        console.error("Erro ao abrir Dee Jay:", error);
+        showStatus("Erro ao abrir Dee Jay", "error");
+        hideButtonLoading(btnDeeJay, "🎧 Dee Jay");
+      }
+    });
+}
 
 // Botão Limpar Cache
 if (btnClearCache) {

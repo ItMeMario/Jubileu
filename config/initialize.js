@@ -64,6 +64,10 @@ const {
   clearClientsByInstance,
 } = require("./initializeModules/droneClientsIM");
 
+const {
+  initializeDeeJayInstancesTable,
+} = require("./initializeModules/deeJayIM");
+
 /**
  * Inicializa todos os arquivos, pastas e banco de dados do sistema
  * @returns {Promise<{success: number, errors: number}>}
@@ -99,6 +103,15 @@ async function initializeAllConfigs() {
     debug("✅ Tabela de clientes do Drone inicializada");
   } catch (error) {
     console.error("❌ Erro ao inicializar tabela de clientes do Drone:", error);
+    throw error;
+  }
+
+  // Inicializa tabela de instâncias Dee Jay
+  try {
+    await initializeDeeJayInstancesTable();
+    debug("✅ Tabela de instâncias Dee Jay inicializada");
+  } catch (error) {
+    console.error("❌ Erro ao inicializar tabela de instâncias Dee Jay:", error);
     throw error;
   }
 
