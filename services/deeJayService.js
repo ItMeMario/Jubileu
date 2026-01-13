@@ -115,6 +115,7 @@ class DeeJayService {
             instanceData.status = DEE_JAY_STATUS.CONNECTED;
             instanceData.qrCode = null;
             const phoneNumber = client.info.wid.user;
+            console.log(`Dee Jay conectado: ${phoneNumber}`);
             await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.CONNECTED, phoneNumber);
             this.emit('instance-update', { instanceId, status: instanceData.status });
         });

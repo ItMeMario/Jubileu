@@ -27,6 +27,8 @@ body {
     margin-bottom: 20px;
     background-color: var(--bg-secondary, #ffffff);
     padding: 15px;
+    padding-right: 80px;
+    /* Space for Dark Mode Toggle */
     border-radius: 10px;
     box-shadow: 0 2px 8px var(--shadow-sm, rgba(0, 0, 0, 0.1));
 }
@@ -209,10 +211,25 @@ body {
     color: var(--text-primary, #333333);
 }
 
-.status-badge.connected { background: #4CAF50; color: white; }
-.status-badge.connecting { background: #FFC107; color: black; }
-.status-badge.disconnected { background: #f44336; color: white; }
-.status-badge.qr_pending { background: #2196F3; color: white; }
+.status-badge.connected {
+    background: #4CAF50;
+    color: white;
+}
+
+.status-badge.connecting {
+    background: #FFC107;
+    color: black;
+}
+
+.status-badge.disconnected {
+    background: #f44336;
+    color: white;
+}
+
+.status-badge.qr_pending {
+    background: #2196F3;
+    color: white;
+}
 
 .qr-container {
     text-align: center;
@@ -263,18 +280,19 @@ body {
 }
 
 .btn-connect {
-    background: var(--bg-hover, #f0f0f0);
-    color: var(--text-primary, #333333);
-    border: 1px solid var(--border-color, #e0e0e0);
+    background: #4CAF50;
+    color: white;
+    border: none;
     padding: 5px 10px;
     border-radius: 4px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.2s;
     flex: 1;
 }
 
 .btn-connect:hover {
-    background: var(--border-color, #e0e0e0);
+    background: #45a049;
+    transform: scale(1.02);
 }
 
 /* Logs Section */
@@ -351,7 +369,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0, 0, 0, 0.7);
     justify-content: center;
     align-items: center;
     z-index: 1000;
