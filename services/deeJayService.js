@@ -1,5 +1,5 @@
 // services/deeJayService.js
-const { Client, LocalAuth } = require("whatsapp-web.js");
+const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const path = require("path");
 const fs = require("fs").promises;
 const { debug } = require("./debugService");
@@ -13,6 +13,7 @@ const {
 
 const MessageType = require("../config/messageType");
 const { runQuery, getDatabaseConnection } = require("../config/initializeModules/databaseIM");
+const { EMOJIS, GIF_URLS } = require("../utils/randomContent");
 
 class DeeJayService {
     constructor() {
@@ -253,26 +254,73 @@ class DeeJayService {
     }
 
     async sendSingleMessage(from, to) {
-        const message = await this.getRandomDeeJayMessage();
-        if (!message) {
-            console.log("Dee Jay: Nenhuma mensagem do tipo 'dee_jay' encontrada.");
-            return;
-        }
+        // Randomization Logic:
+        // 70% - Database Message
+        // 15% - Emoji
+        // 15% - GIF
+
+        const rand = Math.random();
+        let message = null;
+        let options = undefined;
 
         try {
+             if (rand < 0.70) {
+                // Database Message
+                message = await this.getRandomDeeJayMessage();
+                if (!message) {
+                    // Fallback if DB empty
+                     message = this.getRandomEmoji();
+                }
+             } else if (rand < 0.85) {
+                // Emoji
+                message = this.getRandomEmoji();
+             } else {
+                // GIF
+                const gifUrl = this.getRandomGifUrl();
+                if (gifUrl) {
+                    try {
+                        message = await MessageMedia.fromUrl(gifUrl, { unsafeMime: true });
+                        options = { sendVideoAsGif: true };
+                    } catch (e) {
+                         console.error("Dee Jay: Erro ao carregar GIF, enviando emoji em vez disso.", e);
+                         message = this.getRandomEmoji();
+                    }
+                } else {
+                     message = this.getRandomEmoji();
+                }
+             }
+             
+             if (!message) {
+                 console.log("Dee Jay: Não foi possível gerar mensagem.");
+                 return;
+             }
+
             const receiverNumber = to.client.info.wid.user + "@c.us";
-            await from.client.sendMessage(receiverNumber, message);
+            await from.client.sendMessage(receiverNumber, message, options);
             
+            const logMsg = (typeof message === 'object') ? '[GIF]' : message;
+
             this.emit('log', {
                 timestamp: new Date(),
                 sender: from.name,
                 receiver: to.name,
-                message: message
+                message: logMsg
             });
-            console.log(`Dee Jay: ${from.name} enviou para ${to.name}: ${message}`);
+            console.log(`Dee Jay: ${from.name} enviou para ${to.name}: ${logMsg}`);
+
         } catch (error) {
             console.error(`Dee Jay: Erro ao enviar de ${from.name} para ${to.name}:`, error);
         }
+    }
+
+    getRandomEmoji() {
+        if (!EMOJIS || EMOJIS.length === 0) return "👍";
+        return EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+    }
+
+    getRandomGifUrl() {
+        if (!GIF_URLS || GIF_URLS.length === 0) return null;
+        return GIF_URLS[Math.floor(Math.random() * GIF_URLS.length)];
     }
 
     async getRandomDeeJayMessage() {
