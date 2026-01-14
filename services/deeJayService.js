@@ -8,7 +8,8 @@ const {
     updateDeeJayInstanceStatus, 
     DEE_JAY_STATUS,
     deleteDeeJayInstance,
-    createDeeJayInstance
+    createDeeJayInstance,
+    resetAllDeeJayInstancesStatus
 } = require("../config/initializeModules/deeJayIM");
 
 const MessageType = require("../config/messageType");
@@ -47,13 +48,21 @@ class DeeJayService {
     }
 
     async initialize() {
+        // Reset any stale "connected" status from previous runs
+        // This handles cases where the app was closed abruptly
+        try {
+            await resetAllDeeJayInstancesStatus();
+        } catch (error) {
+            console.error("Erro ao resetar status das instâncias Dee Jay:", error);
+        }
+
         // Load instances from DB
         const instances = await getAllDeeJayInstances();
         // We don't auto-connect on startup for now, but we could.
         // Let's just load them into memory as disconnected
         for (const inst of instances) {
             this.clients.set(inst.instance_id, {
-                status: inst.status,
+                status: DEE_JAY_STATUS.DISCONNECTED, // Always start as disconnected
                 name: inst.name,
                 qrCode: null,
                 client: null
@@ -348,6 +357,26 @@ class DeeJayService {
                 });
             }
         }
+    }
+
+    /**
+     * Stops all Dee Jay instances (used during app cleanup)
+     */
+    async stopAll() {
+        console.log("🛑 Parando todas as instâncias Dee Jay...");
+        this.stopLoop(); // Stop the conversation loop first
+
+        const instanceIds = Array.from(this.clients.keys());
+
+        for (const instanceId of instanceIds) {
+            try {
+                await this.stopInstance(instanceId);
+            } catch (error) {
+                console.error(`Erro ao parar instância Dee Jay ${instanceId}:`, error.message);
+            }
+        }
+
+        console.log("✅ Todas as instâncias Dee Jay paradas");
     }
 }
 

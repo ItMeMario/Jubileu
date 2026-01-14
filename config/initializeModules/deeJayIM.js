@@ -180,11 +180,41 @@ async function deleteDeeJayInstance(instanceId) {
     });
 }
 
+/**
+ * Reseta o status de todas as instâncias Dee Jay para disconnected
+ * Útil na inicialização da aplicação para limpar estados "fantasma"
+ * @returns {Promise<boolean>}
+ */
+async function resetAllDeeJayInstancesStatus() {
+    return new Promise(async (resolve, reject) => {
+        let db;
+        try {
+            db = await getDatabaseConnection();
+            db.run(
+                `UPDATE dee_jay_instances SET status = ?`,
+                [DEE_JAY_STATUS.DISCONNECTED],
+                function(err) {
+                    db.close();
+                    if (err) reject(err);
+                    else {
+                        console.log(`🔄 ${this.changes} instância(s) Dee Jay resetada(s) para disconnected`);
+                        resolve(true);
+                    }
+                }
+            );
+        } catch (error) {
+            if (db) db.close();
+            reject(error);
+        }
+    });
+}
+
 module.exports = {
   initializeDeeJayInstancesTable,
   getAllDeeJayInstances,
   createDeeJayInstance,
   updateDeeJayInstanceStatus,
   deleteDeeJayInstance,
+  resetAllDeeJayInstancesStatus,
   DEE_JAY_STATUS
 };

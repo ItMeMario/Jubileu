@@ -1,5 +1,6 @@
 const { app } = require("electron");
 const { instanceManager } = require("../services/instanceManager");
+const deeJayService = require("../services/deeJayService");
 
 class AppLifecycle {
   constructor() {
@@ -72,7 +73,16 @@ class AppLifecycle {
         console.error("⚠️ Erro ao parar instâncias:", error.message);
       }
 
-      // 2. Cleanup do cliente legado (se existir)
+      // 2. Para todas as instâncias Dee Jay
+      try {
+        console.log("🛑 Parando todas as instâncias Dee Jay...");
+        await deeJayService.stopAll();
+        console.log("✅ Todas as instâncias Dee Jay paradas");
+      } catch (error) {
+        console.error("⚠️ Erro ao parar instâncias Dee Jay:", error.message);
+      }
+
+      // 3. Cleanup do cliente legado (se existir)
       if (this.client && this.client.pupPage) {
         try {
           console.log("🛑 Destruindo cliente WhatsApp legado...");
