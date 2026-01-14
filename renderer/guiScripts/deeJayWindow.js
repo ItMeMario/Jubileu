@@ -225,7 +225,7 @@ function createInstanceCard(inst) {
     };
 
     btnDelete.onclick = async () => {
-        if (confirm('Remover esta instância?')) {
+        if (await window.customConfirm('Remover esta instância?')) {
             await window.deeJayAPI.removeInstance(inst.instanceId);
             await loadInstances();
         }
