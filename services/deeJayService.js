@@ -347,7 +347,10 @@ class DeeJayService {
              }
 
             const receiverNumber = to.client.info.wid.user + "@c.us";
-            await from.client.sendMessage(receiverNumber, message, options);
+            // sendSeen: false para contornar erro de compatibilidade na whatsapp-web.js
+            // (erro: Cannot read properties of undefined (reading 'markedUnread'))
+            const sendOptions = { ...options, sendSeen: false };
+            await from.client.sendMessage(receiverNumber, message, sendOptions);
             
             const logMsg = (typeof message === 'object') ? '[GIF]' : message;
 
