@@ -280,6 +280,14 @@ class DeeJayService {
             const receiver = connected[receiverIdx];
 
             // 2. Sender -> Receiver
+            const senderNum = sender.client?.info?.wid?.user;
+            const receiverNum = receiver.client?.info?.wid?.user;
+            console.log(`Dee Jay DEBUG: Loop ${sender.name} (${senderNum}) -> ${receiver.name} (${receiverNum})`);
+
+            if (senderNum && receiverNum && senderNum === receiverNum) {
+                console.warn(`Dee Jay AVISO: As instâncias '${sender.name}' e '${receiver.name}' estão conectadas no MESMO número de WhatsApp (${senderNum}). O Dee Jay precisa de números diferentes para conversar.`);
+            }
+
             await this.sendSingleMessage(sender, receiver);
 
             if (!this.isRunning) break;
