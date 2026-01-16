@@ -72,7 +72,7 @@ class DeeJayHandlers {
   }
 
   async setConfig(event, config) {
-      deeJayService.setConfig(config);
+      await deeJayService.setConfig(config);
       return { success: true };
   }
   

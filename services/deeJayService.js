@@ -48,6 +48,9 @@ class DeeJayService {
     }
 
     async initialize() {
+        // Load persist config
+        await this.loadConfig();
+
         // Reset any stale "connected" status from previous runs
         // This handles cases where the app was closed abruptly
         try {
@@ -67,6 +70,44 @@ class DeeJayService {
                 qrCode: null,
                 client: null
             });
+        }
+    }
+
+    getConfigPath() {
+        return path.join(__dirname, "../config/deeJayConfig.json");
+    }
+
+    async loadConfig() {
+        try {
+            const configPath = this.getConfigPath();
+            const data = await fs.readFile(configPath, 'utf8');
+            const loadedConfig = JSON.parse(data);
+            
+            // Merge loaded config with defaults, ensuring valid types
+            if (loadedConfig.minIntervalMinutes) this.config.minIntervalMinutes = loadedConfig.minIntervalMinutes;
+            if (loadedConfig.maxIntervalMinutes) this.config.maxIntervalMinutes = loadedConfig.maxIntervalMinutes;
+            console.log("Dee Jay: Configuração carregada:", this.config);
+        } catch (error) {
+            if (error.code !== 'ENOENT') {
+                console.error("Dee Jay: Erro ao carregar configuração:", error);
+            } else {
+                console.log("Dee Jay: Arquivo de configuração não encontrado, usando padrões.");
+            }
+        }
+    }
+
+    async saveConfig() {
+        try {
+             const configPath = this.getConfigPath();
+             // Prepare object to save (exclude 'active' if it's runtime only, but user might want persistence)
+             // User request: "persistir mesmo que o programa seja fechado". 
+             // Usually active state is runtime, but intervals are persistent.
+             // Let's persist everything for now provided it's in this.config.
+             const data = JSON.stringify(this.config, null, 2);
+             await fs.writeFile(configPath, data, 'utf8');
+             console.log("Dee Jay: Configuração salva com sucesso.");
+        } catch (error) {
+            console.error("Dee Jay: Erro ao salvar configuração:", error);
         }
     }
 
@@ -207,8 +248,9 @@ class DeeJayService {
         return connected;
     }
 
-    setConfig(config) {
+    async setConfig(config) {
         this.config = { ...this.config, ...config };
+        await this.saveConfig();
     }
     
     getConfig() {
