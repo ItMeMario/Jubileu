@@ -337,17 +337,38 @@ body.dark-mode .numbers-list {
     background-color: var(--bg-secondary);
 }
 
-body.dark-mode .message-card,
-body.dark-mode .city-card,
-body.dark-mode .number-card {
+body.dark-mode .message-item,
+body.dark-mode .city-item,
+body.dark-mode .number-item {
     background-color: var(--bg-tertiary);
     border-color: var(--border-color);
 }
 
-body.dark-mode .message-card:hover,
-body.dark-mode .city-card:hover,
-body.dark-mode .number-card:hover {
+body.dark-mode .message-item:hover,
+body.dark-mode .city-item:hover,
+body.dark-mode .number-item:hover {
     background-color: var(--bg-hover);
+}
+
+/* Item Text Colors - Fix Visibility */
+body.dark-mode .message-header,
+body.dark-mode .message-content,
+body.dark-mode .city-name,
+body.dark-mode .city-content,
+body.dark-mode .number-value,
+body.dark-mode .number-name {
+    color: var(--text-primary);
+}
+
+body.dark-mode .message-meta,
+body.dark-mode .city-meta,
+body.dark-mode .number-meta,
+body.dark-mode .city-info .info-label {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .city-info .info-value {
+    color: var(--text-primary);
 }
 
 /* ========== DRONE PAGE SPECIFIC ========== */
@@ -429,10 +450,10 @@ body.dark-mode input[type="checkbox"] {
 }
 
 /* ========== TABLES / GRIDS ========== */
-body.dark-mode .status-grid,
+/* body.dark-mode .status-grid,
 body.dark-mode .instances-grid {
-    /* Mantém estrutura, apenas cores já aplicadas */
-}
+   Mantém estrutura, apenas cores já aplicadas
+} */
 
 /* ========== AUDIO UPLOAD AREA ========== */
 body.dark-mode .audio-upload-area {
@@ -552,6 +573,7 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
