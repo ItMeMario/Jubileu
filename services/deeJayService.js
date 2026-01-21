@@ -136,8 +136,11 @@ class DeeJayService {
 
     async startInstance(instanceId) {
         if (this.clients.get(instanceId)?.client) {
-            return; // Already started
+            await debug(`Dee Jay: Instância ${instanceId} já está iniciada.`);
+            return;
         }
+
+        await debug(`Dee Jay: Iniciando instância ${instanceId}...`);
 
         const client = new Client({
             authStrategy: new LocalAuth({
@@ -146,7 +149,15 @@ class DeeJayService {
             }),
             puppeteer: {
                 headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
+                args: [
+                    '--no-sandbox', 
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--disable-gpu' // Economiza recursos, útil para múltiplas instâncias
+                ]
             }
         });
 
@@ -154,40 +165,96 @@ class DeeJayService {
         instanceData.client = client;
         instanceData.status = DEE_JAY_STATUS.CONNECTING;
         this.clients.set(instanceId, instanceData);
-        await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.CONNECTING);
-
-        client.on('qr', (qr) => {
-            instanceData.qrCode = qr;
-            instanceData.status = DEE_JAY_STATUS.QR_PENDING;
-            this.emit('instance-update', { instanceId, status: instanceData.status, qr });
-        });
-
-        client.on('ready', async () => {
-            instanceData.status = DEE_JAY_STATUS.CONNECTED;
-            instanceData.qrCode = null;
-            const phoneNumber = client.info.wid.user;
-            console.log(`Dee Jay conectado: ${phoneNumber}`);
-            await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.CONNECTED, phoneNumber);
-            this.emit('instance-update', { instanceId, status: instanceData.status });
-        });
         
-        client.on('authenticated', () => {
-             instanceData.status = DEE_JAY_STATUS.CONNECTING;
-             instanceData.qrCode = null;
-             this.emit('instance-update', { instanceId, status: 'authenticated' });
-        });
-
-        client.on('disconnected', async () => {
-            instanceData.status = DEE_JAY_STATUS.DISCONNECTED;
-            instanceData.client = null;
-            await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.DISCONNECTED);
-             this.emit('instance-update', { instanceId, status: DEE_JAY_STATUS.DISCONNECTED });
-        });
-
         try {
+            await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.CONNECTING);
+
+            client.on('qr', (qr) => {
+                debug(`Dee Jay: QR Code recebido para ${instanceId}`);
+                instanceData.qrCode = qr;
+                instanceData.status = DEE_JAY_STATUS.QR_PENDING;
+                this.emit('instance-update', { instanceId, status: instanceData.status, qr });
+            });
+
+            client.on('ready', async () => {
+                instanceData.status = DEE_JAY_STATUS.CONNECTED;
+                instanceData.qrCode = null;
+                const phoneNumber = client.info.wid.user;
+                console.log(`Dee Jay conectado: ${phoneNumber} (${instanceId})`);
+                await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.CONNECTED, phoneNumber);
+                this.emit('instance-update', { instanceId, status: instanceData.status });
+            });
+            
+            client.on('authenticated', () => {
+                 debug(`Dee Jay: Autenticado ${instanceId}`);
+                 instanceData.status = DEE_JAY_STATUS.CONNECTING; // Ainda conectando até ready
+                 instanceData.qrCode = null;
+                 this.emit('instance-update', { instanceId, status: 'authenticated' });
+            });
+
+            client.on('auth_failure', async (msg) => {
+                console.error(`Dee Jay: Falha de autenticação para ${instanceId}: ${msg}`);
+                instanceData.status = DEE_JAY_STATUS.AUTH_FAILURE;
+                await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.AUTH_FAILURE);
+                this.emit('instance-update', { instanceId, status: DEE_JAY_STATUS.AUTH_FAILURE });
+            });
+
+            client.on('disconnected', async (reason) => {
+                console.log(`Dee Jay: Desconectado ${instanceId} (Razão: ${reason})`);
+                instanceData.status = DEE_JAY_STATUS.DISCONNECTED;
+                instanceData.client = null;
+                await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.DISCONNECTED);
+                this.emit('instance-update', { instanceId, status: DEE_JAY_STATUS.DISCONNECTED });
+            });
+
             await client.initialize();
+            await debug(`Dee Jay: Cliente inicializado para ${instanceId}`);
+            
+            // Forward browser console logs to Node (help debug inner WA errors)
+            if (client.pupPage) {
+                client.pupPage.on('console', async msg => {
+                    const text = msg.text();
+                    if (msg.type() === 'error') {
+                         await debug(`Dee Jay Browser Error (${instanceId}):`, text);
+                         
+                         // Detecção de Erro Crítico de Sessão Corrompida ou Incompatível
+                         if (text.includes('WAWebSetPushnameConnAction')) {
+                             console.error(`Dee Jay CRÍTICO: Sessão corrompida ou incompatível detectada na instância ${instanceId}. Forçando desconexão.`);
+                             try {
+                                 await client.destroy();
+                                 instanceData.client = null;
+                                 instanceData.status = DEE_JAY_STATUS.AUTH_FAILURE;
+                                 await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.AUTH_FAILURE);
+                                 this.emit('instance-update', { instanceId, status: DEE_JAY_STATUS.AUTH_FAILURE, error: "Sessão incompatível. Recrie a instância." });
+                             } catch (e) {
+                                 console.error("Erro ao tentar recuperar de falha crítica:", e);
+                             }
+                         }
+                    }
+                });
+            }
+
+            // Safety Warning if stuck on authenticated too long
+            setTimeout(() => {
+                const currentStatus = this.clients.get(instanceId)?.status;
+                if (currentStatus === DEE_JAY_STATUS.CONNECTING || currentStatus === 'authenticated') {
+                     console.warn(`Dee Jay ALERTA: Instância ${instanceId} parece estar PRESA em '${currentStatus}' por mais de 60 segundos. Pode ser necessário reiniciar manualmente esta instância.`);
+                     // Opcional: tentar reload
+                     // if (client.pupPage) client.pupPage.reload();
+                }
+            }, 60000);
+
         } catch (e) {
-            console.error("Error initializing Dee Jay client:", e);
+            console.error(`Dee Jay: ERRO FATAL ao iniciar instância ${instanceId}:`, e);
+            // Reverter estado
+            const data = this.clients.get(instanceId);
+            if (data) {
+                data.client = null;
+                data.status = DEE_JAY_STATUS.DISCONNECTED;
+            }
+            await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.DISCONNECTED);
+            this.emit('instance-update', { instanceId, status: DEE_JAY_STATUS.DISCONNECTED, error: e.message });
+            throw e; // Propagar para o handler saber
         }
     }
 
@@ -282,7 +349,8 @@ class DeeJayService {
             // 2. Sender -> Receiver
             const senderNum = sender.client?.info?.wid?.user;
             const receiverNum = receiver.client?.info?.wid?.user;
-            console.log(`Dee Jay DEBUG: Loop ${sender.name} (${senderNum}) -> ${receiver.name} (${receiverNum})`);
+            
+            await debug(`Dee Jay DEBUG: Loop ${sender.name} (${senderNum}) -> ${receiver.name} (${receiverNum})`);
 
             if (senderNum && receiverNum && senderNum === receiverNum) {
                 console.warn(`Dee Jay AVISO: As instâncias '${sender.name}' e '${receiver.name}' estão conectadas no MESMO número de WhatsApp (${senderNum}). O Dee Jay precisa de números diferentes para conversar.`);
@@ -296,7 +364,7 @@ class DeeJayService {
             const minMs = this.config.minIntervalMinutes * 60 * 1000;
             const maxMs = this.config.maxIntervalMinutes * 60 * 1000;
             
-            console.log(`Dee Jay: Aguardando resposta...`);
+            await debug(`Dee Jay: Aguardando resposta...`);
             await smartDelay({ minMs, maxMs });
 
             if (!this.isRunning) break;
@@ -307,7 +375,7 @@ class DeeJayService {
             if (!this.isRunning) break;
 
             // 5. Wait before next conversation
-            console.log(`Dee Jay: Aguardando próxima conversa...`);
+            await debug(`Dee Jay: Aguardando próxima conversa...`);
             await smartDelay({ minMs, maxMs });
         }
     }
@@ -350,7 +418,7 @@ class DeeJayService {
              }
              
              if (!message) {
-                 console.log("Dee Jay: Não foi possível gerar mensagem.");
+                 await debug("Dee Jay: Não foi possível gerar mensagem.");
                  return;
              }
 
@@ -368,7 +436,7 @@ class DeeJayService {
                 receiver: to.name,
                 message: logMsg
             });
-            console.log(`Dee Jay: ${from.name} enviou para ${to.name}: ${logMsg}`);
+            await debug(`Dee Jay: ${from.name} enviou para ${to.name}: ${logMsg}`);
 
         } catch (error) {
             console.error(`Dee Jay: Erro ao enviar de ${from.name} para ${to.name}:`, error);
