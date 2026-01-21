@@ -32,14 +32,16 @@ function createDeeJayWindow() {
   });
 
   // Remove menu bar
-  deeJayWindow.setMenuBarVisibility(false);
+  // Menu bar enabled by default
+
 
   const htmlPath = path.join(__dirname, "../html/deeJay.html");
   console.log("Carregando HTML:", htmlPath);
   deeJayWindow.loadFile(htmlPath);
 
   // Abre o DevTools para debug
-  deeJayWindow.webContents.openDevTools();
+  // DevTools removido conforme solicitado
+
 
   deeJayWindow.on("closed", () => {
     console.log("Janela Dee Jay fechada");
