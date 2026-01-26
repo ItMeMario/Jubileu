@@ -445,6 +445,33 @@ Ajustes internos na licença para manter o projeto alinhado com as normas de uso
 📌 Patch Notes - Versão 0.0.14
 
 ✨ Novidades
+Adicionada a capacidade de múltiplas instâncias tanto para o Jubileu quanto para o Pare Seu Drone.
+
+Adicionada a variável {{primeiroNome}} para uso no tipo de mensagem GROUP_MULTI_INVITE.
+
+🛠️ Melhorias
+Atualizada a documentação de preenchimento de mensagens para maior clareza.
+
+Removido o sistema de modo single, com o sistema passando a operar exclusivamente em modo multi.
+
+Removido o sistema de cidade primária da interface gráfica, tornando-o irrelevante após a remoção do modo single.
+
+Removido o tipo de mensagem GROUP_SINGLE_INVITE.
+
+🐛 Correções
+Corrigido bug no configPreload.
+
+Corrigido bug que impedia o uso dos campos de texto após a exclusão de uma cidade ou mensagem.
+
+Corrigido problema onde, ao atualizar uma cidade, o botão não retornava ao estado padrão de salvar.
+
+Corrigido bug que fazia o botão "Limpar" não funcionar corretamente.
+
+📅 Data de Lançamento: [06/01/2026]
+
+📌 Patch Notes - Versão 0.0.15
+
+✨ Novidades
 
 - Adicionado botão de limpar cache
 - Implementado dark mode no sistema
