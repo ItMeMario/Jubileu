@@ -441,3 +441,27 @@ Corrigido o problema que impedia o envio de mensagens de áudio.
 Ajustes internos na licença para manter o projeto alinhado com as normas de uso.
 
 📅 Data de Lançamento: [18/11/2025]
+
+📌 Patch Notes - Versão 0.0.14
+
+✨ Novidades
+
+- Adicionado botão de limpar cache
+- Implementado dark mode no sistema
+- Adicionado limite de 2 mensagens no sistema anti-spam
+- Adicionado sistema de Dee Jay
+
+🛠️ Melhorias
+
+- Modularizado `drone.css` para melhor organização e manutenibilidade
+- Removidas funções deprecated do `numberManagementDSM.js`
+
+🐛 Correções
+
+- Corrigido botão "atualizar mensagem" que não retornava ao estado padrão "salvar mensagem" após a operação
+- Corrigido bug do comando ajuda que não enviava fallback
+- Corrigido bug do dark mode onde o texto ficava ilegível
+
+---
+
+**📅 Data de Lançamento:** 26/01/2026
