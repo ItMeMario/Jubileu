@@ -8,6 +8,7 @@ const MessageType = {
   SUSPENDED: "suspended",
   REMINDER: "reminder",
   DRONE: "drone",
+  DEE_JAY: "dee_jay",
 
   // Fluxo
   SEND_FAQ: "send_faq",

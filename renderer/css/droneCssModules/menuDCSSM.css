@@ -1,0 +1,28 @@
+/* droneCssModules/menuDCSSM.css */
+/* Menu Items - Itens do menu da sidebar */
+
+/* ==================== MENU ITEMS ==================== */
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 0.95em;
+    text-align: left;
+    width: 100%;
+}
+
+.menu-item:hover {
+    background: var(--bg-hover);
+}
+
+.menu-item.active {
+    background: var(--accent-color);
+    color: white;
+}

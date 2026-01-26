@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dee Jay</title>
+    <link rel="stylesheet" href="../css/globalCss.css">
+    <link rel="stylesheet" href="../css/darkMode.css">
+    <link rel="stylesheet" href="../css/deeJay.css">
+</head>
+<body>
+    <div class="dj-container">
+        <header class="dj-header">
+            <h1>🎧 Dee Jay</h1>
+            <div class="dj-controls">
+                <div class="config-group">
+                    <label>Intervalo (min):</label>
+                    <input type="number" id="min-interval" min="1" value="1" placeholder="Min">
+                    <span>a</span>
+                    <input type="number" id="max-interval" min="1" value="5" placeholder="Max">
+                    <button id="btn-save-config">💾 Salvar</button>
+                </div>
+                <div class="action-group">
+                    <button id="btn-start-loop" class="btn-start" disabled>▶ Start Dee Jay</button>
+                    <button id="btn-stop-loop" class="btn-stop" style="display: none;">⏹ Stop Dee Jay</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="dj-main">
+            <section class="dj-instances">
+                <div class="instances-header">
+                    <h2>Instâncias Conectadas</h2>
+                    <button id="btn-add-instance">➕ Nova Conexão</button>
+                </div>
+                <div id="instances-list" class="instances-grid">
+                    <!-- Cards de instâncias aqui -->
+                </div>
+            </section>
+
+            <section class="dj-logs">
+                <h2>Logs de Mensagens</h2>
+                <div id="logs-container" class="logs-container">
+                    <!-- Logs aqui -->
+                    <div class="log-placeholder">Nenhuma mensagem trocada ainda...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Adicionar -->
+    <div id="modal-add" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Nova Conexão Dee Jay</h3>
+            <input type="text" id="new-instance-name" placeholder="Nome (ex: WhatsApp 1)">
+            <div class="modal-buttons">
+                <button id="btn-cancel-add" class="btn-secondary">Cancelar</button>
+                <button id="btn-confirm-add" class="btn-primary">Criar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Template Card -->
+    <template id="instance-card-template">
+        <div class="instance-card">
+            <div class="card-header">
+                <span class="instance-name">Nome</span>
+                <span class="status-badge">Desconectado</span>
+            </div>
+            <div class="card-body">
+                <div class="qr-container" style="display: none;">
+                    <img src="" class="qr-code">
+                    <p>Escaneie o QR Code</p>
+                </div>
+                <div class="info-container" style="display: none;">
+                    <p class="phone-number"></p>
+                </div>
+                <div class="actions">
+                     <button class="btn-delete">🗑️</button>
+                     <button class="btn-connect">Conectar</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="../guiScripts/utils/darkModeManager.js"></script>
+    <script src="../guiScripts/utils/confirmModal.js"></script>
+    <script src="../guiScripts/deeJayWindow.js"></script>
+</body>
+</html>

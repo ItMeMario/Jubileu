@@ -42,6 +42,11 @@ class Application {
       };
       this.ipcManager.registerAllHandlers(modules);
 
+      // Inicializa o serviço Dee Jay
+      console.log("🎧 Inicializando Dee Jay Service...");
+      const deeJayService = require("./services/deeJayService");
+      await deeJayService.initialize();
+
       console.log("🪟 Criando janela principal...");
       // Cria janela principal
       this.windowManager.createMainWindow();
@@ -52,6 +57,9 @@ class Application {
         this.windowManager,
         this.moduleLoader.getModule("client")
       );
+
+      // Configura handlers de sinal para terminação abrupta
+      this.setupSignalHandlers();
 
       console.log("✅ Aplicação inicializada com sucesso!");
     } catch (error) {
@@ -68,6 +76,33 @@ class Application {
 
       // Força saída em caso de erro crítico
       process.exit(1);
+    }
+  }
+
+  /**
+   * Configura handlers para sinais de terminação (SIGINT, SIGTERM)
+   * Garante cleanup adequado do Dee Jay em casos de fechamento abrupto
+   */
+  setupSignalHandlers() {
+    const cleanup = async (signal) => {
+      console.log(`\n🛑 Recebido sinal ${signal}, iniciando cleanup...`);
+      try {
+        await this.appLifecycle.cleanup();
+      } catch (error) {
+        console.error("Erro durante cleanup:", error);
+      }
+      process.exit(0);
+    };
+
+    // Captura Ctrl+C
+    process.on("SIGINT", () => cleanup("SIGINT"));
+
+    // Captura kill/terminate
+    process.on("SIGTERM", () => cleanup("SIGTERM"));
+
+    // Windows: Captura fechamento do console
+    if (process.platform === "win32") {
+      process.on("SIGHUP", () => cleanup("SIGHUP"));
     }
   }
 }

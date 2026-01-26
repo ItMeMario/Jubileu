@@ -1,0 +1,142 @@
+/* droneCssModules/numbersListDCSSM.css */
+/* Numbers List - Lista de números e filtros */
+
+/* ==================== NUMBERS LIST SECTION ==================== */
+.numbers-list-section {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.list-header h3 {
+    margin: 0;
+}
+
+.filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-controls label {
+    font-size: 0.9em;
+    color: var(--text-muted);
+}
+
+.status-filter {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    padding: 6px 12px;
+    font-size: 0.85em;
+}
+
+/* ==================== NUMBERS LIST ==================== */
+.numbers-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+
+.number-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.2s;
+}
+
+.number-item:last-child {
+    border-bottom: none;
+}
+
+.number-item:hover {
+    background: var(--bg-hover);
+}
+
+.number-item .number-index {
+    width: 40px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+}
+
+.number-item .number-value {
+    flex: 1;
+    font-family: monospace;
+    font-size: 0.95em;
+}
+
+.number-item .number-name {
+    flex: 1;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+.number-item .number-status {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+}
+
+.number-item .number-status.pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: var(--warning-color);
+}
+
+.number-item .number-status.sent {
+    background: rgba(40, 167, 69, 0.2);
+    color: var(--success-color);
+}
+
+.number-item .number-status.failed {
+    background: rgba(220, 53, 69, 0.2);
+    color: var(--error-color);
+}
+
+.number-item .btn-remove {
+    background: none;
+    border: none;
+    color: var(--error-color);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s;
+}
+
+.number-item:hover .btn-remove {
+    opacity: 1;
+}
+
+.number-item .btn-remove:hover {
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.empty-state {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-muted);
+}

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../css/globalCss.css">
     <link rel="stylesheet" href="../css/index.css">
     <link rel="stylesheet" href="../css/instances.css">
+    <link rel="stylesheet" href="../css/darkMode.css">
 </head>
 
 <body>
@@ -18,6 +19,9 @@
         <div class="button-group">
             <button id="btn-config" class="config-btn">⚙️ Configurações</button>
             <button id="btn-drone" class="drone-btn">🚁 Drone</button>
+            <button id="btn-dee-jay" class="config-btn" style="background-color: #9C27B0;">🎧 Dee Jay</button>
+            <button id="btn-clear-cache" class="clear-cache-btn"
+                style="background-color: #f44336; margin-left: 10px;">🗑️ Limpar Cache</button>
         </div>
 
         <!-- Status global -->
@@ -140,6 +144,7 @@
         </div>
     </template>
 
+    <script src="../guiScripts/utils/darkModeManager.js"></script>
     <script src="../guiScripts/instancesManager.js"></script>
     <script src="../guiScripts/renderer.js"></script>
 </body>

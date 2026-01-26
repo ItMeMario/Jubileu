@@ -8,6 +8,8 @@ const ModoDevHandlers = require("./ipc/modoDevHandlers");
 const DataBaseHandlers = require("./ipc/dataBaseHandlers");
 const DroneHandlers = require("./ipc/droneHandlers");
 const InstanceHandlers = require("./ipc/instanceHandlers");
+const CacheHandlers = require("./ipc/cacheHandlers");
+const DeeJayHandlers = require("./ipc/deeJayHandlers");
 
 class IPCManager {
   constructor() {
@@ -21,6 +23,7 @@ class IPCManager {
       dataBase: null,
       drone: null,
       instance: null,
+      cache: null,
     };
   }
 
@@ -36,6 +39,8 @@ class IPCManager {
       this.handlers.dataBase = new DataBaseHandlers();
       this.handlers.drone = new DroneHandlers(modules.windowManager);
       this.handlers.instance = new InstanceHandlers(modules);
+      this.handlers.cache = new CacheHandlers();
+      this.handlers.deeJay = new DeeJayHandlers(modules.windowManager);
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -63,6 +68,12 @@ class IPCManager {
 
       // Registra handlers de instâncias
       this.registerInstanceHandlers();
+
+      // Registra handlers de cache
+      this.registerCacheHandlers();
+
+      // Registra handlers de Dee Jay
+      this.registerDeeJayHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -489,6 +500,29 @@ class IPCManager {
     console.log("Handlers de instâncias registrados");
   }
 
+  registerCacheHandlers() {
+    ipcMain.handle(
+      "clear-cache",
+      this.handlers.cache.clearCache.bind(this.handlers.cache)
+    );
+    console.log("Handlers de cache registrados");
+  }
+
+  registerDeeJayHandlers() {
+     ipcMain.handle("dee-jay-get-instances", this.handlers.deeJay.getInstances.bind(this.handlers.deeJay));
+     ipcMain.handle("dee-jay-create-instance", this.handlers.deeJay.createInstance.bind(this.handlers.deeJay));
+     ipcMain.handle("dee-jay-remove-instance", this.handlers.deeJay.removeInstance.bind(this.handlers.deeJay));
+     ipcMain.handle("dee-jay-start-instance", this.handlers.deeJay.startInstance.bind(this.handlers.deeJay));
+     ipcMain.handle("dee-jay-stop-instance", this.handlers.deeJay.stopInstance.bind(this.handlers.deeJay));
+     ipcMain.handle("dee-jay-start-loop", this.handlers.deeJay.startLoop.bind(this.handlers.deeJay));
+     ipcMain.handle("dee-jay-stop-loop", this.handlers.deeJay.stopLoop.bind(this.handlers.deeJay));
+     ipcMain.handle("dee-jay-get-config", this.handlers.deeJay.getConfig.bind(this.handlers.deeJay));
+     ipcMain.handle("dee-jay-set-config", this.handlers.deeJay.setConfig.bind(this.handlers.deeJay));
+     ipcMain.handle("open-dee-jay-window", this.handlers.deeJay.openDeeJayWindow.bind(this.handlers.deeJay));
+     
+     console.log("Handlers de Dee Jay registrados");
+  }
+
   // ========================================
   // Getter para InstanceHandlers (útil para inicialização)
   // ========================================
@@ -577,6 +611,7 @@ class IPCManager {
       "instance-client-info",
       "instance-send-message",
       "instance-get-config",
+      "clear-cache",
     ];
 
     events.forEach((event) => {

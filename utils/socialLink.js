@@ -1,5 +1,6 @@
 // utils/socialLink.js
 const messageManagerNHM = require("../handlers/nameHandlerModules/messageManagerNHM");
+const { debug } = require("../services/debugService");
 
 async function sendSocialLinkIfExists(client, userNumber) {
   try {
@@ -10,6 +11,7 @@ async function sendSocialLinkIfExists(client, userNumber) {
     }
   } catch (error) {
     // Silenciosamente não faz nada se houver erro
+    debug("ℹ️ Social link não disponível (ignorando silenciosamente).");
   }
 }
 

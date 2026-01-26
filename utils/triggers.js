@@ -268,20 +268,14 @@ async function enviarFAQ(client, msg) {
 
     // Tenta buscar mensagem no banco
     const faqMessage = await getMessage("send_faq");
-    if (faqMessage) {
-      await client.sendMessage(msg.from, faqMessage);
-      return;
-    }
-
-    // Fallback genérico
+    await client.sendMessage(msg.from, faqMessage);
+  } catch (error) {
+    // Fallback hardcoded caso não encontre no banco
+    debug("ℹ️ Mensagem SEND_FAQ não cadastrada, usando fallback hardcoded.");
     await client.sendMessage(
       msg.from,
-      "📋 *Estou atualizando meu guia de informações. Tente novamente outra hora."
+      "📋 *Estou atualizando meu guia de informações. Tente novamente outra hora.*"
     );
-  } catch (error) {
-    console.error("Erro ao enviar FAQ:", error);
-    debug("Erro ao enviar FAQ:", error);
-
   }
 }
 

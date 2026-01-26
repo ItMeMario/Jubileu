@@ -3,6 +3,7 @@ const { readJsonFile, saveJsonFile } = require("../config/initialize");
 const { enviarFAQ } = require("./triggers");
 const { debug } = require("../services/debugService");
 const { getMessage } = require("../utils/messageReader");
+const MessageType = require("../config/messageType");
 
 const SPAM_CONFIG = {
   FAQ_THRESHOLD: 3, // Envia FAQ após 3 tentativas
@@ -166,14 +167,14 @@ class AntiSpamManager {
           break;
 
         case "suspend":
-          const suspendMessage = await getMessage("suspend", {
+          const suspendMessage = await getMessage(MessageType.SUSPEND, {
             suspendDurationMinutes: extraData.suspendDurationMinutes || 60,
           });
           await client.sendMessage(userNumber, suspendMessage);
           break;
 
         case "suspended":
-          const suspendedMessage = await getMessage("suspended", {
+          const suspendedMessage = await getMessage(MessageType.SUSPENDED, {
             remainingMinutes: extraData.remainingMinutes || 0,
           });
           await client.sendMessage(userNumber, suspendedMessage);

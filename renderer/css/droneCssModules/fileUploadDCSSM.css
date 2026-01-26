@@ -1,0 +1,96 @@
+/* droneCssModules/fileUploadDCSSM.css */
+/* File Upload - Upload de arquivos e file info */
+
+/* ==================== ADD NUMBERS SECTION ==================== */
+.add-numbers-section {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.add-numbers-section h3 {
+    margin: 0 0 20px 0;
+}
+
+/* ==================== FILE UPLOAD ==================== */
+.file-upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.file-upload-area:hover {
+    border-color: var(--accent-color);
+    background: rgba(37, 211, 102, 0.05);
+}
+
+.file-upload-area.dragover {
+    border-color: var(--accent-color);
+    background: rgba(37, 211, 102, 0.1);
+}
+
+.upload-prompt .upload-icon {
+    font-size: 3em;
+    margin-bottom: 10px;
+}
+
+.upload-prompt h4 {
+    margin: 0 0 5px 0;
+}
+
+.upload-prompt p {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.supported-formats {
+    margin-top: 15px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+}
+
+/* ==================== FILE INFO ==================== */
+.file-info {
+    margin-top: 15px;
+}
+
+.file-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-tertiary);
+    padding: 12px 15px;
+    border-radius: 6px;
+}
+
+.file-icon {
+    font-size: 1.5em;
+}
+
+.file-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.file-count {
+    color: var(--text-muted);
+    font-size: 0.9em;
+}
+
+.btn-remove-file {
+    background: none;
+    border: none;
+    color: var(--error-color);
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.btn-remove-file:hover {
+    background: rgba(220, 53, 69, 0.1);
+}

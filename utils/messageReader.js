@@ -135,9 +135,6 @@ async function getMessage(messageType, variables = {}, customLocale = null) {
       }
 
       if (!messageTemplate) {
-        await debug(
-          `⚠️ Mensagem '${messageType}' não encontrada em nenhum locale (nem fallback). Sistema usará fallback hardcoded.`
-        );
         throw new Error(
           `Mensagem '${messageType}' não encontrada no banco de dados`
         );
@@ -148,7 +145,6 @@ async function getMessage(messageType, variables = {}, customLocale = null) {
 
     return processVariables(messageTemplate, variables);
   } catch (error) {
-    await debug(`❌ Erro ao obter mensagem '${messageType}': ${error.message}`);
     throw error;
   }
 }

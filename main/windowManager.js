@@ -11,6 +11,11 @@ const {
   closeDroneWindow,
   getDroneWindow,
 } = require("../renderer/guiConfig/droneWindow");
+const {
+  createDeeJayWindow,
+  closeDeeJayWindow,
+  getDeeJayWindow,
+} = require("../renderer/guiConfig/deeJayWindow");
 
 class WindowManager {
   constructor() {
@@ -113,6 +118,36 @@ class WindowManager {
         message: "Erro ao fechar Drone: " + error.message,
       };
     }
+  }
+
+  // Métodos para janela Dee Jay
+  openDeeJayWindow() {
+      try {
+          console.log("Abrindo Dee Jay...");
+          let win = getDeeJayWindow();
+          if (!win) {
+              win = createDeeJayWindow();
+          } else {
+              win.focus();
+          }
+          return { success: true, message: "Janela Dee Jay aberta" };
+      } catch (error) {
+          console.error("Erro ao abrir Dee Jay:", error);
+          return { success: false, message: "Erro ao abrir Dee Jay: " + error.message };
+      }
+  }
+  
+  closeDeeJayWindow() {
+      try {
+          closeDeeJayWindow();
+          return { success: true, message: "Janela Dee Jay fechada" };
+      } catch (error) {
+           return { success: false, message: "Erro ao fechar: " + error.message };
+      }
+  }
+  
+  getDeeJayWindow() {
+      return getDeeJayWindow();
   }
 
   // Método para recriar janela principal (macOS)

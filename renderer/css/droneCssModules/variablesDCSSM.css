@@ -1,0 +1,47 @@
+/* droneCssModules/variablesDCSSM.css */
+/* CSS Variables - Cores, temas e tokens de design */
+
+:root {
+    /* Cores de fundo */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --bg-hover: rgba(0, 0, 0, 0.05);
+
+    /* Cores de texto */
+    --text-primary: #212529;
+    --text-secondary: #495057;
+    --text-muted: #6c757d;
+
+    /* Cores de destaque */
+    --accent-color: #25d366;
+    --accent-hover: #128c7e;
+    --accent-rgb: 37, 211, 102;
+
+    /* Cores de status */
+    --success-color: #28a745;
+    --success-bg: rgba(40, 167, 69, 0.1);
+    --warning-color: #ffc107;
+    --warning-bg: rgba(255, 193, 7, 0.1);
+    --error-color: #dc3545;
+    --error-bg: rgba(220, 53, 69, 0.1);
+    --info-color: #007bff;
+    --info-bg: rgba(0, 123, 255, 0.1);
+
+    /* Bordas */
+    --border-color: #dee2e6;
+}
+
+/* Tema escuro (opcional - ativa com classe .dark no body) */
+body.dark {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-tertiary: #0f3460;
+    --bg-hover: rgba(255, 255, 255, 0.05);
+
+    --text-primary: #e9ecef;
+    --text-secondary: #adb5bd;
+    --text-muted: #6c757d;
+
+    --border-color: #2d3748;
+}

@@ -5,6 +5,8 @@
 // Elementos do DOM
 const btnConfig = document.getElementById("btn-config");
 const btnDrone = document.getElementById("btn-drone");
+const btnClearCache = document.getElementById("btn-clear-cache");
+const btnDeeJay = document.getElementById("btn-dee-jay"); // Adicionado: Botão Dee Jay
 const statusDiv = document.getElementById("status");
 
 // ========================================
@@ -119,6 +121,61 @@ btnDrone.addEventListener("click", async () => {
     hideButtonLoading(btnDrone, "🚁 Drone");
   }
 });
+
+// Botão Dee Jay
+if (btnDeeJay) {
+    btnDeeJay.addEventListener("click", async () => {
+      try {
+        showButtonLoading(btnDeeJay, "Abrindo...");
+    
+        const result = await window.electronAPI.openDeeJayWindow();
+    
+        if (result.success) {
+          showStatus(result.message, "success");
+        } else {
+          showStatus(result.message, "error");
+        }
+    
+        hideButtonLoading(btnDeeJay, "🎧 Dee Jay");
+      } catch (error) {
+        console.error("Erro ao abrir Dee Jay:", error);
+        showStatus("Erro ao abrir Dee Jay", "error");
+        hideButtonLoading(btnDeeJay, "🎧 Dee Jay");
+      }
+    });
+}
+
+// Botão Limpar Cache
+if (btnClearCache) {
+  btnClearCache.addEventListener("click", async () => {
+    // Confirmação antes de prosseguir
+    if (!confirm("Tem certeza que deseja limpar o cache?\n\nIsso irá desconectar o WhatsApp e será necessário escanear o QR Code novamente.\n\nO aplicativo será reiniciado.")) {
+      return;
+    }
+
+    try {
+      showButtonLoading(btnClearCache, "Limpando...");
+
+      const result = await window.electronAPI.clearCache();
+
+      if (result.success) {
+        showStatus(result.message, "success");
+        alert(result.message);
+        // Opcional: Recarregar a página ou reiniciar o app se a lógica de limpar sessão for crítica
+        // window.location.reload(); 
+      } else {
+        showStatus(result.message, "error");
+        alert(result.message);
+      }
+
+      hideButtonLoading(btnClearCache, "🗑️ Limpar Cache");
+    } catch (error) {
+      console.error("Erro ao limpar cache:", error);
+      showStatus("Erro ao limpar cache", "error");
+      hideButtonLoading(btnClearCache, "🗑️ Limpar Cache");
+    }
+  });
+}
 
 // ========================================
 // Inicialização

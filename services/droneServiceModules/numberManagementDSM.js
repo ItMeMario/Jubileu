@@ -578,16 +578,6 @@ async function getNumbersForDispatch(instanceId) {
   }
 }
 
-/**
- * @deprecated Use getNumbersForDispatch(instanceId) em vez disso
- */
-async function getNumbersInMemory() {
-  console.warn(
-    "DEPRECATED: getNumbersInMemory() está obsoleto. Use getNumbersForDispatch(instanceId)"
-  );
-  return [];
-}
-
 module.exports = {
   adicionarNumerosDeCSV,
   adicionarNumero,
@@ -598,5 +588,4 @@ module.exports = {
   limparNumerosPorStatus,
   obterEstatisticas,
   getNumbersForDispatch,
-  getNumbersInMemory, // Mantido para compatibilidade (deprecated)
 };

@@ -821,13 +821,15 @@ class MessagesManager {
         this.showStatus(result.message, "success");
         await this.loadMessages();
         this.clearForm();
+        // Preservar o texto atual (definido pelo clearForm) ao invés de restaurar o original
+        this.hideButtonLoading(this.btnSaveMessage, true);
       } else {
         this.showStatus(result.error || "Erro ao salvar mensagem", "error");
+        this.hideButtonLoading(this.btnSaveMessage);
       }
     } catch (error) {
       console.error("Error saving message:", error);
       this.showStatus("Erro ao salvar mensagem", "error");
-    } finally {
       this.hideButtonLoading(this.btnSaveMessage);
     }
   }
@@ -851,13 +853,15 @@ class MessagesManager {
         this.showStatus(result.message, "success");
         await this.loadMessages();
         this.clearForm();
+        // Preservar o texto atual (definido pelo clearForm) ao invés de restaurar o original
+        this.hideButtonLoading(this.btnDeleteMessage, true);
       } else {
         this.showStatus(result.error || "Erro ao excluir mensagem", "error");
+        this.hideButtonLoading(this.btnDeleteMessage);
       }
     } catch (error) {
       console.error("Error deleting message:", error);
       this.showStatus("Erro ao excluir mensagem", "error");
-    } finally {
       this.hideButtonLoading(this.btnDeleteMessage);
     }
   }
@@ -1105,9 +1109,12 @@ class MessagesManager {
     button.dataset.originalText = originalText;
   }
 
-  hideButtonLoading(button) {
-    button.textContent = button.dataset.originalText || button.textContent;
+  hideButtonLoading(button, preserveCurrentText = false) {
+    if (!preserveCurrentText && button.dataset.originalText) {
+      button.textContent = button.dataset.originalText;
+    }
     button.disabled = false;
+    delete button.dataset.originalText;
   }
 
   showStatus(message, type) {
