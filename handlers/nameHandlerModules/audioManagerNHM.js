@@ -4,6 +4,7 @@ const { debug } = require("../../services/debugService");
 const { MessageMedia } = require("whatsapp-web.js");
 const path = require("path");
 const fs = require("fs");
+const { sendMessageOptions } = require("../../config/compatibility/whatsappCompatibility");
 
 class AudioManagerNHM {
   /**
@@ -47,7 +48,7 @@ class AudioManagerNHM {
 
       // Criar MessageMedia e enviar o áudio
       const audioMedia = MessageMedia.fromFilePath(audioPath);
-      await client.sendMessage(userNumber, audioMedia);
+      await client.sendMessage(userNumber, audioMedia, sendMessageOptions);
 
       await debug(`🎵 Áudio enviado: ${audioFileName} para ${userNumber}`);
       return true;

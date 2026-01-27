@@ -4,6 +4,7 @@ const delay = require("../../utils/delay");
 const messageManagerNHM = require("./messageManagerNHM");
 const audioManagerNHM = require("./audioManagerNHM");
 const { sendSocialLinkIfExists } = require("../../utils/socialLink");
+const { sendMessageOptions } = require("../../config/compatibility/whatsappCompatibility");
 
 class InviteProcessorNHM {
   async handleMultiMode(client, userNumber, nomeCompleto, horarioSelecionado) {
@@ -43,7 +44,7 @@ class InviteProcessorNHM {
             selectedCityData.name
           );
         await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
-        await client.sendMessage(userNumber, alreadyInMessage);
+        await client.sendMessage(userNumber, alreadyInMessage, sendMessageOptions);
         return null;
       }
     }
@@ -60,7 +61,7 @@ class InviteProcessorNHM {
     );
 
     // Enviar texto primeiro, depois áudio
-    await client.sendMessage(userNumber, textMessage);
+    await client.sendMessage(userNumber, textMessage, sendMessageOptions);
     await audioManagerNHM.sendAudioInviteIfExists(client, userNumber);
 
     // Enviar social link se existir

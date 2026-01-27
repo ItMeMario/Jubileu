@@ -1,5 +1,13 @@
 // client.js
-const { Client, LocalAuth } = require("whatsapp-web.js");
+const { Client, LocalAuth, Chat } = require("whatsapp-web.js");
+
+// 🛡️ PATCH: Desativa globalmente o envio de 'Visto' (Blue Ticks) e estados de digitação
+// Sobrescreve métodos do protótipo do Chat para evitar travamentos e erros de presença
+if (Chat && Chat.prototype) {
+  Chat.prototype.sendSeen = async function () { return Promise.resolve(); };
+  Chat.prototype.sendStateTyping = async function () { return Promise.resolve(); };
+  Chat.prototype.clearState = async function () { return Promise.resolve(); };
+}
 const path = require("path");
 const startScout = require("../utils/scout");
 const { startBackgroundExtraction } = require("../utils/groupIdExtractor");

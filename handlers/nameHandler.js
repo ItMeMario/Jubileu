@@ -8,6 +8,7 @@ const { debug } = require("../services/debugService");
 const messageManagerNHM = require("./nameHandlerModules/messageManagerNHM");
 const audioManagerNHM = require("./nameHandlerModules/audioManagerNHM");
 const inviteProcessorNHM = require("./nameHandlerModules/inviteProcessorNHM");
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 class NameHandler {
   async process(client, msg, userStates, userNumber, antiSpamManager) {
@@ -46,7 +47,7 @@ class NameHandler {
 
       // Caso contrário, enviar mensagem normalmente (fallback)
       await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
-      await client.sendMessage(msg.from, result);
+      await client.sendMessage(msg.from, result, sendMessageOptions);
 
       await this.updateCounters();
       await antiSpamManager.resetUserAttempts(userNumber);
