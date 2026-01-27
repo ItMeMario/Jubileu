@@ -1,0 +1,17 @@
+{
+    "name": "crm-module",
+    "version": "1.0.0",
+    "description": "CRM Independent Module",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron ."
+    },
+    "dependencies": {
+        "qrcode": "^1.5.4",
+        "sqlite3": "^5.1.7",
+        "whatsapp-web.js": "^1.26.0"
+    },
+    "devDependencies": {
+        "electron": "^33.0.0"
+    }
+}

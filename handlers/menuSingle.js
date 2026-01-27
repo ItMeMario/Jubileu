@@ -5,6 +5,7 @@ const delay = require("../utils/delay");
 const { enviarMenuHorarios } = require("../handlers/timeHandler");
 const MessageType = require("../config/messageType");
 const { debug } = require("../services/debugService"); // ✅ usar debug
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 const chatContext = {};
 
@@ -40,7 +41,9 @@ async function enviarMensagemMenu(client, msg, chat) {
 
   const welcomeMessage = await getWelcomeMessage(name);
 
-  await client.sendMessage(msg.from, welcomeMessage);
+  await debug("📝 [DEBUG] Tentando enviar mensagem de boas-vindas (Single)...");
+  await client.sendMessage(msg.from, welcomeMessage, sendMessageOptions);
+  await debug("✅ [DEBUG] Mensagem de boas-vindas enviada (Single).");
   await enviarMenuHorarios(client, msg.from, chat);
 }
 
