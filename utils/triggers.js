@@ -7,6 +7,7 @@ const { debug } = require("../services/debugService");
 const FAQ_TRIGGERS = require("../aliases/faqAliases.js");
 const db = require("../config/db");
 const { getMessage } = require("../utils/messageReader"); // Para mensagens dinâmicas
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 const TRIGGERS = [
   "menu",
@@ -268,13 +269,14 @@ async function enviarFAQ(client, msg) {
 
     // Tenta buscar mensagem no banco
     const faqMessage = await getMessage("send_faq");
-    await client.sendMessage(msg.from, faqMessage);
+    await client.sendMessage(msg.from, faqMessage, sendMessageOptions);
   } catch (error) {
     // Fallback hardcoded caso não encontre no banco
     debug("ℹ️ Mensagem SEND_FAQ não cadastrada, usando fallback hardcoded.");
     await client.sendMessage(
       msg.from,
-      "📋 *Estou atualizando meu guia de informações. Tente novamente outra hora.*"
+      "📋 *Estou atualizando meu guia de informações. Tente novamente outra hora.*",
+      sendMessageOptions
     );
   }
 }

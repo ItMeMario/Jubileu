@@ -2,6 +2,7 @@
 const { getLastMenuTime } = require("../utils/lastActivity");
 const { debug } = require("../services/debugService");
 const { readJsonFile } = require("../config/initialize");
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 async function getDevModeConfig() {
   try {
@@ -72,7 +73,7 @@ function startScout(client) {
             mensagem += "\n⏰ Nenhum menu enviado ainda nesta sessão";
           }
 
-          await client.sendMessage(chatId, mensagem);
+          await client.sendMessage(chatId, mensagem, sendMessageOptions);
 
           await debug(
             `[SCOUT] Mensagem enviada para ${chatId} às ${horaAtual}`

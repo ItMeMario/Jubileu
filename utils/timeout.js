@@ -1,6 +1,7 @@
 // timeout.js
 const { getMessage } = require("../utils/messageReader");
 const MessageType = require("../config/messageType");
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 // Tempo de timeout em milissegundos (30 minutos)(1800000)
 const TIMEOUT_DURATION = 1800000;
@@ -44,7 +45,7 @@ async function startTimeout(client, userNumber, chat, name = "") {
         name: name || "usuário",
       });
 
-      await client.sendMessage(userNumber, timeoutMessage);
+      await client.sendMessage(userNumber, timeoutMessage, sendMessageOptions);
 
       // Incrementa o contador de mensagens de timeout
       if (messageStats) {
@@ -77,7 +78,7 @@ async function startTimeout(client, userNumber, chat, name = "") {
             name || "usuário"
           );
 
-        await client.sendMessage(userNumber, fallbackMessage);
+        await client.sendMessage(userNumber, fallbackMessage, sendMessageOptions);
 
         // Incrementa o contador também no fallback
         if (messageStats) {

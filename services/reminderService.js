@@ -4,6 +4,7 @@ const { debug } = require("./debugService");
 
 // 🔧 CORREÇÃO: Importa o caminho correto do banco
 const { DATABASE_PATH } = require("../config/initialize");
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 console.log("📂 reminderService.js - Caminho do banco:", DATABASE_PATH);
 
@@ -142,7 +143,7 @@ class ReminderService {
       await debug(`📤 Mensagem: ${finalMessage}`);
 
       if (this.client && this.client.info) {
-        await this.client.sendMessage(city.link_id, finalMessage);
+        await this.client.sendMessage(city.link_id, finalMessage, sendMessageOptions);
         await debug(`✅ Lembrete enviado com sucesso para ${city.name}`);
       } else {
         console.error("❌ Cliente WhatsApp não está pronto!");
