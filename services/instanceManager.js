@@ -3,6 +3,7 @@ const { Client, LocalAuth } = require("whatsapp-web.js");
 const path = require("path");
 const fs = require("fs").promises;
 const { debug } = require("./debugService");
+const startScout = require("../utils/scout");
 const {
   INSTANCE_STATUS,
   MAX_INSTANCES,
@@ -379,6 +380,9 @@ class InstanceManager {
 
     // Configura eventos
     this.setupClientEvents(instanceId, client);
+
+    // Inicia o Scout para esta instância
+    startScout(client);
 
     // Inicializa cliente
     try {

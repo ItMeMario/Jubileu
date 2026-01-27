@@ -2,6 +2,7 @@
 const { antiSpamManager } = require("../utils/antiSpam");
 const { getMessage } = require("../utils/messageReader");
 const MessageType = require("../config/messageType");
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 // Mensagens de fallback (mantidas como backup caso o banco não carregue)
 const FALLBACK_MESSAGES = {
@@ -174,7 +175,7 @@ class MessageTypeHandler {
 
         // Busca mensagem dinâmica ou usa fallback
         const message = await this.getUnsupportedMessage(config.messageType);
-        await client.sendMessage(userNumber, message);
+        await client.sendMessage(userNumber, message, sendMessageOptions);
 
         // Processa ação de spam se necessário
         if (spamCheck.action === "send_faq") {
@@ -203,7 +204,7 @@ class MessageTypeHandler {
       } else {
         // Apenas envia mensagem informativa sem incrementar spam
         const message = await this.getUnsupportedMessage(config.messageType);
-        await client.sendMessage(userNumber, message);
+        await client.sendMessage(userNumber, message, sendMessageOptions);
         return {
           handled: true,
           action: "info_sent",

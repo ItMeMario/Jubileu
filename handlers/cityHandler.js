@@ -10,6 +10,7 @@ const delay = require("../utils/delay");
 const messageReader = require("../utils/messageReader");
 const MessageType = require("../config/messageType");
 const { debug } = require("../services/debugService");
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 // Mensagem de fallback
 const FALLBACK_MESSAGES = {
@@ -90,7 +91,8 @@ class cityHandler {
       msg.from,
       `✅ Cidade selecionada: *${selectedCityData.name}*\n\n${
         selectedCityData.message || ""
-      }`
+      }`,
+      sendMessageOptions
     );
 
     userStates[userNumber] = {
@@ -158,7 +160,7 @@ class cityHandler {
   async sendCityErrorMessage(client, msg) {
     const allGroups = await groupService.getAllGroups();
     const errorMessage = await this.getCityErrorMessage(allGroups);
-    await client.sendMessage(msg.from, errorMessage);
+    await client.sendMessage(msg.from, errorMessage, sendMessageOptions);
   }
 }
 

@@ -3,6 +3,7 @@ const { BrowserWindow } = require("electron");
 const QRCode = require("qrcode");
 const { instanceManager } = require("../../services/instanceManager");
 const { debug } = require("../../services/debugService");
+const { sendMessageOptions } = require("../../config/compatibility/whatsappCompatibility");
 
 /**
  * Handlers IPC para gerenciamento de instâncias WhatsApp
@@ -364,7 +365,7 @@ class InstanceHandlers {
         return { success: false, message: "Instância não está conectada" };
       }
 
-      await client.sendMessage(to, message);
+      await client.sendMessage(to, message, sendMessageOptions);
 
       return { success: true, message: "Mensagem enviada" };
     } catch (error) {

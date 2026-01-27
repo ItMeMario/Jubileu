@@ -4,6 +4,7 @@ const { enviarFAQ } = require("./triggers");
 const { debug } = require("../services/debugService");
 const { getMessage } = require("../utils/messageReader");
 const MessageType = require("../config/messageType");
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 const SPAM_CONFIG = {
   FAQ_THRESHOLD: 3, // Envia FAQ após 3 tentativas
@@ -170,14 +171,14 @@ class AntiSpamManager {
           const suspendMessage = await getMessage(MessageType.SUSPEND, {
             suspendDurationMinutes: extraData.suspendDurationMinutes || 60,
           });
-          await client.sendMessage(userNumber, suspendMessage);
+          await client.sendMessage(userNumber, suspendMessage, sendMessageOptions);
           break;
 
         case "suspended":
           const suspendedMessage = await getMessage(MessageType.SUSPENDED, {
             remainingMinutes: extraData.remainingMinutes || 0,
           });
-          await client.sendMessage(userNumber, suspendedMessage);
+          await client.sendMessage(userNumber, suspendedMessage, sendMessageOptions);
           break;
 
         default:
@@ -204,21 +205,24 @@ class AntiSpamManager {
         case "send_faq":
           await client.sendMessage(
             userNumber,
-            "🤔 Percebi que você está com algumas dúvidas! digite *FAQ* ou *AJUDA* nossa lista de perguntas frequentes que pode te ajudar. 😊"
+            "🤔 Percebi que você está com algumas dúvidas! digite *FAQ* ou *AJUDA* nossa lista de perguntas frequentes que pode te ajudar. 😊",
+            sendMessageOptions
           );
           break;
 
         case "suspend":
           await client.sendMessage(
             userNumber,
-            `Oi! 😊 Poderia me explicar, por gentileza, com detalhes por escrito a sua questão? Assim que possível, te respondo. Obrigado! 🙏`
+            `Oi! 😊 Poderia me explicar, por gentileza, com detalhes por escrito a sua questão? Assim que possível, te respondo. Obrigado! 🙏`,
+            sendMessageOptions
           );
           break;
 
         case "suspended":
           await client.sendMessage(
             userNumber,
-            `Por favor, aguarde. Responderei assim que possível. ⏳\nAtenciosamente`
+            `Por favor, aguarde. Responderei assim que possível. ⏳\nAtenciosamente`,
+            sendMessageOptions
           );
           break;
       }

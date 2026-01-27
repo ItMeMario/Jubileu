@@ -9,6 +9,7 @@ const {
   atualizarStatusCliente,
   atualizarStatusClientePorId,
 } = require("./clientDatabaseDSM");
+const { sendMessageOptions } = require("../../config/compatibility/whatsappCompatibility");
 
 /**
  * Obtém o cliente de uma instância específica
@@ -124,7 +125,7 @@ async function executarDisparo(
         );
 
         // Envia mensagem personalizada
-        await client.sendMessage(numero.whatsappFormat, mensagemPersonalizada);
+        await client.sendMessage(numero.whatsappFormat, mensagemPersonalizada, sendMessageOptions);
 
         // ✅ ATUALIZA STATUS NO BANCO COMO 'sent' (usando ID para garantir instância correta)
         if (numero.id) {

@@ -1,4 +1,5 @@
 // faq.js
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 module.exports = {
   enviarFAQ: async function (client, msg) {
     const faqMessage =
@@ -29,6 +30,6 @@ module.exports = {
 `- MARQUE UM HORÁRIO AGORA MESMO e compareça na seleção! Haverá uma equipe para te orientar\n\n` +
 `Digite "menu" para voltar ao menu principal.`
 
-    await client.sendMessage(msg.from, faqMessage);
+    await client.sendMessage(msg.from, faqMessage, sendMessageOptions);
   },
 };

@@ -9,6 +9,7 @@ const { antiSpamManager } = require("../utils/antiSpam");
 const { messageTypeHandler } = require("../handlers/unsuportedMessage");
 const { debug } = require("../services/debugService");
 const timeout = require("../utils/timeout");
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 // Importa os handlers específicos
 const MenuHandler = require("../handlers/menuHandler");
@@ -400,7 +401,9 @@ async function handleError(msg, error, instanceId, userStates) {
 
   try {
     await msg.reply(
-      "⚠️ Ocorreu um erro inesperado. Por favor, tente novamente digitando *MENU* ou *AJUDA*."
+      "⚠️ Ocorreu um erro inesperado. Por favor, tente novamente digitando *MENU* ou *AJUDA*.",
+      msg.from,
+      sendMessageOptions
     );
   } catch (replyError) {
     console.error(
