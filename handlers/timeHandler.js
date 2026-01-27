@@ -6,6 +6,7 @@ const indicadores = require("../utils/indicadores");
 const { debug } = require("../services/debugService");
 const { getMessage } = require("../utils/messageReader");
 const MessageType = require("../config/messageType");
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 class TimeHandler {
   async process(client, msg, userStates, userNumber, antiSpamManager) {
@@ -73,7 +74,9 @@ class TimeHandler {
         descricao: opcao.descricao,
       });
 
-      await client.sendMessage(msg.from, nameMenuMessage);
+      await debug("📝 [DEBUG] Tentando enviar mensagem NAME_MENU...");
+      await client.sendMessage(msg.from, nameMenuMessage, sendMessageOptions);
+      await debug("✅ [DEBUG] Mensagem NAME_MENU enviada.");
     } catch (error) {
       await debug(
         "Erro ao obter mensagem NAME_MENU, usando fallback:",
@@ -82,7 +85,8 @@ class TimeHandler {
       // Fallback - mensagem hardcoded original
       await client.sendMessage(
         msg.from,
-        `Você escolheu *${opcao.horario} - ${opcao.descricao}*.\nAgora digite somente o seu *NOME COMPLETO* para confirmar a sua inscrição, por favor!😊`
+        `Você escolheu *${opcao.horario} - ${opcao.descricao}*.\nAgora digite somente o seu *NOME COMPLETO* para confirmar a sua inscrição, por favor!😊`,
+        sendMessageOptions
       );
     }
   }
@@ -105,7 +109,7 @@ class TimeHandler {
     // Mensagem dinâmica para TIME_ERROR
     try {
       const timeErrorMessage = await getMessage(MessageType.TIME_ERROR);
-      await client.sendMessage(msg.from, timeErrorMessage);
+      await client.sendMessage(msg.from, timeErrorMessage, sendMessageOptions);
     } catch (error) {
       await debug(
         "Erro ao obter mensagem TIME_ERROR, usando fallback:",
@@ -114,7 +118,8 @@ class TimeHandler {
       // Fallback - mensagem hardcoded original
       await client.sendMessage(
         msg.from,
-        `🤔 Desculpe, horário não reconhecido. Digite apenas o horário que você escolheu.\n\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`
+        `🤔 Desculpe, horário não reconhecido. Digite apenas o horário que você escolheu.\n\nE se precisar de ajuda, digite a palavra *AJUDA* ou *FAQ* que vou te enviar a lista com as dúvidas mais comuns sobre a nossa seleção.`,
+        sendMessageOptions
       );
     }
   }
@@ -130,7 +135,9 @@ async function enviarMenuHorarios(client, chatId, chat) {
 
     // Delay antes do menu de horários
     await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
-    await client.sendMessage(chatId, timeMenuMessage);
+    await debug("📝 [DEBUG] Tentando enviar mensagem TIME_MENU...");
+    await client.sendMessage(chatId, timeMenuMessage, sendMessageOptions);
+    await debug("✅ [DEBUG] Mensagem TIME_MENU enviada.");
   } catch (error) {
     await debug(
       "Erro ao obter mensagem TIME_MENU, usando fallback:",
@@ -148,7 +155,7 @@ _Horarios disponíveis_
 
     // Delay antes do menu de horários
     await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
-    await client.sendMessage(chatId, timeMenu);
+    await client.sendMessage(chatId, timeMenu, sendMessageOptions);
   }
 }
 

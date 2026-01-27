@@ -7,6 +7,7 @@ const db = require("../config/db"); // conexão com o banco SQLite
 const { enviarMenuHorarios } = require("../handlers/timeHandler");
 const MessageType = require("../config/messageType");
 const { debug } = require("../services/debugService"); // ✅ usar debug
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 const chatContext = {};
 
@@ -87,7 +88,9 @@ async function enviarMenuCidades(client, chatId, chat) {
   const cityMenuMessage = await getCityMenuMessage(cities);
 
   await delay.smartDelay({ minMs: 5000, maxMs: 25000 });
-  await client.sendMessage(chatId, cityMenuMessage);
+  await debug("📝 [DEBUG] Tentando enviar mensagem de cidades...");
+  await client.sendMessage(chatId, cityMenuMessage, sendMessageOptions);
+  await debug("✅ [DEBUG] Mensagem de cidades enviada.");
 }
 
 async function enviarMensagemMenu(client, msg, chat) {
@@ -100,7 +103,9 @@ async function enviarMensagemMenu(client, msg, chat) {
 
   const welcomeMessage = await getWelcomeMessage(name);
 
-  await client.sendMessage(msg.from, welcomeMessage);
+  await debug("📝 [DEBUG] Tentando enviar mensagem de boas-vindas (Multi)...");
+  await client.sendMessage(msg.from, welcomeMessage, sendMessageOptions);
+  await debug("✅ [DEBUG] Mensagem de boas-vindas enviada (Multi).");
   await enviarMenuCidades(client, msg.from, chat);
 }
 
