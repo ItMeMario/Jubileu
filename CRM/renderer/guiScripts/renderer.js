@@ -6,6 +6,7 @@ const qrImage = document.getElementById('qr-image');
 const loadingView = document.getElementById('loading-view');
 const connectedView = document.getElementById('connected-view');
 const connectionBadge = document.getElementById('connection-badge');
+const btnConfig = document.getElementById('btn-config');
 
 function showView(viewName) {
     placeholderView.style.display = 'none';
@@ -36,32 +37,48 @@ function updateBadge(status) {
     }
 }
 
+if (btnConfig) {
+    btnConfig.addEventListener('click', () => {
+        if (window.crmAPI && window.crmAPI.openConfig) {
+            window.crmAPI.openConfig();
+        }
+    });
+}
+
 // Listeners do CRM API
 if (window.crmAPI) {
-    window.crmAPI.onQR((url) => {
-        console.log('QR recebido');
-        qrImage.src = url;
-        showView('qr');
-        updateBadge('qr');
-    });
+    if (window.crmAPI.onQR) {
+        window.crmAPI.onQR((url) => {
+            console.log('QR recebido');
+            qrImage.src = url;
+            showView('qr');
+            updateBadge('qr');
+        });
+    }
 
-    window.crmAPI.onConnecting(() => {
-        console.log('Conectando...');
-        showView('loading');
-        updateBadge('connecting');
-    });
+    if (window.crmAPI.onConnecting) {
+        window.crmAPI.onConnecting(() => {
+            console.log('Conectando...');
+            showView('loading');
+            updateBadge('connecting');
+        });
+    }
 
-    window.crmAPI.onReady(() => {
-        console.log('Pronto!');
-        showView('connected');
-        updateBadge('connected');
-    });
+    if (window.crmAPI.onReady) {
+        window.crmAPI.onReady(() => {
+            console.log('Pronto!');
+            showView('connected');
+            updateBadge('connected');
+        });
+    }
 
-    window.crmAPI.onDisconnected(() => {
-        console.log('Desconectado');
-        showView('placeholder'); // ou loading se for reconectar automatico
-        updateBadge('disconnected');
-    });
+    if (window.crmAPI.onDisconnected) {
+        window.crmAPI.onDisconnected(() => {
+            console.log('Desconectado');
+            showView('placeholder'); // ou loading se for reconectar automatico
+            updateBadge('disconnected');
+        });
+    }
 } else {
     console.warn('crmAPI não encontrada. Verifique o preload.');
 }

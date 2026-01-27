@@ -3,7 +3,10 @@ const path = require('path');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 
+const db = require('./services/db');
+
 let mainWindow;
+let configWindow;
 let client;
 
 function createWindow() {
@@ -20,7 +23,42 @@ function createWindow() {
     mainWindow.loadFile('renderer/html/index.html');
 }
 
+function createConfigWindow() {
+    if (configWindow) {
+        configWindow.focus();
+        return;
+    }
+
+    configWindow = new BrowserWindow({
+        width: 900,
+        height: 700,
+        title: 'Configurações',
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: false,
+            contextIsolation: true
+        }
+    });
+
+    configWindow.loadFile('renderer/html/config.html');
+    
+    configWindow.on('closed', () => {
+        configWindow = null;
+    });
+}
+
 app.whenReady().then(() => {
+    // DB IPC Handlers
+    ipcMain.handle('db-get-messages', async () => await db.getMessages());
+    ipcMain.handle('db-add-message', async (e, {locale, type, content}) => await db.addMessage(locale, type, content));
+    ipcMain.handle('db-update-message', async (e, {id, locale, type, content}) => await db.updateMessage(id, locale, type, content));
+    ipcMain.handle('db-delete-message', async (e, id) => await db.deleteMessage(id));
+    
+    ipcMain.handle('db-get-config', async (e, key) => await db.getConfig(key));
+    ipcMain.handle('db-set-config', async (e, {key, value}) => await db.setConfig(key, value));
+
+    ipcMain.handle('open-config', () => createConfigWindow());
+
     createWindow();
     
     // Pequeno delay para garantir que a janela e o listener estejam prontos
