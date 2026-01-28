@@ -160,6 +160,32 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 
   // ========================================
+  // APIs de Update
+  // ========================================
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
+  downloadUpdate: () => ipcRenderer.invoke("download-update"),
+  quitAndInstall: () => ipcRenderer.invoke("quit-and-install"),
+
+  onUpdateChecking: (callback) => {
+    ipcRenderer.on("update-checking", (event, data) => callback(data));
+  },
+  onUpdateAvailable: (callback) => {
+    ipcRenderer.on("update-available", (event, data) => callback(data));
+  },
+  onUpdateNotAvailable: (callback) => {
+    ipcRenderer.on("update-not-available", (event, data) => callback(data));
+  },
+  onUpdateDownloadProgress: (callback) => {
+    ipcRenderer.on("update-download-progress", (event, data) => callback(data));
+  },
+  onUpdateDownloaded: (callback) => {
+    ipcRenderer.on("update-downloaded", (event, data) => callback(data));
+  },
+  onUpdateError: (callback) => {
+    ipcRenderer.on("update-error", (event, data) => callback(data));
+  },
+
+  // ========================================
   // Cleanup geral
   // ========================================
   removeAllListeners: () => {
@@ -189,6 +215,19 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ];
 
     instanceEvents.forEach((event) => {
+      ipcRenderer.removeAllListeners(event);
+    });
+    // Listeners de update
+    const updateEvents = [
+      "update-checking",
+      "update-available",
+      "update-not-available",
+      "update-download-progress",
+      "update-downloaded",
+      "update-error",
+    ];
+
+    updateEvents.forEach((event) => {
       ipcRenderer.removeAllListeners(event);
     });
   },
