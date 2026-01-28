@@ -45,6 +45,20 @@ class UpdateHandlers {
 
   async checkForUpdates() {
     try {
+      // Verifica se está em modo de desenvolvimento
+      const { app } = require("electron");
+      if (!app.isPackaged) {
+          console.log("Modo de desenvolvimento detectado: Simulando verificação de update.");
+          this.sendToWindow("update-checking");
+          
+          // Simula um delay de verificação
+          setTimeout(() => {
+              this.sendToWindow("update-not-available", { version: "DEV-MODE" });
+          }, 1500);
+          
+          return null;
+      }
+
       // In dev mode, we might want to force check if configured, 
       // but usually we just let it fail or log.
       // autoUpdater.forceDevUpdateConfig = true; // Uncomment for dev testing if needed

@@ -35,8 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   window.electronAPI.onUpdateNotAvailable(() => {
-    showStatus("Você já está na versão mais recente.", false);
-    setTimeout(hideStatus, 3000);
+    showStatus("✅ Você já está na versão mais recente.", false);
     btnUpdate.disabled = false;
   });
 
