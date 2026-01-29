@@ -582,3 +582,158 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
 body.dark-mode-transitioning {
     animation: fadeIn 0.3s ease;
 }
+
+/* =========================================
+   FIX: INDICADORES (STATS)
+   ========================================= */
+body.dark-mode .horario-stats,
+body.dark-mode .hourly-stats,
+body.dark-mode .indicators-controls,
+body.dark-mode .available-hours,
+body.dark-mode .unused-hours {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+body.dark-mode .horario-stats h3,
+body.dark-mode .hourly-stats h3,
+body.dark-mode .available-hours h4,
+body.dark-mode .unused-hours h4,
+body.dark-mode .hourly-ranking h4 {
+    color: var(--text-primary);
+}
+
+body.dark-mode .stat-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .horario-item,
+body.dark-mode .ranking-item,
+body.dark-mode .summary-item,
+body.dark-mode .available-hours li,
+body.dark-mode .unused-hours li {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+body.dark-mode .horario-item:hover,
+body.dark-mode .ranking-item:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--color-success);
+}
+
+body.dark-mode .horario-time,
+body.dark-mode .ranking-time,
+body.dark-mode .summary-number,
+body.dark-mode .stats-info strong {
+    color: var(--text-primary);
+}
+
+body.dark-mode .horario-count,
+body.dark-mode .ranking-stats,
+body.dark-mode .summary-label,
+body.dark-mode .stats-info {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .ranking-item.zero-count {
+    background-color: var(--bg-primary); 
+    opacity: 0.5;
+}
+
+/* =========================================
+   FIX: DATABASE SECTION
+   ========================================= */
+body.dark-mode .overview-card,
+body.dark-mode .table-card,
+body.dark-mode .table-details-header,
+body.dark-mode .columns-table,
+body.dark-mode .columns-header {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+body.dark-mode .overview-card:hover,
+body.dark-mode .table-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .card-header,
+body.dark-mode .info-row,
+body.dark-mode .column-row,
+body.dark-mode .columns-header {
+    border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .card-header h4,
+body.dark-mode .table-title h4,
+body.dark-mode .table-name,
+body.dark-mode .info-value,
+body.dark-mode .count-value,
+body.dark-mode .column-name,
+body.dark-mode .col-name {
+    color: var(--text-primary);
+}
+
+body.dark-mode .info-label,
+body.dark-mode .count-label,
+body.dark-mode .column-type {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .overview-card .card-icon,
+body.dark-mode .table-card .table-icon {
+    background-color: var(--bg-tertiary);
+}
+
+body.dark-mode .column-type {
+    background-color: var(--bg-tertiary);
+}
+
+body.dark-mode .column-row:hover {
+    background-color: var(--bg-hover);
+}
+
+body.dark-mode .table-card.selected {
+    background-color: rgba(37, 211, 102, 0.1);
+    border-color: var(--color-success);
+}
+
+/* =========================================
+   FIX: DEV MODE & CONFIGS
+   ========================================= */
+body.dark-mode .current-config,
+body.dark-mode #current-locale-info {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-left-color: var(--color-success);
+}
+
+body.dark-mode .scout-form input[type="text"]:disabled,
+body.dark-mode .locale-form select:disabled {
+    background-color: var(--bg-hover);
+    color: var(--text-secondary);
+}
+
+/* =========================================
+   FIX: MODAL DE CONFIRMAÇÃO
+   ========================================= */
+body.dark-mode #clear-confirmation-modal .modal-content {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+body.dark-mode #clear-confirmation-modal .modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+body.dark-mode #clear-confirmation-modal .modal-footer {
+    border-top-color: var(--border-color);
+}
+
+body.dark-mode #clear-confirmation-modal .modal-header h3 {
+    color: var(--text-primary);   
+}

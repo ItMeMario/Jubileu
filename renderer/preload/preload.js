@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   openDrone: () => ipcRenderer.invoke("open-drone"),
   openDeeJayWindow: () => ipcRenderer.invoke("open-dee-jay-window"),
   clearCache: () => ipcRenderer.invoke("clear-cache"),
+  checkUpdate: () => ipcRenderer.invoke("check-update"),
+  triggerUpdate: () => ipcRenderer.invoke("trigger-update"),
 
   // Listeners legados
   onQRGenerated: (callback) => {
@@ -191,6 +193,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     instanceEvents.forEach((event) => {
       ipcRenderer.removeAllListeners(event);
     });
+
   },
 });
 

@@ -10,6 +10,8 @@ const DroneHandlers = require("./ipc/droneHandlers");
 const InstanceHandlers = require("./ipc/instanceHandlers");
 const CacheHandlers = require("./ipc/cacheHandlers");
 const DeeJayHandlers = require("./ipc/deeJayHandlers");
+const UpdateHandlers = require("./ipc/updateHandlers");
+
 
 class IPCManager {
   constructor() {
@@ -24,6 +26,8 @@ class IPCManager {
       drone: null,
       instance: null,
       cache: null,
+      update: null,
+
     };
   }
 
@@ -41,6 +45,8 @@ class IPCManager {
       this.handlers.instance = new InstanceHandlers(modules);
       this.handlers.cache = new CacheHandlers();
       this.handlers.deeJay = new DeeJayHandlers(modules.windowManager);
+      this.handlers.update = new UpdateHandlers();
+
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -74,6 +80,10 @@ class IPCManager {
 
       // Registra handlers de Dee Jay
       this.registerDeeJayHandlers();
+
+      // Registra handlers de Update
+      this.registerUpdateHandlers();
+
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -523,6 +533,18 @@ class IPCManager {
      console.log("Handlers de Dee Jay registrados");
   }
 
+  registerUpdateHandlers() {
+    ipcMain.handle(
+      "check-update",
+      this.handlers.update.checkUpdate.bind(this.handlers.update)
+    );
+    ipcMain.handle(
+      "trigger-update",
+      this.handlers.update.triggerUpdate.bind(this.handlers.update)
+    );
+    console.log("Handlers de update registrados");
+  }
+
   // ========================================
   // Getter para InstanceHandlers (útil para inicialização)
   // ========================================
@@ -611,7 +633,12 @@ class IPCManager {
       "instance-client-info",
       "instance-send-message",
       "instance-get-config",
+      "instance-get-config",
+      "instance-get-config",
       "clear-cache",
+      "check-update",
+      "trigger-update",
+
     ];
 
     events.forEach((event) => {

@@ -145,6 +145,54 @@ if (btnDeeJay) {
     });
 }
 
+// Botão Update
+const btnUpdate = document.getElementById("btn-update");
+if (btnUpdate) {
+  btnUpdate.addEventListener("click", async () => {
+    try {
+      showButtonLoading(btnUpdate, "Verificando...");
+      
+      const result = await window.electronAPI.checkUpdate();
+      
+      if (result.success) {
+        if (result.hasUpdate) {
+            const confirmUpdate = confirm(`Nova versão encontrada: ${result.remoteVersion} (Atual: ${result.localVersion})\n\nDeseja atualizar agora?`);
+            if (confirmUpdate) {
+                showButtonLoading(btnUpdate, "Atualizando...");
+                const updateResult = await window.electronAPI.triggerUpdate();
+                
+                if (updateResult.success) {
+                   if (updateResult.action === "open_url") {
+                       // Se for para abrir URL (ambiente de produção sem auto-update)
+                       alert(updateResult.message);
+                       // Aqui poderíamos abrir a URL se tivéssemos a API de shell exposta, 
+                       // mas como não tenho certeza, deixo o alert.
+                       // Se "window.open" funcionar no renderer (depende da config de segurança/sandbox), ótimo.
+                   } else {
+                       alert(updateResult.message);
+                   }
+                } else {
+                   showStatus(updateResult.message, "error");
+                   alert(updateResult.message);
+                }
+            }
+        } else {
+            showStatus(result.message, "success");
+            alert(result.message);
+        }
+      } else {
+        showStatus(result.message, "error");
+      }
+      
+      hideButtonLoading(btnUpdate, "🔄 Update");
+    } catch (error) {
+       console.error("Erro no update:", error);
+       showStatus("Erro ao verificar update", "error");
+       hideButtonLoading(btnUpdate, "🔄 Update");
+    }
+  });
+}
+
 // Botão Limpar Cache
 if (btnClearCache) {
   btnClearCache.addEventListener("click", async () => {

@@ -491,4 +491,15 @@ Corrigido bug que fazia o botão "Limpar" não funcionar corretamente.
 
 ---
 
-**📅 Data de Lançamento:** 26/01/2026
+📌 Patch Notes - Versão 1.3.0
+
+✨ Novidades
+    Adicionado botão de update.
+
+🛠️ Melhorias
+    [Nenhuma melhoria registrada nesta versão.]
+
+🐛 Correções
+    Corrigido bug visual do dark mode.
+
+📅 Data de Lançamento: [29/01/2026]
