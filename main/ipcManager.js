@@ -10,7 +10,7 @@ const DroneHandlers = require("./ipc/droneHandlers");
 const InstanceHandlers = require("./ipc/instanceHandlers");
 const CacheHandlers = require("./ipc/cacheHandlers");
 const DeeJayHandlers = require("./ipc/deeJayHandlers");
-const UpdateHandlers = require("./ipc/updateHandlers");
+
 
 class IPCManager {
   constructor() {
@@ -25,7 +25,7 @@ class IPCManager {
       drone: null,
       instance: null,
       cache: null,
-      update: null,
+
     };
   }
 
@@ -43,7 +43,7 @@ class IPCManager {
       this.handlers.instance = new InstanceHandlers(modules);
       this.handlers.cache = new CacheHandlers();
       this.handlers.deeJay = new DeeJayHandlers(modules.windowManager);
-      this.handlers.update = new UpdateHandlers(modules.windowManager);
+
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -79,7 +79,7 @@ class IPCManager {
       this.registerDeeJayHandlers();
 
       // Registra handlers de Update
-      this.registerUpdateHandlers();
+
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -529,21 +529,7 @@ class IPCManager {
      console.log("Handlers de Dee Jay registrados");
   }
 
-  registerUpdateHandlers() {
-    ipcMain.handle(
-      "check-for-updates",
-      this.handlers.update.checkForUpdates.bind(this.handlers.update)
-    );
-    ipcMain.handle(
-      "download-update",
-      this.handlers.update.downloadUpdate.bind(this.handlers.update)
-    );
-    ipcMain.handle(
-      "quit-and-install",
-      this.handlers.update.quitAndInstall.bind(this.handlers.update)
-    );
-    console.log("Handlers de Update registrados");
-  }
+
 
   // ========================================
   // Getter para InstanceHandlers (útil para inicialização)
@@ -635,9 +621,7 @@ class IPCManager {
       "instance-get-config",
       "instance-get-config",
       "clear-cache",
-      "check-for-updates",
-      "download-update",
-      "quit-and-install",
+
     ];
 
     events.forEach((event) => {
