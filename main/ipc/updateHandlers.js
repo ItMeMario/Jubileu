@@ -8,7 +8,7 @@ const fs = require("fs");
 class UpdateHandlers {
   constructor() {
     this.localPackage = require("../../package.json");
-    this.remotePackageUrl = "https://raw.githubusercontent.com/ItMeMario/Jubileu/main/package.json";
+    this.remotePackageUrl = "https://raw.githubusercontent.com/ItMeMario/Jubileu/develop/package.json";
   }
 
   async checkUpdate() {
