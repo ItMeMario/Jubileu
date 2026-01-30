@@ -57,7 +57,7 @@ app.whenReady().then(() => {
     ipcMain.handle('db-get-config', async (e, key) => await db.getConfig(key));
     ipcMain.handle('db-set-config', async (e, {key, value}) => await db.setConfig(key, value));
 
-
+    ipcMain.handle('db-set-config', async (e, {key, value}) => await db.setConfig(key, value));
 
     // Database Introspection IPC Handlers
     ipcMain.handle('database-get-overview', async () => {

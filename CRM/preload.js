@@ -17,3 +17,12 @@ contextBridge.exposeInMainWorld('crmAPI', {
         setConfig: (key, value) => ipcRenderer.invoke('db-set-config', {key, value})
     }
 });
+
+contextBridge.exposeInMainWorld("databaseAPI", {
+  getAllTables: () => ipcRenderer.invoke("database-get-all-tables"),
+  getTableInfo: (tableName) => ipcRenderer.invoke("database-get-table-info", tableName),
+  getTableCounts: () => ipcRenderer.invoke("database-get-table-counts"),
+  getDatabaseInfo: () => ipcRenderer.invoke("database-get-database-info"),
+  getPrimaryCity: () => ipcRenderer.invoke("database-get-primary-city"),
+  getDatabaseOverview: () => ipcRenderer.invoke("database-get-overview"),
+});
