@@ -71,7 +71,7 @@ function editMessage(msg) {
 document.getElementById('btn-clear-form').addEventListener('click', () => {
     editingMessageId = null;
     document.getElementById('message-locale').value = '';
-    document.getElementById('message-type').value = 'text';
+    document.getElementById('message-type').value = (typeof MessageType !== 'undefined' && MessageType.TEXT) ? MessageType.TEXT.value : 'text';
     document.getElementById('message-content').value = '';
     document.getElementById('btn-delete-message').style.display = 'none';
 });
@@ -174,5 +174,24 @@ document.getElementById('btn-save-scout').addEventListener('click', async () => 
 
 
 // Inicialização
+function initializeMessageTypes() {
+    const typeSelect = document.getElementById('message-type');
+    typeSelect.innerHTML = '';
+    
+    if (typeof MessageType !== 'undefined') {
+        Object.values(MessageType).forEach(type => {
+            const option = document.createElement('option');
+            option.value = type.value;
+            option.textContent = type.label;
+            typeSelect.appendChild(option);
+        });
+    } else {
+        console.error('MessageType not defined!');
+        // Fallback or error handling
+        typeSelect.innerHTML = '<option value="text">Texto</option>';
+    }
+}
+
+initializeMessageTypes();
 loadMessages();
 loadDevConfig();

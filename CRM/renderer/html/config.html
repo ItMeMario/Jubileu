@@ -51,9 +51,7 @@
             <div class="form-group">
                 <label for="message-type">Tipo de Mensagem:</label>
                 <select id="message-type">
-                    <option value="text">Texto</option>
-                    <option value="image">Imagem</option>
-                    <option value="audio">Áudio</option>
+                    <!-- Options populated by config.js -->
                 </select>
             </div>
 
@@ -137,6 +135,7 @@
     </div>
 
     <!-- Dark Mode será injetado pelo manager -->
+    <script src="../../config/messageType.js"></script>
     <script src="../guiScripts/utils/darkModeManager.js"></script>
     <script src="../guiScripts/config.js"></script>
 </body>
