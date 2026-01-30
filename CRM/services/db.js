@@ -45,6 +45,15 @@ class DatabaseService {
         });
     }
 
+    getMessageByType(type) {
+        return new Promise((resolve, reject) => {
+            this.db.get('SELECT * FROM messages WHERE message_type = ?', [type], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+    }
+
     addMessage(locale, type, content) {
         return new Promise((resolve, reject) => {
             this.db.run('INSERT INTO messages (locale, message_type, message_content) VALUES (?, ?, ?)', [locale, type, content], function(err) {

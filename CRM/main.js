@@ -159,6 +159,27 @@ function initializeWhatsApp() {
         if (mainWindow) mainWindow.webContents.send('ready');
     });
 
+    client.on('message', async msg => {
+        try {
+            const welcomeMessage = await db.getMessageByType('welcome');
+            if (welcomeMessage && welcomeMessage.message_content) {
+                // Determine if we should reply to this specific message
+                // The requirement says "Toda vez que o numero ... receber uma mensagem ... ele irá responder"
+                // It does not specify ignoring groups or status updates, but typically we might want to avoid status.
+                // However, following strict instructions: "seja qualquer uma de qualquer tipo".
+                
+                // Preventing loops: Check if the message is from me? 
+                // client.on('message') usually only triggers for incoming messages from others. 
+                // 'message_create' triggers for own messages too. So 'message' is safe from self-loop.
+
+                await client.sendMessage(msg.from, welcomeMessage.message_content);
+                console.log(`Auto-reply sent to ${msg.from}`);
+            }
+        } catch (err) {
+            console.error('Error sending auto-reply:', err);
+        }
+    });
+
     client.on('disconnected', (reason) => {
         console.log('Cliente desconectado:', reason);
         if (mainWindow) mainWindow.webContents.send('disconnected');
