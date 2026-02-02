@@ -12,6 +12,16 @@ async function shouldIgnoreMessage(msg) {
     // Obtém o chat da mensagem
     const chat = await msg.getChat();
 
+    // 🚫 Verificação 0: Status do WhatsApp (Broadcast)
+    // Mensagens vindas de 'status@broadcast' são atualizações de status dos contatos.
+    // Responder a isso faz o bot postar no próprio status.
+    if (msg.from === "status@broadcast" || msg.isStatus) {
+      await debug(
+        `🚫 Mensagem ignorada - atualização de status (de: ${msg.from})`
+      );
+      return true;
+    }
+
     // Verifica se é um grupo
     if (chat.isGroup) {
       await debug(
