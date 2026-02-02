@@ -3,6 +3,7 @@ const { Client, LocalAuth } = require("whatsapp-web.js");
 const path = require("path");
 const fs = require("fs").promises;
 const { debug } = require("./debugService");
+const browserHelper = require("../utils/browserHelper");
 const startScout = require("../utils/scout");
 const {
   INSTANCE_STATUS,
@@ -30,27 +31,6 @@ class InstanceManager {
 
     // Flag de inicialização
     this.isInitialized = false;
-  }
-
-  /**
-   * Obtém o caminho do executável do Chrome
-   * @returns {string}
-   */
-  getChromeExecutablePath() {
-    const platform = process.platform;
-
-    if (platform === "win32") {
-      const possiblePaths = [
-        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-        process.env.LOCALAPPDATA + "\\Google\\Chrome\\Application\\chrome.exe",
-      ];
-      return possiblePaths[0];
-    } else if (platform === "darwin") {
-      return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-    } else {
-      return "/usr/bin/google-chrome";
-    }
   }
 
   /**
@@ -86,8 +66,15 @@ class InstanceManager {
    * @returns {Object}
    */
   getPuppeteerConfig() {
+    const executablePath = browserHelper.getChromeExecutablePath();
+    
+    if (!executablePath) {
+        // Log warning but let Puppeteer try its default (which might fail if bundled chromium is missing)
+        console.warn("InstanceManager: Chrome não encontrado pelo browserHelper. Usando padrão do Puppeteer.");
+    }
+
     return {
-      executablePath: this.getChromeExecutablePath(),
+      executablePath: executablePath, // Can be null, Puppeteer handles undefined/null by using default
       headless: true,
       args: [
         "--no-sandbox",
