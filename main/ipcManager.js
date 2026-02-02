@@ -556,6 +556,14 @@ class IPCManager {
       "open-crm",
       this.handlers.crm.openCRM.bind(this.handlers.crm)
     );
+    ipcMain.handle(
+      "crm-create-instance",
+      this.handlers.crm.createCRMInstance.bind(this.handlers.crm)
+    );
+    ipcMain.handle(
+      "crm-get-instances",
+      this.handlers.crm.getCRMInstances.bind(this.handlers.crm)
+    );
     console.log("Handlers de CRM registrados");
   }
 

@@ -316,9 +316,10 @@ class InstanceManager {
   /**
    * Cria uma nova instância
    * @param {string} name - Nome da instância
+   * @param {string} type - Tipo da instância (default: 'whatsapp')
    * @returns {Promise<Object>}
    */
-  async addInstance(name) {
+  async addInstance(name, type = 'whatsapp') {
     // Verifica limite
     const count = await countActiveInstances();
     if (count >= MAX_INSTANCES) {
@@ -326,8 +327,8 @@ class InstanceManager {
     }
 
     // Cria no banco de dados
-    const instance = await createInstance(name);
-    await debug(`✅ Instância criada: ${instance.instance_id} (${name})`);
+    const instance = await createInstance(name, type);
+    await debug(`✅ Instância criada: ${instance.instance_id} (${name}) - Tipo: ${type}`);
 
     return instance;
   }
