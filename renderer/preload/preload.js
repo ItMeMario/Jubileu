@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   stopWhatsApp: () => ipcRenderer.invoke("stop-whatsapp"),
   openConfig: () => ipcRenderer.invoke("open-config"),
   openDrone: () => ipcRenderer.invoke("open-drone"),
+  openCRM: () => ipcRenderer.invoke("open-crm"),
   openDeeJayWindow: () => ipcRenderer.invoke("open-dee-jay-window"),
   clearCache: () => ipcRenderer.invoke("clear-cache"),
   checkUpdate: () => ipcRenderer.invoke("check-update"),
