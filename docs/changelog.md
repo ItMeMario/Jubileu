@@ -504,6 +504,8 @@ Corrigido bug que fazia o botão "Limpar" não funcionar corretamente.
 
 📅 Data de Lançamento: [29/01/2026]
 
+---
+
 📌 Patch Notes - Versão 1.3.1
 
 ✨ Novidades
