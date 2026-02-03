@@ -1,5 +1,7 @@
-// main/ipc/crmHandlers.js
-const { instanceManager } = require("../../services/instanceManager");
+const { 
+  createCrmInstance, 
+  getAllCrmInstances 
+} = require("../../config/initializeModules/crmIM");
 
 class CRMHandlers {
   constructor(windowManager) {
@@ -28,7 +30,7 @@ class CRMHandlers {
   async createCRMInstance(event, name) {
     try {
       console.log(`Criando instância CRM: ${name}`);
-      const instance = await instanceManager.addInstance(name, 'crm');
+      const instance = await createCrmInstance(name);
       return { success: true, instance };
     } catch (error) {
       console.error("Erro ao criar instância CRM:", error);
@@ -42,12 +44,7 @@ class CRMHandlers {
   async getCRMInstances() {
     try {
       console.log("Listando instâncias CRM...");
-      const allInstances = await instanceManager.listInstances();
-      // Filtra apenas instâncias do tipo 'crm'
-      // Nota: Como listInstances retorna do banco, preciso garantir que o banco retornou e o objeto tem 'type'.
-      // Se a migration falhou por algum motivo, 'type' pode ser undefined, então assumimos 'whatsapp' se não existir.
-      // O filtro deve ser seguro.
-      const crmInstances = allInstances.filter(inst => inst.type === 'crm');
+      const crmInstances = await getAllCrmInstances();
       return { success: true, instances: crmInstances };
     } catch (error) {
       console.error("Erro ao listar instâncias CRM:", error);

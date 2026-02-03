@@ -27,7 +27,6 @@ const CREATE_INSTANCES_TABLE = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     instance_id TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
-    type TEXT DEFAULT 'whatsapp',
     status TEXT DEFAULT 'disconnected',
     phone_number TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -70,7 +69,6 @@ async function initializeInstancesTable() {
     const tableExists = await checkTableExists(db, "instances");
 
     if (tableExists) {
-      await debug("✅ Tabela 'instances' já existe");
       db.close();
       return true;
     }
@@ -89,23 +87,7 @@ async function initializeInstancesTable() {
     }
     await debug("✅ Índices da tabela 'instances' criados");
 
-    // MIGRATION: Verifica se coluna 'type' existe
-    try {
-        const columns = await new Promise((resolve, reject) => {
-            db.all(`PRAGMA table_info(instances)`, [], (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
-        
-        const typeColumnExists = columns.some(col => col.name === 'type');
-        if (!typeColumnExists) {
-            await runQuery(db, `ALTER TABLE instances ADD COLUMN type TEXT DEFAULT 'whatsapp'`);
-            await debug("✅ Coluna 'type' adicionada à tabela 'instances'");
-        }
-    } catch (error) {
-        console.error("Erro na migração da coluna type:", error);
-    }
+
 
     // Cria trigger
     try {
@@ -207,7 +189,7 @@ async function countActiveInstances() {
  * @param {string} instanceId - ID único (opcional, será gerado se não fornecido)
  * @returns {Promise<Object>}
  */
-async function createInstance(name, type = 'whatsapp', instanceId = null) {
+async function createInstance(name, instanceId = null) {
   // Verifica limite de instâncias
   const currentCount = await countActiveInstances();
   if (currentCount >= MAX_INSTANCES) {
@@ -224,8 +206,8 @@ async function createInstance(name, type = 'whatsapp', instanceId = null) {
     try {
       db = await getDatabaseConnection();
       db.run(
-        `INSERT INTO instances (instance_id, name, type, status) VALUES (?, ?, ?, ?)`,
-        [finalInstanceId, name, type, INSTANCE_STATUS.DISCONNECTED],
+        `INSERT INTO instances (instance_id, name, status) VALUES (?, ?, ?)`,
+        [finalInstanceId, name, INSTANCE_STATUS.DISCONNECTED],
         function (err) {
           if (err) {
             db.close();
