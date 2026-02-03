@@ -503,3 +503,22 @@ Corrigido bug que fazia o botão "Limpar" não funcionar corretamente.
     Corrigido bug visual do dark mode.
 
 📅 Data de Lançamento: [29/01/2026]
+
+📌 Patch Notes - Versão 1.3.1
+
+✨ Novidades
+Implementada detecção automática do Chrome para agilizar a conexão.
+
+Adicionado botão do CRM (funcionalidade em desenvolvimento).
+
+🛠️ Melhorias
+Atualizado o comportamento do botão de atualizar.
+
+Desabilitado o fallback de timeout para evitar conflitos.
+
+🐛 Correções
+Corrigido problema que permitia ao bot postar no status do WhatsApp.
+
+Corrigido bug nos campos que não estavam respeitando o dark mode.
+
+📅 Data de Lançamento: [03/02/2026]
