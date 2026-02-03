@@ -62,6 +62,8 @@ async function startTimeout(client, userNumber, chat, name = "") {
       console.error("Erro ao enviar mensagem de timeout:", error);
 
       // Fallback em caso de erro - mensagem básica padronizada
+      // COMENTADO: Se não tiver no banco, não envia nada (conforme solicitado)
+      /*
       try {
         const messageStats = timeoutMessageCount.get(userNumber);
 
@@ -97,6 +99,8 @@ async function startTimeout(client, userNumber, chat, name = "") {
           fallbackError
         );
       }
+      */
+      activeTimeouts.delete(userNumber);
     }
   }, TIMEOUT_DURATION);
 
