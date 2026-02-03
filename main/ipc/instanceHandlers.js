@@ -160,15 +160,15 @@ class InstanceHandlers {
   /**
    * Cria uma nova instância
    * @param {Event} event - Evento IPC
-   * @param {Object} params - Parâmetros { name }
+   * @param {Object} params - Parâmetros { name, type }
    */
-  async createInstance(event, { name }) {
+  async createInstance(event, { name, type = 'whatsapp' }) {
     try {
       if (!name || name.trim() === "") {
         return { success: false, message: "Nome da instância é obrigatório" };
       }
 
-      const instance = await instanceManager.addInstance(name.trim());
+      const instance = await instanceManager.addInstance(name.trim(), type);
 
       this.sendToRenderer("instance-created", { instance });
 

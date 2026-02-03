@@ -3,6 +3,7 @@ const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const path = require("path");
 const fs = require("fs").promises;
 const { debug } = require("./debugService");
+const browserHelper = require("../utils/browserHelper");
 const { 
     getAllDeeJayInstances, 
     updateDeeJayInstanceStatus, 
@@ -142,12 +143,18 @@ class DeeJayService {
 
         await debug(`Dee Jay: Iniciando instância ${instanceId}...`);
 
+        const executablePath = browserHelper.getChromeExecutablePath();
+        if (!executablePath) {
+             console.warn("DeeJayService: Chrome não encontrado. Puppeteer tentará usar versão padrão.");
+        }
+
         const client = new Client({
             authStrategy: new LocalAuth({
                 clientId: instanceId,
                 dataPath: this.getBaseSessionPath(),
             }),
             puppeteer: {
+                executablePath: executablePath,
                 headless: true,
                 args: [
                     '--no-sandbox', 

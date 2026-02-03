@@ -7,6 +7,7 @@ const btnConfig = document.getElementById("btn-config");
 const btnDrone = document.getElementById("btn-drone");
 const btnClearCache = document.getElementById("btn-clear-cache");
 const btnDeeJay = document.getElementById("btn-dee-jay"); // Adicionado: Botão Dee Jay
+const btnCRM = document.getElementById("btn-crm"); // Adicionado: Botão CRM
 const statusDiv = document.getElementById("status");
 
 // ========================================
@@ -142,6 +143,26 @@ if (btnDeeJay) {
         showStatus("Erro ao abrir Dee Jay", "error");
         hideButtonLoading(btnDeeJay, "🎧 Dee Jay");
       }
+    });
+}
+
+// Botão CRM
+if (typeof btnCRM !== 'undefined' && btnCRM) {
+    btnCRM.addEventListener("click", async () => {
+        try {
+            showButtonLoading(btnCRM, "Abrindo...");
+            const result = await window.electronAPI.openCRM();
+            if (result.success) {
+                showStatus(result.message, "success");
+            } else {
+                showStatus(result.message, "error");
+            }
+            hideButtonLoading(btnCRM, "👥 CRM");
+        } catch (error) {
+            console.error("Erro ao abrir CRM:", error);
+            showStatus("Erro ao abrir CRM", "error");
+            hideButtonLoading(btnCRM, "👥 CRM");
+        }
     });
 }
 

@@ -13,9 +13,13 @@ const {
 } = require("../renderer/guiConfig/droneWindow");
 const {
   createDeeJayWindow,
-  closeDeeJayWindow,
   getDeeJayWindow,
 } = require("../renderer/guiConfig/deeJayWindow");
+const {
+  createCRMWindow,
+  closeCRMWindow,
+  getCRMWindow,
+} = require("../renderer/guiConfig/crmWindow");
 
 class WindowManager {
   constructor() {
@@ -148,6 +152,32 @@ class WindowManager {
   
   getDeeJayWindow() {
       return getDeeJayWindow();
+  }
+
+  // Métodos para janela CRM
+  openCRMWindow() {
+      try {
+          console.log("Abrindo CRM...");
+          let win = getCRMWindow();
+          if (!win) {
+              win = createCRMWindow();
+          } else {
+              win.focus();
+          }
+          return { success: true, message: "Janela CRM aberta" };
+      } catch (error) {
+          console.error("Erro ao abrir CRM:", error);
+          return { success: false, message: "Erro ao abrir CRM: " + error.message };
+      }
+  }
+  
+  closeCRMWindow() {
+      try {
+          closeCRMWindow();
+          return { success: true, message: "Janela CRM fechada" };
+      } catch (error) {
+           return { success: false, message: "Erro ao fechar: " + error.message };
+      }
   }
 
   // Método para recriar janela principal (macOS)

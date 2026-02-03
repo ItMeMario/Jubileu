@@ -29,33 +29,49 @@ class UpdateHandlers {
                     
                     console.log("Git pull output:", stdout);
 
-                    // Verifica se o arquivo realmente mudou
-                    const packagePath = require.resolve("../../package.json");
-                    delete require.cache[packagePath]; // Limpa cache para ler o arquivo do disco
-                    const newLocalPackage = require("../../package.json");
-                    
-                    // Se o output diz "Already up to date" mas a versão é antiga, é porque o usuário alterou o arquivo manualmente
-                    // ou o commit local já é o mais atual.
-                    if (stdout.includes("Already up to date")) {
-                        // Compara com a remota novamente (ou checa se mudou em relação ao que sabíamos)
-                        // Para simplificar, verificamos se a versão agora é igual à remota (precisaríamos buscar a remota de novo ou confiar no reload)
-                        
-                        // Busca remota para ter certeza
-                        try {
-                            const remotePackage = await this.fetchRemotePackage();
-                            if (newLocalPackage.version !== remotePackage.version) {
-                                resolve({ 
-                                    success: false, 
-                                    message: "O Git informou que já está atualizado, mas a versão local difere da remota.\n\nIsso geralmente acontece se você alterou o package.json manualmente. Desfaça suas alterações locais (git checkout) e tente novamente." 
-                                });
-                                return;
-                            }
-                        } catch (e) {
-                            console.error("Erro ao re-verificar remote:", e);
+                    // Executa npm install para garantir que as dependências estejam atualizadas
+                    console.log("Executando npm install...");
+                    exec("npm install", { cwd: process.cwd() }, async (installError, installStdout, installStderr) => {
+                        if (installError) {
+                            console.error("npm install error:", installError);
+                            // Não vamos falhar o update inteiro, mas avisar o usuário
+                            // Ou falhar? Melhor avisar que o código atualizou mas libs falharam.
+                            // Mas para consistência, vamos considerar sucesso parcial ou falha crítica dependendo da preferência.
+                            // Aqui vamos considerar erro crítico pois sem deps o app quebra.
+                            resolve({ success: false, message: "Erro no npm install: " + installError.message });
+                            return;
                         }
-                    }
+                        
+                        console.log("npm install output:", installStdout);
 
-                    resolve({ success: true, message: "Atualizado com sucesso! Reinicie o aplicativo para aplicar as mudanças." });
+                        // Verifica se o arquivo realmente mudou
+                        const packagePath = require.resolve("../../package.json");
+                        delete require.cache[packagePath]; // Limpa cache para ler o arquivo do disco
+                        const newLocalPackage = require("../../package.json");
+                        
+                        // Se o output diz "Already up to date" mas a versão é antiga, é porque o usuário alterou o arquivo manualmente
+                        // ou o commit local já é o mais atual.
+                        if (stdout.includes("Already up to date")) {
+                            // Compara com a remota novamente (ou checa se mudou em relação ao que sabíamos)
+                            // Para simplificar, verificamos se a versão agora é igual à remota (precisaríamos buscar a remota de novo ou confiar no reload)
+                            
+                            // Busca remota para ter certeza
+                            try {
+                                const remotePackage = await this.fetchRemotePackage();
+                                if (newLocalPackage.version !== remotePackage.version) {
+                                    resolve({ 
+                                        success: false, 
+                                        message: "O Git informou que já está atualizado, mas a versão local difere da remota.\n\nIsso geralmente acontece se você alterou o package.json manualmente. Desfaça suas alterações locais (git checkout) e tente novamente." 
+                                    });
+                                    return;
+                                }
+                            } catch (e) {
+                                console.error("Erro ao re-verificar remote:", e);
+                            }
+                        }
+
+                        resolve({ success: true, message: "Atualizado e dependências instaladas com sucesso! Reinicie o aplicativo para aplicar as mudanças." });
+                    });
                 });
             });
         } else {

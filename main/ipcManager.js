@@ -11,6 +11,7 @@ const InstanceHandlers = require("./ipc/instanceHandlers");
 const CacheHandlers = require("./ipc/cacheHandlers");
 const DeeJayHandlers = require("./ipc/deeJayHandlers");
 const UpdateHandlers = require("./ipc/updateHandlers");
+const CRMHandlers = require("./ipc/crmHandlers");
 
 
 class IPCManager {
@@ -27,6 +28,7 @@ class IPCManager {
       instance: null,
       cache: null,
       update: null,
+      crm: null,
 
     };
   }
@@ -46,6 +48,7 @@ class IPCManager {
       this.handlers.cache = new CacheHandlers();
       this.handlers.deeJay = new DeeJayHandlers(modules.windowManager);
       this.handlers.update = new UpdateHandlers();
+      this.handlers.crm = new CRMHandlers(modules.windowManager);
 
 
       // Registra handlers do WhatsApp
@@ -83,6 +86,9 @@ class IPCManager {
 
       // Registra handlers de Update
       this.registerUpdateHandlers();
+
+      // Registra handlers de CRM
+      this.registerCRMHandlers();
 
 
       console.log("Todos os handlers IPC registrados");
@@ -543,6 +549,22 @@ class IPCManager {
       this.handlers.update.triggerUpdate.bind(this.handlers.update)
     );
     console.log("Handlers de update registrados");
+  }
+
+  registerCRMHandlers() {
+    ipcMain.handle(
+      "open-crm",
+      this.handlers.crm.openCRM.bind(this.handlers.crm)
+    );
+    ipcMain.handle(
+      "crm-create-instance",
+      this.handlers.crm.createCRMInstance.bind(this.handlers.crm)
+    );
+    ipcMain.handle(
+      "crm-get-instances",
+      this.handlers.crm.getCRMInstances.bind(this.handlers.crm)
+    );
+    console.log("Handlers de CRM registrados");
   }
 
   // ========================================

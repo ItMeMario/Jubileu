@@ -28,6 +28,7 @@
   "devDependencies": {
     "electron": "^39.2.3",
     "electron-builder": "^26.0.12",
+    "mockery": "^2.1.0",
     "node-abi": "^4.26.0"
   },
   "build": {

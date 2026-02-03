@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM - Jubileu</title>
+    <link rel="stylesheet" href="../css/globalCss.css">
+    <link rel="stylesheet" href="../css/crm.css">
+    <link rel="stylesheet" href="../css/darkMode.css">
+</head>
+
+<body>
+
+
+    <div class="main-content">
+        <div class="crm-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>Instâncias CRM (Isoladas)</h3>
+                <button id="btn-create-crm-instance" class="btn-primary"
+                    style="background-color: #9C27B0; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    ➕ Nova Instância
+                </button>
+            </div>
+
+            <div id="crm-instances-list" class="crm-instances-grid">
+                <!-- Lista será renderizada aqui -->
+            </div>
+        </div>
+    </div>
+
+    <script src="../guiScripts/utils/darkModeManager.js"></script>
+    <script src="../guiScripts/crmRenderer.js"></script>
+</body>
+
+</html>
