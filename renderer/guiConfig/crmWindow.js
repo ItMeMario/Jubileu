@@ -35,6 +35,9 @@ function createCRMWindow() {
   
   const htmlPath = path.join(__dirname, "../html/crm.html");
   crmWindow.loadFile(htmlPath);
+  
+  // Abrir DevTools automaticamente para debug
+  crmWindow.webContents.openDevTools();
 
   crmWindow.on("closed", () => {
     crmWindow = null;

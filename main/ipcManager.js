@@ -564,6 +564,18 @@ class IPCManager {
       "crm-get-instances",
       this.handlers.crm.getCRMInstances.bind(this.handlers.crm)
     );
+    ipcMain.handle(
+      "crm-start-instance",
+      this.handlers.crm.startInstance.bind(this.handlers.crm)
+    );
+    ipcMain.handle(
+      "crm-stop-instance",
+      this.handlers.crm.stopInstance.bind(this.handlers.crm)
+    );
+    ipcMain.handle(
+      "crm-remove-instance",
+      this.handlers.crm.removeInstance.bind(this.handlers.crm)
+    );
     console.log("Handlers de CRM registrados");
   }
 
