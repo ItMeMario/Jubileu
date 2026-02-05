@@ -10,7 +10,7 @@ async function renderInstances() {
     instancesList.innerHTML = '<div class="loading">Carregando instâncias...</div>';
 
     try {
-        const result = await window.electronAPI.crm.getInstances();
+        const result = await window.crmAPI.getInstances();
         
         if (result.success) {
             const instances = result.instances;
@@ -51,7 +51,7 @@ if (btnCreateInstance) {
         if (!name) return;
 
         try {
-            const result = await window.electronAPI.crm.createInstance(name);
+            const result = await window.crmAPI.createInstance(name);
             if (result.success) {
                 alert(`Instância '${result.instance.name}' criada com sucesso!`);
                 renderInstances(); // Atualiza a lista

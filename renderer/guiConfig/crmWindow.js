@@ -13,15 +13,9 @@ function createCRMWindow() {
   crmWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    parent: require("electron").BrowserWindow.getFocusedWindow(),
-    // modal: true, // Optional: decides if it blocks the main window
+    // parent: require("electron").BrowserWindow.getFocusedWindow(), // Removed for isolation
     webPreferences: {
-      preload: path.join(__dirname, "../preload/preload.js"), // Reusing main preload for now, or should I create specific?
-      // actually drone uses dronePreload.js, but config uses... let's check configWindow usage in windowManager
-      // windowManager uses ../renderer/preload/preload.js for main window.
-      // let's stick to the main preload since I'm adding openCRM to it.
-      // Wait, drone uses specific preload. Let's see if I need one.
-      // For now, I'll use the main preload if it has what I need (standard IPC).
+      preload: path.join(__dirname, "../preload/crmPreload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },
