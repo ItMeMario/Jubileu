@@ -27,37 +27,29 @@ function updateInstanceCard(data) {
     const card = document.getElementById(`card-${data.instanceId}`);
     if (!card) return;
 
-    const statusBadge = card.querySelector('.status-badge');
-    const qrContainer = card.querySelector('.qr-container');
-    const qrImage = card.querySelector('.qr-image');
-    const infoText = card.querySelector('.info-text');
-
-    if (statusBadge) {
-        statusBadge.className = `status-badge ${data.status}`;
-        statusBadge.textContent = data.status;
+    // Update internal cache if needed (optional but good practice)
+    if(localInstances.has(data.instanceId)) {
+        const inst = localInstances.get(data.instanceId);
+        inst.status = data.status;
+        if(data.qr) inst.qr = data.qr;
     }
 
+    // Use shared state logic
+    // We create a temporary object or use cached one to pass to updateCardState
+    // Simulating instance object with updated data
+    const instanceMock = {
+        instanceId: data.instanceId,
+        status: data.status,
+        qr: data.qr
+    };
+    
+    updateCardState(card, instanceMock);
+
+    // QR Code Handling specific (as updateCardState handles visibility, but we need to inject content)
     if (data.status === 'qr_pending' && data.qr) {
-        if (qrContainer) qrContainer.style.display = 'block';
+        const qrImage = card.querySelector('.qr-image');
         if (qrImage) {
-            // QRCode library might be needed if raw string, but usually we send dataURL or use a lib in renderer
-            // Actually, message implementation sends dataURL usually.
-            // But whatsapp-web.js sends raw string. We need qrcode.js lib or similar.
-            // Let's assume we need to generate it using a library included globally or we used to send base64?
-            // DeeJay uses `qrcode.toDataURL` in service or renderer?
-            // Checking DeeJay... it doesn't show in the service code I read.
-            // Wait, DeeJay service emits 'qr'. Renderer usually needs 'qrcode' lib.
-            // Let's just set src if it's base64, otherwise we need a lib.
-            // For now, let's assume we need to use a library. 
-            // I'll check if qrcode lib is available or if I should implement a simple fallback.
-            // Most "modern" templates here use a qrcode lib in the html.
-            
-            // Checking dependencies... previous view_file of index.html didn't show qrcode lib.
-            // But let's check if we can simple display the string for now or if we have a generator.
-            // Actually, let's use the same approach as main renderer if possible. 
-            // Main renderer uses `new QRCode(element, text)`.
-            
-            qrImage.innerHTML = ""; // Clear previous
+            qrImage.innerHTML = "";
             if (typeof QRCode !== 'undefined') {
                  new QRCode(qrImage, {
                     text: data.qr,
@@ -65,11 +57,9 @@ function updateInstanceCard(data) {
                     height: 128
                  });
             } else {
-                qrImage.textContent = "QR Code received (Lib missing)";
+                qrImage.textContent = "QR Code received";
             }
         }
-    } else {
-        if (qrContainer) qrContainer.style.display = 'none';
     }
 }
 
@@ -119,49 +109,112 @@ function createInstanceCardElement(instance) {
     card.innerHTML = `
         <div class="instance-header">
             <h4>${instance.name}</h4>
-            <span class="status-badge ${instance.status}">${instance.status}</span>
+            <span class="status-badge ${instance.status}">${getBadgeText(instance.status)}</span>
         </div>
         <div class="instance-info">
-            <p class="info-text instance-id">ID: ${instance.instanceId}</p>
-            <div class="qr-container" style="display: none; text-align: center; margin: 10px 0;">
-                <div class="qr-image" style="display: inline-block;"></div>
+            <div class="qr-container" style="display: none;">
+                <div class="qr-image"></div>
                 <p>Escaneie com o WhatsApp</p>
+            </div>
+            <div class="info-container" style="display: none; margin-top: 10px;">
+                 <p style="color: #666; font-size: 14px;">Conectado</p>
             </div>
         </div>
         <div class="instance-actions">
-            <button class="btn-action btn-connect" onclick="handleConnect('${instance.instanceId}')">Conectar</button>
-            <button class="btn-action btn-stop" onclick="handleStop('${instance.instanceId}')" style="display: none;">Parar</button>
             <button class="btn-action btn-remove" onclick="handleRemove('${instance.instanceId}')">🗑️</button>
+            <button class="btn-action btn-connect" onclick="handleConnect(this, '${instance.instanceId}')">Conectar</button>
         </div>
     `;
 
-    // Simple visibility logic for buttons based on status
-    updateCardButtons(card, instance.status);
+    // Initialize state
+    updateCardState(card, instance);
 
     return card;
 }
 
-function updateCardButtons(card, status) {
-    const btnConnect = card.querySelector('.btn-connect');
-    const btnStop = card.querySelector('.btn-stop');
-    
-    if (status === 'connected' || status === 'connecting' || status === 'qr_pending') {
-        if(btnConnect) btnConnect.style.display = 'none';
-        if(btnStop) btnStop.style.display = 'inline-block';
-    } else {
-        if(btnConnect) btnConnect.style.display = 'inline-block';
-        if(btnStop) btnStop.style.display = 'none';
+function getBadgeText(status) {
+    switch(status) {
+        case 'connected': return 'Conectado';
+        case 'connecting': return 'Conectando...';
+        case 'qr_pending': return 'Lendo QR';
+        case 'disconnected': return 'Desconectado';
+        default: return status;
     }
+}
+
+function updateCardState(card, instance) {
+    const qrContainer = card.querySelector('.qr-container');
+    const infoContainer = card.querySelector('.info-container');
+    const btnConnect = card.querySelector('.btn-connect');
+    const badge = card.querySelector('.status-badge');
+
+    // Update Badge
+    if(badge) {
+        badge.className = `status-badge ${instance.status}`;
+        badge.textContent = getBadgeText(instance.status);
+    }
+
+    // Reset visibility
+    if(qrContainer) qrContainer.style.display = 'none';
+    if(infoContainer) infoContainer.style.display = 'none';
+
+    // Button Logic & Helper Views
+    if (instance.status === 'connected') {
+        if(infoContainer) infoContainer.style.display = 'block';
+        if(btnConnect) {
+            btnConnect.textContent = "Desconectar";
+            btnConnect.className = "btn-action btn-connect btn-disconnect"; // Adds red color
+            btnConnect.onclick = () => window.handleStop(instance.instanceId);
+            btnConnect.disabled = false;
+        }
+    } else if (instance.status === 'qr_pending') {
+        if(qrContainer) qrContainer.style.display = 'block';
+        if(btnConnect) {
+            btnConnect.textContent = "Cancelar";
+            btnConnect.className = "btn-action btn-connect btn-disconnect";
+            btnConnect.onclick = () => window.handleStop(instance.instanceId);
+            btnConnect.disabled = false;
+        }
+    } else if (instance.status === 'connecting') {
+        if(btnConnect) {
+            btnConnect.textContent = "Iniciando...";
+            btnConnect.disabled = true;
+            btnConnect.className = "btn-action btn-connect";
+        }
+    } else {
+        // Disconnected or others
+        if(btnConnect) {
+            btnConnect.textContent = "Conectar";
+            btnConnect.className = "btn-action btn-connect";
+            btnConnect.onclick = () => window.handleConnect(btnConnect, instance.instanceId);
+            btnConnect.disabled = false;
+        }
+    }
+}
+
+// Deprecated: verify if this function is still called elsewhere, if not it can be removed or kept as empty wrapper
+function updateCardButtons(card, status) {
+   // This function is replaced by updateCardState logic but kept if legacy calls exist
 }
 
 // Global handlers (attached to window to be accessible from HTML onclick strings if needed, 
 // though addEventListener is better, but I used innerHTML string above for speed)
-window.handleConnect = async (instanceId) => {
+window.handleConnect = async (btnElement, instanceId) => {
     try {
         console.log("Conectando:", instanceId);
+        // Instant feedback
+        if(btnElement && btnElement.tagName === 'BUTTON') {
+             btnElement.textContent = "Iniciando...";
+             btnElement.disabled = true;
+        }
+        
         await window.crmAPI.startInstance(instanceId);
     } catch (e) {
         alert("Erro ao conectar: " + e.message);
+        if(btnElement && btnElement.tagName === 'BUTTON') {
+             btnElement.textContent = "Conectar";
+             btnElement.disabled = false;
+        }
     }
 };
 

@@ -760,10 +760,7 @@ body.dark-mode .instance-crm-card .info-text {
     color: var(--text-secondary);
 }
 
-body.dark-mode .instance-id {
-    background: var(--bg-tertiary);
-    color: var(--text-tertiary);
-}
+
 
 body.dark-mode .crm-header h3 {
     color: var(--text-primary);
