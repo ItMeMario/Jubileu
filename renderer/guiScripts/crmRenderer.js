@@ -122,16 +122,16 @@ function createInstanceCardElement(instance) {
             <span class="status-badge ${instance.status}">${instance.status}</span>
         </div>
         <div class="instance-info">
-            <p class="info-text">ID: ${instance.instanceId}</p>
+            <p class="info-text instance-id">ID: ${instance.instanceId}</p>
             <div class="qr-container" style="display: none; text-align: center; margin: 10px 0;">
                 <div class="qr-image" style="display: inline-block;"></div>
                 <p>Escaneie com o WhatsApp</p>
             </div>
         </div>
-        <div class="instance-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+        <div class="instance-actions">
             <button class="btn-action btn-connect" onclick="handleConnect('${instance.instanceId}')">Conectar</button>
             <button class="btn-action btn-stop" onclick="handleStop('${instance.instanceId}')" style="display: none;">Parar</button>
-            <button class="btn-action btn-remove" onclick="handleRemove('${instance.instanceId}')" style="background-color: #f44336;">🗑️</button>
+            <button class="btn-action btn-remove" onclick="handleRemove('${instance.instanceId}')">🗑️</button>
         </div>
     `;
 

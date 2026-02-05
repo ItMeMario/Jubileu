@@ -639,7 +639,7 @@ body.dark-mode .stats-info {
 }
 
 body.dark-mode .ranking-item.zero-count {
-    background-color: var(--bg-primary); 
+    background-color: var(--bg-primary);
     opacity: 0.5;
 }
 
@@ -735,5 +735,38 @@ body.dark-mode #clear-confirmation-modal .modal-footer {
 }
 
 body.dark-mode #clear-confirmation-modal .modal-header h3 {
-    color: var(--text-primary);   
+    color: var(--text-primary);
 }
+
+/* =========================================
+   FIX: CRM MODULE
+   ========================================= */
+body.dark-mode .crm-card,
+body.dark-mode .instance-crm-card {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    box-shadow: 0 2px 8px var(--shadow-sm);
+}
+
+body.dark-mode .instance-crm-card:hover {
+    box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+body.dark-mode .instance-crm-card h4 {
+    color: var(--text-primary);
+}
+
+body.dark-mode .instance-crm-card .info-text {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .instance-id {
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+}
+
+body.dark-mode .crm-header h3 {
+    color: var(--text-primary);
+}
+
+/* Ensure buttons are visible/styled in dark mode (usually they are OK with default btn styles, but good to check status badges) */
