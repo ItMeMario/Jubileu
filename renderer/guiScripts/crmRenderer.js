@@ -228,7 +228,10 @@ window.handleStop = async (instanceId) => {
 };
 
 window.handleRemove = async (instanceId) => {
-    if(!confirm("Tem certeza que deseja remover esta instância?")) return;
+    // Usando modal customizado para evitar bugs do Electron
+    const confirmed = await window.customConfirm("Tem certeza que deseja remover esta instância?");
+    if (!confirmed) return;
+
     try {
         console.log("Removendo:", instanceId);
         await window.crmAPI.removeInstance(instanceId);
