@@ -12,6 +12,10 @@ const {
     createCrmInstance,
     resetAllCrmInstancesStatus
 } = require("../config/initializeModules/crmIM");
+const MessageType = require("../config/messageType");
+const { smartDelay } = require("../utils/delay");
+const { getMessage } = require("../utils/messageReader");
+const { sendMessageOptions } = require("../config/compatibility/whatsappCompatibility");
 
 class CrmService {
     constructor() {
@@ -155,6 +159,29 @@ class CrmService {
                 instanceData.client = null;
                 await updateCrmInstanceStatus(instanceId, CRM_STATUS.DISCONNECTED);
                 this.emit('instance-update', { instanceId, status: CRM_STATUS.DISCONNECTED });
+            });
+
+            client.on('message', async (msg) => {
+                if (msg.fromMe) return;
+
+                try {
+                    await debug(`CRM: Mensagem recebida de ${msg.from} em ${instanceId}. Aguardando delay...`);
+                    // Usando smartDelay conforme solicitado (padrão 1-3 min se não passar args, ou configurável se necessario)
+                    // Para um "welcome" talvez fosse melhor menos tempo, mas vou respeitar o "usar do delay.js" genérico
+                    // Se precisar de algo mais rápido, podemos passar { minMs: 2000, maxMs: 10000 }
+                    await smartDelay(); 
+
+                    const welcomeMessage = await getMessage(MessageType.CRM_WELCOME);
+                    
+                    if (welcomeMessage) {
+                        await client.sendMessage(msg.from, welcomeMessage, sendMessageOptions);
+                        await debug(`CRM: Auto-resposta enviada para ${msg.from} em ${instanceId}`);
+                    } else {
+                        console.warn(`CRM: Mensagem ${MessageType.CRM_WELCOME} não encontrada ou vazia.`);
+                    }
+                } catch (error) {
+                    console.error(`CRM: Erro ao enviar auto-resposta para ${msg.from}:`, error);
+                }
             });
 
             await client.initialize();
