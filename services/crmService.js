@@ -176,6 +176,17 @@ class CrmService {
                     if (welcomeMessage) {
                         await client.sendMessage(msg.from, welcomeMessage, sendMessageOptions);
                         await debug(`CRM: Auto-resposta enviada para ${msg.from} em ${instanceId}`);
+
+                        // Aguarda novamente e envia CRM_TIPS
+                        await smartDelay();
+                        const tipsMessage = await getMessage(MessageType.CRM_TIPS);
+
+                        if (tipsMessage) {
+                            await client.sendMessage(msg.from, tipsMessage, sendMessageOptions);
+                            await debug(`CRM: Dicas enviadas para ${msg.from} em ${instanceId}`);
+                        } else {
+                            console.warn(`CRM: Mensagem ${MessageType.CRM_TIPS} não encontrada ou vazia.`);
+                        }
                     } else {
                         console.warn(`CRM: Mensagem ${MessageType.CRM_WELCOME} não encontrada ou vazia.`);
                     }

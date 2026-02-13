@@ -20,7 +20,10 @@ const MessageType = {
   NAME_MENU: "name_menu",
   AUDIO_INVITE: "audio_invite",
   SOCIAL_LINK: "social_link",
+
+  // CRM
   CRM_WELCOME: "crm_welcome",
+  CRM_TIPS: "crm_tips",
 
   // Erros
   CITY_ERROR: "city_error",
