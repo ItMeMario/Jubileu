@@ -729,9 +729,18 @@ body.dark-mode .stats-info strong {
 
 body.dark-mode .horario-count,
 body.dark-mode .ranking-stats,
-body.dark-mode .summary-label,
-body.dark-mode .stats-info {
+body.dark-mode .summary-label {
     color: var(--text-secondary);
+}
+
+body.dark-mode .stats-info {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+body.dark-mode .stats-info strong {
+    color: var(--text-primary);
 }
 
 body.dark-mode .ranking-item.zero-count {
