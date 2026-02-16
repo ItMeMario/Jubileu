@@ -4,3 +4,4 @@ data/
 dist/
 .wwebjs_auth/
 .wwebjs_auth_deejay
+.wwebjs_auth_crm

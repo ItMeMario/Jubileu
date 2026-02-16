@@ -473,8 +473,23 @@ body.dark-mode .audio-file-info {
 
 /* ========== COMPLETENESS SECTION ========== */
 body.dark-mode .message-completeness-section {
-    background-color: var(--bg-secondary);
+    background: var(--bg-secondary);
     border-color: var(--border-color);
+}
+
+body.dark-mode .message-completeness-section::before {
+    background: linear-gradient(90deg, var(--color-success), #128c7e, var(--color-success));
+    opacity: 0.5;
+}
+
+body.dark-mode .completeness-header {
+    background: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .completeness-header::after {
+    background: linear-gradient(90deg, transparent, var(--color-success), transparent);
+    opacity: 0.5;
 }
 
 body.dark-mode .completeness-header h3 {
@@ -485,24 +500,105 @@ body.dark-mode .completeness-header p {
     color: var(--text-secondary);
 }
 
+body.dark-mode .completeness-controls {
+    background: var(--bg-secondary);
+}
+
+body.dark-mode .verification-mode {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .verification-mode::before {
+    /* Keep the side border/gradient or adjust */
+    opacity: 0.8;
+}
+
+body.dark-mode .verification-mode h4 {
+    color: var(--text-primary);
+}
+
 body.dark-mode .btn-mode {
-    background-color: var(--bg-tertiary);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .btn-mode::before {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+body.dark-mode .btn-mode:hover {
+    background: var(--bg-hover);
+    color: var(--color-success);
+    border-color: var(--color-success);
+}
+
+body.dark-mode .btn-mode.active {
+    background: linear-gradient(135deg, var(--color-success) 0%, #128c7e 100%);
+    color: white;
+    border-color: var(--color-success);
+}
+
+body.dark-mode .mode-indicator {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .mode-badge {
+    background: var(--bg-hover);
     color: var(--text-primary);
     border-color: var(--border-color);
 }
 
-body.dark-mode .btn-mode.active {
-    background-color: var(--color-success);
-    color: white;
+body.dark-mode .mode-badge.active {
+    background: rgba(37, 211, 102, 0.2);
+    color: var(--color-success);
+    border-color: rgba(37, 211, 102, 0.3);
 }
 
-body.dark-mode .mode-indicator {
-    background-color: var(--bg-tertiary);
+body.dark-mode #specific-locale-section {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode #specific-locale-section label {
+    color: var(--text-primary);
+}
+
+body.dark-mode #specific-locale-section select {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+body.dark-mode .hint {
+    background: rgba(0, 123, 255, 0.1);
+    color: #60a5fa;
+    border-left-color: #007bff;
+}
+
+body.dark-mode #btn-check-completeness {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode #btn-check-completeness:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 body.dark-mode .completeness-results {
-    background-color: var(--bg-tertiary);
+    background: var(--bg-secondary);
     border-color: var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .results-header {
+    background: var(--bg-tertiary);
+    border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .results-header h4 {
+    color: var(--text-primary);
 }
 
 /* ========== DEV MODE SECTION ========== */
@@ -633,13 +729,22 @@ body.dark-mode .stats-info strong {
 
 body.dark-mode .horario-count,
 body.dark-mode .ranking-stats,
-body.dark-mode .summary-label,
-body.dark-mode .stats-info {
+body.dark-mode .summary-label {
     color: var(--text-secondary);
 }
 
+body.dark-mode .stats-info {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+body.dark-mode .stats-info strong {
+    color: var(--text-primary);
+}
+
 body.dark-mode .ranking-item.zero-count {
-    background-color: var(--bg-primary); 
+    background-color: var(--bg-primary);
     opacity: 0.5;
 }
 
@@ -735,5 +840,35 @@ body.dark-mode #clear-confirmation-modal .modal-footer {
 }
 
 body.dark-mode #clear-confirmation-modal .modal-header h3 {
-    color: var(--text-primary);   
+    color: var(--text-primary);
 }
+
+/* =========================================
+   FIX: CRM MODULE
+   ========================================= */
+body.dark-mode .crm-card,
+body.dark-mode .instance-crm-card {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+    box-shadow: 0 2px 8px var(--shadow-sm);
+}
+
+body.dark-mode .instance-crm-card:hover {
+    box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+body.dark-mode .instance-crm-card h4 {
+    color: var(--text-primary);
+}
+
+body.dark-mode .instance-crm-card .info-text {
+    color: var(--text-secondary);
+}
+
+
+
+body.dark-mode .crm-header h3 {
+    color: var(--text-primary);
+}
+
+/* Ensure buttons are visible/styled in dark mode (usually they are OK with default btn styles, but good to check status badges) */

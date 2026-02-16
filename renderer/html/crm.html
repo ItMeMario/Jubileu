@@ -17,8 +17,7 @@
         <div class="crm-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h3>Instâncias CRM (Isoladas)</h3>
-                <button id="btn-create-crm-instance" class="btn-primary"
-                    style="background-color: #9C27B0; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                <button id="btn-create-crm-instance" class="btn-primary">
                     ➕ Nova Instância
                 </button>
             </div>
@@ -29,7 +28,28 @@
         </div>
     </div>
 
+    <!-- Modal de Criação -->
+    <div id="modal-create-instance" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nova Instância CRM</h3>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="input-instance-name">Nome da Instância</label>
+                    <input type="text" id="input-instance-name" placeholder="Ex: Vendas 01">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-cancel-create" class="btn-secondary">Cancelar</button>
+                <button id="btn-confirm-create" class="btn-primary">Criar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="../guiScripts/utils/darkModeManager.js"></script>
+    <script src="../guiScripts/utils/confirmModal.js"></script>
     <script src="../guiScripts/crmRenderer.js"></script>
 </body>
 

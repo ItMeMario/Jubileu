@@ -524,3 +524,22 @@ Corrigido problema que permitia ao bot postar no status do WhatsApp.
 Corrigido bug nos campos que não estavam respeitando o dark mode.
 
 📅 Data de Lançamento: [03/02/2026]
+
+---
+
+📌 Patch Notes - Versão 1.3.2
+
+✨ Novidades
+Adicionada mensagem de boas-vindas ao CRM (crm_welcome).
+
+Adicionada mensagem de dicas ao CRM (crm_tips).
+
+🛠️ Melhorias
+[Nenhuma melhoria registrada nesta versão.]
+
+🐛 Correções
+Corrigido erro de visualização na completude durante o modo dark.
+
+Corrigido erro de visualização na data de última atualização durante o modo dark.
+
+📅 Data de Lançamento: [16/02/2026]

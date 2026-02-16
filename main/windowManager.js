@@ -180,6 +180,10 @@ class WindowManager {
       }
   }
 
+  getCRMWindow() {
+      return getCRMWindow();
+  }
+
   // Método para recriar janela principal (macOS)
   recreateMainWindow() {
     if (BrowserWindow.getAllWindows().length === 0) {

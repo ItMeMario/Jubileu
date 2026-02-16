@@ -97,50 +97,228 @@ body {
     gap: 15px;
 }
 
+/* Instance Card - DeeJay Style */
 .instance-crm-card {
-    background: #f9f9f9;
-    border: 1px solid #eee;
+    background: var(--bg-tertiary, #f8f9fa);
+    border-radius: 8px;
     padding: 15px;
-    border-radius: 6px;
-    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid var(--border-color, #e0e0e0);
+    box-shadow: 0 2px 4px var(--shadow-sm, rgba(0, 0, 0, 0.1));
+    transition: box-shadow 0.2s;
+    max-width: 300px;
 }
 
 .instance-crm-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px var(--shadow-md, rgba(0, 0, 0, 0.15));
 }
 
 .instance-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
 }
 
 .instance-header h4 {
     margin: 0;
-    color: #333;
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--text-primary, #333);
 }
 
 .status-badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.status-badge.disconnected {
-    background: #ffebee;
-    color: #c62828;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: var(--border-color, #e0e0e0);
+    color: var(--text-primary, #333);
+    font-weight: normal;
 }
 
 .status-badge.connected {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: #4CAF50;
+    color: white;
 }
 
-.instance-info p {
-    margin: 0;
+.status-badge.connecting {
+    background: #FFC107;
+    color: black;
+}
+
+.status-badge.disconnected {
+    background: #f44336;
+    color: white;
+}
+
+.status-badge.qr_pending {
+    background: #2196F3;
+    color: white;
+}
+
+.instance-info {
+    text-align: center;
+}
+
+.qr-container {
+    text-align: center;
+    padding: 10px;
+}
+
+.qr-image {
+    display: inline-block;
+    padding: 5px;
+    background: white;
+    border: 3px solid #4CAF50;
+    border-radius: 5px;
+}
+
+.qr-container p {
+    margin-top: 10px;
+    color: var(--text-secondary, #666);
     font-size: 12px;
-    color: #777;
+}
+
+
+/* Modal Styles */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header h3 {
+    margin: 0 0 20px 0;
+    color: #333;
+}
+
+.modal-body {
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    /* Important for padding */
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-secondary {
+    background: #e0e0e0;
+    color: #333;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #9C27B0;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-primary:hover {
+    background: #7b1fa2;
+}
+
+.instance-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    gap: 10px;
+}
+
+.btn-action {
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-connect {
+    background-color: #232323;
+    /* Dark grey like DeeJay default/connect */
+    color: white;
+    padding: 6px 12px;
+    flex: 1;
+    font-weight: 500;
+}
+
+.btn-connect:hover {
+    transform: scale(1.02);
+}
+
+.btn-start-process {
+    background-color: #232323;
+}
+
+.btn-disconnect {
+    background-color: #f44336;
+}
+
+.btn-remove {
+    background-color: transparent;
+    color: var(--text-secondary, #666);
+    font-size: 18px;
+    padding: 5px;
+}
+
+.btn-remove:hover {
+    transform: scale(1.2);
+    color: #f44336;
+    background-color: transparent;
 }
