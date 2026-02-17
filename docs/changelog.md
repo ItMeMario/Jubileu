@@ -543,3 +543,18 @@ Corrigido erro de visualização na completude durante o modo dark.
 Corrigido erro de visualização na data de última atualização durante o modo dark.
 
 📅 Data de Lançamento: [16/02/2026]
+
+---
+
+📌 Patch Notes - Versão 1.3.3
+
+✨ Novidades
+[Nenhuma nova funcionalidade adicionada nesta versão.]
+
+🛠️ Melhorias
+Atualizada a lógica do botão de update.
+
+🐛 Correções
+Corrigido o botão de update.
+
+📅 Data de Lançamento: [17/02/2026]

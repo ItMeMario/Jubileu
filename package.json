@@ -1,6 +1,6 @@
 {
   "name": "whatsapp-bot-jubileu",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Bot de WhatsApp com interface Electron",
   "author": "ItMeMario",
   "main": "main.js",
