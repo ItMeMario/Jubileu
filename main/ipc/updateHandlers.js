@@ -75,13 +75,81 @@ class UpdateHandlers {
                 });
             });
         } else {
-            console.log("Not a git repository. Running in production/packaged mode.");
-           return { 
-                success: true, 
-                message: "Ambiente de produção detectado. Por favor, baixe a nova versão no GitHub.",
-                action: "open_url",
-                url: "https://github.com/ItMeMario/Jubileu/releases"
-            };
+            console.log("Not a git repository. Using electron-updater.");
+            const { autoUpdater } = require("electron-updater");
+            
+            // Configurar logger (opcional, mas recomendado)
+            try {
+                const log = require("electron-log");
+                log.transports.file.level = "info";
+                autoUpdater.logger = log;
+            } catch (e) {
+                console.log("electron-log not found, using console");
+                autoUpdater.logger = console;
+            }
+
+            autoUpdater.autoDownload = true;
+
+            return new Promise((resolve) => {
+                // Remove listeners anteriores para evitar duplicidade se chamado múltiplas vezes
+                autoUpdater.removeAllListeners();
+
+                autoUpdater.on('update-available', (info) => {
+                    console.log("Update available:", info);
+                    // Opcional: Notificar que o download começou?
+                    // Por enquanto, só aguardamos o download.
+                });
+
+                autoUpdater.on('update-not-available', (info) => {
+                    console.log("Update not available:", info);
+                    resolve({ success: true, message: "Você já está na versão mais atual." });
+                });
+
+                autoUpdater.on('error', (err) => {
+                    console.error("AutoUpdater error:", err);
+                    // Se der erro (ex: sem assinatura, net error), resolvemos com erro mas sem quebrar app
+                    resolve({ success: false, message: "Erro na atualização automática: " + (err.message || err) });
+                });
+
+                autoUpdater.on('download-progress', (progressObj) => {
+                    let log_message = "Download speed: " + progressObj.bytesPerSecond;
+                    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+                    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+                    console.log(log_message);
+                });
+
+                autoUpdater.once('update-downloaded', (info) => {
+                    console.log("Update downloaded");
+                    // Pergunta ao usuário ou avisa que vai reiniciar?
+                    // A mensagem de retorno será mostrada no frontend.
+                    // O quitAndInstall é chamado depois?
+                    
+                    // O comportamento padrão do 'resolve' aqui retorna para o frontend exibir a msg.
+                    // O frontend provavelmente exibe a msg e só.
+                    // Precisamos garantir que o app reinicie.
+                    
+                    // Respondemos sucesso, e o frontend pode recarregar?
+                    // Se o frontend só mostra um alerta, o usuário clica OK.
+                    // O ideal é chamar quitAndInstall.
+                    
+                    // Vamos agendar o quitAndInstall para acontecer logo após o resolve, 
+                    // ou retornamos uma ação específica se o frontend suportar.
+                    
+                    // Como o frontend espera { success, message }, vamos mandar isso.
+                    // E chamamos quitAndInstall() imediatamente ou com um pequeno delay.
+                    
+                    setTimeout(() => {
+                        autoUpdater.quitAndInstall();
+                    }, 3000); // 3 segundos para o usuário ler a mensagem
+                    
+                    resolve({ success: true, message: "Nova versão baixada! O aplicativo será reiniciado em instantes para aplicar a atualização." });
+                });
+
+                // Inicia verificação
+                autoUpdater.checkForUpdates().catch(err => {
+                     resolve({ success: false, message: "Erro ao verificar atualizações: " + err.message });
+                });
+            });
         }
     } catch (error) {
       console.error("Error triggering update:", error);
