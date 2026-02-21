@@ -12,6 +12,7 @@ const CacheHandlers = require("./ipc/cacheHandlers");
 const DeeJayHandlers = require("./ipc/deeJayHandlers");
 const UpdateHandlers = require("./ipc/updateHandlers");
 const CRMHandlers = require("./ipc/crmHandlers");
+const GoatHandlers = require("./ipc/goatHandlers");
 
 
 class IPCManager {
@@ -29,6 +30,7 @@ class IPCManager {
       cache: null,
       update: null,
       crm: null,
+      goat: null,
 
     };
   }
@@ -49,6 +51,7 @@ class IPCManager {
       this.handlers.deeJay = new DeeJayHandlers(modules.windowManager);
       this.handlers.update = new UpdateHandlers();
       this.handlers.crm = new CRMHandlers(modules.windowManager);
+      this.handlers.goat = new GoatHandlers(modules.windowManager);
 
 
       // Registra handlers do WhatsApp
@@ -89,6 +92,9 @@ class IPCManager {
 
       // Registra handlers de CRM
       this.registerCRMHandlers();
+
+      // Registra handlers de Goat
+      this.registerGoatHandlers();
 
 
       console.log("Todos os handlers IPC registrados");
@@ -579,6 +585,14 @@ class IPCManager {
     console.log("Handlers de CRM registrados");
   }
 
+  registerGoatHandlers() {
+    ipcMain.handle(
+      "open-goat",
+      this.handlers.goat.openGoat.bind(this.handlers.goat)
+    );
+    console.log("Handlers de Goat registrados");
+  }
+
   // ========================================
   // Getter para InstanceHandlers (útil para inicialização)
   // ========================================
@@ -672,6 +686,7 @@ class IPCManager {
       "clear-cache",
       "check-update",
       "trigger-update",
+      "open-goat",
 
     ];
 
