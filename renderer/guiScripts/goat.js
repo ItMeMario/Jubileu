@@ -10,10 +10,20 @@ document.addEventListener('DOMContentLoaded', () => {
         'r': 'De novo 🔙'
     };
 
-    document.addEventListener('keydown', (event) => {
+    // Função de delay baseada na lógica do randomDelay.js
+    async function delay(ms) {
+        await new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    let currentActionId = 0;
+
+    document.addEventListener('keydown', async (event) => {
         const key = event.key.toLowerCase();
         
         if (displayMapping[key]) {
+            currentActionId++;
+            const myActionId = currentActionId;
+
             const content = displayMapping[key];
             
             // Adjust font size for 'De novo 🔙' as it is longer
@@ -40,6 +50,17 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 emojiDisplay.classList.remove('changed');
             }, 150);
+
+            // Intervalo de 15s em que a tela fica com o emoji
+            await delay(15000);
+
+            // Retorna ao default se nenhuma outra tecla correspondente foi apertada
+            if (currentActionId === myActionId) {
+                emojiDisplay.textContent = '';
+                if (goatTitle) {
+                    goatTitle.style.opacity = '1';
+                }
+            }
         }
     });
 });
