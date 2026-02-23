@@ -20,6 +20,11 @@ const {
   closeCRMWindow,
   getCRMWindow,
 } = require("../renderer/guiConfig/crmWindow");
+const {
+  createGoatWindow,
+  getGoatWindow,
+  closeGoatWindow,
+} = require("../renderer/guiConfig/goatWindow");
 
 class WindowManager {
   constructor() {
@@ -182,6 +187,36 @@ class WindowManager {
 
   getCRMWindow() {
       return getCRMWindow();
+  }
+
+  // Métodos para janela Goat
+  openGoatWindow() {
+      try {
+          console.log("Abrindo Goat...");
+          let win = getGoatWindow();
+          if (!win) {
+              win = createGoatWindow();
+          } else {
+              win.focus();
+          }
+          return { success: true, message: "Janela Goat aberta" };
+      } catch (error) {
+          console.error("Erro ao abrir Goat:", error);
+          return { success: false, message: "Erro ao abrir Goat: " + error.message };
+      }
+  }
+
+  closeGoatWindow() {
+      try {
+          closeGoatWindow();
+          return { success: true, message: "Janela Goat fechada" };
+      } catch (error) {
+           return { success: false, message: "Erro ao fechar: " + error.message };
+      }
+  }
+
+  getGoatWindow() {
+      return getGoatWindow();
   }
 
   // Método para recriar janela principal (macOS)

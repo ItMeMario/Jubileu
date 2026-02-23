@@ -8,6 +8,7 @@ const btnDrone = document.getElementById("btn-drone");
 const btnClearCache = document.getElementById("btn-clear-cache");
 const btnDeeJay = document.getElementById("btn-dee-jay"); // Adicionado: Botão Dee Jay
 const btnCRM = document.getElementById("btn-crm"); // Adicionado: Botão CRM
+const btnGoat = document.getElementById("btn-goat"); // Adicionado: Botão Goat
 const statusDiv = document.getElementById("status");
 
 // ========================================
@@ -162,6 +163,26 @@ if (typeof btnCRM !== 'undefined' && btnCRM) {
             console.error("Erro ao abrir CRM:", error);
             showStatus("Erro ao abrir CRM", "error");
             hideButtonLoading(btnCRM, "👥 CRM");
+        }
+    });
+}
+
+// Botão Goat
+if (btnGoat) {
+    btnGoat.addEventListener("click", async () => {
+        try {
+            showButtonLoading(btnGoat, "Abrindo...");
+            const result = await window.electronAPI.openGoat();
+            if (result.success) {
+                showStatus(result.message, "success");
+            } else {
+                showStatus(result.message, "error");
+            }
+            hideButtonLoading(btnGoat, "🐐 Goat");
+        } catch (error) {
+            console.error("Erro ao abrir Goat:", error);
+            showStatus("Erro ao abrir Goat", "error");
+            hideButtonLoading(btnGoat, "🐐 Goat");
         }
     });
 }

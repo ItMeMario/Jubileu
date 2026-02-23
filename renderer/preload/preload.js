@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   openDrone: () => ipcRenderer.invoke("open-drone"),
   openCRM: () => ipcRenderer.invoke("open-crm"),
   openDeeJayWindow: () => ipcRenderer.invoke("open-dee-jay-window"),
+  openGoat: () => ipcRenderer.invoke("open-goat"),
   
   crm: {
       createInstance: (name) => ipcRenderer.invoke("crm-create-instance", name),

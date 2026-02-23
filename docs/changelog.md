@@ -558,3 +558,24 @@ Atualizada a lógica do botão de update.
 Corrigido o botão de update.
 
 📅 Data de Lançamento: [17/02/2026]
+
+---
+
+📌 Patch Notes - Versão 1.3.4
+
+✨ Novidades
+Adicionada a nova interface "Goat".
+Implementados comandos de teclado na tela Goat para exibição de respostas rápidas:
+- **Q**: 🙁 🔴
+- **W**: 😐 🔵
+- **E**: 🤩 🟢
+- **R**: De novo 🔙
+Implementado delay automático para a exibição em tela dos comandos (15 segundos) antes de retornar ao estado original.
+
+🛠️ Melhorias
+Adicionado background customizado (identidade Dilson Stein) e estilo translúcido aos atalhos exibidos em tela para a tela Goat.
+
+🐛 Correções
+[Nenhuma correção registrada nesta versão.]
+
+📅 Data de Lançamento: [23/02/2026]
