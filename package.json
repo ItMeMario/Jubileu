@@ -35,6 +35,7 @@
   "build": {
     "appId": "com.itmemario.jubileubot",
     "productName": "Jubileu Bot",
+    "artifactName": "jubileu-bot-setup-${version}.${ext}",
     "asar": false,
     "directories": {
       "output": "dist"
