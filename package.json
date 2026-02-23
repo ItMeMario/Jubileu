@@ -39,6 +39,13 @@
     "directories": {
       "output": "dist"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ItMeMario",
+        "repo": "Jubileu"
+      }
+    ],
     "files": [
       "**/*",
       "!node_modules/.cache/**/*",
