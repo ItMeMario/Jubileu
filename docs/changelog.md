@@ -579,3 +579,18 @@ Adicionado background customizado (identidade Dilson Stein) e estilo translúcid
 [Nenhuma correção registrada nesta versão.]
 
 📅 Data de Lançamento: [23/02/2026]
+
+---
+
+📌 Patch Notes - Versão 1.3.5
+
+✨ Novidades
+[Nenhuma nova funcionalidade adicionada nesta versão.]
+
+🛠️ Melhorias
+Refatoramento da Atualização (botão Update)
+
+🐛 Correções
+[Nenhuma correção registrada nesta versão.]
+
+📅 Data de Lançamento: [23/02/2026]
