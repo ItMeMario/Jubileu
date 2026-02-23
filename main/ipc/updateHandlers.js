@@ -22,40 +22,27 @@ class UpdateHandlers {
                 exec("git pull", { cwd: process.cwd() }, async (error, stdout, stderr) => {
                     if (error) {
                         console.error("Git pull error:", error);
-                        // Se houver erro (ex: conflito), retorna falha
                         resolve({ success: false, message: "Erro no git pull: " + error.message });
                         return;
                     }
                     
                     console.log("Git pull output:", stdout);
 
-                    // Executa npm install para garantir que as dependências estejam atualizadas
                     console.log("Executando npm install...");
                     exec("npm install", { cwd: process.cwd() }, async (installError, installStdout, installStderr) => {
                         if (installError) {
                             console.error("npm install error:", installError);
-                            // Não vamos falhar o update inteiro, mas avisar o usuário
-                            // Ou falhar? Melhor avisar que o código atualizou mas libs falharam.
-                            // Mas para consistência, vamos considerar sucesso parcial ou falha crítica dependendo da preferência.
-                            // Aqui vamos considerar erro crítico pois sem deps o app quebra.
                             resolve({ success: false, message: "Erro no npm install: " + installError.message });
                             return;
                         }
                         
                         console.log("npm install output:", installStdout);
 
-                        // Verifica se o arquivo realmente mudou
                         const packagePath = require.resolve("../../package.json");
-                        delete require.cache[packagePath]; // Limpa cache para ler o arquivo do disco
+                        delete require.cache[packagePath];
                         const newLocalPackage = require("../../package.json");
                         
-                        // Se o output diz "Already up to date" mas a versão é antiga, é porque o usuário alterou o arquivo manualmente
-                        // ou o commit local já é o mais atual.
                         if (stdout.includes("Already up to date")) {
-                            // Compara com a remota novamente (ou checa se mudou em relação ao que sabíamos)
-                            // Para simplificar, verificamos se a versão agora é igual à remota (precisaríamos buscar a remota de novo ou confiar no reload)
-                            
-                            // Busca remota para ter certeza
                             try {
                                 const remotePackage = await this.fetchRemotePackage();
                                 if (newLocalPackage.version !== remotePackage.version) {
@@ -78,7 +65,6 @@ class UpdateHandlers {
             console.log("Not a git repository. Using electron-updater.");
             const { autoUpdater } = require("electron-updater");
             
-            // Configurar logger (opcional, mas recomendado)
             try {
                 const log = require("electron-log");
                 log.transports.file.level = "info";
@@ -89,15 +75,13 @@ class UpdateHandlers {
             }
 
             autoUpdater.autoDownload = true;
+            autoUpdater.autoInstallOnAppQuit = true;
 
             return new Promise((resolve) => {
-                // Remove listeners anteriores para evitar duplicidade se chamado múltiplas vezes
                 autoUpdater.removeAllListeners();
 
                 autoUpdater.on('update-available', (info) => {
                     console.log("Update available:", info);
-                    // Opcional: Notificar que o download começou?
-                    // Por enquanto, só aguardamos o download.
                 });
 
                 autoUpdater.on('update-not-available', (info) => {
@@ -107,7 +91,6 @@ class UpdateHandlers {
 
                 autoUpdater.on('error', (err) => {
                     console.error("AutoUpdater error:", err);
-                    // Se der erro (ex: sem assinatura, net error), resolvemos com erro mas sem quebrar app
                     resolve({ success: false, message: "Erro na atualização automática: " + (err.message || err) });
                 });
 
@@ -120,23 +103,6 @@ class UpdateHandlers {
 
                 autoUpdater.once('update-downloaded', (info) => {
                     console.log("Update downloaded");
-                    // Pergunta ao usuário ou avisa que vai reiniciar?
-                    // A mensagem de retorno será mostrada no frontend.
-                    // O quitAndInstall é chamado depois?
-                    
-                    // O comportamento padrão do 'resolve' aqui retorna para o frontend exibir a msg.
-                    // O frontend provavelmente exibe a msg e só.
-                    // Precisamos garantir que o app reinicie.
-                    
-                    // Respondemos sucesso, e o frontend pode recarregar?
-                    // Se o frontend só mostra um alerta, o usuário clica OK.
-                    // O ideal é chamar quitAndInstall.
-                    
-                    // Vamos agendar o quitAndInstall para acontecer logo após o resolve, 
-                    // ou retornamos uma ação específica se o frontend suportar.
-                    
-                    // Como o frontend espera { success, message }, vamos mandar isso.
-                    // E chamamos quitAndInstall() imediatamente ou com um pequeno delay.
                     
                     setTimeout(() => {
                         autoUpdater.quitAndInstall();
@@ -145,7 +111,6 @@ class UpdateHandlers {
                     resolve({ success: true, message: "Nova versão baixada! O aplicativo será reiniciado em instantes para aplicar a atualização." });
                 });
 
-                // Inicia verificação
                 autoUpdater.checkForUpdates().catch(err => {
                      resolve({ success: false, message: "Erro ao verificar atualizações: " + err.message });
                 });
@@ -162,7 +127,6 @@ class UpdateHandlers {
 
   fetchRemotePackage() {
     return new Promise((resolve, reject) => {
-      // Adiciona timestamp para evitar cache de requisição
       const url = `${this.remotePackageUrl}?t=${Date.now()}`;
       https.get(url, (res) => {
         if (res.statusCode !== 200) {
@@ -187,10 +151,57 @@ class UpdateHandlers {
     try {
       console.log("Checking for updates...");
       
-      // Limpa cache do package.json local antes de ler
+      const isGitRepo = fs.existsSync(path.join(app.getAppPath(), ".git")) || 
+                        fs.existsSync(path.join(process.cwd(), ".git")); 
+
+      if (!isGitRepo) {
+        // Usa electron-updater para checar de verdade se há uma release
+        const { autoUpdater } = require("electron-updater");
+        autoUpdater.autoDownload = false; // Apenas verifica
+        
+        return new Promise((resolve) => {
+            autoUpdater.removeAllListeners();
+
+            autoUpdater.once('update-available', (info) => {
+                const remoteVersion = info.version;
+                resolve({
+                    success: true,
+                    hasUpdate: true,
+                    localVersion: app.getVersion(),
+                    remoteVersion: remoteVersion,
+                    message: `Nova versão ${remoteVersion} disponível!`
+                });
+            });
+
+            autoUpdater.once('update-not-available', (info) => {
+                resolve({
+                    success: true,
+                    hasUpdate: false,
+                    localVersion: app.getVersion(),
+                    remoteVersion: info.version,
+                    message: "Você já está na versão mais atual."
+                });
+            });
+
+            autoUpdater.once('error', (err) => {
+                // Falha silenciosa no check e faz fallback fallback ou retorna erro tratado
+                console.error("AutoUpdater check error:", err);
+                resolve({
+                    success: false,
+                    message: "Erro ao verificar atualizações: " + (err.message || err)
+                });
+            });
+
+            autoUpdater.checkForUpdates().catch(err => {
+                resolve({ success: false, message: "Erro ao verificar atualizações: " + err.message });
+            });
+        });
+      }
+
+      // Fallback para desenvolvimento (Git): verifica o package.json no github
       const packagePath = require.resolve("../../package.json");
       delete require.cache[packagePath];
-      this.localPackage = require("../../package.json"); // Recarrega
+      this.localPackage = require("../../package.json"); 
       
       const remotePackage = await this.fetchRemotePackage();
       

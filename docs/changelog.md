@@ -579,3 +579,35 @@ Adicionado background customizado (identidade Dilson Stein) e estilo translúcid
 [Nenhuma correção registrada nesta versão.]
 
 📅 Data de Lançamento: [23/02/2026]
+
+---
+
+📌 Patch Notes - Versão 1.3.5
+
+✨ Novidades
+[Nenhuma nova funcionalidade adicionada nesta versão.]
+
+🛠️ Melhorias
+Refatoramento da Atualização (botão Update)
+
+🐛 Correções
+[Nenhuma correção registrada nesta versão.]
+
+📅 Data de Lançamento: [23/02/2026]
+
+---
+
+📌 Patch Notes - Versão 1.3.6
+
+✨ Novidades
+[Nenhuma nova funcionalidade adicionada nesta versão.]
+
+🛠️ Melhorias
+Otimizado processo de compilação do executável (`artifactName`) para gerar arquivos sem espaços, compatibilizando com as exigências web para download de atualizações automáticas.
+
+Adicionada configuração (`publish`) no repositório GitHub para viabilizar a criação automática de metadados de release (`latest.yml`).
+
+🐛 Correções
+Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de encontrar e baixar as novas versões em instalações Windows.
+
+📅 Data de Lançamento: [23/02/2026]
