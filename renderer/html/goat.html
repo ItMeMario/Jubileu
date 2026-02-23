@@ -7,43 +7,25 @@
     <title>Goat</title>
     <link rel="stylesheet" href="../css/globalCss.css">
     <link rel="stylesheet" href="../css/darkMode.css">
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .goat-container {
-            text-align: center;
-            padding: 40px;
-        }
-
-        .goat-container h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            color: #ffffff;
-        }
-
-        .goat-container p {
-            font-size: 1.1rem;
-            color: #888;
-        }
-    </style>
+    <link rel="stylesheet" href="../css/goat.css">
 </head>
 
 <body>
     <div class="goat-container">
-        <h1>🐐 Goat</h1>
-        <p>Em breve...</p>
+        <h1 id="goat-title">🐐 Goat</h1>
+        <div class="emoji-display" id="emoji-display"></div>
+    </div>
+
+    <!-- Commands Cheat Sheet -->
+    <div class="commands-overlay">
+        <div class="command-item"><span class="key">Q</span> <span class="meaning">🙁 🔴</span></div>
+        <div class="command-item"><span class="key">W</span> <span class="meaning">😐 🔵</span></div>
+        <div class="command-item"><span class="key">E</span> <span class="meaning">🤩 🟢</span></div>
+        <div class="command-item"><span class="key">R</span> <span class="meaning">De novo 🔙</span></div>
     </div>
 
     <script src="../guiScripts/utils/darkModeManager.js"></script>
+    <script src="../guiScripts/goat.js"></script>
 </body>
 
 </html>
