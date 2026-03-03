@@ -29,8 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Adjust font size for 'De novo 🔙' as it is longer
             if (key === 'r') {
                 emojiDisplay.style.fontSize = '8rem';
+                emojiDisplay.classList.add('with-placeholder');
             } else {
                 emojiDisplay.style.fontSize = '15rem';
+                emojiDisplay.classList.remove('with-placeholder');
             }
             
             emojiDisplay.textContent = content;
@@ -57,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Retorna ao default se nenhuma outra tecla correspondente foi apertada
             if (currentActionId === myActionId) {
                 emojiDisplay.textContent = '';
+                emojiDisplay.classList.remove('with-placeholder');
                 if (goatTitle) {
                     goatTitle.style.opacity = '1';
                 }

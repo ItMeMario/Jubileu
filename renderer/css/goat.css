@@ -58,6 +58,16 @@ body {
     transform: scale(1.1);
 }
 
+.emoji-display.with-placeholder {
+    background: rgba(30, 30, 30, 0.85);
+    padding: 20px 60px;
+    border-radius: 40px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
 .commands-overlay {
     position: absolute;
     bottom: 25px;
