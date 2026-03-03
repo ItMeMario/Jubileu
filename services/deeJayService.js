@@ -252,6 +252,11 @@ class DeeJayService {
             }, 60000);
 
         } catch (e) {
+            if (e.message && (e.message.includes('TargetCloseError') || e.message.includes('Target closed'))) {
+                console.warn(`Dee Jay: Inicialização da instância ${instanceId} cancelada prematuramente (Target fechado). Ignorando erro para evitar alerta.`);
+                return;
+            }
+
             console.error(`Dee Jay: ERRO FATAL ao iniciar instância ${instanceId}:`, e);
             // Reverter estado
             const data = this.clients.get(instanceId);
