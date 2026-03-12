@@ -9,8 +9,9 @@ class CacheHandlers {
             const authPath = path.resolve(process.cwd(), '.wwebjs_auth');
             const cachePath = path.resolve(process.cwd(), '.wwebjs_cache');
             const deeJayAuthPath = path.resolve(process.cwd(), '.wwebjs_auth_deejay');
+            const crmAuthPath = path.resolve(process.cwd(), '.wwebjs_auth_crm');
 
-            // 1. Parar todas as instâncias (Main + Dee Jay)
+            // 1. Parar todas as instâncias (Main + Dee Jay + CRM)
             console.log('Parando todas as instâncias...');
             await instanceManager.stopAll();
             
@@ -20,12 +21,23 @@ class CacheHandlers {
                 deeJayService.stopLoop();
                 const djInstances = deeJayService.getInstances();
                 for (const dj of djInstances) {
-                    // removeInstance stops, deletes from DB, and cleans memory
                     await deeJayService.removeInstance(dj.instanceId);
                     console.log(`Instância Dee Jay removida: ${dj.instanceId}`);
                 }
             } catch (e) {
                 console.error("Erro ao remover Dee Jay instances:", e);
+            }
+
+            // Stop and Remove CRM Instances
+            try {
+                const crmService = require('../../services/crmService');
+                const crmInstances = crmService.getInstances();
+                for (const crm of crmInstances) {
+                    await crmService.removeInstance(crm.instanceId);
+                    console.log(`Instância CRM removida: ${crm.instanceId}`);
+                }
+            } catch (e) {
+                console.error("Erro ao remover CRM instances:", e);
             }
 
             // 2. Listar e remover todas as instâncias do banco
@@ -44,6 +56,7 @@ class CacheHandlers {
                 auth: false,
                 cache: false,
                 deeJay: false,
+                crm: false,
                 message: ''
             };
 
@@ -71,9 +84,17 @@ class CacheHandlers {
                 console.error(`Erro ao remover .wwebjs_auth_deejay: ${err.message}`);
             }
 
-            if (results.auth || results.cache || results.deeJay) {
+            // Remove .wwebjs_auth_crm
+            try {
+                await fs.rm(crmAuthPath, { recursive: true, force: true });
+                results.crm = true;
+            } catch (err) {
+                console.error(`Erro ao remover .wwebjs_auth_crm: ${err.message}`);
+            }
+
+            if (results.auth || results.cache || results.deeJay || results.crm) {
                 console.log('Cache limpo com sucesso');
-                return { success: true, message: 'Cache e sessão (incluindo Dee Jay) limpos com sucesso! Reinicie o aplicativo para efetivar as mudanças.' };
+                return { success: true, message: 'Cache e sessões (WhatsApp, Dee Jay e CRM) limpos com sucesso! Reinicie o aplicativo para efetivar as mudanças.' };
             } else {
                 return { success: false, message: 'Não foi possível limpar o cache ou ele já estava vazio.' };
             }
