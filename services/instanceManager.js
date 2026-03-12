@@ -314,8 +314,8 @@ class InstanceManager {
     }
 
     // Cria no banco de dados
-    const instance = await createInstance(name, type);
-    await debug(`✅ Instância criada: ${instance.instance_id} (${name}) - Tipo: ${type}`);
+    const instance = await createInstance(name);
+    await debug(`✅ Instância criada: ${instance.instance_id} (${name})`);
 
     return instance;
   }

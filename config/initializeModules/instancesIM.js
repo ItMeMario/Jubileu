@@ -189,17 +189,15 @@ async function countActiveInstances() {
  * @param {string} instanceId - ID único (opcional, será gerado se não fornecido)
  * @returns {Promise<Object>}
  */
-async function createInstance(name, instanceId = null) {
+async function createInstance(name) {
   // Verifica limite de instâncias
   const currentCount = await countActiveInstances();
   if (currentCount >= MAX_INSTANCES) {
     throw new Error(`Limite máximo de ${MAX_INSTANCES} instâncias atingido`);
   }
 
-  // Gera ID único se não fornecido
-  const finalInstanceId =
-    instanceId ||
-    `instance-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Gera ID único automaticamente
+  const finalInstanceId = `whatsapp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   return new Promise(async (resolve, reject) => {
     let db;

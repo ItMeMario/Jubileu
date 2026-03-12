@@ -611,3 +611,24 @@ Adicionada configuração (`publish`) no repositório GitHub para viabilizar a c
 Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de encontrar e baixar as novas versões em instalações Windows.
 
 📅 Data de Lançamento: [23/02/2026]
+
+---
+
+📌 Patch Notes - Versão 1.3.7
+✨ Novidades
+[Nenhuma nova funcionalidade adicionada nesta versão.]
+
+🛠️ Melhorias
+- Adicionado placeholder no botão "De novo" da tela Goat.
+- Adicionada a instância do CRM na rotina de limpeza de cache.
+- Removido o arquivo de entrada legado `app.js`.
+- Removido o arquivo de utilitários `displayUtils.js`.
+- Removido o arquivo de utilitários `messageUtils.js`.
+
+🐛 Correções
+- Corrigido o erro `TargetCloseError` no módulo Drone.
+- Corrigido o bug de instâncias do Drone
+
+📅 Data de Lançamento: [12/03/2026]
+
+---
