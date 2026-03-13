@@ -600,6 +600,7 @@ Refatoramento da Atualização (botão Update)
 📌 Patch Notes - Versão 1.3.6
 
 ✨ Novidades
+
 [Nenhuma nova funcionalidade adicionada nesta versão.]
 
 🛠️ Melhorias
@@ -608,6 +609,7 @@ Otimizado processo de compilação do executável (`artifactName`) para gerar ar
 Adicionada configuração (`publish`) no repositório GitHub para viabilizar a criação automática de metadados de release (`latest.yml`).
 
 🐛 Correções
+
 Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de encontrar e baixar as novas versões em instalações Windows.
 
 📅 Data de Lançamento: [23/02/2026]
@@ -615,7 +617,9 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 ---
 
 📌 Patch Notes - Versão 1.3.7
+
 ✨ Novidades
+
 [Nenhuma nova funcionalidade adicionada nesta versão.]
 
 🛠️ Melhorias
@@ -626,9 +630,24 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 - Removido o arquivo de utilitários `messageUtils.js`.
 
 🐛 Correções
+
 - Corrigido o erro `TargetCloseError` no módulo Drone.
 - Corrigido o bug de instâncias do Drone
 
 📅 Data de Lançamento: [12/03/2026]
 
 ---
+
+📌 Patch Notes - Versão 1.3.8
+✨ Novidades
+[Nenhuma nova funcionalidade adicionada nesta versão.]
+
+🛠️ Melhorias
+[Nenhuma nova funcionalidade adicionada nesta versão.]
+
+🐛 Correções
+
+- Corrigido o bug que impedia o disparo de mensagens no modo multi-instância.
+
+
+📅 Data de Lançamento: [13/03/2026]

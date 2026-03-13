@@ -199,11 +199,6 @@ export default class DroneDispatch {
    * Executa o disparo de mensagens
    */
   async executeDisparo() {
-    if (this.manager.isDisparoRunning) {
-      this.manager.utility.showStatus("Disparo já em andamento", "error");
-      return;
-    }
-
     // Verifica instância selecionada
     const instanceId = this.getSelectedInstanceId();
     if (!instanceId) {
@@ -211,6 +206,11 @@ export default class DroneDispatch {
         "Selecione uma instância antes de disparar",
         "error"
       );
+      return;
+    }
+
+    if (this.manager.disparoRunningInstances.has(instanceId)) {
+      this.manager.utility.showStatus("Disparo já em andamento nesta instância", "error");
       return;
     }
 
@@ -260,7 +260,7 @@ export default class DroneDispatch {
       return;
     }
 
-    this.manager.isDisparoRunning = true;
+    this.manager.disparoRunningInstances.add(instanceId);
     this.manager.btnExecuteDisparo.disabled = true;
     this.manager.btnExecuteDisparo.textContent = "🚀 Disparando...";
 
@@ -272,7 +272,7 @@ export default class DroneDispatch {
         batchSize
       );
 
-      this.manager.isDisparoRunning = false;
+      this.manager.disparoRunningInstances.delete(instanceId);
       this.manager.btnExecuteDisparo.disabled = false;
       this.manager.btnExecuteDisparo.textContent = "🚀 Executar Disparo";
 
@@ -298,7 +298,7 @@ export default class DroneDispatch {
     } catch (error) {
       console.error(`[${instanceId}] Erro ao executar disparo:`, error);
       this.manager.utility.showStatus("Erro ao executar disparo", "error");
-      this.manager.isDisparoRunning = false;
+      this.manager.disparoRunningInstances.delete(instanceId);
       this.manager.btnExecuteDisparo.disabled = false;
       this.manager.btnExecuteDisparo.textContent = "🚀 Executar Disparo";
     }

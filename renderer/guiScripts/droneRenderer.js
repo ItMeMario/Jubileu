@@ -20,7 +20,7 @@ class DroneRenderer {
     this.connectedInstances = [];
     this.currentStatusFilter = "all";
     this.currentFile = null;
-    this.isDisparoRunning = false;
+    this.disparoRunningInstances = new Set();
 
     // Inicializa quando o DOM estiver pronto
     if (document.readyState === "loading") {
