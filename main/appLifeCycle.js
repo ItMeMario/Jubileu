@@ -7,6 +7,7 @@ class AppLifecycle {
     this.windowManager = null;
     this.client = null; // Mantido para compatibilidade legada
     this.isCleaningUp = false;
+    this.isCleanedUp = false;
   }
 
   setup(windowManager, client = null) {
@@ -28,32 +29,36 @@ class AppLifecycle {
   }
 
   setupWindowAllClosedHandler() {
-    app.on("window-all-closed", async () => {
+    app.on("window-all-closed", () => {
       if (process.platform !== "darwin") {
-        await this.cleanup();
-        app.quit();
+        app.quit(); // This triggers before-quit instead of manual cleanup
       }
     });
   }
 
   setupBeforeQuitHandler() {
     app.on("before-quit", async (event) => {
-      if (this.isCleaningUp) {
-        return; // Já está fazendo cleanup, deixa sair
+      // If we are already cleaned up, let Electron naturally exit
+      if (this.isCleanedUp) {
+        return;
       }
 
-      // Previne saída imediata para fazer cleanup
+      if (this.isCleaningUp) {
+         event.preventDefault();
+         return; // Already triggered cleanup
+      }
+
+      // Prevent immediate exit to allow cleanup
       event.preventDefault();
 
       await this.cleanup();
-
-      // Agora permite sair
-      app.exit(0);
+      this.isCleanedUp = true;
+      app.quit(); // Retry quit now that cleanup is done
     });
   }
 
   async cleanup() {
-    // Previne múltiplos cleanups simultâneos
+    // Prevent multiple simultaneous cleanups
     if (this.isCleaningUp) {
       console.log("⏳ Cleanup já em andamento...");
       return;
@@ -64,37 +69,41 @@ class AppLifecycle {
     try {
       console.log("🧹 Iniciando cleanup da aplicação...");
 
+      const cleanupTasks = [];
+
       // 1. Para todas as instâncias do novo sistema
-      try {
-        console.log("🛑 Parando todas as instâncias WhatsApp...");
-        await instanceManager.stopAll();
-        console.log("✅ Todas as instâncias paradas");
-      } catch (error) {
-        console.error("⚠️ Erro ao parar instâncias:", error.message);
-      }
+      cleanupTasks.push(
+        instanceManager.stopAll()
+          .then(() => console.log("✅ Todas as instâncias paradas"))
+          .catch(err => console.error("⚠️ Erro ao parar instâncias:", err.message))
+      );
 
       // 2. Para todas as instâncias Dee Jay
-      try {
-        console.log("🛑 Parando todas as instâncias Dee Jay...");
-        await deeJayService.stopAll();
-        console.log("✅ Todas as instâncias Dee Jay paradas");
-      } catch (error) {
-        console.error("⚠️ Erro ao parar instâncias Dee Jay:", error.message);
-      }
+      cleanupTasks.push(
+        deeJayService.stopAll()
+          .then(() => console.log("✅ Todas as instâncias Dee Jay paradas"))
+          .catch(err => console.error("⚠️ Erro ao parar instâncias Dee Jay:", err.message))
+      );
 
       // 3. Cleanup do cliente legado (se existir)
       if (this.client && this.client.pupPage) {
-        try {
-          console.log("🛑 Destruindo cliente WhatsApp legado...");
-          await this.client.destroy();
-          console.log("✅ Cliente legado destruído");
-        } catch (error) {
-          console.error("⚠️ Erro ao destruir cliente legado:", error.message);
-        }
+         cleanupTasks.push(
+           this.client.destroy()
+             .then(() => console.log("✅ Cliente legado destruído"))
+             .catch(err => console.error("⚠️ Erro ao destruir cliente legado:", err.message))
+         );
       }
 
-      // 3. Aguarda um pouco para garantir que tudo fechou
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Race against a strict timeout (e.g. 5 seconds) to prevent frozen Puppeteer processes
+      // from hanging the application forever and breaking NSIS installers.
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => {
+          console.warn("⚠️ Cleanup atingiu tempo limite (5s). Forçando encerramento dos filhos.");
+          resolve(); 
+        }, 5000);
+      });
+
+      await Promise.race([Promise.allSettled(cleanupTasks), timeoutPromise]);
 
       console.log("✅ Cleanup concluído");
     } catch (error) {
@@ -106,15 +115,13 @@ class AppLifecycle {
 
   // Método para forçar saída da aplicação
   async forceQuit() {
-    await this.cleanup();
-    app.quit();
+    app.quit(); // Re-reroutes through before-quit
   }
 
   // Método para reiniciar aplicação
   async restart() {
-    await this.cleanup();
     app.relaunch();
-    app.exit();
+    app.quit();
   }
 
   // Getters para debug/monitoramento
