@@ -582,6 +582,14 @@ class IPCManager {
       "crm-remove-instance",
       this.handlers.crm.removeInstance.bind(this.handlers.crm)
     );
+    ipcMain.handle(
+      "crm-get-manifests",
+      this.handlers.crm.getManifests.bind(this.handlers.crm)
+    );
+    ipcMain.handle(
+      "crm-generate-pdf",
+      this.handlers.crm.generatePdf.bind(this.handlers.crm)
+    );
     console.log("Handlers de CRM registrados");
   }
 
@@ -687,7 +695,8 @@ class IPCManager {
       "check-update",
       "trigger-update",
       "open-goat",
-
+      "crm-get-manifests",
+      "crm-generate-pdf"
     ];
 
     events.forEach((event) => {

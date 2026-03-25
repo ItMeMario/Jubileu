@@ -97,6 +97,36 @@ body {
     gap: 15px;
 }
 
+.crm-manifests-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.manifest-item {
+    background: var(--bg-tertiary, #f8f9fa);
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid var(--border-color, #e0e0e0);
+    box-shadow: 0 2px 4px var(--shadow-sm, rgba(0, 0, 0, 0.1));
+}
+
+.manifest-content {
+    color: var(--text-primary, #333);
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    max-height: 100px;
+    overflow-y: auto;
+    background: var(--bg-input, #fff);
+    border: 1px solid var(--border-color, #eee);
+    padding: 10px;
+    border-radius: 4px;
+}
+
 /* Instance Card - DeeJay Style */
 .instance-crm-card {
     background: var(--bg-tertiary, #f8f9fa);

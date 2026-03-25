@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld("crmAPI", {
     startInstance: (instanceId) => ipcRenderer.invoke("crm-start-instance", instanceId),
     stopInstance: (instanceId) => ipcRenderer.invoke("crm-stop-instance", instanceId),
     removeInstance: (instanceId) => ipcRenderer.invoke("crm-remove-instance", instanceId),
+    getManifests: () => ipcRenderer.invoke("crm-get-manifests"),
+    generatePdf: (data) => ipcRenderer.invoke("crm-generate-pdf", data),
     
     onInstanceUpdate: (callback) => {
         ipcRenderer.on('crm-instance-update', (event, data) => callback(data));
