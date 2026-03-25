@@ -112,7 +112,7 @@ class CRMHandlers {
       console.log("Gerando PDF com Puppeteer...");
       const { filePath } = await dialog.showSaveDialog({
         title: "Salvar PDF do Manifesto",
-        defaultPath: title ? `${title}.pdf` : "ManifestoCRM.pdf",
+        defaultPath: title ? `${title}.pdf` : "Manifesto.pdf",
         filters: [
           { name: "Documentos em PDF", extensions: ["pdf"] }
         ]
@@ -122,23 +122,87 @@ class CRMHandlers {
         return { success: false, canceled: true };
       }
 
-      // Format HTML for PDF
+      // If the user changed the file name in the dialog, we might want to use that as the document title too.
+      // But using the title they specifically typed in the prompt is better. 
+      const displayTitle = title || "Manifesto Jubileu";
+      
+      const date = new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      // Format HTML for PDF - Professional and easy to read
       const htmlContent = `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="UTF-8">
           <style>
-            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; }
-            h1 { color: #9C27B0; border-bottom: 2px solid #9C27B0; padding-bottom: 10px; }
-            .content { margin-top: 20px; white-space: pre-wrap; font-size: 14pt; }
-            .footer { margin-top: 50px; font-size: 10pt; color: #888; text-align: center; }
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+            
+            body { 
+              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+              padding: 0; 
+              margin: 0;
+              color: #2c3e50; 
+              background-color: #ffffff;
+            }
+            .page {
+              padding: 50px 70px;
+            }
+            .header {
+              border-bottom: 2px solid #9C27B0;
+              padding-bottom: 20px;
+              margin-bottom: 40px;
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-end;
+            }
+            .header-titles {
+              flex: 1;
+            }
+            h1 { 
+              color: #2c3e50; 
+              margin: 0 0 8px 0;
+              font-size: 28pt;
+              font-weight: 700;
+              line-height: 1.2;
+            }
+            .subtitle {
+              color: #7f8c8d;
+              font-size: 11pt;
+              margin: 0;
+            }
+            .content { 
+              margin-top: 30px; 
+              white-space: pre-wrap; 
+              font-size: 12pt; 
+              line-height: 1.8;
+              color: #34495e;
+              text-align: justify;
+            }
+            .footer { 
+              margin-top: 60px; 
+              padding-top: 20px;
+              border-top: 1px solid #ecf0f1;
+              font-size: 9pt; 
+              color: #95a5a6; 
+              text-align: center; 
+            }
           </style>
         </head>
         <body>
-          <h1>Manifesto CRM ${title ? "- " + title : ""}</h1>
-          <div class="content">${content}</div>
-          <div class="footer">Gerado via Jubileu Bot CRM</div>
+          <div class="page">
+            <div class="header">
+              <div class="header-titles">
+                <h1>${displayTitle}</h1>
+                <p class="subtitle">Documento gerado em ${date}</p>
+              </div>
+            </div>
+            
+            <div class="content">${content}</div>
+            
+            <div class="footer">
+              <p>Gerado automaticamente pelo Sistema CRM - Jubileu Bot</p>
+            </div>
+          </div>
         </body>
         </html>
       `;
@@ -146,7 +210,15 @@ class CRMHandlers {
       const browser = await puppeteer.launch({ headless: 'new' });
       const page = await browser.newPage();
       await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-      await page.pdf({ path: filePath, format: 'A4', printBackground: true });
+      
+      // Professional margins and formatting
+      await page.pdf({ 
+        path: filePath, 
+        format: 'A4', 
+        printBackground: true,
+        margin: { top: '20px', bottom: '20px' }
+      });
+      
       await browser.close();
 
       console.log("PDF gerado e salvo em:", filePath);

@@ -299,12 +299,19 @@ window.handleGeneratePdf = async (btnElement, id) => {
         const card = btnElement.closest('.manifest-item');
         const content = card.dataset.content;
         
+        // Abre o modal HTML customizado
+        const customTitle = await window.customPrompt("Qual será o título deste manifesto?", `Manifesto_${id}`);
+        if (!customTitle) {
+            // Se o usuário cancelou o modal, apenas abortar
+            return;
+        }
+
         btnElement.textContent = "Gerando...";
         btnElement.disabled = true;
 
         const result = await window.crmAPI.generatePdf({
             content: content,
-            title: `Manifesto_${id}`
+            title: customTitle
         });
 
         if (result.success) {
