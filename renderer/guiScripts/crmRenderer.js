@@ -131,15 +131,16 @@ async function renderManifests() {
                         <h4>Manifesto ${manifest.id || ''}</h4>
                         <span class="status-badge connected">Pronto</span>
                     </div>
-                    <div class="manifest-content"></div>
+                    <textarea class="manifest-content" spellcheck="false" placeholder="Nenhum conteúdo definido"></textarea>
                     <div class="instance-actions" style="margin-top: 15px;">
                         <button class="btn-action btn-connect" onclick="handleGeneratePdf(this, '${manifest.id || Date.now()}')">📄 Gravar PDF</button>
                     </div>
                 `;
                 
                 // Safely assign content to avoid HTML injection
-                card.querySelector('.manifest-content').textContent = manifest.message_content;
-                card.dataset.content = manifest.message_content;
+                card.querySelector('.manifest-content').value = manifest.message_content || '';
+                // Optional: set the dataset if kept for backward compatibility, but we rely on value now
+                card.dataset.content = manifest.message_content || '';
 
                 manifestsList.appendChild(card);
             });
@@ -297,7 +298,7 @@ window.handleRemove = async (instanceId) => {
 window.handleGeneratePdf = async (btnElement, id) => {
     try {
         const card = btnElement.closest('.manifest-item');
-        const content = card.dataset.content;
+        const content = card.querySelector('.manifest-content').value;
         
         // Abre o modal HTML customizado
         const customTitle = await window.customPrompt("Qual será o título deste manifesto?", `Manifesto_${id}`);
