@@ -2,6 +2,7 @@ const crmService = require("../../services/crmService");
 const messageService = require("../../services/messageService");
 const { dialog } = require("electron");
 const puppeteer = require("puppeteer");
+const path = require("path");
 
 class CRMHandlers {
   constructor(windowManager) {
@@ -122,11 +123,16 @@ class CRMHandlers {
         return { success: false, canceled: true };
       }
 
-      // If the user changed the file name in the dialog, we might want to use that as the document title too.
-      // But using the title they specifically typed in the prompt is better. 
-      const displayTitle = title || "Manifesto Jubileu";
-      
-      const date = new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const displayTitle = path.basename(filePath, path.extname(filePath));
+
+      let formattedContent = (content || "")
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+        .replace(/_(.*?)_/g, '<em>$1</em>')
+        .replace(/~(.*?)~/g, '<del>$1</del>')
+        .replace(/```([\s\S]*?)```/g, '<pre style="margin:0; padding:10px; background:#f5f5f5; border-radius:4px;"><code>$1</code></pre>');
 
       // Format HTML for PDF - Professional and easy to read
       const htmlContent = `
@@ -193,15 +199,10 @@ class CRMHandlers {
             <div class="header">
               <div class="header-titles">
                 <h1>${displayTitle}</h1>
-                <p class="subtitle">Documento gerado em ${date}</p>
               </div>
             </div>
             
-            <div class="content">${content}</div>
-            
-            <div class="footer">
-              <p>Gerado automaticamente pelo Sistema CRM - Jubileu Bot</p>
-            </div>
+            <div class="content">${formattedContent}</div>
           </div>
         </body>
         </html>
