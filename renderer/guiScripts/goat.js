@@ -1,69 +1,38 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const emojiDisplay = document.getElementById('emoji-display');
+    const circle = document.getElementById('color-circle');
     const goatTitle = document.getElementById('goat-title');
 
-    // Mapeamento de teclas para exibição
-    const displayMapping = {
-        'q': '🙁 🔴',
-        'w': '😐 🔵',
-        'e': '🤩 🟢',
-        'r': 'De novo 🔙'
-    };
-
-    // Função de delay baseada na lógica do randomDelay.js
-    async function delay(ms) {
-        await new Promise(resolve => setTimeout(resolve, ms));
+    // Suaviza o título
+    if (goatTitle) {
+        goatTitle.style.opacity = '0.05';
     }
 
-    let currentActionId = 0;
+    // Cores vibrantes estilo RGB para o círculo
+    const colors = [
+        '#ff003c', // Red/Crimson
+        '#ffaa00', // Orange
+        '#00ff2a', // Green
+        '#00d4ff', // Cyan
+        '#2a00ff', // Blue
+        '#d400ff'  // Magenta
+    ];
 
-    document.addEventListener('keydown', async (event) => {
-        const key = event.key.toLowerCase();
+    let colorIndex = 0;
+
+    // Função de pulse/piscar a cada 1 segundo (ritmo do desfile)
+    setInterval(() => {
+        circle.style.backgroundColor = colors[colorIndex];
+        circle.style.boxShadow = `0 0 60px ${colors[colorIndex]}, 0 0 120px ${colors[colorIndex]}`;
         
-        if (displayMapping[key]) {
-            currentActionId++;
-            const myActionId = currentActionId;
+        // Ativa o estado ligado
+        circle.classList.add('blink-on');
+        
+        // Desliga após 500ms (meio segundo ligado, meio desligado)
+        setTimeout(() => {
+            circle.classList.remove('blink-on');
+        }, 500);
 
-            const content = displayMapping[key];
-            
-            // Adjust font size for 'De novo 🔙' as it is longer
-            if (key === 'r') {
-                emojiDisplay.style.fontSize = '8rem';
-                emojiDisplay.classList.add('with-placeholder');
-            } else {
-                emojiDisplay.style.fontSize = '15rem';
-                emojiDisplay.classList.remove('with-placeholder');
-            }
-            
-            emojiDisplay.textContent = content;
-            
-            // Reduzir opacidade do título para dar destaque ao emoji
-            if (goatTitle) {
-                goatTitle.style.opacity = '0.05';
-            }
-
-            // Animação de pop
-            emojiDisplay.classList.remove('changed');
-            // Força o reflow para reiniciar a transição
-            void emojiDisplay.offsetWidth;
-            emojiDisplay.classList.add('changed');
-            
-            // Volta ao tamanho normal após a transição
-            setTimeout(() => {
-                emojiDisplay.classList.remove('changed');
-            }, 150);
-
-            // Intervalo de 15s em que a tela fica com o emoji
-            await delay(15000);
-
-            // Retorna ao default se nenhuma outra tecla correspondente foi apertada
-            if (currentActionId === myActionId) {
-                emojiDisplay.textContent = '';
-                emojiDisplay.classList.remove('with-placeholder');
-                if (goatTitle) {
-                    goatTitle.style.opacity = '1';
-                }
-            }
-        }
-    });
+        // Avança para a próxima cor no ciclo RGB
+        colorIndex = (colorIndex + 1) % colors.length;
+    }, 1000);
 });
