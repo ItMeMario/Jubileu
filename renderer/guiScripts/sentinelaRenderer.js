@@ -71,8 +71,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         echarts.registerMap('Brasil', geoJson);
 
-        // Preparamos os dados para o "Heatmap" - Baseado na quantidade de DDDs
-        const mapData = geoJson.features.map(feature => {
+        // Preparamos os dados originais do mapa
+        const originalMapData = geoJson.features.map(feature => {
             // Em alguns geojsons a propriedade é 'name' ou 'NAME_1'
             const nomeEstado = feature.properties.name || feature.properties.NAME_1; 
             
@@ -116,19 +116,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             },
             visualMap: {
-                left: 'right',
-                bottom: '10%',
+                show: false, // Custom HTML filter used instead
                 min: 1,
                 max: 9, // SP tem 9 DDDs
-                text: ['Mais DDDs', 'Menos DDDs'],
-                textStyle: {
-                    color: '#e0e0e0'
-                },
-                realtime: false,
-                calculable: true,
                 inRange: {
                     // Paleta "Heatmap" estilizada para o projeto
                     color: ['#1e1e1e', '#611632', '#9c1c44', '#E91E63', '#ff4081']
+                },
+                outOfRange: {
+                    color: ['#111111']
                 }
             },
             series: [
@@ -169,7 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             color: '#fff'
                         }
                     },
-                    data: mapData
+                    data: originalMapData
                 }
             ]
         };
@@ -182,6 +178,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (params.data && params.data.stateData) {
                 updateSidebar(params.name, params.data.stateData);
             }
+        });
+
+        // Filtro Customizado
+        document.getElementById('btn-apply-filter').addEventListener('click', () => {
+            const operator = document.getElementById('filter-operator').value;
+            const val = parseInt(document.getElementById('filter-value').value, 10);
+
+            const filteredData = originalMapData.map(item => {
+                const count = item.stateData.ddds.length;
+                let match = false;
+                if (operator === '<=') match = count <= val;
+                else if (operator === '>=') match = count >= val;
+                else if (operator === '==') match = count === val;
+
+                if (match) return item;
+                
+                return {
+                    ...item,
+                    value: -1, // Force outOfRange
+                    itemStyle: {
+                        areaColor: '#151515', // Visual indication of exclusion
+                        borderColor: '#2a2a2a'
+                    }
+                };
+            });
+
+            mapChart.setOption({
+                series: [{ data: filteredData }]
+            });
+        });
+
+        document.getElementById('btn-clear-filter').addEventListener('click', () => {
+            document.getElementById('filter-operator').value = '<=';
+            document.getElementById('filter-value').value = 1;
+            mapChart.setOption({
+                series: [{ data: originalMapData }]
+            });
         });
 
         // Permite re-ajustar a janela

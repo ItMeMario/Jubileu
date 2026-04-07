@@ -28,6 +28,23 @@
             
             <!-- Side Info Panel -->
             <div class="info-card">
+                <h2>Filtros</h2>
+                <div class="filter-section">
+                    <span style="font-size: 14px; margin-bottom: 5px; display: block; color: #ccc;">Quantidade de DDDs:</span>
+                    <div class="filter-controls">
+                        <select id="filter-operator" class="modern-select">
+                            <option value="<="><= (Até)</option>
+                            <option value=">=">>= (A partir de)</option>
+                            <option value="==">= (Exatamente)</option>
+                        </select>
+                        <input type="number" id="filter-value" class="modern-input" min="1" max="9" value="2">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btn-apply-filter" class="modern-btn apply-btn">Filtrar</button>
+                        <button id="btn-clear-filter" class="modern-btn clear-btn">Limpar</button>
+                    </div>
+                </div>
+
                 <h2>Região Selecionada</h2>
                 <div id="region-info" class="region-info-content">
                     <p class="placeholder-text">Passe o mouse sobre um estado no mapa para visualizar a cobertura de DDDs.</p>

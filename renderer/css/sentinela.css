@@ -169,3 +169,69 @@
     color: #fff;
     font-weight: bold;
 }
+
+/* Custom Filter Controls */
+.filter-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(233, 30, 99, 0.2);
+}
+
+.filter-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.modern-select, .modern-input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.modern-select:focus, .modern-input:focus {
+    border-color: #E91E63;
+    box-shadow: 0 0 8px rgba(233, 30, 99, 0.3);
+}
+
+.modern-input {
+    width: 60px;
+}
+
+.modern-select {
+    flex: 1;
+}
+
+.modern-btn {
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    flex: 1;
+    transition: all 0.3s ease;
+}
+
+.apply-btn {
+    background: linear-gradient(135deg, #E91E63, #9C27B0);
+    color: #fff;
+}
+
+.apply-btn:hover {
+    box-shadow: 0 4px 15px rgba(233, 30, 99, 0.4);
+    transform: translateY(-2px);
+}
+
+.clear-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ddd;
+}
+
+.clear-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
