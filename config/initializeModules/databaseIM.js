@@ -113,6 +113,14 @@ const TABLE_QUERIES = [
     tel TEXT NOT NULL UNIQUE,
     status TEXT DEFAULT 'pending'
   )`,
+  `CREATE TABLE IF NOT EXISTS area_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    priority INTEGER,
+    name TEXT,
+    ddd TEXT,
+    tel TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`,
 ];
 
 /**
@@ -153,7 +161,7 @@ const TRIGGER_QUERIES = [
 /**
  * Nomes das tabelas para verificação
  */
-const TABLE_NAMES = ["cities", "indicators", "messages", "clients"];
+const TABLE_NAMES = ["cities", "indicators", "messages", "clients", "ddd"];
 
 /**
  * Inicializa o banco de dados com todas as tabelas, índices e triggers
@@ -191,7 +199,7 @@ async function initializeDatabase() {
         }
 
         await debug(
-          `📊 Status das tabelas: cities=${tablesExist.cities}, indicators=${tablesExist.indicators}, messages=${tablesExist.messages}, clients=${tablesExist.clients}`
+          `📊 Status das tabelas: cities=${tablesExist.cities}, indicators=${tablesExist.indicators}, messages=${tablesExist.messages}, clients=${tablesExist.clients}, ddd=${tablesExist.ddd}`
         );
 
         // Cria tabelas
@@ -236,7 +244,7 @@ async function initializeDatabase() {
         }
 
         await debug(
-          `🔍 Verificação final das tabelas: cities=${finalCheck.cities}, indicators=${finalCheck.indicators}, messages=${finalCheck.messages}, clients=${finalCheck.clients}`
+          `🔍 Verificação final das tabelas: cities=${finalCheck.cities}, indicators=${finalCheck.indicators}, messages=${finalCheck.messages}, clients=${finalCheck.clients}, ddd=${finalCheck.ddd}`
         );
 
         // Valida se todas as tabelas foram criadas
