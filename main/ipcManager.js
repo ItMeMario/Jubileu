@@ -13,6 +13,7 @@ const DeeJayHandlers = require("./ipc/deeJayHandlers");
 const UpdateHandlers = require("./ipc/updateHandlers");
 const CRMHandlers = require("./ipc/crmHandlers");
 const GoatHandlers = require("./ipc/goatHandlers");
+const SentinelaHandlers = require("./ipc/sentinelaHandlers");
 
 
 class IPCManager {
@@ -31,7 +32,7 @@ class IPCManager {
       update: null,
       crm: null,
       goat: null,
-
+      sentinela: null,
     };
   }
 
@@ -52,7 +53,7 @@ class IPCManager {
       this.handlers.update = new UpdateHandlers();
       this.handlers.crm = new CRMHandlers(modules.windowManager);
       this.handlers.goat = new GoatHandlers(modules.windowManager);
-
+      this.handlers.sentinela = new SentinelaHandlers(modules.windowManager);
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -96,6 +97,8 @@ class IPCManager {
       // Registra handlers de Goat
       this.registerGoatHandlers();
 
+      // Registra handlers de Sentinela
+      this.registerSentinelaHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -601,6 +604,14 @@ class IPCManager {
     console.log("Handlers de Goat registrados");
   }
 
+  registerSentinelaHandlers() {
+    ipcMain.handle(
+      "open-sentinela",
+      this.handlers.sentinela.openSentinela.bind(this.handlers.sentinela)
+    );
+    console.log("Handlers de Sentinela registrados");
+  }
+
   // ========================================
   // Getter para InstanceHandlers (útil para inicialização)
   // ========================================
@@ -695,6 +706,7 @@ class IPCManager {
       "check-update",
       "trigger-update",
       "open-goat",
+      "open-sentinela",
       "crm-get-manifests",
       "crm-generate-pdf"
     ];

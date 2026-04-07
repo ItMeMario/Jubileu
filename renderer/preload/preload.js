@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   openCRM: () => ipcRenderer.invoke("open-crm"),
   openDeeJayWindow: () => ipcRenderer.invoke("open-dee-jay-window"),
   openGoat: () => ipcRenderer.invoke("open-goat"),
+  openSentinela: () => ipcRenderer.invoke("open-sentinela"),
   
   crm: {
       createInstance: (name) => ipcRenderer.invoke("crm-create-instance", name),
