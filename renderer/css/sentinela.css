@@ -1,0 +1,171 @@
+/* ========================================
+   Sentinela Dashboard CSS
+   ======================================== */
+
+.sentinela-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+    color: var(--text-color, #e0e0e0);
+    background-color: var(--bg-color, #121212);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+}
+
+/* Header */
+.sentinela-header {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-title-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.sentinela-icon {
+    font-size: 36px;
+    filter: drop-shadow(0 0 10px rgba(233, 30, 99, 0.5));
+}
+
+.sentinela-title {
+    font-size: 28px;
+    margin: 0;
+    color: #E91E63;
+    text-shadow: 0 0 10px rgba(233, 30, 99, 0.3);
+}
+
+.sentinela-subtitle {
+    margin: 5px 0 0 50px;
+    font-size: 14px;
+    color: #888;
+}
+
+/* Dashboard Layout */
+.dashboard {
+    display: flex;
+    flex: 1;
+    gap: 20px;
+    min-height: 0; /* Important for flex-child containment */
+}
+
+/* Cards Premium Styling (Glassmorphism) */
+.map-card, .info-card {
+    background: rgba(30, 30, 30, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.map-card {
+    flex: 2; /* Takes up more space */
+    position: relative;
+}
+
+.info-card {
+    flex: 1;
+    min-width: 300px;
+    max-width: 400px;
+    overflow-y: auto;
+}
+
+/* Map Container */
+.map-container {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+}
+
+/* Info Panel Contet */
+.info-card h2 {
+    margin-top: 0;
+    color: #E91E63;
+    font-size: 20px;
+    border-bottom: 1px solid rgba(233, 30, 99, 0.2);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.region-info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.placeholder-text {
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    margin-top: 50px;
+}
+
+/* Dynamic State Details */
+.state-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.state-badge {
+    background: linear-gradient(135deg, #E91E63, #9C27B0);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: normal;
+}
+
+.ddd-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.ddd-item {
+    background: rgba(233, 30, 99, 0.15);
+    border: 1px solid rgba(233, 30, 99, 0.3);
+    color: #FF8A80;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.ddd-item:hover {
+    transform: translateY(-2px);
+    background: rgba(233, 30, 99, 0.3);
+    box-shadow: 0 4px 12px rgba(233, 30, 99, 0.2);
+}
+
+.stats-container {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #aaa;
+}
+
+.stat-value {
+    color: #fff;
+    font-weight: bold;
+}

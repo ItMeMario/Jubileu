@@ -6,42 +6,39 @@
     <title>Jubileu - Sentinela</title>
     <link rel="stylesheet" href="../css/globalCss.css">
     <link rel="stylesheet" href="../css/darkMode.css">
-    <style>
-        .sentinela-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            text-align: center;
-            color: #fff;
-        }
-
-        .sentinela-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-        }
-
-        .sentinela-title {
-            font-size: 32px;
-            margin-bottom: 15px;
-            color: #E91E63;
-        }
-
-        .sentinela-text {
-            font-size: 18px;
-            max-width: 600px;
-            color: #ccc;
-        }
-    </style>
+    <link rel="stylesheet" href="../css/sentinela.css">
 </head>
 <body>
     <div class="sentinela-container">
-        <div class="sentinela-icon">👁️</div>
-        <h1 class="sentinela-title">Sentinela</h1>
-        <p class="sentinela-text">Esta função será implementada em breve. Fique de olho!</p>
+        <!-- Header -->
+        <header class="sentinela-header">
+            <div class="header-title-container">
+                <span class="sentinela-icon">👁️</span>
+                <h1 class="sentinela-title">Sentinela</h1>
+            </div>
+            <p class="sentinela-subtitle">Monitoramento e Distribuição de DDDs</p>
+        </header>
+
+        <!-- Main Dashboard -->
+        <main class="dashboard">
+            <!-- Map Container -->
+            <div class="map-card">
+                <div id="brazil-map" class="map-container"></div>
+            </div>
+            
+            <!-- Side Info Panel -->
+            <div class="info-card">
+                <h2>Região Selecionada</h2>
+                <div id="region-info" class="region-info-content">
+                    <p class="placeholder-text">Passe o mouse sobre um estado no mapa para visualizar a cobertura de DDDs.</p>
+                </div>
+            </div>
+        </main>
     </div>
 
+    <!-- Bibliotecas e Scripts -->
+    <script src="../libs/echarts.min.js"></script>
     <script src="../guiScripts/utils/darkModeManager.js"></script>
+    <script src="../guiScripts/sentinelaRenderer.js"></script>
 </body>
 </html>
