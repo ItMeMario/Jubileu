@@ -161,7 +161,7 @@ const TRIGGER_QUERIES = [
 /**
  * Nomes das tabelas para verificação
  */
-const TABLE_NAMES = ["cities", "indicators", "messages", "clients", "ddd"];
+const TABLE_NAMES = ["cities", "indicators", "messages", "clients", "area_codes"];
 
 /**
  * Inicializa o banco de dados com todas as tabelas, índices e triggers
