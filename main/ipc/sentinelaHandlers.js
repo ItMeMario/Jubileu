@@ -60,12 +60,12 @@ class SentinelaHandlers {
   }
 
   /**
-   * Limpa todos os registros da tabela area_codes
+   * Limpa todos os registros da tabela area_codes, com suporte a filtros
    */
-  async clearAreaCodes() {
+  async clearAreaCodes(event, filters = {}) {
     try {
-      console.log("[Sentinela] Limpando tabela area_codes...");
-      return await sentinelaService.clearAreaCodes();
+      console.log("[Sentinela] Limpando tabela area_codes com filtros:", filters);
+      return await sentinelaService.clearAreaCodes(filters);
     } catch (error) {
       console.error("[Sentinela] Erro ao limpar area_codes:", error);
       return { success: false, error: error.message, removidos: 0 };

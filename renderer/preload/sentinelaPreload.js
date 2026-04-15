@@ -25,10 +25,10 @@ contextBridge.exposeInMainWorld("sentinelaAPI", {
     }
   },
 
-  // Limpar todos os registros
-  clearAreaCodes: async () => {
+  // Limpar todos os registros (com suporte a filtros)
+  clearAreaCodes: async (filters = {}) => {
     try {
-      return await ipcRenderer.invoke("sentinela-clear-area-codes");
+      return await ipcRenderer.invoke("sentinela-clear-area-codes", filters);
     } catch (error) {
       console.error("[Sentinela] Erro ao limpar area_codes:", error);
       return { success: false, error: error.message };

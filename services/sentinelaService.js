@@ -396,18 +396,43 @@ async function getAreaCodes(filters = {}) {
 
 /**
  * Limpa todos os registros da tabela area_codes
+ * @param {Object} filters - Filtros opcionais { ddd, priority, date }
  * @returns {Promise<Object>} - { success, message, removidos }
  */
-async function clearAreaCodes() {
+async function clearAreaCodes(filters = {}) {
   let db;
 
   try {
     db = await getDatabaseConnection();
 
-    const countResult = await getQuery(db, "SELECT COUNT(*) as total FROM area_codes");
+    let sql = "DELETE FROM area_codes";
+    let countSql = "SELECT COUNT(*) as total FROM area_codes";
+    const conditions = [];
+    const params = [];
+
+    if (filters.ddd) {
+      conditions.push("ddd = ?");
+      params.push(filters.ddd);
+    }
+    if (filters.priority) {
+      conditions.push("priority = ?");
+      params.push(filters.priority);
+    }
+    if (filters.date) {
+      conditions.push("DATE(created_at) = ?");
+      params.push(filters.date);
+    }
+
+    if (conditions.length > 0) {
+      const whereClause = " WHERE " + conditions.join(" AND ");
+      sql += whereClause;
+      countSql += whereClause;
+    }
+
+    const countResult = await getQuery(db, countSql, params);
     const total = countResult ? countResult.total : 0;
 
-    await runQuery(db, "DELETE FROM area_codes");
+    await runQuery(db, sql, params);
 
     db.close();
 
