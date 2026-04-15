@@ -16,11 +16,11 @@ function createSentinelaWindow() {
   console.log("Criando nova janela Sentinela...");
 
   sentinelaWindow = new BrowserWindow({
-    width: 600,
-    height: 400,
+    width: 1100,
+    height: 750,
     modal: false,
     webPreferences: {
-      preload: path.join(__dirname, "../preload/preload.js"),
+      preload: path.join(__dirname, "../preload/sentinelaPreload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },

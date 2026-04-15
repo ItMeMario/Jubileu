@@ -1,9 +1,11 @@
 /**
  * sentinelaRenderer.js
- * Lógica do dashboard do Sentinela - Mapeamento interativo de DDDs
+ * Lógica do dashboard do Sentinela - Mapeamento interativo de DDDs + Import CSV
  */
 
+// ========================================
 // Dicionário de DDDs por Estado
+// ========================================
 const dddData = {
     'Acre': { uf: 'AC', ddds: [68] },
     'Alagoas': { uf: 'AL', ddds: [82] },
@@ -34,8 +36,423 @@ const dddData = {
     'Tocantins': { uf: 'TO', ddds: [63] }
 };
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const mapChart = echarts.init(document.getElementById('brazil-map'));
+// ========================================
+// State Management
+// ========================================
+let currentCSVContent = null;
+let currentPage = 0;
+const pageSize = 50;
+let currentDDDFilter = '';
+
+// ========================================
+// Tab Navigation
+// ========================================
+function initTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetTab = btn.dataset.tab;
+
+            // Update buttons
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update content
+            tabContents.forEach(content => content.classList.remove('active'));
+            document.getElementById(`tab-${targetTab}`).classList.add('active');
+
+            // Trigger resize for ECharts when switching to mapa
+            if (targetTab === 'mapa') {
+                window.dispatchEvent(new Event('resize'));
+            }
+
+            // Load data when switching to registros
+            if (targetTab === 'registros') {
+                loadRegistros();
+                loadStats();
+            }
+        });
+    });
+}
+
+// ========================================
+// Import CSV Logic
+// ========================================
+function initImport() {
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('csv-file-input');
+    const fileInfo = document.getElementById('file-info');
+    const fileName = document.getElementById('file-name');
+    const fileSize = document.getElementById('file-size');
+    const btnRemoveFile = document.getElementById('btn-remove-file');
+    const btnImport = document.getElementById('btn-import');
+
+    // Click on drop zone → triggers file input
+    dropZone.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'LABEL' && e.target.tagName !== 'INPUT') {
+            fileInput.click();
+        }
+    });
+
+    // Drag and Drop events
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            await handleFile(files[0]);
+        }
+    });
+
+    // File input change
+    fileInput.addEventListener('change', async (e) => {
+        if (e.target.files.length > 0) {
+            await handleFile(e.target.files[0]);
+        }
+    });
+
+    // Remove file
+    btnRemoveFile.addEventListener('click', () => {
+        currentCSVContent = null;
+        fileInfo.classList.add('hidden');
+        btnImport.disabled = true;
+        fileInput.value = '';
+    });
+
+    // Import button
+    btnImport.addEventListener('click', async () => {
+        if (!currentCSVContent) return;
+        await executeImport();
+    });
+}
+
+/**
+ * Processa o arquivo selecionado
+ */
+async function handleFile(file) {
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showImportError('Apenas arquivos .csv são aceitos.');
+        return;
+    }
+
+    try {
+        const result = await window.fileAPI.readFile(file);
+
+        if (!result.success) {
+            showImportError('Erro ao ler o arquivo: ' + (result.error || 'desconhecido'));
+            return;
+        }
+
+        currentCSVContent = result.content;
+
+        // Show file info
+        const fileInfo = document.getElementById('file-info');
+        document.getElementById('file-name').textContent = result.name;
+        document.getElementById('file-size').textContent = formatFileSize(result.size);
+        fileInfo.classList.remove('hidden');
+
+        // Enable import
+        document.getElementById('btn-import').disabled = false;
+
+    } catch (error) {
+        showImportError('Erro ao processar arquivo: ' + error.message);
+    }
+}
+
+/**
+ * Executa a importação do CSV
+ */
+async function executeImport() {
+    const btnImport = document.getElementById('btn-import');
+    const spinner = document.getElementById('import-spinner');
+
+    // Disable button and show spinner
+    btnImport.disabled = true;
+    spinner.classList.remove('hidden');
+    btnImport.textContent = ' Importando...';
+    btnImport.prepend(spinner);
+
+    try {
+        const result = await window.sentinelaAPI.importCSV(currentCSVContent);
+        showImportResult(result);
+
+        // Clear file after import
+        currentCSVContent = null;
+        document.getElementById('file-info').classList.add('hidden');
+        document.getElementById('csv-file-input').value = '';
+
+    } catch (error) {
+        showImportResult({
+            success: false,
+            error: error.message || 'Erro desconhecido durante importação',
+        });
+    } finally {
+        // Reset button
+        btnImport.disabled = true;
+        spinner.classList.add('hidden');
+        btnImport.innerHTML = 'Importar Dados';
+    }
+}
+
+/**
+ * Exibe resultado da importação
+ */
+function showImportResult(result) {
+    const container = document.getElementById('import-result');
+
+    if (!result.success && result.error) {
+        container.innerHTML = `
+            <div class="result-banner error animate-in">
+                ❌ ${escapeHtml(result.error)}
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div class="result-banner success animate-in">
+            ✅ ${escapeHtml(result.message || 'Importação concluída!')}
+        </div>
+
+        <div class="result-summary animate-in">
+            <div class="result-item">
+                <span class="result-label">Adicionados</span>
+                <span class="result-value success">${result.adicionados || 0}</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Atualizados</span>
+                <span class="result-value updated">${result.atualizados || 0}</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Ignorados</span>
+                <span class="result-value ignored">${result.ignorados || 0}</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Erros</span>
+                <span class="result-value error">${result.totalErros || 0}</span>
+            </div>
+        </div>
+    `;
+
+    // Show ignored details
+    if (result.detalhesIgnorados && result.detalhesIgnorados.length > 0) {
+        html += `
+            <div class="result-details animate-in">
+                <h3>📝 Linhas Ignoradas (${result.detalhesIgnorados.length})</h3>
+                <ul class="detail-list">
+                    ${result.detalhesIgnorados.map(item => `
+                        <li>
+                            <span>Linha ${item.linha}: ${escapeHtml(item.nome)} - ${escapeHtml(item.numero)}</span>
+                            <span class="detail-reason">${escapeHtml(item.motivo)}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    // Show error details
+    if (result.erros && result.erros.length > 0) {
+        html += `
+            <div class="result-details animate-in">
+                <h3>❌ Erros (${result.erros.length})</h3>
+                <ul class="detail-list">
+                    ${result.erros.map(item => `
+                        <li>
+                            <span>Linha ${item.linha}: ${escapeHtml(item.nome)} - ${escapeHtml(item.numero)}</span>
+                            <span class="detail-reason">${escapeHtml(item.erro)}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+/**
+ * Exibe mensagem de erro no import
+ */
+function showImportError(message) {
+    const container = document.getElementById('import-result');
+    container.innerHTML = `
+        <div class="result-banner error animate-in">
+            ❌ ${escapeHtml(message)}
+        </div>
+    `;
+}
+
+// ========================================
+// Registros Tab Logic
+// ========================================
+function initRegistros() {
+    // Filter buttons
+    document.getElementById('btn-filter-registros').addEventListener('click', () => {
+        currentDDDFilter = document.getElementById('filter-ddd-input').value.trim();
+        currentPage = 0;
+        loadRegistros();
+    });
+
+    document.getElementById('btn-clear-filter-registros').addEventListener('click', () => {
+        document.getElementById('filter-ddd-input').value = '';
+        currentDDDFilter = '';
+        currentPage = 0;
+        loadRegistros();
+    });
+
+    // Refresh
+    document.getElementById('btn-refresh-registros').addEventListener('click', () => {
+        loadRegistros();
+        loadStats();
+    });
+
+    // Clear all
+    document.getElementById('btn-clear-all').addEventListener('click', async () => {
+        if (!confirm('Tem certeza que deseja remover TODOS os registros? Esta ação não pode ser desfeita.')) {
+            return;
+        }
+
+        const result = await window.sentinelaAPI.clearAreaCodes();
+        if (result.success) {
+            loadRegistros();
+            loadStats();
+        } else {
+            alert('Erro ao limpar: ' + result.error);
+        }
+    });
+
+    // Pagination
+    document.getElementById('btn-prev-page').addEventListener('click', () => {
+        if (currentPage > 0) {
+            currentPage--;
+            loadRegistros();
+        }
+    });
+
+    document.getElementById('btn-next-page').addEventListener('click', () => {
+        currentPage++;
+        loadRegistros();
+    });
+
+    // Enter key on DDD filter
+    document.getElementById('filter-ddd-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('btn-filter-registros').click();
+        }
+    });
+}
+
+/**
+ * Carrega registros da tabela area_codes
+ */
+async function loadRegistros() {
+    const tbody = document.getElementById('registros-tbody');
+
+    try {
+        const filters = {
+            limit: pageSize,
+            offset: currentPage * pageSize,
+        };
+
+        if (currentDDDFilter) {
+            filters.ddd = currentDDDFilter;
+        }
+
+        const result = await window.sentinelaAPI.getAreaCodes(filters);
+
+        if (!result.success) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-table">Erro: ${escapeHtml(result.error)}</td></tr>`;
+            return;
+        }
+
+        if (result.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-table">Nenhum registro encontrado</td></tr>`;
+            updatePagination(0, 0);
+            return;
+        }
+
+        // Render rows
+        tbody.innerHTML = result.data.map(row => {
+            const priorityClass = row.priority <= 3 ? `priority-${row.priority}` : 'priority-default';
+            const nameClass = row.name ? 'name-cell' : 'name-cell empty';
+            const nameText = row.name || '(sem nome)';
+            const dateText = row.created_at ? formatDate(row.created_at) : '-';
+
+            return `
+                <tr>
+                    <td><span class="priority-badge ${priorityClass}">${row.priority}</span></td>
+                    <td class="${nameClass}">${escapeHtml(nameText)}</td>
+                    <td class="ddd-cell">${escapeHtml(row.ddd || '-')}</td>
+                    <td class="tel-cell">${escapeHtml(row.tel || '-')}</td>
+                    <td>${dateText}</td>
+                </tr>
+            `;
+        }).join('');
+
+        updatePagination(result.total, result.data.length);
+
+    } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-table">Erro: ${escapeHtml(error.message)}</td></tr>`;
+    }
+}
+
+/**
+ * Carrega estatísticas
+ */
+async function loadStats() {
+    try {
+        const stats = await window.sentinelaAPI.getImportStats();
+
+        if (stats.success) {
+            document.getElementById('stat-total').textContent = stats.total || 0;
+            document.getElementById('stat-ddds').textContent = stats.porDDD ? stats.porDDD.length : 0;
+            document.getElementById('stat-imports').textContent = stats.porPrioridade ? stats.porPrioridade.length : 0;
+        }
+    } catch (error) {
+        console.error('Erro ao carregar stats:', error);
+    }
+}
+
+/**
+ * Atualiza informações de paginação
+ */
+function updatePagination(total, loaded) {
+    const totalPages = Math.ceil(total / pageSize);
+    const currentPageDisplay = total > 0 ? currentPage + 1 : 0;
+
+    document.getElementById('pagination-info').textContent = 
+        `Página ${currentPageDisplay} de ${totalPages} (${total} registros)`;
+
+    document.getElementById('btn-prev-page').disabled = currentPage <= 0;
+    document.getElementById('btn-next-page').disabled = (currentPage + 1) * pageSize >= total;
+}
+
+// ========================================
+// Mapa (ECharts) — Preservado do original
+// ========================================
+async function initMap() {
+    const mapElement = document.getElementById('brazil-map');
+    if (!mapElement) return;
+
+    const mapChart = echarts.init(mapElement);
     
     // Função para mostrar loading estiloso
     mapChart.showLoading({
@@ -46,7 +463,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     try {
-        // Tentar carregar o GeoJSON usando fetch (funciona se for servido localmente ou configurado)
+        // Tentar carregar o GeoJSON usando fetch
         let geoJson;
         try {
             const response = await fetch('../data/brazil-states.json');
@@ -57,7 +474,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (fetchErr) {
             console.warn("Fetch failed, tentando carregar via require (Electron):", fetchErr);
-            // Fallback para require do Node (se nodeIntegration estiver ativado)
             if (typeof require !== 'undefined') {
                 const fs = require('fs');
                 const path = require('path');
@@ -73,13 +489,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Preparamos os dados originais do mapa
         const originalMapData = geoJson.features.map(feature => {
-            // Em alguns geojsons a propriedade é 'name' ou 'NAME_1'
             const nomeEstado = feature.properties.name || feature.properties.NAME_1; 
             
-            // Tratamento caso haja pequena divergencia de nome
             let estadoKey = Object.keys(dddData).find(k => k === nomeEstado);
             if (!estadoKey) {
-                // Tenta achar ignorando acentos ou lowercase
                 const normalize = s => s && s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
                 estadoKey = Object.keys(dddData).find(k => normalize(k) === normalize(nomeEstado));
             }
@@ -88,7 +501,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             return {
                 name: nomeEstado,
-                value: stateInfo.ddds.length, // O valor do mapa de calor será a qtd de DDDs
+                value: stateInfo.ddds.length,
                 stateData: stateInfo
             };
         });
@@ -116,11 +529,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             },
             visualMap: {
-                show: false, // Custom HTML filter used instead
+                show: false,
                 min: 1,
-                max: 9, // SP tem 9 DDDs
+                max: 9,
                 inRange: {
-                    // Paleta "Heatmap" estilizada para o projeto
                     color: ['#1e1e1e', '#611632', '#9c1c44', '#E91E63', '#ff4081']
                 },
                 outOfRange: {
@@ -132,9 +544,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     name: 'DDDs por Estado',
                     type: 'map',
                     map: 'Brasil',
-                    roam: true, // Permite zoom e pan
-                    scaleLimit: { min: 1, max: 4 }, // Limita o zoom
-                    selectedMode: 'single', // Permite selecionar um estado
+                    roam: true,
+                    scaleLimit: { min: 1, max: 4 },
+                    selectedMode: 'single',
                     itemStyle: {
                         borderColor: 'rgba(255, 255, 255, 0.3)',
                         borderWidth: 0.5,
@@ -196,9 +608,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 return {
                     ...item,
-                    value: -1, // Force outOfRange
+                    value: -1,
                     itemStyle: {
-                        areaColor: '#151515', // Visual indication of exclusion
+                        areaColor: '#151515',
                         borderColor: '#2a2a2a'
                     }
                 };
@@ -224,16 +636,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (error) {
         console.error("Erro ao inicializar ECharts:", error);
-        mapChart.hideLoading();
-        document.getElementById('brazil-map').innerHTML = `
-            <div style="color:#F44336; padding: 20px; text-align: center;">
-                <h3>❌ Erro ao renderizar o mapa.</h3>
-                <p>Verifique o console para mais detalhes.</p>
-                <p style="font-size: 12px; color: #888;">${error.message}</p>
-            </div>
-        `;
+        const mapElement = document.getElementById('brazil-map');
+        if (mapElement) {
+            mapElement.innerHTML = `
+                <div style="color:#F44336; padding: 20px; text-align: center;">
+                    <h3>❌ Erro ao renderizar o mapa.</h3>
+                    <p>Verifique o console para mais detalhes.</p>
+                    <p style="font-size: 12px; color: #888;">${error.message}</p>
+                </div>
+            `;
+        }
     }
-});
+}
 
 // Atualiza a barra lateral com as informações do estado selecionado/focado
 function updateSidebar(stateName, stateData) {
@@ -268,3 +682,56 @@ function updateSidebar(stateName, stateData) {
         </div>
     `;
 }
+
+// ========================================
+// Utility Functions
+// ========================================
+
+/**
+ * Formata tamanho de arquivo em bytes para legível
+ */
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+/**
+ * Formata data ISO para exibição
+ */
+function formatDate(dateStr) {
+    try {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    } catch {
+        return dateStr;
+    }
+}
+
+/**
+ * Escape HTML para prevenir XSS
+ */
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ========================================
+// Initialize
+// ========================================
+document.addEventListener('DOMContentLoaded', async () => {
+    initTabs();
+    initImport();
+    initRegistros();
+    await initMap();
+});

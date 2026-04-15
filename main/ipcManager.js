@@ -609,6 +609,22 @@ class IPCManager {
       "open-sentinela",
       this.handlers.sentinela.openSentinela.bind(this.handlers.sentinela)
     );
+    ipcMain.handle(
+      "sentinela-import-csv",
+      this.handlers.sentinela.importCSV.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-get-area-codes",
+      this.handlers.sentinela.getAreaCodes.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-clear-area-codes",
+      this.handlers.sentinela.clearAreaCodes.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-get-import-stats",
+      this.handlers.sentinela.getImportStats.bind(this.handlers.sentinela)
+    );
     console.log("Handlers de Sentinela registrados");
   }
 
@@ -707,6 +723,10 @@ class IPCManager {
       "trigger-update",
       "open-goat",
       "open-sentinela",
+      "sentinela-import-csv",
+      "sentinela-get-area-codes",
+      "sentinela-clear-area-codes",
+      "sentinela-get-import-stats",
       "crm-get-manifests",
       "crm-generate-pdf"
     ];
