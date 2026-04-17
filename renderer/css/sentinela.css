@@ -1156,6 +1156,16 @@
     gap: 5px;
 }
 
+.form-group .modern-input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-group textarea.modern-input {
+    resize: vertical;
+    min-height: 80px;
+}
+
 .form-group label {
     font-size: 13px;
     color: #aaa;

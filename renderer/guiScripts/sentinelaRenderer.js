@@ -44,6 +44,11 @@ let currentPage = 0;
 const pageSize = 50;
 let currentDDDFilter = '';
 let globalDDDStats = {}; // Armazena contagem de números por DDD
+let currentMapMode = 'ddds';
+let municipiosData = [];
+let allEventsData = [];
+let mapChart = null;
+let originalMapOption = null;
 
 // ========================================
 // Tab Navigation
@@ -561,7 +566,7 @@ async function initMap() {
     const mapElement = document.getElementById('brazil-map');
     if (!mapElement) return;
 
-    const mapChart = echarts.init(mapElement);
+    mapChart = echarts.init(mapElement);
     
     // Função para mostrar loading estiloso
     mapChart.showLoading({
@@ -698,6 +703,7 @@ async function initMap() {
         };
 
         mapChart.hideLoading();
+        originalMapOption = option;
         mapChart.setOption(option);
 
         // Evento para atualizar o painel lateral ao passar o mouse ou clicar
@@ -960,17 +966,40 @@ async function initCalendar() {
     document.getElementById('btn-save-evento').addEventListener('click', async () => {
         const data = document.getElementById('evento-data').value;
         const titulo = document.getElementById('evento-titulo').value.trim();
+        const inputCidade = document.getElementById('evento-cidade').value.trim();
         const descricao = document.getElementById('evento-descricao').value.trim();
 
-        if (!data || !titulo) {
-            alert('Data e título são obrigatórios.');
+        if (!data || !titulo || !inputCidade) {
+            alert('Data, título e cidade são obrigatórios.');
             return;
         }
 
-        const result = await window.sentinelaAPI.createEvent({ data, titulo, descricao });
+        // Remover a parte " - UF" se o usuário selecionou da lista
+        const cidadeNomeRaw = inputCidade.split(' - ')[0].trim();
+        
+        // Tentar encontrar a cidade selecionada para pegar as coordenadas
+        const normalizeStr = str => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : '';
+        let cidadeSelecionada = municipiosData.find(m => normalizeStr(m.nome) === normalizeStr(cidadeNomeRaw));
+        
+        const eventData = { 
+            data, 
+            titulo, 
+            descricao,
+            cidade: cidadeNomeRaw,
+            estado: cidadeSelecionada ? (inputCidade.includes(' - ') ? inputCidade.split(' - ')[1].trim() : cidadeSelecionada.uf) : null,
+            lat: cidadeSelecionada ? cidadeSelecionada.lat : null,
+            lng: cidadeSelecionada ? cidadeSelecionada.lng : null
+        };
+        console.log('[DEBUG] eventData a ser salvo:', JSON.stringify(eventData));
+        console.log('[DEBUG] cidadeSelecionada:', cidadeSelecionada ? JSON.stringify(cidadeSelecionada) : 'NÃO ENCONTRADA');
+        console.log('[DEBUG] cidadeNomeRaw:', cidadeNomeRaw);
+        console.log('[DEBUG] municipiosData length:', municipiosData.length);
+
+        const result = await window.sentinelaAPI.createEvent(eventData);
         if (result.success) {
             modal.classList.add('hidden');
             calendar.refetchEvents();
+            await fetchAllEvents(); // atualiza o map
             loadTimeline();
         } else {
             alert('Erro ao criar evento: ' + result.error);
@@ -982,6 +1011,7 @@ function openEventModal(dateStr) {
     const modal = document.getElementById('evento-modal');
     document.getElementById('evento-data').value = dateStr;
     document.getElementById('evento-titulo').value = '';
+    document.getElementById('evento-cidade').value = '';
     document.getElementById('evento-descricao').value = '';
     modal.classList.remove('hidden');
 }
@@ -1033,6 +1063,200 @@ document.addEventListener('DOMContentLoaded', async () => {
     initImport();
     initRegistros();
     initCalendar();
+    await loadMunicipios();
+    await fetchAllEvents();
     await loadStats(); // Carregar estatísticas para alimentar o mapa
     await initMap();
+    initMapToggles();
 });
+
+// ========================================
+// Novas Funções (Cidades e Heatmap)
+// ========================================
+
+async function loadMunicipios() {
+    try {
+        const response = await fetch('../data/municipios.json');
+        if (response.ok) {
+            municipiosData = await response.json();
+            const datalist = document.getElementById('cidades-list');
+            let options = '';
+            // Vamos carregar as cidades no datalist (como podem ser muitas, o datalist pode aguentar ou travar um pouco, mas em navegadores modernos é suportado)
+            municipiosData.forEach(m => {
+                options += `<option value="${m.nome} - ${m.uf}">`;
+            });
+            datalist.innerHTML = options;
+        } else {
+            console.error('Falha ao carregar municipios.json');
+        }
+    } catch (e) {
+        console.error('Erro ao carregar cidades:', e);
+    }
+}
+
+async function fetchAllEvents() {
+    const result = await window.sentinelaAPI.getEvents();
+    if (result.success && result.data) {
+        allEventsData = result.data;
+    } else {
+        allEventsData = [];
+    }
+    
+    // Atualiza o mapa se estiver na aba eventos
+    if (currentMapMode === 'eventos' && mapChart) {
+        updateMapForEvents();
+    }
+}
+
+function initMapToggles() {
+    const btnDdds = document.getElementById('btn-map-ddds');
+    const btnEventos = document.getElementById('btn-map-eventos');
+    
+    if(!btnDdds || !btnEventos) return;
+
+    btnDdds.addEventListener('click', () => {
+        currentMapMode = 'ddds';
+        btnDdds.classList.remove('clear-btn');
+        btnDdds.classList.add('apply-btn');
+        btnEventos.classList.remove('apply-btn');
+        btnEventos.classList.add('clear-btn');
+        
+        if (mapChart && originalMapOption) {
+            mapChart.setOption(originalMapOption, true);
+        }
+        
+        document.querySelector('.filter-section').style.display = 'block';
+    });
+
+    btnEventos.addEventListener('click', () => {
+        currentMapMode = 'eventos';
+        btnEventos.classList.remove('clear-btn');
+        btnEventos.classList.add('apply-btn');
+        btnDdds.classList.remove('apply-btn');
+        btnDdds.classList.add('clear-btn');
+        
+        document.querySelector('.filter-section').style.display = 'none';
+        updateMapForEvents();
+    });
+}
+
+function updateMapForEvents() {
+    if (!mapChart) return;
+    
+    const hoje = new Date();
+    
+    // Processar eventos para a série de scatter
+    const scatterData = [];
+    
+    console.log('[HEATMAP] allEventsData:', allEventsData.length, 'eventos');
+    
+    allEventsData.forEach(ev => {
+        console.log('[HEATMAP] Evento:', ev.titulo, '| lat:', ev.lat, '| lng:', ev.lng, '| cidade:', ev.cidade);
+        if (ev.lat != null && ev.lng != null) {
+            const dataEvento = new Date(ev.data);
+            const diffTime = Math.abs(hoje - dataEvento);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            
+            // "Temperatura": Menos dias = mais quente. maxDaysLimit = 365
+            const score = Math.max(0, 365 - diffDays);
+            
+            scatterData.push({
+                name: (ev.cidade || 'Sem cidade') + " - " + ev.titulo,
+                value: [ev.lng, ev.lat, score],
+                eventRef: ev
+            });
+        }
+    });
+
+    console.log('[HEATMAP] scatterData final:', scatterData.length, 'pontos');
+    if (scatterData.length > 0) {
+        console.log('[HEATMAP] Primeiro ponto:', JSON.stringify(scatterData[0]));
+    }
+
+    // Option para mostrar mapa limpo com scatters
+    const heatmapOption = {
+        backgroundColor: 'transparent',
+        tooltip: {
+            trigger: 'item',
+            backgroundColor: 'rgba(20, 20, 20, 0.9)',
+            borderColor: '#ff9800',
+            textStyle: { color: '#fff' },
+            formatter: function (params) {
+                if (!params.data || !params.data.eventRef) return params.name;
+                const ev = params.data.eventRef;
+                const dateParts = ev.data.split('-');
+                const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : ev.data;
+                return `
+                    <div style="font-weight:bold; font-size: 16px; border-bottom:1px solid #ff9800; padding-bottom:5px; margin-bottom:5px;">
+                        ${ev.cidade || 'Sem cidade'} (${ev.estado || '?'})
+                    </div>
+                    <div>Evento: <span style="color:#ff9800; font-weight:bold">${ev.titulo}</span></div>
+                    <div>Data: ${formattedDate}</div>
+                `;
+            }
+        },
+        visualMap: {
+            show: true,
+            min: 0,
+            max: 365,
+            dimension: 2,
+            calculable: true,
+            inRange: {
+                color: ['#0d47a1', '#2196f3', '#4caf50', '#ffeb3b', '#ff9800', '#f44336']
+            },
+            text: ['Recente', 'Antigo'],
+            textStyle: {
+                color: '#fff'
+            },
+            orient: 'vertical',
+            right: 10,
+            bottom: 20
+        },
+        geo: {
+            map: 'Brasil',
+            roam: true,
+            scaleLimit: { min: 1, max: 6 },
+            itemStyle: {
+                areaColor: '#1a1a1a',
+                borderColor: '#333'
+            },
+            emphasis: {
+                itemStyle: {
+                    areaColor: '#2a2a2a'
+                },
+                label: { show: false }
+            }
+        },
+        series: [
+            {
+                name: 'Eventos',
+                type: 'effectScatter',
+                coordinateSystem: 'geo',
+                data: scatterData,
+                symbolSize: function (val) {
+                    return Math.max(12, (val[2] / 365) * 25);
+                },
+                showEffectOn: 'render',
+                rippleEffect: {
+                    brushType: 'stroke',
+                    scale: 4
+                },
+                label: {
+                    formatter: '{b}',
+                    position: 'right',
+                    show: false
+                },
+                itemStyle: {
+                    shadowBlur: 15,
+                    shadowColor: 'rgba(255, 152, 0, 0.5)'
+                },
+                zlevel: 2,
+                emphasis: {
+                    scale: true
+                }
+            }
+        ]
+    };
+
+    mapChart.setOption(heatmapOption, true);
+}

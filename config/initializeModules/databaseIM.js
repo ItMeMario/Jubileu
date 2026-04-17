@@ -125,6 +125,10 @@ const TABLE_QUERIES = [
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     data DATE NOT NULL,
     titulo TEXT NOT NULL,
+    cidade TEXT,
+    estado TEXT,
+    lat REAL,
+    lng REAL,
     descricao TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`,
@@ -233,6 +237,18 @@ async function initializeDatabase() {
         }
 
         await debug("✅ Índices criados/verificados");
+
+        // Migration para adicionar novas colunas em calendar caso a tabela já exista
+        const calendarCols = ["cidade", "estado", "lat", "lng"];
+        for (const col of calendarCols) {
+          try {
+            const colType = (col === "lat" || col === "lng") ? "REAL" : "TEXT";
+            await runQuery(db, `ALTER TABLE calendar ADD COLUMN ${col} ${colType}`);
+            await debug(`✅ Coluna '${col}' adicionada em calendar`);
+          } catch (err) {
+            // Ignorar erro se a coluna já existir
+          }
+        }
 
         // Cria triggers
         for (const triggerQuery of TRIGGER_QUERIES) {

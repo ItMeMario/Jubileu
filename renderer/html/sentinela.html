@@ -45,6 +45,10 @@
                 
                 <!-- Side Info Panel -->
                 <div class="info-card">
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button id="btn-map-ddds" class="modern-btn apply-btn" style="flex: 1;">DDDs</button>
+                        <button id="btn-map-eventos" class="modern-btn clear-btn" style="flex: 1;">Eventos</button>
+                    </div>
                     <h2>Filtros</h2>
                     <div class="filter-section">
                         <span style="font-size: 14px; margin-bottom: 5px; display: block; color: #ccc;">Quantidade de DDDs:</span>
@@ -217,8 +221,13 @@
                     <input type="date" id="evento-data" class="modern-input">
                 </div>
                 <div class="form-group">
-                    <label for="evento-titulo">Cidade / Título</label>
-                    <input type="text" id="evento-titulo" class="modern-input" placeholder="Ex: Evento em São Paulo" required>
+                    <label for="evento-titulo">Título do Evento</label>
+                    <input type="text" id="evento-titulo" class="modern-input" placeholder="Ex: Show na Praça" required>
+                </div>
+                <div class="form-group">
+                    <label for="evento-cidade">Cidade</label>
+                    <input type="text" id="evento-cidade" class="modern-input" placeholder="Digite para buscar..." list="cidades-list" autocomplete="off" required>
+                    <datalist id="cidades-list"></datalist>
                 </div>
                 <div class="form-group">
                     <label for="evento-descricao">Descrição (Opcional)</label>

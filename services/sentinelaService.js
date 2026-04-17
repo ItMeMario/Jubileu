@@ -507,8 +507,16 @@ async function createCalendarEvent(eventData) {
     db = await getDatabaseConnection();
     await runQuery(
       db,
-      "INSERT INTO calendar (data, titulo, descricao) VALUES (?, ?, ?)",
-      [eventData.data, eventData.titulo, eventData.descricao || ""]
+      "INSERT INTO calendar (data, titulo, cidade, estado, lat, lng, descricao) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        eventData.data,
+        eventData.titulo,
+        eventData.cidade || null,
+        eventData.estado || null,
+        eventData.lat || null,
+        eventData.lng || null,
+        eventData.descricao || "",
+      ]
     );
     db.close();
     return { success: true, message: "Evento criado com sucesso" };
