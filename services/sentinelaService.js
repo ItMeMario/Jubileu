@@ -497,6 +497,70 @@ async function getImportStats() {
   }
 }
 
+/**
+ * Cria um novo evento no calendário
+ * @param {Object} eventData - { data, titulo, descricao }
+ */
+async function createCalendarEvent(eventData) {
+  let db;
+  try {
+    db = await getDatabaseConnection();
+    await runQuery(
+      db,
+      "INSERT INTO calendar (data, titulo, descricao) VALUES (?, ?, ?)",
+      [eventData.data, eventData.titulo, eventData.descricao || ""]
+    );
+    db.close();
+    return { success: true, message: "Evento criado com sucesso" };
+  } catch (error) {
+    if (db) {
+      try { db.close(); } catch (e) { /* ignore */ }
+    }
+    console.error("[Sentinela] Erro ao criar evento no calendário:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Busca os eventos do calendário
+ * Retorna todos ordenados por data DESC (mais recente primeiro)
+ */
+async function getCalendarEvents() {
+  let db;
+  try {
+    db = await getDatabaseConnection();
+    const rows = await allQuery(db, "SELECT * FROM calendar ORDER BY data DESC", []);
+    db.close();
+    return { success: true, data: rows };
+  } catch (error) {
+    if (db) {
+      try { db.close(); } catch (e) { /* ignore */ }
+    }
+    console.error("[Sentinela] Erro ao buscar eventos do calendário:", error);
+    return { success: false, error: error.message, data: [] };
+  }
+}
+
+/**
+ * Exclui um evento do calendário
+ * @param {number} id - ID do evento
+ */
+async function deleteCalendarEvent(id) {
+  let db;
+  try {
+    db = await getDatabaseConnection();
+    await runQuery(db, "DELETE FROM calendar WHERE id = ?", [id]);
+    db.close();
+    return { success: true, message: "Evento excluído com sucesso" };
+  } catch (error) {
+    if (db) {
+      try { db.close(); } catch (e) { /* ignore */ }
+    }
+    console.error("[Sentinela] Erro ao excluir evento do calendário:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   parseCSV,
   normalizePhone,
@@ -505,4 +569,7 @@ module.exports = {
   getAreaCodes,
   clearAreaCodes,
   getImportStats,
+  createCalendarEvent,
+  getCalendarEvents,
+  deleteCalendarEvent,
 };

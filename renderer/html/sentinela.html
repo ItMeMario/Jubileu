@@ -30,6 +30,9 @@
             <button class="tab-btn" data-tab="registros">
                 <span class="tab-icon">📋</span> Registros
             </button>
+            <button class="tab-btn" data-tab="calendario">
+                <span class="tab-icon">📅</span> Calendário
+            </button>
         </nav>
 
         <!-- ==================== ABA MAPA ==================== -->
@@ -181,10 +184,57 @@
                 </div>
             </div>
         </main>
+
+        <!-- ==================== ABA CALENDARIO ==================== -->
+        <main id="tab-calendario" class="tab-content">
+            <div class="calendario-layout">
+                <!-- Timeline Section (Esquerda) -->
+                <div class="timeline-container info-card">
+                    <h2><span class="section-icon">🕰️</span> Linha do Tempo</h2>
+                    <div id="timeline-list" class="timeline-list">
+                        <!-- Itens da linha do tempo renderizados via JS -->
+                    </div>
+                </div>
+
+                <!-- Calendar Section (Direita) -->
+                <div class="calendar-container map-card">
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                        <button id="btn-open-modal" class="modern-btn apply-btn">Novo Evento</button>
+                    </div>
+                    <div id="fullcalendar-el"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Novo Evento -->
+    <div id="evento-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="modal-title">Novo Evento</h2>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="evento-data">Data</label>
+                    <input type="date" id="evento-data" class="modern-input">
+                </div>
+                <div class="form-group">
+                    <label for="evento-titulo">Cidade / Título</label>
+                    <input type="text" id="evento-titulo" class="modern-input" placeholder="Ex: Evento em São Paulo" required>
+                </div>
+                <div class="form-group">
+                    <label for="evento-descricao">Descrição (Opcional)</label>
+                    <textarea id="evento-descricao" class="modern-input" rows="3" placeholder="Detalhes do evento..."></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-cancel-evento" class="modern-btn clear-btn">Cancelar</button>
+                <button id="btn-save-evento" class="modern-btn apply-btn">Salvar Evento</button>
+            </div>
+        </div>
     </div>
 
     <!-- Bibliotecas e Scripts -->
     <script src="../libs/echarts.min.js"></script>
+    <script src="../libs/fullcalendar.min.js"></script>
     <script src="../guiScripts/utils/darkModeManager.js"></script>
     <script src="../guiScripts/utils/confirmModal.js"></script>
     <script src="../guiScripts/sentinelaRenderer.js"></script>

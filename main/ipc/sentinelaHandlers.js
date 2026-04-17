@@ -89,6 +89,42 @@ class SentinelaHandlers {
       };
     }
   }
+
+  /**
+   * Cria um evento no calendário
+   */
+  async createCalendarEvent(event, eventData) {
+    try {
+      return await sentinelaService.createCalendarEvent(eventData);
+    } catch (error) {
+      console.error("[Sentinela] Erro ao criar evento:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Busca eventos do calendário
+   */
+  async getCalendarEvents(event) {
+    try {
+      return await sentinelaService.getCalendarEvents();
+    } catch (error) {
+      console.error("[Sentinela] Erro ao buscar eventos:", error);
+      return { success: false, error: error.message, data: [] };
+    }
+  }
+
+  /**
+   * Exclui um evento do calendário
+   */
+  async deleteCalendarEvent(event, id) {
+    try {
+      return await sentinelaService.deleteCalendarEvent(id);
+    } catch (error) {
+      console.error("[Sentinela] Erro ao excluir evento:", error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 module.exports = SentinelaHandlers;

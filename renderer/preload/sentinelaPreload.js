@@ -44,6 +44,36 @@ contextBridge.exposeInMainWorld("sentinelaAPI", {
       return { success: false, error: error.message };
     }
   },
+
+  // Criar evento no calendário
+  createEvent: async (eventData) => {
+    try {
+      return await ipcRenderer.invoke("sentinela-create-event", eventData);
+    } catch (error) {
+      console.error("[Sentinela] Erro ao criar evento:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Buscar eventos
+  getEvents: async () => {
+    try {
+      return await ipcRenderer.invoke("sentinela-get-events");
+    } catch (error) {
+      console.error("[Sentinela] Erro ao buscar eventos:", error);
+      return { success: false, error: error.message, data: [] };
+    }
+  },
+
+  // Excluir evento
+  deleteEvent: async (id) => {
+    try {
+      return await ipcRenderer.invoke("sentinela-delete-event", id);
+    } catch (error) {
+      console.error("[Sentinela] Erro ao excluir evento:", error);
+      return { success: false, error: error.message };
+    }
+  },
 });
 
 // ==========================================

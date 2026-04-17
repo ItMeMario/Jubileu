@@ -121,6 +121,13 @@ const TABLE_QUERIES = [
     tel TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`,
+  `CREATE TABLE IF NOT EXISTS calendar (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data DATE NOT NULL,
+    titulo TEXT NOT NULL,
+    descricao TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`,
 ];
 
 /**
@@ -133,6 +140,7 @@ const INDEX_QUERIES = [
   `CREATE INDEX IF NOT EXISTS idx_indicators_horario ON indicators(horario_escolhido)`,
   `CREATE INDEX IF NOT EXISTS idx_indicators_created_at ON indicators(created_at)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_tel ON clients(tel)`,
+  `CREATE INDEX IF NOT EXISTS idx_calendar_data ON calendar(data)`,
 ];
 
 /**
@@ -161,7 +169,7 @@ const TRIGGER_QUERIES = [
 /**
  * Nomes das tabelas para verificação
  */
-const TABLE_NAMES = ["cities", "indicators", "messages", "clients", "area_codes"];
+const TABLE_NAMES = ["cities", "indicators", "messages", "clients", "area_codes", "calendar"];
 
 /**
  * Inicializa o banco de dados com todas as tabelas, índices e triggers
@@ -199,7 +207,7 @@ async function initializeDatabase() {
         }
 
         await debug(
-          `📊 Status das tabelas: cities=${tablesExist.cities}, indicators=${tablesExist.indicators}, messages=${tablesExist.messages}, clients=${tablesExist.clients}, ddd=${tablesExist.ddd}`
+          `📊 Status das tabelas: cities=${tablesExist.cities}, indicators=${tablesExist.indicators}, messages=${tablesExist.messages}, clients=${tablesExist.clients}, ddd=${tablesExist.area_codes}, calendar=${tablesExist.calendar}`
         );
 
         // Cria tabelas
@@ -244,7 +252,7 @@ async function initializeDatabase() {
         }
 
         await debug(
-          `🔍 Verificação final das tabelas: cities=${finalCheck.cities}, indicators=${finalCheck.indicators}, messages=${finalCheck.messages}, clients=${finalCheck.clients}, ddd=${finalCheck.ddd}`
+          `🔍 Verificação final das tabelas: cities=${finalCheck.cities}, indicators=${finalCheck.indicators}, messages=${finalCheck.messages}, clients=${finalCheck.clients}, ddd=${finalCheck.area_codes}, calendar=${finalCheck.calendar}`
         );
 
         // Valida se todas as tabelas foram criadas

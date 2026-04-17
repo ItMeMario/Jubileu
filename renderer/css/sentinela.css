@@ -984,3 +984,186 @@
     from { opacity: 0; }
     to { opacity: 1; }
 }
+
+/* ========================================
+   Calendário & Linha do Tempo
+   ======================================== */
+.calendario-layout {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 150px);
+    width: 100%;
+}
+
+.timeline-container {
+    width: 350px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden;
+    background: rgba(30, 30, 30, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.timeline-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    margin-top: 15px;
+    position: relative;
+}
+
+.timeline-list::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(233, 30, 99, 0.3);
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 40px;
+    margin-bottom: 25px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 8px;
+    top: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #E91E63;
+    border: 3px solid #1e1e1e;
+    box-shadow: 0 0 10px rgba(233, 30, 99, 0.5);
+    z-index: 2;
+}
+
+.timeline-content {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 15px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.timeline-item:hover .timeline-content {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(233, 30, 99, 0.2);
+    border-color: rgba(233, 30, 99, 0.3);
+}
+
+.timeline-date {
+    font-size: 12px;
+    color: #E91E63;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.timeline-title {
+    font-size: 15px;
+    color: #fff;
+    margin: 0 0 5px 0;
+    font-weight: 600;
+}
+
+.timeline-desc {
+    font-size: 13px;
+    color: #aaa;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.timeline-delete {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 14px;
+    transition: color 0.2s;
+}
+
+.timeline-item:hover .timeline-delete {
+    color: #EF5350;
+}
+
+.calendar-container {
+    flex: 1;
+    background: rgba(30, 30, 30, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#fullcalendar-el {
+    flex: 1;
+}
+
+/* FullCalendar Dark Mode */
+.fc {
+    color: #ddd;
+    font-family: inherit;
+}
+.fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+.fc-day-today {
+    background: rgba(233, 30, 99, 0.1) !important;
+}
+.fc-event {
+    background-color: #E91E63;
+    border-color: #C2185B;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+.fc-button-primary {
+    background-color: rgba(233, 30, 99, 0.8) !important;
+    border-color: transparent !important;
+}
+.fc-button-primary:hover {
+    background-color: #E91E63 !important;
+}
+.fc-button-active {
+    background-color: #C2185B !important;
+}
+
+/* Modal Form */
+.modal-overlay.hidden {
+    display: none !important;
+}
+
+.modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    font-size: 13px;
+    color: #aaa;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}

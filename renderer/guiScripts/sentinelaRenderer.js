@@ -895,12 +895,144 @@ function escapeHtml(text) {
 }
 
 // ========================================
+// Calendário & Linha do Tempo
+// ========================================
+let calendar = null;
+
+async function initCalendar() {
+    const modal = document.getElementById('evento-modal');
+    const calendarEl = document.getElementById('fullcalendar-el');
+    if (!calendarEl) return;
+
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'pt-br',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        buttonText: {
+            today: 'Hoje',
+            month: 'Mês',
+            week: 'Semana',
+            day: 'Dia'
+        },
+        height: '100%',
+        dateClick: function(info) {
+            openEventModal(info.dateStr);
+        },
+        events: async function(info, successCallback, failureCallback) {
+            const result = await window.sentinelaAPI.getEvents();
+            if (result.success && result.data) {
+                const events = result.data.map(event => ({
+                    id: event.id,
+                    title: event.titulo,
+                    start: event.data,
+                    description: event.descricao
+                }));
+                successCallback(events);
+            } else {
+                failureCallback();
+            }
+        }
+    });
+
+    // Renderizar quando a tab for ativada
+    document.querySelector('.tab-btn[data-tab="calendario"]').addEventListener('click', () => {
+        setTimeout(() => {
+            calendar.render();
+            loadTimeline();
+        }, 100);
+    });
+
+    // Botão "Novo Evento"
+    document.getElementById('btn-open-modal').addEventListener('click', () => {
+        openEventModal(new Date().toISOString().split('T')[0]);
+    });
+
+    // Cancelar modal
+    document.getElementById('btn-cancel-evento').addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    // Salvar evento
+    document.getElementById('btn-save-evento').addEventListener('click', async () => {
+        const data = document.getElementById('evento-data').value;
+        const titulo = document.getElementById('evento-titulo').value.trim();
+        const descricao = document.getElementById('evento-descricao').value.trim();
+
+        if (!data || !titulo) {
+            alert('Data e título são obrigatórios.');
+            return;
+        }
+
+        const result = await window.sentinelaAPI.createEvent({ data, titulo, descricao });
+        if (result.success) {
+            modal.classList.add('hidden');
+            calendar.refetchEvents();
+            loadTimeline();
+        } else {
+            alert('Erro ao criar evento: ' + result.error);
+        }
+    });
+}
+
+function openEventModal(dateStr) {
+    const modal = document.getElementById('evento-modal');
+    document.getElementById('evento-data').value = dateStr;
+    document.getElementById('evento-titulo').value = '';
+    document.getElementById('evento-descricao').value = '';
+    modal.classList.remove('hidden');
+}
+
+async function loadTimeline() {
+    const listEl = document.getElementById('timeline-list');
+    const result = await window.sentinelaAPI.getEvents();
+    
+    if (!result.success || !result.data || result.data.length === 0) {
+        listEl.innerHTML = '<p class="placeholder-text">Nenhum evento registrado.</p>';
+        return;
+    }
+
+    listEl.innerHTML = result.data.map(event => {
+        const dateParts = event.data.split('-');
+        const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : event.data;
+        
+        return `
+            <div class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                    <button class="timeline-delete" onclick="deleteEvent(${event.id})" title="Excluir evento">✕</button>
+                    <div class="timeline-date">${formattedDate}</div>
+                    <h3 class="timeline-title">${escapeHtml(event.titulo)}</h3>
+                    ${event.descricao ? `<p class="timeline-desc">${escapeHtml(event.descricao)}</p>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.deleteEvent = async function(id) {
+    if (confirm('Tem certeza que deseja excluir este evento?')) {
+        const result = await window.sentinelaAPI.deleteEvent(id);
+        if (result.success) {
+            calendar.refetchEvents();
+            loadTimeline();
+        } else {
+            alert('Erro ao excluir evento: ' + result.error);
+        }
+    }
+};
+
+// ========================================
 // Initialize
 // ========================================
 document.addEventListener('DOMContentLoaded', async () => {
     initTabs();
     initImport();
     initRegistros();
+    initCalendar();
     await loadStats(); // Carregar estatísticas para alimentar o mapa
     await initMap();
 });

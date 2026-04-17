@@ -625,6 +625,18 @@ class IPCManager {
       "sentinela-get-import-stats",
       this.handlers.sentinela.getImportStats.bind(this.handlers.sentinela)
     );
+    ipcMain.handle(
+      "sentinela-create-event",
+      this.handlers.sentinela.createCalendarEvent.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-get-events",
+      this.handlers.sentinela.getCalendarEvents.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-delete-event",
+      this.handlers.sentinela.deleteCalendarEvent.bind(this.handlers.sentinela)
+    );
     console.log("Handlers de Sentinela registrados");
   }
 
@@ -727,6 +739,9 @@ class IPCManager {
       "sentinela-get-area-codes",
       "sentinela-clear-area-codes",
       "sentinela-get-import-stats",
+      "sentinela-create-event",
+      "sentinela-get-events",
+      "sentinela-delete-event",
       "crm-get-manifests",
       "crm-generate-pdf"
     ];
