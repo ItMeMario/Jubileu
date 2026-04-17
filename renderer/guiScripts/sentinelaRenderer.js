@@ -43,6 +43,7 @@ let currentCSVContent = null;
 let currentPage = 0;
 const pageSize = 50;
 let currentDDDFilter = '';
+let globalDDDStats = {}; // Armazena contagem de números por DDD
 
 // ========================================
 // Tab Navigation
@@ -525,6 +526,14 @@ async function loadStats() {
             document.getElementById('stat-total').textContent = stats.total || 0;
             document.getElementById('stat-ddds').textContent = stats.porDDD ? stats.porDDD.length : 0;
             document.getElementById('stat-imports').textContent = stats.porPrioridade ? stats.porPrioridade.length : 0;
+            
+            // Atualiza cache global de DDDs
+            globalDDDStats = {};
+            if (stats.porDDD) {
+                stats.porDDD.forEach(item => {
+                    globalDDDStats[item.ddd] = item.count;
+                });
+            }
         }
     } catch (error) {
         console.error('Erro ao carregar stats:', error);
@@ -587,6 +596,8 @@ async function initMap() {
 
         echarts.registerMap('Brasil', geoJson);
 
+        let maxNumeros = 1;
+
         // Preparamos os dados originais do mapa
         const originalMapData = geoJson.features.map(feature => {
             const nomeEstado = feature.properties.name || feature.properties.NAME_1; 
@@ -599,9 +610,12 @@ async function initMap() {
 
             const stateInfo = estadoKey ? dddData[estadoKey] : { uf: '??', ddds: [] };
 
+            const totalNumeros = stateInfo.ddds.reduce((sum, ddd) => sum + (globalDDDStats[ddd.toString()] || 0), 0);
+            if (totalNumeros > maxNumeros) maxNumeros = totalNumeros;
+
             return {
                 name: nomeEstado,
-                value: stateInfo.ddds.length,
+                value: totalNumeros,
                 stateData: stateInfo
             };
         });
@@ -617,11 +631,12 @@ async function initMap() {
                 formatter: function (params) {
                     if (!params.data) return params.name;
                     const { uf, ddds } = params.data.stateData;
+                    const val = params.data.value;
                     return `
                         <div style="font-weight:bold; font-size: 16px; border-bottom:1px solid #e91e63; padding-bottom:5px; margin-bottom:5px;">
                             ${params.name} (${uf})
                         </div>
-                        <div>Total de DDDs: <span style="color:#E91E63; font-weight:bold">${ddds.length}</span></div>
+                        <div>Números Registrados: <span style="color:#E91E63; font-weight:bold">${val}</span></div>
                         <div style="margin-top:5px; max-width: 200px; white-space: normal;">
                             DDDs: ${ddds.join(', ')}
                         </div>
@@ -630,8 +645,8 @@ async function initMap() {
             },
             visualMap: {
                 show: false,
-                min: 1,
-                max: 9,
+                min: 0,
+                max: maxNumeros,
                 inRange: {
                     color: ['#1e1e1e', '#611632', '#9c1c44', '#E91E63', '#ff4081']
                 },
@@ -758,7 +773,58 @@ function updateSidebar(stateName, stateData) {
         return;
     }
 
-    const dddsHtml = stateData.ddds.map(d => `<span class="ddd-item">${d}</span>`).join('');
+    // Calcular estatísticas para os DDDs deste estado
+    const dddStatsList = stateData.ddds.map(ddd => {
+        return {
+            ddd: ddd,
+            count: globalDDDStats[ddd.toString()] || 0
+        };
+    });
+
+    // Ordenar por quantidade decrescente
+    dddStatsList.sort((a, b) => b.count - a.count);
+    
+    const totalNumeros = dddStatsList.reduce((sum, d) => sum + d.count, 0);
+
+    // Pegar os top 5 DDDs de TODO o Brasil (Geral)
+    const allDDDStats = Object.keys(globalDDDStats).map(ddd => ({
+        ddd: ddd,
+        count: globalDDDStats[ddd]
+    }));
+    allDDDStats.sort((a, b) => b.count - a.count);
+    const top5Geral = allDDDStats.slice(0, 5).filter(d => d.count > 0);
+    
+    let top5Html = '';
+    if (top5Geral.length > 0) {
+        top5Html = `
+            <div style="margin-top: 15px; padding: 12px; background: rgba(233, 30, 99, 0.05); border-radius: 8px; border: 1px solid rgba(233, 30, 99, 0.2);">
+                <h4 style="margin: 0 0 10px 0; color: #E91E63; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">🏆 Top 5 DDDs (Geral)</h4>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    ${top5Geral.map((d, index) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;">
+                            <span><strong style="color: #ccc; margin-right: 5px;">${index + 1}º</strong> DDD ${d.ddd}</span>
+                            <span style="font-weight: bold; color: #fff; background: #E91E63; padding: 2px 6px; border-radius: 10px; font-size: 11px;">${d.count}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // Renderizar a lista completa de DDDs
+    const dddsHtml = dddStatsList.map(d => {
+        const hasNumbers = d.count > 0;
+        const borderColor = hasNumbers ? 'rgba(233, 30, 99, 0.5)' : 'rgba(255, 255, 255, 0.1)';
+        const bgColor = hasNumbers ? 'rgba(233, 30, 99, 0.1)' : 'rgba(0, 0, 0, 0.2)';
+        const textColor = hasNumbers ? '#fff' : '#888';
+        const countColor = hasNumbers ? '#E91E63' : '#555';
+        
+        return `
+        <div style="display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 48px; margin: 3px; padding: 6px 4px; border: 1px solid ${borderColor}; border-radius: 6px; background: ${bgColor}; transition: all 0.2s ease;">
+            <span style="font-weight: bold; font-size: 14px; color: ${textColor};">${d.ddd}</span>
+            <span style="font-size: 10px; font-weight: bold; color: ${countColor}; margin-top: 2px;">${hasNumbers ? d.count : '-'}</span>
+        </div>`;
+    }).join('');
 
     infoContainer.innerHTML = `
         <div class="state-name">
@@ -771,13 +837,15 @@ function updateSidebar(stateName, stateData) {
                 <span class="stat-value">${stateData.ddds.length}</span>
             </div>
             <div class="stat-row">
-                <span>Status da Região</span>
-                <span class="stat-value" style="color: #4CAF50;">Mapeada</span>
+                <span>Total de Números</span>
+                <span class="stat-value" style="color: ${totalNumeros > 0 ? '#4CAF50' : '#888'}; font-weight: bold;">${totalNumeros}</span>
             </div>
         </div>
 
-        <h3 style="margin-top: 20px; font-size: 16px; color: #aaa;">Códigos de Área (DDD):</h3>
-        <div class="ddd-list">
+        ${top5Html}
+
+        <h3 style="margin-top: 20px; font-size: 13px; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;">Todos os DDDs:</h3>
+        <div class="ddd-list" style="display: flex; flex-wrap: wrap; margin-top: 10px;">
             ${dddsHtml}
         </div>
     `;
@@ -833,5 +901,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTabs();
     initImport();
     initRegistros();
+    await loadStats(); // Carregar estatísticas para alimentar o mapa
     await initMap();
 });
