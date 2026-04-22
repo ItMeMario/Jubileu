@@ -113,6 +113,25 @@ const TABLE_QUERIES = [
     tel TEXT NOT NULL UNIQUE,
     status TEXT DEFAULT 'pending'
   )`,
+  `CREATE TABLE IF NOT EXISTS area_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    priority INTEGER,
+    name TEXT,
+    ddd TEXT,
+    tel TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE TABLE IF NOT EXISTS calendar (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data DATE NOT NULL,
+    titulo TEXT NOT NULL,
+    cidade TEXT,
+    estado TEXT,
+    lat REAL,
+    lng REAL,
+    descricao TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`,
 ];
 
 /**
@@ -125,6 +144,7 @@ const INDEX_QUERIES = [
   `CREATE INDEX IF NOT EXISTS idx_indicators_horario ON indicators(horario_escolhido)`,
   `CREATE INDEX IF NOT EXISTS idx_indicators_created_at ON indicators(created_at)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_tel ON clients(tel)`,
+  `CREATE INDEX IF NOT EXISTS idx_calendar_data ON calendar(data)`,
 ];
 
 /**
@@ -153,7 +173,7 @@ const TRIGGER_QUERIES = [
 /**
  * Nomes das tabelas para verificação
  */
-const TABLE_NAMES = ["cities", "indicators", "messages", "clients"];
+const TABLE_NAMES = ["cities", "indicators", "messages", "clients", "area_codes", "calendar"];
 
 /**
  * Inicializa o banco de dados com todas as tabelas, índices e triggers
@@ -191,7 +211,7 @@ async function initializeDatabase() {
         }
 
         await debug(
-          `📊 Status das tabelas: cities=${tablesExist.cities}, indicators=${tablesExist.indicators}, messages=${tablesExist.messages}, clients=${tablesExist.clients}`
+          `📊 Status das tabelas: cities=${tablesExist.cities}, indicators=${tablesExist.indicators}, messages=${tablesExist.messages}, clients=${tablesExist.clients}, ddd=${tablesExist.area_codes}, calendar=${tablesExist.calendar}`
         );
 
         // Cria tabelas
@@ -218,6 +238,18 @@ async function initializeDatabase() {
 
         await debug("✅ Índices criados/verificados");
 
+        // Migration para adicionar novas colunas em calendar caso a tabela já exista
+        const calendarCols = ["cidade", "estado", "lat", "lng"];
+        for (const col of calendarCols) {
+          try {
+            const colType = (col === "lat" || col === "lng") ? "REAL" : "TEXT";
+            await runQuery(db, `ALTER TABLE calendar ADD COLUMN ${col} ${colType}`);
+            await debug(`✅ Coluna '${col}' adicionada em calendar`);
+          } catch (err) {
+            // Ignorar erro se a coluna já existir
+          }
+        }
+
         // Cria triggers
         for (const triggerQuery of TRIGGER_QUERIES) {
           try {
@@ -236,7 +268,7 @@ async function initializeDatabase() {
         }
 
         await debug(
-          `🔍 Verificação final das tabelas: cities=${finalCheck.cities}, indicators=${finalCheck.indicators}, messages=${finalCheck.messages}, clients=${finalCheck.clients}`
+          `🔍 Verificação final das tabelas: cities=${finalCheck.cities}, indicators=${finalCheck.indicators}, messages=${finalCheck.messages}, clients=${finalCheck.clients}, ddd=${finalCheck.area_codes}, calendar=${finalCheck.calendar}`
         );
 
         // Valida se todas as tabelas foram criadas

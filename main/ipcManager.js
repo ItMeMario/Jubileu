@@ -13,6 +13,7 @@ const DeeJayHandlers = require("./ipc/deeJayHandlers");
 const UpdateHandlers = require("./ipc/updateHandlers");
 const CRMHandlers = require("./ipc/crmHandlers");
 const GoatHandlers = require("./ipc/goatHandlers");
+const SentinelaHandlers = require("./ipc/sentinelaHandlers");
 
 
 class IPCManager {
@@ -31,7 +32,7 @@ class IPCManager {
       update: null,
       crm: null,
       goat: null,
-
+      sentinela: null,
     };
   }
 
@@ -52,7 +53,7 @@ class IPCManager {
       this.handlers.update = new UpdateHandlers();
       this.handlers.crm = new CRMHandlers(modules.windowManager);
       this.handlers.goat = new GoatHandlers(modules.windowManager);
-
+      this.handlers.sentinela = new SentinelaHandlers(modules.windowManager);
 
       // Registra handlers do WhatsApp
       this.registerWhatsAppHandlers();
@@ -96,6 +97,8 @@ class IPCManager {
       // Registra handlers de Goat
       this.registerGoatHandlers();
 
+      // Registra handlers de Sentinela
+      this.registerSentinelaHandlers();
 
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
@@ -582,6 +585,14 @@ class IPCManager {
       "crm-remove-instance",
       this.handlers.crm.removeInstance.bind(this.handlers.crm)
     );
+    ipcMain.handle(
+      "crm-get-manifests",
+      this.handlers.crm.getManifests.bind(this.handlers.crm)
+    );
+    ipcMain.handle(
+      "crm-generate-pdf",
+      this.handlers.crm.generatePdf.bind(this.handlers.crm)
+    );
     console.log("Handlers de CRM registrados");
   }
 
@@ -591,6 +602,42 @@ class IPCManager {
       this.handlers.goat.openGoat.bind(this.handlers.goat)
     );
     console.log("Handlers de Goat registrados");
+  }
+
+  registerSentinelaHandlers() {
+    ipcMain.handle(
+      "open-sentinela",
+      this.handlers.sentinela.openSentinela.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-import-csv",
+      this.handlers.sentinela.importCSV.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-get-area-codes",
+      this.handlers.sentinela.getAreaCodes.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-clear-area-codes",
+      this.handlers.sentinela.clearAreaCodes.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-get-import-stats",
+      this.handlers.sentinela.getImportStats.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-create-event",
+      this.handlers.sentinela.createCalendarEvent.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-get-events",
+      this.handlers.sentinela.getCalendarEvents.bind(this.handlers.sentinela)
+    );
+    ipcMain.handle(
+      "sentinela-delete-event",
+      this.handlers.sentinela.deleteCalendarEvent.bind(this.handlers.sentinela)
+    );
+    console.log("Handlers de Sentinela registrados");
   }
 
   // ========================================
@@ -687,7 +734,16 @@ class IPCManager {
       "check-update",
       "trigger-update",
       "open-goat",
-
+      "open-sentinela",
+      "sentinela-import-csv",
+      "sentinela-get-area-codes",
+      "sentinela-clear-area-codes",
+      "sentinela-get-import-stats",
+      "sentinela-create-event",
+      "sentinela-get-events",
+      "sentinela-delete-event",
+      "crm-get-manifests",
+      "crm-generate-pdf"
     ];
 
     events.forEach((event) => {

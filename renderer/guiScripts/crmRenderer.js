@@ -4,11 +4,15 @@
 
 let btnCreateInstance;
 let instancesList;
+let manifestsList;
+let btnRefreshManifests;
 
 function initElements() {
     btnCreateInstance = document.getElementById('btn-create-crm-instance');
     instancesList = document.getElementById('crm-instances-list');
-    console.log("Elementos inicializados:", { btnCreateInstance, instancesList });
+    manifestsList = document.getElementById('crm-manifests-list');
+    btnRefreshManifests = document.getElementById('btn-refresh-manifests');
+    console.log("Elementos inicializados:", { btnCreateInstance, instancesList, manifestsList });
 }
 
 // Mapa local para rastrear status (opcional, mas bom para update rápido)
@@ -96,6 +100,56 @@ async function renderInstances() {
     } catch (error) {
         console.error("Erro ao carregar instâncias:", error);
         instancesList.innerHTML = `<div class="error">Erro crítico: ${error.message}</div>`;
+    }
+}
+
+async function renderManifests() {
+    if (!manifestsList) return;
+
+    if (manifestsList.children.length === 0) {
+        manifestsList.innerHTML = '<div class="loading">Carregando manifestos...</div>';
+    }
+
+    try {
+        const result = await window.crmAPI.getManifests();
+        
+        if (result.success) {
+            const manifests = result.manifests;
+            
+            if (manifests.length === 0) {
+                manifestsList.innerHTML = '<div class="empty-state">Nenhum manifesto CRM encontrado.</div>';
+                return;
+            }
+
+            manifestsList.innerHTML = '';
+            manifests.forEach(manifest => {
+                const card = document.createElement('div');
+                card.className = 'manifest-item';
+                
+                card.innerHTML = `
+                    <div class="instance-header">
+                        <h4>Manifesto ${manifest.id || ''}</h4>
+                        <span class="status-badge connected">Pronto</span>
+                    </div>
+                    <textarea class="manifest-content" spellcheck="false" placeholder="Nenhum conteúdo definido"></textarea>
+                    <div class="instance-actions" style="margin-top: 15px;">
+                        <button class="btn-action btn-connect" onclick="handleGeneratePdf(this, '${manifest.id || Date.now()}')">📄 Gravar PDF</button>
+                    </div>
+                `;
+                
+                // Safely assign content to avoid HTML injection
+                card.querySelector('.manifest-content').value = manifest.message_content || '';
+                // Optional: set the dataset if kept for backward compatibility, but we rely on value now
+                card.dataset.content = manifest.message_content || '';
+
+                manifestsList.appendChild(card);
+            });
+        } else {
+            manifestsList.innerHTML = `<div class="error">Erro ao carregar: ${result.error}</div>`;
+        }
+    } catch (error) {
+        console.error("Erro ao carregar manifestos:", error);
+        manifestsList.innerHTML = `<div class="error">Erro crítico: ${error.message}</div>`;
     }
 }
 
@@ -241,6 +295,40 @@ window.handleRemove = async (instanceId) => {
     }
 };
 
+window.handleGeneratePdf = async (btnElement, id) => {
+    try {
+        const card = btnElement.closest('.manifest-item');
+        const content = card.querySelector('.manifest-content').value;
+        
+        // Abre o modal HTML customizado
+        const customTitle = await window.customPrompt("Qual será o título deste manifesto?", `Manifesto_${id}`);
+        if (!customTitle) {
+            // Se o usuário cancelou o modal, apenas abortar
+            return;
+        }
+
+        btnElement.textContent = "Gerando...";
+        btnElement.disabled = true;
+
+        const result = await window.crmAPI.generatePdf({
+            content: content,
+            title: customTitle
+        });
+
+        if (result.success) {
+            alert("PDF gerado com sucesso!\nSalvo em: " + result.filePath);
+        } else if (result.canceled) {
+            console.log("Geração de PDF cancelada pelo usuário.");
+        } else {
+            alert("Erro ao gerar PDF: " + result.error);
+        }
+    } catch (error) {
+        alert("Erro inesperado: " + error.message);
+    } finally {
+        btnElement.innerHTML = "📄 Gravar PDF";
+        btnElement.disabled = false;
+    }
+};
 
 // Função de inicialização principal
 function initializeCRM() {
@@ -307,6 +395,7 @@ function initializeCRM() {
 
     if (btnCancel) btnCancel.onclick = closeModal;
     if (btnConfirm) btnConfirm.onclick = handleCreate;
+    if (btnRefreshManifests) btnRefreshManifests.onclick = renderManifests;
     
     // Fechar ao clicar fora
     if (modal) {
@@ -323,6 +412,7 @@ function initializeCRM() {
     }
 
     renderInstances();
+    renderManifests();
 }
 
 // Inicializa

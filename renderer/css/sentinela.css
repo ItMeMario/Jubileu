@@ -1,0 +1,34 @@
+/* ========================================
+   Sentinela Dashboard CSS
+   Arquivo principal - Importa todos os módulos CSS
+   ======================================== */
+
+/* Utilitários (scrollbar, animações) */
+@import url('./sentinelaCssModules/utilsSCM.css');
+
+/* Layout base (container, tab contents) */
+@import url('./sentinelaCssModules/layoutSCM.css');
+
+/* Header */
+@import url('./sentinelaCssModules/headerSCM.css');
+
+/* Abas de Navegação */
+@import url('./sentinelaCssModules/tabsSCM.css');
+
+/* Controles Compartilhados (inputs, botões) */
+@import url('./sentinelaCssModules/controlsSCM.css');
+
+/* Mapa Tab */
+@import url('./sentinelaCssModules/mapSCM.css');
+
+/* Import CSV Tab */
+@import url('./sentinelaCssModules/importSCM.css');
+
+/* Registros Tab */
+@import url('./sentinelaCssModules/recordsSCM.css');
+
+/* Calendário Tab */
+@import url('./sentinelaCssModules/calendarSCM.css');
+
+/* Modais globais */
+@import url('./sentinelaCssModules/modalSCM.css');

@@ -1,4 +1,8 @@
 const crmService = require("../../services/crmService");
+const messageService = require("../../services/messageService");
+const { dialog } = require("electron");
+const puppeteer = require("puppeteer");
+const path = require("path");
 
 class CRMHandlers {
   constructor(windowManager) {
@@ -90,6 +94,140 @@ class CRMHandlers {
       } catch (error) {
            return { success: false, error: error.message };
       }
+  }
+
+  async getManifests() {
+    try {
+      console.log("Buscando manifestos CRM...");
+      const allMessages = await messageService.getMessages();
+      const manifests = allMessages.filter(m => m.message_type === "crm_manifest");
+      return { success: true, manifests };
+    } catch (error) {
+      console.error("Erro ao buscar manifestos CRM:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async generatePdf(event, { content, title }) {
+    try {
+      console.log("Gerando PDF com Puppeteer...");
+      const { filePath } = await dialog.showSaveDialog({
+        title: "Salvar PDF do Manifesto",
+        defaultPath: title ? `${title}.pdf` : "Manifesto.pdf",
+        filters: [
+          { name: "Documentos em PDF", extensions: ["pdf"] }
+        ]
+      });
+
+      if (!filePath) {
+        return { success: false, canceled: true };
+      }
+
+      const displayTitle = path.basename(filePath, path.extname(filePath));
+
+      let formattedContent = (content || "")
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+        .replace(/_(.*?)_/g, '<em>$1</em>')
+        .replace(/~(.*?)~/g, '<del>$1</del>')
+        .replace(/```([\s\S]*?)```/g, '<pre style="margin:0; padding:10px; background:#f5f5f5; border-radius:4px;"><code>$1</code></pre>');
+
+      // Format HTML for PDF - Professional and easy to read
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+            
+            body { 
+              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+              padding: 0; 
+              margin: 0;
+              color: #2c3e50; 
+              background-color: #ffffff;
+            }
+            .page {
+              padding: 50px 70px;
+            }
+            .header {
+              border-bottom: 2px solid #9C27B0;
+              padding-bottom: 20px;
+              margin-bottom: 40px;
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-end;
+            }
+            .header-titles {
+              flex: 1;
+            }
+            h1 { 
+              color: #2c3e50; 
+              margin: 0 0 8px 0;
+              font-size: 28pt;
+              font-weight: 700;
+              line-height: 1.2;
+            }
+            .subtitle {
+              color: #7f8c8d;
+              font-size: 11pt;
+              margin: 0;
+            }
+            .content { 
+              margin-top: 30px; 
+              white-space: pre-wrap; 
+              font-size: 12pt; 
+              line-height: 1.8;
+              color: #34495e;
+              text-align: justify;
+            }
+            .footer { 
+              margin-top: 60px; 
+              padding-top: 20px;
+              border-top: 1px solid #ecf0f1;
+              font-size: 9pt; 
+              color: #95a5a6; 
+              text-align: center; 
+            }
+          </style>
+        </head>
+        <body>
+          <div class="page">
+            <div class="header">
+              <div class="header-titles">
+                <h1>${displayTitle}</h1>
+              </div>
+            </div>
+            
+            <div class="content">${formattedContent}</div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const browser = await puppeteer.launch({ headless: 'new' });
+      const page = await browser.newPage();
+      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+      
+      // Professional margins and formatting
+      await page.pdf({ 
+        path: filePath, 
+        format: 'A4', 
+        printBackground: true,
+        margin: { top: '20px', bottom: '20px' }
+      });
+      
+      await browser.close();
+
+      console.log("PDF gerado e salvo em:", filePath);
+      return { success: true, filePath };
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      return { success: false, error: error.message };
+    }
   }
 }
 

@@ -1,0 +1,83 @@
+/* renderer/css/hotkeys.css */
+#floating-toolbar {
+    position: absolute;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    padding: 6px;
+    display: flex;
+    gap: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    align-items: center;
+}
+
+#floating-toolbar.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.toolbar-btn {
+    background: transparent;
+    border: none;
+    color: #e0e0e0;
+    font-family: monospace, sans-serif;
+    font-size: 14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.toolbar-btn:hover {
+    background-color: #333333;
+}
+
+.toolbar-separator {
+    width: 1px;
+    height: 20px;
+    background-color: #444;
+    margin: 0 4px;
+}
+
+/* Modificação no textarea manifest-content para ficar agradável */
+textarea.manifest-content {
+    width: 100%;
+    min-height: 150px;
+    resize: vertical;
+    padding: 12px;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fcfcfc;
+    color: #333;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+}
+
+textarea.manifest-content:focus {
+    outline: none;
+    border-color: #9C27B0;
+    background-color: #fff;
+}
+
+/* Dark mode adjustment se existir darkMode */
+body.dark-mode textarea.manifest-content {
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #f0f0f0;
+}
+
+body.dark-mode textarea.manifest-content:focus {
+    border-color: #bb86fc;
+}

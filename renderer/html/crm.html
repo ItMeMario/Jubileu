@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../css/globalCss.css">
     <link rel="stylesheet" href="../css/crm.css">
     <link rel="stylesheet" href="../css/darkMode.css">
+    <link rel="stylesheet" href="../css/hotkeys.css">
 </head>
 
 <body>
@@ -26,6 +27,20 @@
                 <!-- Lista será renderizada aqui -->
             </div>
         </div>
+
+        <div class="crm-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>Manifestos CRM</h3>
+                <button id="btn-refresh-manifests" class="btn-secondary" style="background-color: transparent; border: 1px solid #ddd; padding: 5px 10px; cursor: pointer;">
+                    🔄 Atualizar
+                </button>
+            </div>
+
+            <div id="crm-manifests-list" class="crm-manifests-grid">
+                <!-- Lista de manifestos será renderizada aqui -->
+            </div>
+        </div>
+
     </div>
 
     <!-- Modal de Criação -->
@@ -50,6 +65,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="../guiScripts/utils/darkModeManager.js"></script>
     <script src="../guiScripts/utils/confirmModal.js"></script>
+    <script src="../guiScripts/utils/promptModal.js"></script>
+    <script src="../guiScripts/utils/hotkeys.js"></script>
     <script src="../guiScripts/crmRenderer.js"></script>
 </body>
 

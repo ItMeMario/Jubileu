@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="../css/dataBase.css">
     <link rel="stylesheet" href="../css/modalCss/confirmModal.css">
     <link rel="stylesheet" href="../css/darkMode.css">
+    <link rel="stylesheet" href="../css/hotkeys.css">
 </head>
 
 <body>
@@ -91,7 +92,7 @@
             <!-- Campo de conteúdo da mensagem (escondido quando audio_invite está selecionado) -->
             <div id="message-content-group" class="form-group">
                 <label for="message-content">Conteúdo da Mensagem:</label>
-                <textarea id="message-content" placeholder="Digite o conteúdo da mensagem aqui..." rows="6"></textarea>
+                <textarea id="message-content" class="manifest-content" placeholder="Digite o conteúdo da mensagem aqui..." rows="6"></textarea>
             </div>
 
             <div class="button-group">
@@ -185,7 +186,7 @@
 
             <div class="form-group">
                 <label for="city-message">Mensagem:</label>
-                <textarea id="city-message" placeholder="Digite uma mensagem sobre a cidade..." rows="4"></textarea>
+                <textarea id="city-message" class="manifest-content" placeholder="Digite uma mensagem sobre a cidade..." rows="4"></textarea>
                 <div class="hint">Informações adicionais sobre a cidade</div>
             </div>
 
@@ -312,6 +313,7 @@
 
     <script src="../guiScripts/utils/darkModeManager.js"></script>
     <script src="../guiScripts/utils/confirmModal.js"></script>
+    <script src="../guiScripts/utils/hotkeys.js"></script>
     <script src="../guiConfig/configRenderer.js"></script>
     <script src="../guiScripts/messageRenderer.js"></script>
     <script src="../guiScripts/cityRenderer.js"></script>

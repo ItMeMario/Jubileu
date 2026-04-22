@@ -1,0 +1,25 @@
+/* renderer/css/sentinelaCssModules/layoutSCM.css */
+
+.sentinela-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+    color: var(--text-color, #e0e0e0);
+    background-color: var(--bg-color, #121212);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+}
+
+.tab-content {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.tab-content.active {
+    display: flex;
+    flex-direction: column;
+}

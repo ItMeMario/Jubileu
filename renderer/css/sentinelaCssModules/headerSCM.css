@@ -1,0 +1,31 @@
+/* renderer/css/sentinelaCssModules/headerSCM.css */
+
+.sentinela-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-title-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.sentinela-icon {
+    font-size: 36px;
+    filter: drop-shadow(0 0 10px rgba(233, 30, 99, 0.5));
+}
+
+.sentinela-title {
+    font-size: 28px;
+    margin: 0;
+    color: #E91E63;
+    text-shadow: 0 0 10px rgba(233, 30, 99, 0.3);
+}
+
+.sentinela-subtitle {
+    margin: 5px 0 0 50px;
+    font-size: 14px;
+    color: #888;
+}

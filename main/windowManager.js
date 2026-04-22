@@ -25,6 +25,11 @@ const {
   getGoatWindow,
   closeGoatWindow,
 } = require("../renderer/guiConfig/goatWindow");
+const {
+  createSentinelaWindow,
+  getSentinelaWindow,
+  closeSentinelaWindow,
+} = require("../renderer/guiConfig/sentinelaWindow");
 
 class WindowManager {
   constructor() {
@@ -217,6 +222,36 @@ class WindowManager {
 
   getGoatWindow() {
       return getGoatWindow();
+  }
+
+  // Métodos para janela Sentinela
+  openSentinelaWindow() {
+      try {
+          console.log("Abrindo Sentinela...");
+          let win = getSentinelaWindow();
+          if (!win) {
+              win = createSentinelaWindow();
+          } else {
+              win.focus();
+          }
+          return { success: true, message: "Janela Sentinela aberta" };
+      } catch (error) {
+          console.error("Erro ao abrir Sentinela:", error);
+          return { success: false, message: "Erro ao abrir Sentinela: " + error.message };
+      }
+  }
+
+  closeSentinelaWindow() {
+      try {
+          closeSentinelaWindow();
+          return { success: true, message: "Janela Sentinela fechada" };
+      } catch (error) {
+           return { success: false, message: "Erro ao fechar: " + error.message };
+      }
+  }
+
+  getSentinelaWindow() {
+      return getSentinelaWindow();
   }
 
   // Método para recriar janela principal (macOS)

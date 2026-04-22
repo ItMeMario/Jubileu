@@ -24,6 +24,7 @@ const MessageType = {
   // CRM
   CRM_WELCOME: "crm_welcome",
   CRM_TIPS: "crm_tips",
+  CRM_MANIFEST: "crm_manifest",
 
   // Erros
   CITY_ERROR: "city_error",

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jubileu - Sentinela</title>
+    <link rel="stylesheet" href="../css/globalCss.css">
+    <link rel="stylesheet" href="../css/darkMode.css">
+    <link rel="stylesheet" href="../css/sentinela.css">
+</head>
+<body>
+    <div class="sentinela-container">
+        <!-- Header -->
+        <header class="sentinela-header">
+            <div class="header-title-container">
+                <span class="sentinela-icon">👁️</span>
+                <h1 class="sentinela-title">Sentinela</h1>
+            </div>
+            <p class="sentinela-subtitle">Monitoramento e Distribuição de DDDs</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="sentinela-tabs">
+            <button class="tab-btn active" data-tab="mapa">
+                <span class="tab-icon">🗺️</span> Mapa
+            </button>
+            <button class="tab-btn" data-tab="import">
+                <span class="tab-icon">📥</span> Importar CSV
+            </button>
+            <button class="tab-btn" data-tab="registros">
+                <span class="tab-icon">📋</span> Registros
+            </button>
+            <button class="tab-btn" data-tab="calendario">
+                <span class="tab-icon">📅</span> Calendário
+            </button>
+        </nav>
+
+        <!-- ==================== ABA MAPA ==================== -->
+        <main id="tab-mapa" class="tab-content active">
+            <div class="dashboard">
+                <!-- Map Container -->
+                <div class="map-card">
+                    <div id="brazil-map" class="map-container"></div>
+                </div>
+                
+                <!-- Side Info Panel -->
+                <div class="info-card">
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button id="btn-map-ddds" class="modern-btn apply-btn" style="flex: 1;">DDDs</button>
+                        <button id="btn-map-eventos" class="modern-btn clear-btn" style="flex: 1;">Eventos</button>
+                    </div>
+                    <div id="ddds-info-section">
+                        <h2>Filtros</h2>
+                        <div class="filter-section">
+                            <span style="font-size: 14px; margin-bottom: 5px; display: block; color: #ccc;">Quantidade de DDDs:</span>
+                            <div class="filter-controls">
+                                <select id="filter-operator" class="modern-select">
+                                    <option value="<=">&lt;= (Até)</option>
+                                    <option value=">=">&gt;= (A partir de)</option>
+                                    <option value="==">= (Exatamente)</option>
+                                </select>
+                                <input type="number" id="filter-value" class="modern-input" min="1" max="9" value="2">
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="btn-apply-filter" class="modern-btn apply-btn">Filtrar</button>
+                                <button id="btn-clear-filter" class="modern-btn clear-btn">Limpar</button>
+                            </div>
+                        </div>
+
+                        <h2>Região Selecionada</h2>
+                        <div id="region-info" class="region-info-content">
+                            <p class="placeholder-text">Passe o mouse sobre um estado no mapa para visualizar a cobertura de DDDs.</p>
+                        </div>
+                    </div>
+                    
+                    <div id="eventos-timeline-section" style="display: none;">
+                        <h2 style="margin-bottom: 15px;"><span class="section-icon">🕰️</span> Próximos Eventos</h2>
+                        <div id="map-timeline-list" class="timeline-list">
+                            <!-- Itens da linha do tempo renderizados via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== ABA IMPORT ==================== -->
+        <main id="tab-import" class="tab-content">
+            <div class="import-layout">
+                <!-- Upload Section -->
+                <div class="import-card upload-card">
+                    <h2><span class="section-icon">📤</span> Upload de CSV</h2>
+                    <p class="import-description">
+                        Importe arquivos <strong>.csv</strong> com duas colunas: <code>Nome</code> e <code>Telefone</code>.
+                        Os números serão normalizados e separados em DDD + Telefone automaticamente.
+                    </p>
+
+                    <!-- Drop Zone -->
+                    <div id="drop-zone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <span class="drop-icon">📁</span>
+                            <p class="drop-text">Arraste um arquivo <strong>.csv</strong> aqui</p>
+                            <span class="drop-separator">ou</span>
+                            <label for="csv-file-input" class="file-select-btn">Selecionar Arquivo</label>
+                            <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+                        </div>
+                    </div>
+
+                    <!-- File Info -->
+                    <div id="file-info" class="file-info hidden">
+                        <div class="file-info-header">
+                            <span class="file-icon">📄</span>
+                            <div class="file-details">
+                                <span id="file-name" class="file-name">-</span>
+                                <span id="file-size" class="file-size">-</span>
+                            </div>
+                            <button id="btn-remove-file" class="btn-icon" title="Remover arquivo">✕</button>
+                        </div>
+                    </div>
+
+                    <!-- Import Button -->
+                    <button id="btn-import" class="modern-btn import-btn" disabled>
+                        <span class="btn-spinner hidden" id="import-spinner"></span>
+                        Importar Dados
+                    </button>
+                </div>
+
+                <!-- Results Section -->
+                <div class="import-card results-card">
+                    <h2><span class="section-icon">📊</span> Resultado da Importação</h2>
+                    
+                    <div id="import-result" class="import-result">
+                        <p class="placeholder-text">Nenhuma importação realizada ainda.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== ABA REGISTROS ==================== -->
+        <main id="tab-registros" class="tab-content">
+            <div class="registros-layout">
+                <!-- Stats Bar -->
+                <div class="stats-bar">
+                    <div class="stat-card">
+                        <span class="stat-label">Total de Registros</span>
+                        <span id="stat-total" class="stat-number">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">DDDs Distintos</span>
+                        <span id="stat-ddds" class="stat-number">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Imports Realizados</span>
+                        <span id="stat-imports" class="stat-number">0</span>
+                    </div>
+                </div>
+
+                <!-- Filters & Actions -->
+                <div class="registros-toolbar">
+                    <div class="toolbar-filters">
+                        <label for="filter-ddd-input" class="filter-label">Filtrar DDD:</label>
+                        <input type="text" id="filter-ddd-input" class="modern-input toolbar-input" placeholder="Ex: 11" maxlength="2">
+                        <button id="btn-filter-registros" class="modern-btn apply-btn small-btn">Filtrar</button>
+                        <button id="btn-clear-filter-registros" class="modern-btn clear-btn small-btn">Limpar</button>
+                    </div>
+
+                    <div class="toolbar-actions">
+                        <button id="btn-refresh-registros" class="modern-btn refresh-btn" title="Atualizar">🔄 Atualizar</button>
+                        <button id="btn-clear-all" class="modern-btn danger-btn" title="Limpar Registros">🗑️ Limpar</button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="table-container">
+                    <table id="registros-table" class="registros-table">
+                        <thead>
+                            <tr>
+                                <th>Prioridade</th>
+                                <th>Nome</th>
+                                <th>DDD</th>
+                                <th>Telefone</th>
+                                <th>Data Import</th>
+                            </tr>
+                        </thead>
+                        <tbody id="registros-tbody">
+                            <tr>
+                                <td colspan="5" class="empty-table">Nenhum registro encontrado</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button id="btn-prev-page" class="modern-btn clear-btn small-btn" disabled>← Anterior</button>
+                    <span id="pagination-info" class="pagination-info">Página 1</span>
+                    <button id="btn-next-page" class="modern-btn clear-btn small-btn" disabled>Próxima →</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== ABA CALENDARIO ==================== -->
+        <main id="tab-calendario" class="tab-content">
+            <div class="calendario-layout">
+                <!-- Timeline Section (Esquerda) -->
+                <div class="timeline-container info-card">
+                    <h2><span class="section-icon">🕰️</span> Linha do Tempo</h2>
+                    <div id="timeline-list" class="timeline-list">
+                        <!-- Itens da linha do tempo renderizados via JS -->
+                    </div>
+                </div>
+
+                <!-- Calendar Section (Direita) -->
+                <div class="calendar-container map-card">
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                        <button id="btn-open-modal" class="modern-btn apply-btn">Novo Evento</button>
+                    </div>
+                    <div id="fullcalendar-el"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Novo Evento -->
+    <div id="evento-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="modal-title">Novo Evento</h2>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="evento-data">Data</label>
+                    <input type="date" id="evento-data" class="modern-input">
+                </div>
+                <div class="form-group">
+                    <label for="evento-titulo">Título do Evento</label>
+                    <input type="text" id="evento-titulo" class="modern-input" placeholder="Ex: Show na Praça" required>
+                </div>
+                <div class="form-group">
+                    <label for="evento-cidade">Cidade</label>
+                    <input type="text" id="evento-cidade" class="modern-input" placeholder="Digite para buscar..." list="cidades-list" autocomplete="off" required>
+                    <datalist id="cidades-list"></datalist>
+                </div>
+                <div class="form-group">
+                    <label for="evento-descricao">Descrição (Opcional)</label>
+                    <textarea id="evento-descricao" class="modern-input" rows="3" placeholder="Detalhes do evento..."></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-cancel-evento" class="modern-btn clear-btn">Cancelar</button>
+                <button id="btn-save-evento" class="modern-btn apply-btn">Salvar Evento</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bibliotecas e Scripts -->
+    <script src="../libs/echarts.min.js"></script>
+    <script src="../libs/fullcalendar.min.js"></script>
+    <script src="../guiScripts/utils/darkModeManager.js"></script>
+    <script src="../guiScripts/utils/confirmModal.js"></script>
+    <script type="module" src="../guiScripts/sentinelaRenderer.js"></script>
+</body>
+</html>

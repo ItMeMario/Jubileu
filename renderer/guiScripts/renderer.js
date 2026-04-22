@@ -9,6 +9,7 @@ const btnClearCache = document.getElementById("btn-clear-cache");
 const btnDeeJay = document.getElementById("btn-dee-jay"); // Adicionado: Botão Dee Jay
 const btnCRM = document.getElementById("btn-crm"); // Adicionado: Botão CRM
 const btnGoat = document.getElementById("btn-goat"); // Adicionado: Botão Goat
+const btnSentinela = document.getElementById("btn-sentinela");
 const statusDiv = document.getElementById("status");
 
 // ========================================
@@ -183,6 +184,26 @@ if (btnGoat) {
             console.error("Erro ao abrir Goat:", error);
             showStatus("Erro ao abrir Goat", "error");
             hideButtonLoading(btnGoat, "🐐 Goat");
+        }
+    });
+}
+
+// Botão Sentinela
+if (btnSentinela) {
+    btnSentinela.addEventListener("click", async () => {
+        try {
+            showButtonLoading(btnSentinela, "Abrindo...");
+            const result = await window.electronAPI.openSentinela();
+            if (result.success) {
+                showStatus(result.message, "success");
+            } else {
+                showStatus(result.message, "error");
+            }
+            hideButtonLoading(btnSentinela, "👁️ Sentinela");
+        } catch (error) {
+            console.error("Erro ao abrir Sentinela:", error);
+            showStatus("Erro ao abrir Sentinela", "error");
+            hideButtonLoading(btnSentinela, "👁️ Sentinela");
         }
     });
 }
