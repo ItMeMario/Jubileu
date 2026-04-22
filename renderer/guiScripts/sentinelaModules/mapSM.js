@@ -327,16 +327,30 @@ export default class MapSM {
         if (!mapChart) return;
         
         const hoje = new Date();
-        hoje.setHours(23, 59, 59, 999);
+        hoje.setHours(0, 0, 0, 0); // Considerar o início do dia para as comparações
         
         const scatterData = [];
         const cityMap = new Map();
         
         this.manager.allEventsData.forEach(ev => {
             if (ev.lat != null && ev.lng != null) {
-                const dataEvento = new Date(ev.data);
-                const diffMs = Math.abs(hoje - dataEvento);
-                const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                let dataEvento = new Date(ev.data);
+                
+                // Tratar fuso se o dado for apenas YYYY-MM-DD
+                if (ev.data && ev.data.length <= 10) {
+                    const parts = ev.data.split('-');
+                    if (parts.length === 3) {
+                        dataEvento = new Date(parts[0], parts[1] - 1, parts[2]);
+                    }
+                }
+                
+                let daysAgo;
+                if (dataEvento >= hoje) {
+                    daysAgo = 0; // Futuro ou hoje é calor máximo
+                } else {
+                    const diffMs = hoje.getTime() - dataEvento.getTime();
+                    daysAgo = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                }
                 
                 const cityKey = `${ev.cidade}_${ev.estado}`;
                 if (!cityMap.has(cityKey)) {
@@ -346,15 +360,17 @@ export default class MapSM {
                         lat: ev.lat,
                         lng: ev.lng,
                         mostRecentDate: dataEvento,
-                        daysAgo: diffDays,
+                        daysAgo: daysAgo,
                         events: [ev]
                     });
                 } else {
                     const cData = cityMap.get(cityKey);
                     cData.events.push(ev);
-                    if (diffDays < cData.daysAgo) {
+                    
+                    // Queremos o evento mais "quente" (com o menor número de dias)
+                    if (daysAgo < cData.daysAgo) {
                         cData.mostRecentDate = dataEvento;
-                        cData.daysAgo = diffDays;
+                        cData.daysAgo = daysAgo;
                     }
                 }
             }
@@ -385,21 +401,38 @@ export default class MapSM {
                     const cData = params.data.cityData;
                     const sortedEvents = [...cData.events].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
                     
+                    const statusText = cData.daysAgo === 0 
+                        ? '<span style="color:#f44336; font-weight:bold;">🔥 Evitar: Evento já Agendado</span>' 
+                        : `Evento mais recente: há ${cData.daysAgo} dia(s)`;
+
                     let html = `
                         <div style="font-weight:bold; font-size: 16px; border-bottom:1px solid #ff9800; padding-bottom:5px; margin-bottom:5px;">
                             ${cData.cidade || 'Sem cidade'} (${cData.estado || '?'})
                         </div>
-                        <div style="font-size: 12px; color: #aaa; margin-bottom: 6px;">Evento mais recente: há ${cData.daysAgo} dia(s)</div>
+                        <div style="font-size: 13px; color: #ccc; margin-bottom: 8px;">${statusText}</div>
                     `;
                     
                     const maxEventsToShow = 3;
                     sortedEvents.slice(0, maxEventsToShow).forEach(ev => {
                         const dateParts = ev.data.split('-');
                         const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : ev.data;
+                        
+                        // Destacar os eventos que são de hoje em diante
+                        let isFuture = false;
+                        if (dateParts.length === 3) {
+                            const d = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                            isFuture = d >= hoje;
+                        } else {
+                            const d = new Date(ev.data);
+                            isFuture = d >= hoje;
+                        }
+                        
+                        const eventColor = isFuture ? '#f44336' : '#ff9800';
+
                         html += `
                             <div style="margin-top: 6px;">
-                                <span style="color:#ff9800; font-weight:bold">${ev.titulo}</span><br>
-                                <span style="font-size: 12px; color: #ccc;">Data: ${formattedDate}</span>
+                                <span style="color:${eventColor}; font-weight:bold">${ev.titulo}</span><br>
+                                <span style="font-size: 12px; color: #aaa;">Data: ${formattedDate}</span>
                             </div>
                         `;
                     });
@@ -413,13 +446,13 @@ export default class MapSM {
             visualMap: {
                 show: true,
                 min: 0,
-                max: maxDaysAgo,
+                max: maxDaysAgo > 0 ? maxDaysAgo : 1,
                 dimension: 2,
                 calculable: true,
                 inRange: {
                     color: ['#f44336', '#ff9800', '#ffeb3b', '#4caf50', '#2196f3', '#0d47a1']
                 },
-                text: ['Antigo', 'Recente'],
+                text: ['Frio (Antigo)', 'Quente (Futuro/Hoje)'],
                 textStyle: {
                     color: '#fff'
                 },
@@ -428,9 +461,9 @@ export default class MapSM {
                 bottom: 20,
                 formatter: function (value) {
                     const days = Math.round(value);
-                    if (days === 0) return 'Hoje';
-                    if (days === 1) return '1 dia';
-                    return days + ' dias';
+                    if (days === 0) return 'Futuro/Hoje';
+                    if (days === 1) return '1 dia atrás';
+                    return days + ' dias atrás';
                 }
             },
             geo: {
@@ -456,7 +489,7 @@ export default class MapSM {
                     data: scatterData,
                     symbolSize: function (val) {
                         const ratio = maxDaysAgo > 0 ? 1 - (val[2] / maxDaysAgo) : 1;
-                        return 12 + ratio * 13; 
+                        return 12 + ratio * 18; // Bolinhas de 12 a 30 de tamanho (evitar é maior)
                     },
                     showEffectOn: 'render',
                     rippleEffect: {
