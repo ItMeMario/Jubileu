@@ -1048,6 +1048,7 @@ window.deleteEvent = async function(id) {
         const result = await window.sentinelaAPI.deleteEvent(id);
         if (result.success) {
             calendar.refetchEvents();
+            await fetchAllEvents(); // atualiza o map
             loadTimeline();
         } else {
             alert('Erro ao excluir evento: ' + result.error);
