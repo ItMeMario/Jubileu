@@ -1,0 +1,56 @@
+/* renderer/css/sentinelaCssModules/utilsSCM.css */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-in {
+    animation: fadeIn 0.3s ease;
+}
+
+.table-container::-webkit-scrollbar,
+.results-card::-webkit-scrollbar,
+.detail-list::-webkit-scrollbar,
+.info-card::-webkit-scrollbar {
+    width: 6px;
+}
+
+.table-container::-webkit-scrollbar-track,
+.results-card::-webkit-scrollbar-track,
+.detail-list::-webkit-scrollbar-track,
+.info-card::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.table-container::-webkit-scrollbar-thumb,
+.results-card::-webkit-scrollbar-thumb,
+.detail-list::-webkit-scrollbar-thumb,
+.info-card::-webkit-scrollbar-thumb {
+    background: rgba(233, 30, 99, 0.3);
+    border-radius: 3px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover,
+.results-card::-webkit-scrollbar-thumb:hover,
+.detail-list::-webkit-scrollbar-thumb:hover,
+.info-card::-webkit-scrollbar-thumb:hover {
+    background: rgba(233, 30, 99, 0.5);
+}
