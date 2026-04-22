@@ -49,26 +49,35 @@
                         <button id="btn-map-ddds" class="modern-btn apply-btn" style="flex: 1;">DDDs</button>
                         <button id="btn-map-eventos" class="modern-btn clear-btn" style="flex: 1;">Eventos</button>
                     </div>
-                    <h2>Filtros</h2>
-                    <div class="filter-section">
-                        <span style="font-size: 14px; margin-bottom: 5px; display: block; color: #ccc;">Quantidade de DDDs:</span>
-                        <div class="filter-controls">
-                            <select id="filter-operator" class="modern-select">
-                                <option value="<=">&lt;= (Até)</option>
-                                <option value=">=">&gt;= (A partir de)</option>
-                                <option value="==">= (Exatamente)</option>
-                            </select>
-                            <input type="number" id="filter-value" class="modern-input" min="1" max="9" value="2">
+                    <div id="ddds-info-section">
+                        <h2>Filtros</h2>
+                        <div class="filter-section">
+                            <span style="font-size: 14px; margin-bottom: 5px; display: block; color: #ccc;">Quantidade de DDDs:</span>
+                            <div class="filter-controls">
+                                <select id="filter-operator" class="modern-select">
+                                    <option value="<=">&lt;= (Até)</option>
+                                    <option value=">=">&gt;= (A partir de)</option>
+                                    <option value="==">= (Exatamente)</option>
+                                </select>
+                                <input type="number" id="filter-value" class="modern-input" min="1" max="9" value="2">
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="btn-apply-filter" class="modern-btn apply-btn">Filtrar</button>
+                                <button id="btn-clear-filter" class="modern-btn clear-btn">Limpar</button>
+                            </div>
                         </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button id="btn-apply-filter" class="modern-btn apply-btn">Filtrar</button>
-                            <button id="btn-clear-filter" class="modern-btn clear-btn">Limpar</button>
+
+                        <h2>Região Selecionada</h2>
+                        <div id="region-info" class="region-info-content">
+                            <p class="placeholder-text">Passe o mouse sobre um estado no mapa para visualizar a cobertura de DDDs.</p>
                         </div>
                     </div>
-
-                    <h2>Região Selecionada</h2>
-                    <div id="region-info" class="region-info-content">
-                        <p class="placeholder-text">Passe o mouse sobre um estado no mapa para visualizar a cobertura de DDDs.</p>
+                    
+                    <div id="eventos-timeline-section" style="display: none;">
+                        <h2 style="margin-bottom: 15px;"><span class="section-icon">🕰️</span> Próximos Eventos</h2>
+                        <div id="map-timeline-list" class="timeline-list">
+                            <!-- Itens da linha do tempo renderizados via JS -->
+                        </div>
                     </div>
                 </div>
             </div>

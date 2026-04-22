@@ -307,7 +307,11 @@ export default class MapSM {
                 this.manager.mapChart.setOption(this.manager.originalMapOption, true);
             }
             
-            document.querySelector('.filter-section').style.display = 'block';
+            const dddsInfo = document.getElementById('ddds-info-section');
+            if (dddsInfo) dddsInfo.style.display = 'block';
+            
+            const eventosTimeline = document.getElementById('eventos-timeline-section');
+            if (eventosTimeline) eventosTimeline.style.display = 'none';
         });
 
         btnEventos.addEventListener('click', () => {
@@ -316,8 +320,12 @@ export default class MapSM {
             btnEventos.classList.add('apply-btn');
             btnDdds.classList.remove('apply-btn');
             btnDdds.classList.add('clear-btn');
+            const dddsInfo = document.getElementById('ddds-info-section');
+            if (dddsInfo) dddsInfo.style.display = 'none';
             
-            document.querySelector('.filter-section').style.display = 'none';
+            const eventosTimeline = document.getElementById('eventos-timeline-section');
+            if (eventosTimeline) eventosTimeline.style.display = 'block';
+            
             this.updateMapForEvents();
         });
     }

@@ -50,6 +50,7 @@ class SentinelaRenderer {
         
         // Carrega eventos e stats
         await this.cities.fetchAllEvents();
+        await this.calendarSM.loadTimeline();
         await this.records.loadStats(); 
         
         // Configura mapa

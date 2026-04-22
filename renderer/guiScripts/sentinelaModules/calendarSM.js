@@ -125,30 +125,34 @@ export default class CalendarSM {
     }
 
     async loadTimeline() {
-        const listEl = document.getElementById('timeline-list');
+        const listEls = [document.getElementById('timeline-list'), document.getElementById('map-timeline-list')];
         const result = await window.sentinelaAPI.getEvents();
         const escapeHtml = this.manager.utility.escapeHtml;
         
+        let htmlContent = '';
         if (!result.success || !result.data || result.data.length === 0) {
-            listEl.innerHTML = '<p class="placeholder-text">Nenhum evento registrado.</p>';
-            return;
+            htmlContent = '<p class="placeholder-text">Nenhum evento registrado.</p>';
+        } else {
+            htmlContent = result.data.map(event => {
+                const dateParts = event.data.split('-');
+                const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : event.data;
+                
+                return `
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <button class="timeline-delete" onclick="window.deleteEvent(${event.id})" title="Excluir evento">✕</button>
+                            <div class="timeline-date">${formattedDate}</div>
+                            <h3 class="timeline-title">${escapeHtml(event.titulo)}</h3>
+                            ${event.descricao ? `<p class="timeline-desc">${escapeHtml(event.descricao)}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
-        listEl.innerHTML = result.data.map(event => {
-            const dateParts = event.data.split('-');
-            const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : event.data;
-            
-            return `
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <button class="timeline-delete" onclick="window.deleteEvent(${event.id})" title="Excluir evento">✕</button>
-                        <div class="timeline-date">${formattedDate}</div>
-                        <h3 class="timeline-title">${escapeHtml(event.titulo)}</h3>
-                        ${event.descricao ? `<p class="timeline-desc">${escapeHtml(event.descricao)}</p>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
+        listEls.forEach(el => {
+            if (el) el.innerHTML = htmlContent;
+        });
     }
 }
