@@ -1144,34 +1144,60 @@ function updateMapForEvents() {
     if (!mapChart) return;
     
     const hoje = new Date();
+    hoje.setHours(23, 59, 59, 999); // fim do dia de hoje como referência
     
     // Processar eventos para a série de scatter
     const scatterData = [];
+    const cityMap = new Map();
     
     console.log('[HEATMAP] allEventsData:', allEventsData.length, 'eventos');
     
+    // Agrupar eventos por cidade, mantendo o mais recente
     allEventsData.forEach(ev => {
-        console.log('[HEATMAP] Evento:', ev.titulo, '| lat:', ev.lat, '| lng:', ev.lng, '| cidade:', ev.cidade);
         if (ev.lat != null && ev.lng != null) {
             const dataEvento = new Date(ev.data);
-            const diffTime = Math.abs(hoje - dataEvento);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            const diffMs = Math.abs(hoje - dataEvento);
+            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
             
-            // "Temperatura": Menos dias = mais quente. maxDaysLimit = 365
-            const score = Math.max(0, 365 - diffDays);
-            
-            scatterData.push({
-                name: (ev.cidade || 'Sem cidade') + " - " + ev.titulo,
-                value: [ev.lng, ev.lat, score],
-                eventRef: ev
-            });
+            const cityKey = `${ev.cidade}_${ev.estado}`;
+            if (!cityMap.has(cityKey)) {
+                cityMap.set(cityKey, {
+                    cidade: ev.cidade,
+                    estado: ev.estado,
+                    lat: ev.lat,
+                    lng: ev.lng,
+                    mostRecentDate: dataEvento,
+                    daysAgo: diffDays,
+                    events: [ev]
+                });
+            } else {
+                const cData = cityMap.get(cityKey);
+                cData.events.push(ev);
+                // Manter a data mais recente (menor distância de hoje)
+                if (diffDays < cData.daysAgo) {
+                    cData.mostRecentDate = dataEvento;
+                    cData.daysAgo = diffDays;
+                }
+            }
         }
     });
 
-    console.log('[HEATMAP] scatterData final:', scatterData.length, 'pontos');
-    if (scatterData.length > 0) {
-        console.log('[HEATMAP] Primeiro ponto:', JSON.stringify(scatterData[0]));
-    }
+    // Encontrar o maior número de dias de distância para definir o range
+    let maxDaysAgo = 1;
+    cityMap.forEach(cData => {
+        if (cData.daysAgo > maxDaysAgo) maxDaysAgo = cData.daysAgo;
+    });
+
+    // Montar scatterData: value[2] = daysAgo (0 = hoje, maxDaysAgo = mais antigo)
+    cityMap.forEach((cData) => {
+        scatterData.push({
+            name: cData.cidade || 'Sem cidade',
+            value: [cData.lng, cData.lat, cData.daysAgo],
+            cityData: cData
+        });
+    });
+
+    console.log('[HEATMAP] scatterData final:', scatterData.length, 'pontos (cidades únicas), maxDaysAgo:', maxDaysAgo);
 
     // Option para mostrar mapa limpo com scatters
     const heatmapOption = {
@@ -1182,35 +1208,58 @@ function updateMapForEvents() {
             borderColor: '#ff9800',
             textStyle: { color: '#fff' },
             formatter: function (params) {
-                if (!params.data || !params.data.eventRef) return params.name;
-                const ev = params.data.eventRef;
-                const dateParts = ev.data.split('-');
-                const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : ev.data;
-                return `
+                if (!params.data || !params.data.cityData) return params.name;
+                const cData = params.data.cityData;
+                const sortedEvents = [...cData.events].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+                
+                let html = `
                     <div style="font-weight:bold; font-size: 16px; border-bottom:1px solid #ff9800; padding-bottom:5px; margin-bottom:5px;">
-                        ${ev.cidade || 'Sem cidade'} (${ev.estado || '?'})
+                        ${cData.cidade || 'Sem cidade'} (${cData.estado || '?'})
                     </div>
-                    <div>Evento: <span style="color:#ff9800; font-weight:bold">${ev.titulo}</span></div>
-                    <div>Data: ${formattedDate}</div>
+                    <div style="font-size: 12px; color: #aaa; margin-bottom: 6px;">Evento mais recente: há ${cData.daysAgo} dia(s)</div>
                 `;
+                
+                const maxEventsToShow = 3;
+                sortedEvents.slice(0, maxEventsToShow).forEach(ev => {
+                    const dateParts = ev.data.split('-');
+                    const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : ev.data;
+                    html += `
+                        <div style="margin-top: 6px;">
+                            <span style="color:#ff9800; font-weight:bold">${ev.titulo}</span><br>
+                            <span style="font-size: 12px; color: #ccc;">Data: ${formattedDate}</span>
+                        </div>
+                    `;
+                });
+                
+                if (sortedEvents.length > maxEventsToShow) {
+                    html += `<div style="font-size: 12px; color: #888; margin-top: 8px;">+ ${sortedEvents.length - maxEventsToShow} outro(s) evento(s)</div>`;
+                }
+                return html;
             }
         },
         visualMap: {
             show: true,
             min: 0,
-            max: 365,
+            max: maxDaysAgo,
             dimension: 2,
             calculable: true,
             inRange: {
-                color: ['#0d47a1', '#2196f3', '#4caf50', '#ffeb3b', '#ff9800', '#f44336']
+                // 0 dias (recente) = vermelho/quente → muitos dias (antigo) = azul/frio
+                color: ['#f44336', '#ff9800', '#ffeb3b', '#4caf50', '#2196f3', '#0d47a1']
             },
-            text: ['Recente', 'Antigo'],
+            text: ['Antigo', 'Recente'],
             textStyle: {
                 color: '#fff'
             },
             orient: 'vertical',
             right: 10,
-            bottom: 20
+            bottom: 20,
+            formatter: function (value) {
+                const days = Math.round(value);
+                if (days === 0) return 'Hoje';
+                if (days === 1) return '1 dia';
+                return days + ' dias';
+            }
         },
         geo: {
             map: 'Brasil',
@@ -1234,7 +1283,9 @@ function updateMapForEvents() {
                 coordinateSystem: 'geo',
                 data: scatterData,
                 symbolSize: function (val) {
-                    return Math.max(12, (val[2] / 365) * 25);
+                    // Eventos mais recentes (daysAgo menor) = ponto maior
+                    const ratio = maxDaysAgo > 0 ? 1 - (val[2] / maxDaysAgo) : 1;
+                    return 12 + ratio * 13; // Min 12, max 25
                 },
                 showEffectOn: 'render',
                 rippleEffect: {
