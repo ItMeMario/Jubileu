@@ -100,7 +100,8 @@ export default class CalendarSM {
 
         // Expose deleteEvent globally for the timeline inline onclick handler
         window.deleteEvent = async (id) => {
-            if (confirm('Tem certeza que deseja excluir este evento?')) {
+            const confirmed = await window.customConfirm('Tem certeza que deseja excluir este evento?');
+            if (confirmed) {
                 const result = await window.sentinelaAPI.deleteEvent(id);
                 if (result.success) {
                     if (this.manager.calendar) {
