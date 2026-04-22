@@ -1,0 +1,31 @@
+// renderer/guiScripts/sentinelaModules/dataSM.js
+
+export const dddData = {
+    'Acre': { uf: 'AC', ddds: [68] },
+    'Alagoas': { uf: 'AL', ddds: [82] },
+    'Amapá': { uf: 'AP', ddds: [96] },
+    'Amazonas': { uf: 'AM', ddds: [92, 97] },
+    'Bahia': { uf: 'BA', ddds: [71, 73, 74, 75, 77] },
+    'Ceará': { uf: 'CE', ddds: [85, 88] },
+    'Distrito Federal': { uf: 'DF', ddds: [61] },
+    'Espírito Santo': { uf: 'ES', ddds: [27, 28] },
+    'Goiás': { uf: 'GO', ddds: [62, 64] },
+    'Maranhão': { uf: 'MA', ddds: [98, 99] },
+    'Mato Grosso': { uf: 'MT', ddds: [65, 66] },
+    'Mato Grosso do Sul': { uf: 'MS', ddds: [67] },
+    'Minas Gerais': { uf: 'MG', ddds: [31, 32, 33, 34, 35, 37, 38] },
+    'Pará': { uf: 'PA', ddds: [91, 93, 94] },
+    'Paraíba': { uf: 'PB', ddds: [83] },
+    'Paraná': { uf: 'PR', ddds: [41, 42, 43, 44, 45, 46] },
+    'Pernambuco': { uf: 'PE', ddds: [81, 87] },
+    'Piauí': { uf: 'PI', ddds: [86, 89] },
+    'Rio de Janeiro': { uf: 'RJ', ddds: [21, 22, 24] },
+    'Rio Grande do Norte': { uf: 'RN', ddds: [84] },
+    'Rio Grande do Sul': { uf: 'RS', ddds: [51, 53, 54, 55] },
+    'Rondônia': { uf: 'RO', ddds: [69] },
+    'Roraima': { uf: 'RR', ddds: [95] },
+    'Santa Catarina': { uf: 'SC', ddds: [47, 48, 49] },
+    'São Paulo': { uf: 'SP', ddds: [11, 12, 13, 14, 15, 16, 17, 18, 19] },
+    'Sergipe': { uf: 'SE', ddds: [79] },
+    'Tocantins': { uf: 'TO', ddds: [63] }
+};
