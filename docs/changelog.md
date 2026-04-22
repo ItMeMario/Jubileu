@@ -651,3 +651,26 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 
 
 📅 Data de Lançamento: [13/03/2026]
+
+---
+
+📌 Patch Notes - Versão 1.3.9
+
+✨ Novidades
+
+- Adicionado o Manifesto no CRM, sistema de criação de PDF a partir de textos cadastrados.
+
+- Adicionadas teclas de atalho e barra de ferramentas flutuante.
+
+- Criado o módulo Sentinela.
+
+🛠️ Melhorias
+
+- Atualizado o `appLifeCycle.js` para garantir que a aplicação possua um Cleanup timeout adequado.
+
+- Refatorado o GOAT: removidas as teclas de atalho, substituídas por um RGB que pisca em intervalos de 1 segundo.
+
+🐛 Correções
+[Nenhuma correção registrada nesta versão.]
+
+📅 Data de Lançamento: [22/04/2026]
