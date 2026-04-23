@@ -53,22 +53,10 @@ class DroneDispatchDCGM {
         };
       }
 
-      // Valida índice da mensagem
-      const mensagemIndex0 = mensagemIndex - 1; // Converte para índice base 0
-      if (mensagemIndex0 < 0 || mensagemIndex0 >= mensagens.length) {
-        return {
-          success: false,
-          error: "Mensagem selecionada inválida.",
-          instanceId: instanceId,
-        };
-      }
-
-      const mensagemSelecionada = mensagens[mensagemIndex0];
-
-      // Executa disparo completo passando instanceId
+      // O backend cuidará de selecionar as mensagens aleatoriamente
       const resultado = await droneService.executarDisparoCompleto(
         instanceId,
-        mensagemSelecionada.id,
+        null,
         batchSize
       );
 
@@ -78,9 +66,9 @@ class DroneDispatchDCGM {
         detalhes: {
           instanceId: instanceId,
           mensagemUsada: {
-            id: mensagemSelecionada.id,
-            conteudo: mensagemSelecionada.message_content,
-            locale: mensagemSelecionada.locale,
+            id: "aleatoria",
+            conteudo: "Múltiplas mensagens",
+            locale: "variado",
           },
           totalNumeros: resultado.totalNumeros,
           totalBatches: resultado.totalBatches,

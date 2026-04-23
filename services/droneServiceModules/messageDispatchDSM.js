@@ -3,7 +3,7 @@ const { instanceManager } = require("../instanceManager");
 const { smartDelay } = require("../../utils/delay");
 const { processVariables } = require("../../utils/messageReader");
 const { getNumbersForDispatch } = require("./numberManagementDSM");
-const { buscarMensagemPorId } = require("./messageDatabaseDSM");
+const { buscarMensagemPorId, listarMensagensDisponiveis } = require("./messageDatabaseDSM");
 const { verificarStatusCliente } = require("./clientStatusDSM");
 const {
   atualizarStatusCliente,
@@ -66,12 +66,12 @@ async function executarDisparo(
       };
     }
 
-    // Busca a mensagem no banco
-    const mensagem = await buscarMensagemPorId(mensagemId);
-    if (!mensagem) {
+    // Busca todas as mensagens disponíveis no banco
+    const mensagensDisponiveis = await listarMensagensDisponiveis();
+    if (!mensagensDisponiveis || mensagensDisponiveis.length === 0) {
       return {
         success: false,
-        error: "Mensagem não encontrada",
+        error: "Nenhuma mensagem disponível para envio",
         results: [],
         instanceId: instanceId,
       };
@@ -119,8 +119,11 @@ async function executarDisparo(
           }
         }
 
+        // Escolhe uma mensagem aleatória
+        const mensagemSorteada = mensagensDisponiveis[Math.floor(Math.random() * mensagensDisponiveis.length)];
+
         const mensagemPersonalizada = processVariables(
-          mensagem.message_content,
+          mensagemSorteada.message_content,
           { name }
         );
 

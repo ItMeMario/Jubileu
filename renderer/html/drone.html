@@ -224,7 +224,7 @@
                 </div>
                 <div class="requirement-item" id="req-message">
                     <span class="req-icon">⏳</span>
-                    <span class="req-text">Mensagem selecionada</span>
+                    <span class="req-text">Mensagens cadastradas</span>
                 </div>
                 <div class="requirement-item" id="req-numbers">
                     <span class="req-icon">⏳</span>
@@ -236,11 +236,17 @@
             <div class="disparo-config" id="disparo-config">
                 <h3>Configuração do Disparo</h3>
 
-                <div class="form-group">
+                <div class="form-group" style="display: none;">
                     <label for="message-select">Mensagem:</label>
                     <select id="message-select">
                         <option value="">Selecione uma mensagem...</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label>Mensagem:</label>
+                    <div class="info-text" style="padding: 10px; background: rgba(0,0,0,0.1); border-radius: 5px; font-size: 14px; margin-top: 5px;">
+                        🔄 As mensagens cadastradas serão escolhidas de forma <strong>aleatória</strong> para cada número, evitando bloqueios.
+                    </div>
                 </div>
 
                 <div class="form-group">

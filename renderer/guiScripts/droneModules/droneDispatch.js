@@ -49,11 +49,11 @@ export default class DroneDispatch {
       );
 
       // Check Message
-      const hasMessage = this.manager.selectedMessageIndex !== null;
+      const hasMessage = this.manager.allMessages && this.manager.allMessages.length > 0;
       this.updateRequirement(
         this.manager.reqMessage,
         hasMessage,
-        hasMessage ? "Mensagem selecionada" : "Selecione uma mensagem"
+        hasMessage ? `${this.manager.allMessages.length} mensagens cadastradas` : "Nenhuma mensagem cadastrada"
       );
 
       // Check Numbers (da instância selecionada)
@@ -123,26 +123,12 @@ export default class DroneDispatch {
         // Armazena as mensagens
         this.manager.allMessages = result.mensagens;
 
-        // Popula o select
-        this.manager.messageSelect.innerHTML =
-          '<option value="">Selecione uma mensagem...</option>' +
-          result.mensagens
-            .map(
-              (msg) =>
-                `<option value="${msg.indice}">#${msg.indice} - (${
-                  msg.locale
-                }) ${msg.conteudo.substring(0, 50)}...</option>`
-            )
-            .join("");
-
-        // Se já tinha uma mensagem selecionada, mantém a seleção
-        if (this.manager.selectedMessageIndex !== null) {
-          this.manager.messageSelect.value = this.manager.selectedMessageIndex;
-        }
-
         if (this.manager.statusMessages) {
           this.manager.statusMessages.textContent = result.mensagens.length;
         }
+
+        // Atualiza requisitos após carregar mensagens
+        this.checkRequirements();
       }
     } catch (error) {
       console.error("Erro ao carregar mensagens:", error);
@@ -214,11 +200,11 @@ export default class DroneDispatch {
       return;
     }
 
-    const selectedIndex = this.manager.selectedMessageIndex;
+    const hasMessages = this.manager.allMessages && this.manager.allMessages.length > 0;
     const batchSize = parseInt(this.manager.batchSize.value) || 200;
 
-    if (!selectedIndex) {
-      this.manager.utility.showStatus("Selecione uma mensagem", "error");
+    if (!hasMessages) {
+      this.manager.utility.showStatus("Nenhuma mensagem cadastrada para envio", "error");
       return;
     }
 
@@ -252,7 +238,7 @@ export default class DroneDispatch {
     if (instancePhone) {
       confirmMsg += ` (${instancePhone})`;
     }
-    confirmMsg += `\n📨 Mensagem: #${selectedIndex}`;
+    confirmMsg += `\n📨 Mensagem: Aleatória (${this.manager.allMessages.length} disponíveis)`;
     confirmMsg += `\n📦 Batch: ${batchSize} números por lote`;
     confirmMsg += `\n📊 Total a enviar: ${numbersToSend} números (Pendentes + Falhas)`;
 
@@ -265,10 +251,10 @@ export default class DroneDispatch {
     this.manager.btnExecuteDisparo.textContent = "🚀 Disparando...";
 
     try {
-      // Executa disparo com instanceId
+      // Executa disparo com instanceId (mensagemIndex = null)
       const result = await window.droneAPI.executarDisparoDrone(
         instanceId,
-        selectedIndex,
+        null,
         batchSize
       );
 
