@@ -1,5 +1,6 @@
 // services/droneServiceModules/messageDispatchDSM.js
 const { smartDelay } = require("../../utils/delay");
+const { debug } = require("../debugService");
 const { processVariables } = require("../../utils/messageReader");
 const { getNumbersForDispatch } = require("./numberManagementDSM");
 const { buscarMensagemPorId, listarMensagensDisponiveis } = require("./messageDatabaseDSM");
@@ -281,7 +282,13 @@ async function executarDisparoCompleto(
     for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
       // Re-verifica instâncias conectadas antes de cada batch
       const currentAllInstances = droneInstanceManager.getAllInstancesStatus();
-      const currentConnectedInstances = currentAllInstances.filter((i) => i.status === "connected");
+      let currentConnectedInstances = currentAllInstances.filter((i) => i.status === "connected");
+
+      // Embaralha (Shuffle) as instâncias conectadas para que a distribuição não seja estritamente determinística
+      for (let i = currentConnectedInstances.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [currentConnectedInstances[i], currentConnectedInstances[j]] = [currentConnectedInstances[j], currentConnectedInstances[i]];
+      }
 
       if (currentConnectedInstances.length === 0) {
         resultadoFinal.success = false;
@@ -309,6 +316,19 @@ async function executarDisparoCompleto(
       for (let i = 0; i < numerosBatch.length; i++) {
         const instanceToUse = currentConnectedInstances[i % currentConnectedInstances.length];
         instanceBatches[instanceToUse.instanceId].push(numerosBatch[i]);
+      }
+
+      // Logs de Auditoria da Distribuição
+      await debug(`\n[Global - AUDITORIA] Resultado da distribuição (Round-Robin) para o Batch ${batchIndex + 1}:`);
+      for (const i of currentConnectedInstances) {
+        const numbersForInstance = instanceBatches[i.instanceId];
+        await debug(`  -> Instância [${i.instanceId}]: Recebeu ${numbersForInstance.length} número(s).`);
+        if (numbersForInstance.length > 0) {
+          // Mostra preview de até 3 números para auditoria visual
+          const preview = numbersForInstance.slice(0, 3).map(n => n.whatsappFormat || n.originalNumber).join(', ');
+          const previewSuffix = numbersForInstance.length > 3 ? '...' : '';
+          await debug(`      Exemplos: ${preview}${previewSuffix}`);
+        }
       }
 
       // Prepara as execuções para rodarem em paralelo por instância
