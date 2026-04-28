@@ -1,4 +1,5 @@
 const { instanceManager } = require("../services/instanceManager");
+const { droneInstanceManager } = require("../services/droneServiceModules/droneInstanceManagerDSM");
 
 class ModuleLoader {
   constructor() {
@@ -22,6 +23,9 @@ class ModuleLoader {
 
       // NOVO: Carrega e inicializa o InstanceManager
       await this.loadInstanceManager();
+
+      // NOVO: Carrega e inicializa o DroneInstanceManager
+      await this.loadDroneInstanceManager();
 
       this.isLoaded = true;
       console.log("✅ Todos os módulos carregados com sucesso");
@@ -100,6 +104,18 @@ class ModuleLoader {
       console.error("❌ Erro ao carregar InstanceManager:", error);
       // Não quebra a aplicação, mas registra o erro
       console.warn("⚠️ Sistema de múltiplas instâncias não disponível");
+    }
+  }
+
+  // NOVO: Carrega e inicializa o DroneInstanceManager
+  async loadDroneInstanceManager() {
+    try {
+      this.modules.droneInstanceManager = droneInstanceManager;
+      await droneInstanceManager.initialize();
+      console.log("✅ DroneInstanceManager carregado e inicializado");
+    } catch (error) {
+      console.error("❌ Erro ao carregar DroneInstanceManager:", error);
+      console.warn("⚠️ Sistema de instâncias do Drone não disponível");
     }
   }
 

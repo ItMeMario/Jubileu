@@ -134,6 +134,10 @@ class WindowManager {
     }
   }
 
+  getDroneWindow() {
+    return getDroneWindow();
+  }
+
   // Métodos para janela Dee Jay
   openDeeJayWindow() {
       try {

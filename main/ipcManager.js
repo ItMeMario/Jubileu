@@ -434,6 +434,34 @@ class IPCManager {
       "drone-listar-instancias-conectadas",
       this.handlers.drone.listarInstanciasConectadas.bind(this.handlers.drone)
     );
+    ipcMain.handle(
+      "drone-instance-create",
+      this.handlers.drone.createInstance.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-instance-remove",
+      this.handlers.drone.removeInstance.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-instance-rename",
+      this.handlers.drone.renameInstance.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-instance-start",
+      this.handlers.drone.startInstance.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-instance-stop",
+      this.handlers.drone.stopInstance.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-instance-reconnect",
+      this.handlers.drone.reconnectInstance.bind(this.handlers.drone)
+    );
+    ipcMain.handle(
+      "drone-instance-list",
+      this.handlers.drone.listInstances.bind(this.handlers.drone)
+    );
 
     console.log("Handlers de drone registrados");
   }
@@ -713,6 +741,13 @@ class IPCManager {
       "drone-gerar-relatorio-nomes",
       "drone-obter-status-todas-instancias",
       "drone-listar-instancias-conectadas",
+      "drone-instance-create",
+      "drone-instance-remove",
+      "drone-instance-rename",
+      "drone-instance-start",
+      "drone-instance-stop",
+      "drone-instance-reconnect",
+      "drone-instance-list",
       // Novos eventos de instâncias
       "instance-initialize",
       "instance-list",

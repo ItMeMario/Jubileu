@@ -1,10 +1,36 @@
 // main/ipc/droneHandlers.js
 const droneControllerGui = require("../../controllers/droneControllerGui");
+const { droneInstanceManager } = require("../../services/droneServiceModules/droneInstanceManagerDSM");
 
 class DroneHandlers {
   constructor(windowManager) {
     this.windowManager = windowManager;
+    this.setupInstanceEvents();
     console.log("DroneHandlers inicializado");
+  }
+
+  setupInstanceEvents() {
+    droneInstanceManager.on("qr", (instanceId, qr) => {
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-qr", { instanceId, qrImage: qr });
+    });
+    droneInstanceManager.on("authenticated", (instanceId) => {
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-authenticated", { instanceId });
+    });
+    droneInstanceManager.on("ready", (instanceId, info) => {
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-ready", { instanceId, info });
+    });
+    droneInstanceManager.on("auth_failure", (instanceId, message) => {
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-auth-failure", { instanceId, message });
+    });
+    droneInstanceManager.on("disconnected", (instanceId, reason) => {
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-disconnected", { instanceId, reason });
+    });
+    droneInstanceManager.on("loading", (instanceId, data) => {
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-loading", { instanceId, ...data });
+    });
+    droneInstanceManager.on("state_change", (instanceId, state) => {
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-state-change", { instanceId, state });
+    });
   }
 
   /**
@@ -273,6 +299,74 @@ class DroneHandlers {
     } catch (error) {
       console.error(`[${instanceId}] Erro ao gerar relatório:`, error);
       return { success: false, error: error.message, instanceId };
+    }
+  }
+
+  // ==================== NOVOS HANDLERS DE INSTÂNCIA ====================
+
+  async createInstance(event, data) {
+    try {
+      const instance = await droneInstanceManager.addInstance(data.name);
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-created", { instance });
+      return { success: true, data: instance };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async removeInstance(event, data) {
+    try {
+      const result = await droneInstanceManager.removeInstance(data.instanceId);
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-removed", { instanceId: data.instanceId });
+      return result;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async renameInstance(event, data) {
+    try {
+      const result = await droneInstanceManager.renameInstance(data.instanceId, data.name);
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-renamed", { instanceId: data.instanceId, name: data.name });
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async startInstance(event, data) {
+    try {
+      return await droneInstanceManager.startInstance(data.instanceId);
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async stopInstance(event, data) {
+    try {
+      const result = await droneInstanceManager.stopInstance(data.instanceId);
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-stopped", { instanceId: data.instanceId });
+      return result;
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async reconnectInstance(event, data) {
+    try {
+      this.windowManager.getDroneWindow()?.webContents.send("drone-instance-reconnecting", { instanceId: data.instanceId });
+      return await droneInstanceManager.reconnectInstance(data.instanceId);
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  async listInstances() {
+    try {
+      const instances = await droneInstanceManager.listInstances();
+      return { success: true, data: instances };
+    } catch (error) {
+      return { success: false, message: error.message };
     }
   }
 }

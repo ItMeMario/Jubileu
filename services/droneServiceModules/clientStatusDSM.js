@@ -1,16 +1,16 @@
 // services/droneServiceModules/clientStatusDSM.js
-const { instanceManager } = require("../instanceManager");
+const { droneInstanceManager } = require("./droneInstanceManagerDSM");
 
 /**
- * Verifica o status de conexão do cliente WhatsApp de uma instância específica
+ * Verifica o status de conexão do cliente WhatsApp de uma instância específica do Drone
  * @param {string} instanceId - ID da instância (opcional para compatibilidade)
  * @returns {Promise<Object>} - Status do cliente
  */
 async function verificarStatusCliente(instanceId = null) {
   try {
-    // Se não passou instanceId, tenta pegar a primeira instância conectada
+    // Se não passou instanceId, tenta pegar a primeira instância conectada do Drone
     if (!instanceId) {
-      const instances = await instanceManager.listInstances();
+      const instances = await droneInstanceManager.listInstances();
       const connectedInstance = instances.find(i => i.status === "connected");
       
       if (!connectedInstance) {
@@ -18,21 +18,21 @@ async function verificarStatusCliente(instanceId = null) {
           success: false,
           connected: false,
           state: "NO_INSTANCE",
-          error: "Nenhuma instância conectada",
+          error: "Nenhuma instância do Drone conectada",
         };
       }
       
       instanceId = connectedInstance.instance_id;
     }
 
-    const client = instanceManager.getClient(instanceId);
+    const client = droneInstanceManager.getClient(instanceId);
 
     if (!client) {
       return {
         success: false,
         connected: false,
         state: "NOT_INITIALIZED",
-        error: "Cliente não inicializado para esta instância",
+        error: "Cliente não inicializado para esta instância do Drone",
         instanceId: instanceId,
       };
     }
@@ -58,16 +58,16 @@ async function verificarStatusCliente(instanceId = null) {
 }
 
 /**
- * Verifica o status de todas as instâncias
+ * Verifica o status de todas as instâncias do Drone
  * @returns {Promise<Object>} - Status de todas as instâncias
  */
 async function verificarStatusTodasInstancias() {
   try {
-    const instances = await instanceManager.listInstances();
+    const instances = await droneInstanceManager.listInstances();
     
     const statusList = await Promise.all(
       instances.map(async (instance) => {
-        const client = instanceManager.getClient(instance.instance_id);
+        const client = droneInstanceManager.getClient(instance.instance_id);
         let state = "DISCONNECTED";
         let info = null;
 
@@ -110,7 +110,7 @@ async function verificarStatusTodasInstancias() {
 }
 
 /**
- * Lista apenas instâncias conectadas (para seleção no Drone)
+ * Lista apenas instâncias conectadas do Drone
  * @returns {Promise<Object>} - Lista de instâncias conectadas
  */
 async function listarInstanciasConectadas() {

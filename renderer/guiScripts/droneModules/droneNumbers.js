@@ -45,19 +45,11 @@ export default class DroneNumbers {
   }
 
   /**
-   * Retorna o instanceId selecionado ou exibe erro
-   * @returns {string|null} - instanceId ou null se não selecionado
+   * Retorna o identificador global para operações de números
+   * @returns {string}
    */
   getSelectedInstanceId() {
-    const instanceId = this.manager.selectedInstanceId;
-    if (!instanceId) {
-      this.manager.utility.showStatus(
-        "Selecione uma instância antes de continuar",
-        "error"
-      );
-      return null;
-    }
-    return instanceId;
+    return "drone_global";
   }
 
   /**
@@ -67,13 +59,6 @@ export default class DroneNumbers {
   async loadNumbers(filtroStatus = "all") {
     try {
       const instanceId = this.getSelectedInstanceId();
-      if (!instanceId) {
-        // Limpa lista se não há instância selecionada
-        this.manager.currentNumbers = [];
-        this.renderNumbers([]);
-        this.updateNumbersCount();
-        return;
-      }
 
       const result = await window.droneAPI.listarNumerosAtuais(
         instanceId,
@@ -109,10 +94,7 @@ export default class DroneNumbers {
    */
   renderNumbers(numeros) {
     if (!numeros || numeros.length === 0) {
-      const instanceId = this.manager.selectedInstanceId;
-      const message = instanceId
-        ? "Nenhum número cadastrado para esta instância"
-        : "Selecione uma instância para ver os números";
+      const message = "Nenhum número cadastrado na lista global";
 
       this.manager.numbersList.innerHTML = `<div class="empty-state">${message}</div>`;
       return;
@@ -157,14 +139,7 @@ export default class DroneNumbers {
   handleFileSelect(file) {
     if (!file) return;
 
-    // Verifica se há instância selecionada
-    if (!this.manager.selectedInstanceId) {
-      this.manager.utility.showStatus(
-        "Selecione uma instância antes de importar números",
-        "error"
-      );
-      return;
-    }
+    // Permite importar números sem instância selecionada, pois a lista é global
 
     // Aceita apenas CSV
     const ext = "." + file.name.split(".").pop().toLowerCase();
@@ -272,12 +247,8 @@ export default class DroneNumbers {
    * Constrói mensagem de confirmação com as opções aplicadas
    */
   buildConfirmationMessage(opcoes) {
-    const instanceName =
-      this.manager.selectedInstanceInfo?.name ||
-      this.manager.selectedInstanceId;
-
     let msg = `Confirmar importação do CSV?\n\n`;
-    msg += `📱 Instância: ${instanceName}\n\n`;
+    msg += `📱 Destino: Lista Global de Disparo\n\n`;
     msg += `Opções aplicadas:\n`;
     msg += `• Prefixo país: ${opcoes.prefixoPais || "Nenhum"}\n`;
     msg += `• DDD: ${opcoes.ddd || "Nenhum"}\n`;
@@ -295,9 +266,7 @@ export default class DroneNumbers {
   async importFile() {
     if (!this.manager.currentFile) return;
 
-    // Verifica instância selecionada
     const instanceId = this.getSelectedInstanceId();
-    if (!instanceId) return;
 
     try {
       // Lê o conteúdo do arquivo
@@ -383,7 +352,6 @@ export default class DroneNumbers {
   async removeNumber(id) {
     try {
       const instanceId = this.getSelectedInstanceId();
-      if (!instanceId) return;
 
       const result = await window.droneAPI.removerNumero(instanceId, id);
 
@@ -404,13 +372,10 @@ export default class DroneNumbers {
 
   async clearAllNumbers() {
     const instanceId = this.getSelectedInstanceId();
-    if (!instanceId) return;
-
-    const instanceName = this.manager.selectedInstanceInfo?.name || instanceId;
 
     if (
       !confirm(
-        `Tem certeza que deseja remover TODOS os números da instância "${instanceName}"?`
+        `Tem certeza que deseja remover TODOS os números da lista global?`
       )
     ) {
       return;
@@ -442,13 +407,10 @@ export default class DroneNumbers {
    */
   async clearSentNumbers() {
     const instanceId = this.getSelectedInstanceId();
-    if (!instanceId) return;
-
-    const instanceName = this.manager.selectedInstanceInfo?.name || instanceId;
 
     if (
       !confirm(
-        `Tem certeza que deseja remover todos os números ENVIADOS da instância "${instanceName}"?`
+        `Tem certeza que deseja remover todos os números ENVIADOS da lista global?`
       )
     ) {
       return;
@@ -480,13 +442,10 @@ export default class DroneNumbers {
    */
   async clearFailedNumbers() {
     const instanceId = this.getSelectedInstanceId();
-    if (!instanceId) return;
-
-    const instanceName = this.manager.selectedInstanceInfo?.name || instanceId;
 
     if (
       !confirm(
-        `Tem certeza que deseja remover todos os números que FALHARAM da instância "${instanceName}"?`
+        `Tem certeza que deseja remover todos os números que FALHARAM da lista global?`
       )
     ) {
       return;

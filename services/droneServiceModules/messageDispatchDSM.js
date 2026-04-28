@@ -1,5 +1,4 @@
 // services/droneServiceModules/messageDispatchDSM.js
-const { instanceManager } = require("../instanceManager");
 const { smartDelay } = require("../../utils/delay");
 const { processVariables } = require("../../utils/messageReader");
 const { getNumbersForDispatch } = require("./numberManagementDSM");
@@ -11,13 +10,15 @@ const {
 } = require("./clientDatabaseDSM");
 const { sendMessageOptions } = require("../../config/compatibility/whatsappCompatibility");
 
+const { droneInstanceManager } = require("./droneInstanceManagerDSM");
+
 /**
  * Obtém o cliente de uma instância específica
  * @param {string} instanceId - ID da instância
  * @returns {Object|null} - Cliente WhatsApp ou null
  */
 function getClient(instanceId) {
-  return instanceManager.getClient(instanceId);
+  return droneInstanceManager.getClient(instanceId);
 }
 
 /**
@@ -130,12 +131,12 @@ async function executarDisparo(
         // Envia mensagem personalizada
         await client.sendMessage(numero.whatsappFormat, mensagemPersonalizada, sendMessageOptions);
 
-        // ✅ ATUALIZA STATUS NO BANCO COMO 'sent' (usando ID para garantir instância correta)
+        // ✅ ATUALIZA STATUS NO BANCO COMO 'sent' (usando ID)
         if (numero.id) {
           await atualizarStatusClientePorId(numero.id, "sent");
         } else {
           await atualizarStatusCliente(
-            instanceId,
+            "drone_global",
             numero.whatsappFormat,
             "sent"
           );
@@ -167,12 +168,12 @@ async function executarDisparo(
           await smartDelay({ minMs: 60000, maxMs: 180000 });
         }
       } catch (error) {
-        // ❌ ATUALIZA STATUS NO BANCO COMO 'failed' (usando ID para garantir instância correta)
+        // ❌ ATUALIZA STATUS NO BANCO COMO 'failed' (usando ID)
         if (numero.id) {
           await atualizarStatusClientePorId(numero.id, "failed");
         } else {
           await atualizarStatusCliente(
-            instanceId,
+            "drone_global",
             numero.whatsappFormat,
             "failed"
           );
@@ -217,7 +218,7 @@ async function executarDisparo(
 
 /**
  * Executa disparo completo com divisão em batches
- * @param {string} instanceId - ID da instância a ser usada
+ * @param {string} ignore_instanceId - (Ignorado, agora é global)
  * @param {number} mensagemId - ID da mensagem
  * @param {number} batchSize - Tamanho do batch (padrão 200)
  * @param {Function} onProgress - Callback de progresso
@@ -232,35 +233,28 @@ async function executarDisparoCompleto(
   onBatchComplete = null
 ) {
   try {
-    // Valida instanceId
-    if (!instanceId) {
+    // Obtém todas as instâncias conectadas
+    const allInstances = droneInstanceManager.getAllInstancesStatus();
+    const connectedInstances = allInstances.filter((i) => i.status === "connected");
+
+    if (connectedInstances.length === 0) {
       return {
         success: false,
-        error: "instanceId é obrigatório para executar disparo",
+        error: "Nenhuma instância do Drone está conectada.",
         results: [],
+        instanceId: "drone_global",
       };
     }
 
-    // Verifica se a instância está conectada antes de começar
-    const status = await verificarStatusCliente(instanceId);
-    if (!status.connected) {
-      return {
-        success: false,
-        error: `Instância não está conectada. Status: ${status.state}`,
-        results: [],
-        instanceId: instanceId,
-      };
-    }
-
-    // 🔄 BUSCA NÚMEROS DO BANCO DA INSTÂNCIA (pending + failed)
-    const numbersForDispatch = await getNumbersForDispatch(instanceId);
+    // 🔄 BUSCA NÚMEROS DO BANCO GLOBAL (pending + failed)
+    const numbersForDispatch = await getNumbersForDispatch("drone_global");
 
     if (numbersForDispatch.length === 0) {
       return {
         success: false,
-        error: "Nenhum número cadastrado para disparo nesta instância",
+        error: "Nenhum número cadastrado para disparo",
         results: [],
-        instanceId: instanceId,
+        instanceId: "drone_global",
       };
     }
 
@@ -268,7 +262,7 @@ async function executarDisparoCompleto(
     const totalBatches = Math.ceil(totalNumeros / batchSize);
 
     console.log(
-      `[${instanceId}] 📊 Iniciando disparo: ${totalNumeros} números em ${totalBatches} batch(es)`
+      `[Global] 📊 Iniciando disparo distribuído: ${totalNumeros} números em ${totalBatches} batch(es) para ${connectedInstances.length} instâncias.`
     );
 
     const resultadoFinal = {
@@ -280,19 +274,21 @@ async function executarDisparoCompleto(
       totalEnviados: 0,
       totalFalhas: 0,
       batches: [],
-      instanceId: instanceId,
+      instanceId: "drone_global",
     };
 
     // Processa cada batch
     for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-      // Verifica se a instância ainda está conectada antes de cada batch
-      const statusAtual = await verificarStatusCliente(instanceId);
-      if (!statusAtual.connected) {
+      // Re-verifica instâncias conectadas antes de cada batch
+      const currentAllInstances = droneInstanceManager.getAllInstancesStatus();
+      const currentConnectedInstances = currentAllInstances.filter((i) => i.status === "connected");
+
+      if (currentConnectedInstances.length === 0) {
         resultadoFinal.success = false;
-        resultadoFinal.message = `Disparo interrompido: instância desconectada no batch ${
+        resultadoFinal.message = `Disparo interrompido: todas as instâncias desconectaram no batch ${
           batchIndex + 1
         }`;
-        resultadoFinal.error = `Instância desconectou. Status: ${statusAtual.state}`;
+        resultadoFinal.error = `Sem instâncias conectadas.`;
         break;
       }
 
@@ -301,43 +297,69 @@ async function executarDisparoCompleto(
       const numerosBatch = numbersForDispatch.slice(inicio, fim);
 
       console.log(
-        `\n[${instanceId}] 🚀 Processando batch ${
+        `\n[Global] 🚀 Processando batch ${
           batchIndex + 1
         }/${totalBatches} (${numerosBatch.length} números)`
       );
 
-      // Executa disparo do batch
-      const resultadoBatch = await executarDisparo(
-        instanceId,
-        mensagemId,
-        numerosBatch,
-        (progress) => {
-          // Ajusta progresso para incluir informações do batch
-          if (onProgress) {
-            onProgress({
-              ...progress,
-              batch: batchIndex + 1,
-              totalBatches: totalBatches,
-              progressoGeral: {
-                atual: resultadoFinal.totalEnviados + progress.atual,
-                total: totalNumeros,
-              },
-              instanceId: instanceId,
-            });
+      // Divide o batch entre as instâncias conectadas (Round-Robin)
+      const instanceBatches = {};
+      currentConnectedInstances.forEach(i => instanceBatches[i.instanceId] = []);
+      
+      for (let i = 0; i < numerosBatch.length; i++) {
+        const instanceToUse = currentConnectedInstances[i % currentConnectedInstances.length];
+        instanceBatches[instanceToUse.instanceId].push(numerosBatch[i]);
+      }
+
+      // Prepara as execuções para rodarem em paralelo por instância
+      const executionPromises = currentConnectedInstances.map(instance => {
+        const numbersForInstance = instanceBatches[instance.instanceId];
+        if (numbersForInstance.length === 0) return Promise.resolve(null);
+        
+        return executarDisparo(
+          instance.instanceId,
+          mensagemId,
+          numbersForInstance,
+          (progress) => {
+            // Ajusta progresso para incluir informações do batch e instância
+            if (onProgress) {
+              onProgress({
+                ...progress,
+                batch: batchIndex + 1,
+                totalBatches: totalBatches,
+                progressoGeral: {
+                  atual: resultadoFinal.totalEnviados + progress.atual, // Note: Isso pode ficar impreciso com chamadas paralelas
+                  total: totalNumeros,
+                },
+              });
+            }
           }
+        );
+      });
+
+      // Executa o batch aguardando todas as instâncias concluírem sua parte
+      const batchResults = await Promise.all(executionPromises);
+      
+      let batchEnviados = 0;
+      let batchFalhas = 0;
+
+      for (const res of batchResults) {
+        if (res) {
+          batchEnviados += res.enviados || 0;
+          batchFalhas += res.falhas || 0;
         }
-      );
+      }
 
       // Atualiza resultado final
       resultadoFinal.batchesProcessados++;
-      resultadoFinal.totalEnviados += resultadoBatch.enviados;
-      resultadoFinal.totalFalhas += resultadoBatch.falhas;
+      resultadoFinal.totalEnviados += batchEnviados;
+      resultadoFinal.totalFalhas += batchFalhas;
       resultadoFinal.batches.push({
         batch: batchIndex + 1,
         numeros: numerosBatch.length,
-        enviados: resultadoBatch.enviados,
-        falhas: resultadoBatch.falhas,
-        instanceId: instanceId,
+        enviados: batchEnviados,
+        falhas: batchFalhas,
+        instanceId: "drone_global",
       });
 
       // Callback de batch completo
@@ -345,9 +367,9 @@ async function executarDisparoCompleto(
         const continuarProximo = await onBatchComplete({
           batchAtual: batchIndex + 1,
           totalBatches: totalBatches,
-          resultado: resultadoBatch,
+          resultado: { enviados: batchEnviados, falhas: batchFalhas },
           temProximo: batchIndex + 1 < totalBatches,
-          instanceId: instanceId,
+          instanceId: "drone_global",
         });
 
         if (!continuarProximo) {
@@ -361,7 +383,7 @@ async function executarDisparoCompleto(
       // Delay entre batches (exceto no último) - 24 a 26 horas
       if (batchIndex < totalBatches - 1) {
         console.log(
-          `[${instanceId}] ⏳ Aguardando delay entre batches (24-26 horas)...`
+          `[Global] ⏳ Aguardando delay entre batches (24-26 horas)...`
         );
         // 24 horas = 86400000 ms, 26 horas = 93600000 ms
         await smartDelay({ minMs: 86400000, maxMs: 93600000 });

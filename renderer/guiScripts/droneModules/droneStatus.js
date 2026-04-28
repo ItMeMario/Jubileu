@@ -6,11 +6,10 @@ export default class DroneStatus {
   }
 
   /**
-   * Retorna o instanceId selecionado
-   * @returns {string|null} - instanceId ou null se não selecionado
+   * Retorna 'drone_global' como identificador
    */
   getSelectedInstanceId() {
-    return this.manager.selectedInstanceId || null;
+    return "drone_global";
   }
 
   /**
@@ -21,7 +20,6 @@ export default class DroneStatus {
       // Atualiza instâncias conectadas
       if (this.manager.instances) {
         await this.manager.instances.loadInstances();
-        await this.manager.instances.loadAllInstancesStatus();
       }
 
       // Atualiza status do WhatsApp da instância selecionada
@@ -44,7 +42,7 @@ export default class DroneStatus {
   }
 
   /**
-   * Atualiza status do WhatsApp (baseado na instância selecionada)
+   * Atualiza status do WhatsApp (baseado em qualquer instância conectada)
    */
   async updateWhatsAppStatus() {
     try {
@@ -55,24 +53,13 @@ export default class DroneStatus {
 
       if (!indicator || !text) return;
 
-      // Verifica se há instância selecionada
+      // Verifica se há instância pronta
       if (this.manager.instances?.isInstanceReady()) {
-        const instanceInfo = this.manager.selectedInstanceInfo;
         indicator.textContent = "🟢";
-        text.textContent = instanceInfo?.phoneFormatted || "Conectado";
-        return;
-      }
-
-      // Fallback: verifica status via API
-      const instanceId = this.getSelectedInstanceId();
-      const statusResult = await window.droneAPI.obterStatusCliente(instanceId);
-
-      if (statusResult.conectado) {
-        indicator.textContent = "🟢";
-        text.textContent = statusResult.statusTexto || "Conectado";
+        text.textContent = "Conectado (Global)";
       } else {
         indicator.textContent = "🔴";
-        text.textContent = statusResult.statusTexto || "Desconectado";
+        text.textContent = "Desconectado";
       }
     } catch (error) {
       console.error("Erro ao atualizar status do WhatsApp:", error);
@@ -85,15 +72,6 @@ export default class DroneStatus {
   async updateGeneralStats() {
     try {
       const instanceId = this.getSelectedInstanceId();
-
-      // Se não há instância selecionada, zera os contadores
-      if (!instanceId) {
-        if (this.manager.statusTotal) {
-          this.manager.statusTotal.textContent = "0";
-        }
-        console.log("Estatísticas: nenhuma instância selecionada");
-        return;
-      }
 
       const result = await window.droneAPI.obterEstatisticasNumeros(instanceId);
 
@@ -120,12 +98,6 @@ export default class DroneStatus {
   async updateStatusBreakdown() {
     try {
       const instanceId = this.getSelectedInstanceId();
-
-      // Se não há instância selecionada, zera o breakdown
-      if (!instanceId) {
-        this.clearBreakdown();
-        return;
-      }
 
       const result = await window.droneAPI.obterEstatisticasNumeros(instanceId);
 
@@ -242,9 +214,7 @@ export default class DroneStatus {
       const instanceId = this.getSelectedInstanceId();
 
       const [statsResult, instancesResult] = await Promise.all([
-        instanceId
-          ? window.droneAPI.obterEstatisticasNumeros(instanceId)
-          : Promise.resolve({ success: false }),
+        window.droneAPI.obterEstatisticasNumeros(instanceId),
         window.droneAPI.obterStatusTodasInstancias(),
       ]);
 

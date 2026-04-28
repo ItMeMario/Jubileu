@@ -13,11 +13,8 @@ class DroneRenderer {
     // Estado da aplicação
     this.selectedMessageIndex = null;
     this.selectedMessageData = null;
-    this.selectedInstanceId = null;
-    this.selectedInstanceInfo = null;
     this.allMessages = [];
     this.currentNumbers = [];
-    this.connectedInstances = [];
     this.currentStatusFilter = "all";
     this.currentFile = null;
     this.disparoRunningInstances = new Set();
@@ -57,18 +54,9 @@ class DroneRenderer {
     // Status message
     this.statusDiv = document.getElementById("status");
 
-    // Instance Selector (NOVO)
-    this.instanceSelect = document.getElementById("instance-select");
-    this.instanceStatus = document.getElementById("instance-status");
-    this.btnRefreshInstances = document.getElementById("btn-refresh-instances");
-    this.noInstanceWarning = document.getElementById("no-instance-warning");
-
-    // Disparo - Instance Info (NOVO)
+    // Disparo - Instance Info
     this.disparoInstanceInfo = document.getElementById("disparo-instance-info");
     this.disparoInstanceName = document.getElementById("disparo-instance-name");
-    this.disparoInstancePhone = document.getElementById(
-      "disparo-instance-phone"
-    );
 
     // Navigation
     this.menuItems = document.querySelectorAll(".menu-item");
@@ -174,15 +162,7 @@ class DroneRenderer {
       });
     });
 
-    // Instance Selector (NOVO)
-    this.instanceSelect?.addEventListener("change", (e) => {
-      this.instances.handleInstanceChange(e.target.value);
-    });
-
-    // Refresh Instances (NOVO)
-    this.btnRefreshInstances?.addEventListener("click", () => {
-      this.instances.loadInstances();
-    });
+    // (Instâncias são gerenciadas diretamente pela aba de instâncias)
 
     // File Upload
     this.fileUploadArea?.addEventListener("click", () => {

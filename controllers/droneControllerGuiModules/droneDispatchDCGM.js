@@ -7,40 +7,31 @@ class DroneDispatchDCGM {
   }
 
   /**
-   * Executa disparo de drone com mensagem selecionada
-   * @param {string} instanceId - ID da instância a ser usada
-   * @param {number} mensagemIndex - Índice da mensagem (baseado em 1)
+   * Executa disparo de drone distribuído (Round-Robin entre instâncias conectadas)
+   * @param {string} instanceId - Ignorado (agora é global via 'drone_global')
+   * @param {number} mensagemIndex - Índice da mensagem (baseado em 1), ou null para aleatória
    * @param {number} batchSize - Tamanho do batch
    * @returns {Promise<Object>} - Resultado do disparo
    */
   async executarDisparoDrone(instanceId, mensagemIndex, batchSize = 200) {
     try {
-      // Valida instanceId
-      if (!instanceId) {
-        return {
-          success: false,
-          error:
-            "Nenhuma instância selecionada. Selecione uma instância conectada.",
-        };
-      }
-
       console.log(
-        `[${instanceId}] Executando disparo - Mensagem: ${mensagemIndex}, Batch: ${batchSize}`
+        `[drone_global] Executando disparo distribuído - Batch: ${batchSize}`
       );
 
-      // Verifica se há números cadastrados PARA ESTA INSTÂNCIA
-      const listaNumeros = await droneService.listarNumeros(instanceId, null);
+      // Verifica se há números cadastrados na lista GLOBAL
+      const listaNumeros = await droneService.listarNumeros("drone_global", null);
       if (!listaNumeros.success || listaNumeros.numbers.length === 0) {
         return {
           success: false,
           error:
-            "Nenhum número cadastrado para disparo nesta instância. Adicione números primeiro.",
-          instanceId: instanceId,
+            "Nenhum número cadastrado para disparo. Adicione números primeiro.",
+          instanceId: "drone_global",
         };
       }
 
       console.log(
-        `[${instanceId}] Números encontrados para disparo: ${listaNumeros.numbers.length}`
+        `[drone_global] Números encontrados para disparo: ${listaNumeros.numbers.length}`
       );
 
       // Busca mensagens disponíveis
@@ -49,13 +40,13 @@ class DroneDispatchDCGM {
         return {
           success: false,
           error: "Nenhuma mensagem disponível para disparo.",
-          instanceId: instanceId,
+          instanceId: "drone_global",
         };
       }
 
-      // O backend cuidará de selecionar as mensagens aleatoriamente
+      // O backend (messageDispatchDSM) cuidará do Round-Robin e seleção aleatória de mensagens
       const resultado = await droneService.executarDisparoCompleto(
-        instanceId,
+        "drone_global",
         null,
         batchSize
       );
@@ -64,10 +55,10 @@ class DroneDispatchDCGM {
         success: resultado.success,
         message: resultado.message || "Disparo finalizado",
         detalhes: {
-          instanceId: instanceId,
+          instanceId: "drone_global",
           mensagemUsada: {
             id: "aleatoria",
-            conteudo: "Múltiplas mensagens",
+            conteudo: "Múltiplas mensagens (Round-Robin)",
             locale: "variado",
           },
           totalNumeros: resultado.totalNumeros,
@@ -78,14 +69,14 @@ class DroneDispatchDCGM {
           batches: resultado.batches,
         },
         error: resultado.error,
-        instanceId: instanceId,
+        instanceId: "drone_global",
       };
     } catch (error) {
-      console.error(`[${instanceId}] Erro ao executar disparo:`, error);
+      console.error(`[drone_global] Erro ao executar disparo:`, error);
       return {
         success: false,
         error: error.message,
-        instanceId: instanceId,
+        instanceId: "drone_global",
       };
     }
   }

@@ -65,6 +65,11 @@ const {
 } = require("./initializeModules/droneClientsIM");
 
 const {
+  initializeDroneInstancesTable,
+  resetAllDroneInstancesStatus,
+} = require("./initializeModules/droneInstancesIM");
+
+const {
   initializeDeeJayInstancesTable,
 } = require("./initializeModules/deeJayIM");
 
@@ -108,6 +113,18 @@ async function initializeAllConfigs() {
     debug("✅ Tabela de clientes do Drone inicializada");
   } catch (error) {
     console.error("❌ Erro ao inicializar tabela de clientes do Drone:", error);
+    throw error;
+  }
+
+  // Inicializa tabela de instâncias do Drone
+  try {
+    await initializeDroneInstancesTable();
+    debug("✅ Tabela de instâncias do Drone inicializada");
+    
+    await resetAllDroneInstancesStatus();
+    debug("✅ Status das instâncias do Drone resetado para 'disconnected'");
+  } catch (error) {
+    console.error("❌ Erro ao inicializar tabela de instâncias do Drone:", error);
     throw error;
   }
 
@@ -236,6 +253,10 @@ module.exports = {
   initializeDroneClientsTable,
   getDroneClientsStats,
   clearClientsByInstance,
+
+  // Funções de instâncias do Drone
+  initializeDroneInstancesTable,
+  resetAllDroneInstancesStatus,
 
   // Função principal
   initializeAllConfigs,

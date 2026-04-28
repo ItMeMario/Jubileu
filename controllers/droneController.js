@@ -323,6 +323,7 @@ async function obterStatusCliente() {
  * @returns {Promise<Object>} - Resultado do disparo
  */
 async function executarDisparoDrone(
+  instanceId,
   mensagemIndex,
   batchSize = 200,
   onProgress = null,
@@ -348,19 +349,22 @@ async function executarDisparoDrone(
       };
     }
 
-    // Valida índice da mensagem
-    const mensagemIndex0 = mensagemIndex - 1; // Converte para índice base 0
-    if (mensagemIndex0 < 0 || mensagemIndex0 >= mensagens.length) {
-      return {
-        sucesso: false,
-        mensagem: "Mensagem selecionada inválida.",
-      };
+    let mensagemSelecionada = null;
+    
+    if (mensagemIndex !== null && mensagemIndex !== undefined) {
+      const mensagemIndex0 = mensagemIndex - 1; // Converte para índice base 0
+      if (mensagemIndex0 >= 0 && mensagemIndex0 < mensagens.length) {
+        mensagemSelecionada = mensagens[mensagemIndex0];
+      }
+    }
+    
+    // Se não houver índice válido, escolhe aleatório
+    if (!mensagemSelecionada) {
+      mensagemSelecionada = mensagens[Math.floor(Math.random() * mensagens.length)];
     }
 
-    const mensagemSelecionada = mensagens[mensagemIndex0];
-
-    // Executa disparo completo
     const resultado = await droneService.executarDisparoCompleto(
+      "drone_global", // Ignora instanceId passado, força global
       mensagemSelecionada.id,
       batchSize,
       onProgress,

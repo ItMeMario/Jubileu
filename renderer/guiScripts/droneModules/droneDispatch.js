@@ -6,11 +6,10 @@ export default class DroneDispatch {
   }
 
   /**
-   * Retorna o instanceId selecionado
-   * @returns {string|null} - instanceId ou null se não selecionado
+   * Retorna 'drone_global' como identificador
    */
   getSelectedInstanceId() {
-    return this.manager.selectedInstanceId || null;
+    return "drone_global";
   }
 
   /**
@@ -23,29 +22,14 @@ export default class DroneDispatch {
       this.updateRequirement(
         this.manager.reqInstance,
         hasInstance,
-        hasInstance ? "Instância selecionada" : "Selecione uma instância"
+        hasInstance ? "Pelo menos uma instância conectada" : "Conecte uma instância"
       );
 
-      // Check WhatsApp (baseado na instância)
-      let whatsappConnected = false;
-      let whatsappText = "Verificando...";
-
-      if (hasInstance) {
-        whatsappConnected = true;
-        whatsappText = "WhatsApp conectado";
-      } else {
-        const instanceId = this.getSelectedInstanceId();
-        const statusResult = await window.droneAPI.obterStatusCliente(
-          instanceId
-        );
-        whatsappConnected = statusResult.conectado;
-        whatsappText = statusResult.statusTexto || "Verificando...";
-      }
-
+      // Check WhatsApp
       this.updateRequirement(
         this.manager.reqWhatsapp,
-        whatsappConnected,
-        whatsappText
+        hasInstance,
+        hasInstance ? "WhatsApp(s) pronto(s) para disparo" : "Aguardando conexão"
       );
 
       // Check Message
@@ -56,27 +40,23 @@ export default class DroneDispatch {
         hasMessage ? `${this.manager.allMessages.length} mensagens cadastradas` : "Nenhuma mensagem cadastrada"
       );
 
-      // Check Numbers (da instância selecionada)
+      // Check Numbers (agora globais)
       let hasNumbers = false;
       let numbersText = "Adicione números";
 
-      const instanceId = this.getSelectedInstanceId();
-      if (instanceId) {
-        const numbersResult = await window.droneAPI.listarNumerosAtuais(
-          instanceId,
-          "all"
-        );
-        hasNumbers = numbersResult.success && numbersResult.total > 0;
-        numbersText = hasNumbers
-          ? `${numbersResult.total} número(s) cadastrado(s)`
-          : "Adicione números";
-      }
+      const numbersResult = await window.droneAPI.listarNumerosAtuais(
+        "drone_global",
+        "all"
+      );
+      hasNumbers = numbersResult.success && numbersResult.total > 0;
+      numbersText = hasNumbers
+        ? `${numbersResult.total} número(s) cadastrado(s)`
+        : "Adicione números";
 
       this.updateRequirement(this.manager.reqNumbers, hasNumbers, numbersText);
 
       // Enable/disable execute button
-      const canExecute =
-        hasInstance && whatsappConnected && hasMessage && hasNumbers;
+      const canExecute = hasInstance && hasMessage && hasNumbers;
       if (this.manager.btnExecuteDisparo) {
         this.manager.btnExecuteDisparo.disabled = !canExecute;
       }
@@ -171,32 +151,21 @@ export default class DroneDispatch {
     }
   }
 
-  /**
-   * Atualiza resumo do disparo
-   */
   updateDisparoSummary() {
-    // Atualiza informações da instância selecionada
-    if (this.manager.instances) {
-      this.manager.instances.updateDisparoInstanceInfo();
-    }
+    // Não precisa atualizar info de instância única
   }
 
-  /**
-   * Executa o disparo de mensagens
-   */
   async executeDisparo() {
-    // Verifica instância selecionada
-    const instanceId = this.getSelectedInstanceId();
-    if (!instanceId) {
+    if (!this.manager.instances?.isInstanceReady()) {
       this.manager.utility.showStatus(
-        "Selecione uma instância antes de disparar",
+        "Conecte pelo menos uma instância antes de disparar",
         "error"
       );
       return;
     }
 
-    if (this.manager.disparoRunningInstances.has(instanceId)) {
-      this.manager.utility.showStatus("Disparo já em andamento nesta instância", "error");
+    if (this.manager.disparoRunningInstances.has("global")) {
+      this.manager.utility.showStatus("Disparo já em andamento", "error");
       return;
     }
 
@@ -208,10 +177,8 @@ export default class DroneDispatch {
       return;
     }
 
-    // Busca estatísticas da instância para mostrar confirmação correta
-    const statsResult = await window.droneAPI.obterEstatisticasNumeros(
-      instanceId
-    );
+    // Busca estatísticas globais para mostrar confirmação correta
+    const statsResult = await window.droneAPI.obterEstatisticasNumeros("drone_global");
     let numbersToSend = this.manager.currentNumbers?.length || 0;
 
     if (statsResult.success && statsResult.estatisticas) {
@@ -228,17 +195,9 @@ export default class DroneDispatch {
       return;
     }
 
-    // Monta mensagem de confirmação com info da instância
-    const instanceName = this.manager.selectedInstanceInfo?.name || instanceId;
-    const instancePhone =
-      this.manager.selectedInstanceInfo?.phoneFormatted || "";
-
-    let confirmMsg = `Confirma o disparo?\n\n`;
-    confirmMsg += `📱 Instância: ${instanceName}`;
-    if (instancePhone) {
-      confirmMsg += ` (${instancePhone})`;
-    }
-    confirmMsg += `\n📨 Mensagem: Aleatória (${this.manager.allMessages.length} disponíveis)`;
+    let confirmMsg = `Confirma o disparo distribuído?\n\n`;
+    confirmMsg += `📱 Instâncias: Round-Robin (Distribuído)\n`;
+    confirmMsg += `📨 Mensagem: Aleatória (${this.manager.allMessages.length} disponíveis)`;
     confirmMsg += `\n📦 Batch: ${batchSize} números por lote`;
     confirmMsg += `\n📊 Total a enviar: ${numbersToSend} números (Pendentes + Falhas)`;
 
@@ -246,19 +205,19 @@ export default class DroneDispatch {
       return;
     }
 
-    this.manager.disparoRunningInstances.add(instanceId);
+    this.manager.disparoRunningInstances.add("global");
     this.manager.btnExecuteDisparo.disabled = true;
     this.manager.btnExecuteDisparo.textContent = "🚀 Disparando...";
 
     try {
-      // Executa disparo com instanceId (mensagemIndex = null)
+      // Executa disparo global (instanceId = 'drone_global')
       const result = await window.droneAPI.executarDisparoDrone(
-        instanceId,
+        "drone_global",
         null,
         batchSize
       );
 
-      this.manager.disparoRunningInstances.delete(instanceId);
+      this.manager.disparoRunningInstances.delete("global");
       this.manager.btnExecuteDisparo.disabled = false;
       this.manager.btnExecuteDisparo.textContent = "🚀 Executar Disparo";
 
@@ -282,9 +241,9 @@ export default class DroneDispatch {
         );
       }
     } catch (error) {
-      console.error(`[${instanceId}] Erro ao executar disparo:`, error);
+      console.error(`Erro ao executar disparo global:`, error);
       this.manager.utility.showStatus("Erro ao executar disparo", "error");
-      this.manager.disparoRunningInstances.delete(instanceId);
+      this.manager.disparoRunningInstances.delete("global");
       this.manager.btnExecuteDisparo.disabled = false;
       this.manager.btnExecuteDisparo.textContent = "🚀 Executar Disparo";
     }

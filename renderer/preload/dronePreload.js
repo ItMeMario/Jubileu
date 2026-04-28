@@ -131,6 +131,70 @@ contextBridge.exposeInMainWorld("droneAPI", {
     }
   },
 
+  // CRUD e Controle de Instâncias Drone
+  listInstances: () => ipcRenderer.invoke("drone-instance-list"),
+  createInstance: (name) => ipcRenderer.invoke("drone-instance-create", { name }),
+  removeInstance: (instanceId) => ipcRenderer.invoke("drone-instance-remove", { instanceId }),
+  renameInstance: (instanceId, name) => ipcRenderer.invoke("drone-instance-rename", { instanceId, name }),
+  startInstance: (instanceId) => ipcRenderer.invoke("drone-instance-start", { instanceId }),
+  stopInstance: (instanceId) => ipcRenderer.invoke("drone-instance-stop", { instanceId }),
+  reconnectInstance: (instanceId) => ipcRenderer.invoke("drone-instance-reconnect", { instanceId }),
+
+  // Eventos de Instância
+  onQR: (callback) => {
+    ipcRenderer.on("drone-instance-qr", (event, data) => callback(data));
+  },
+  onAuthenticated: (callback) => {
+    ipcRenderer.on("drone-instance-authenticated", (event, data) => callback(data));
+  },
+  onReady: (callback) => {
+    ipcRenderer.on("drone-instance-ready", (event, data) => callback(data));
+  },
+  onAuthFailure: (callback) => {
+    ipcRenderer.on("drone-instance-auth-failure", (event, data) => callback(data));
+  },
+  onDisconnected: (callback) => {
+    ipcRenderer.on("drone-instance-disconnected", (event, data) => callback(data));
+  },
+  onLoading: (callback) => {
+    ipcRenderer.on("drone-instance-loading", (event, data) => callback(data));
+  },
+  onStateChange: (callback) => {
+    ipcRenderer.on("drone-instance-state-change", (event, data) => callback(data));
+  },
+  onCreated: (callback) => {
+    ipcRenderer.on("drone-instance-created", (event, data) => callback(data));
+  },
+  onRemoved: (callback) => {
+    ipcRenderer.on("drone-instance-removed", (event, data) => callback(data));
+  },
+  onRenamed: (callback) => {
+    ipcRenderer.on("drone-instance-renamed", (event, data) => callback(data));
+  },
+  onStopped: (callback) => {
+    ipcRenderer.on("drone-instance-stopped", (event, data) => callback(data));
+  },
+  onReconnecting: (callback) => {
+    ipcRenderer.on("drone-instance-reconnecting", (event, data) => callback(data));
+  },
+  removeAllInstanceListeners: () => {
+    const events = [
+      "drone-instance-qr",
+      "drone-instance-authenticated",
+      "drone-instance-ready",
+      "drone-instance-auth-failure",
+      "drone-instance-disconnected",
+      "drone-instance-loading",
+      "drone-instance-state-change",
+      "drone-instance-created",
+      "drone-instance-removed",
+      "drone-instance-renamed",
+      "drone-instance-stopped",
+      "drone-instance-reconnecting"
+    ];
+    events.forEach(event => ipcRenderer.removeAllListeners(event));
+  },
+
   // ==================== DISPARO ====================
 
   // Executar disparo com instância selecionada
