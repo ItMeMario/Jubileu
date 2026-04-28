@@ -11,6 +11,16 @@ class UpdateHandlers {
     this.remotePackageUrl = "https://raw.githubusercontent.com/ItMeMario/Jubileu/main/package.json";
   }
 
+  register(ipcMain) {
+    ipcMain.handle("check-update", this.checkUpdate.bind(this));
+    ipcMain.handle("trigger-update", this.triggerUpdate.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("check-update");
+    ipcMain.removeHandler("trigger-update");
+  }
+
   async triggerUpdate() {
     try {
         const isGitRepo = fs.existsSync(path.join(app.getAppPath(), ".git")) || 

@@ -24,6 +24,30 @@ class ConfigHandlers {
     };
   }
 
+  register(ipcMain) {
+    ipcMain.handle("open-config", this.openConfig.bind(this));
+    ipcMain.handle("config-close-window", this.closeWindow.bind(this));
+    ipcMain.handle("config-get-system-config", this.getSystemConfig.bind(this));
+    ipcMain.handle("config-update-system-config", this.updateSystemConfig.bind(this));
+    ipcMain.handle("config-get-available-options", this.getAvailableOptions.bind(this));
+    ipcMain.handle("config-get-theme-settings", this.getThemeSettings.bind(this));
+    ipcMain.handle("config-update-theme-settings", this.updateThemeSettings.bind(this));
+    ipcMain.handle("config-export-settings", this.exportSettings.bind(this));
+    ipcMain.handle("config-import-settings", this.importSettings.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("open-config");
+    ipcMain.removeHandler("config-close-window");
+    ipcMain.removeHandler("config-get-system-config");
+    ipcMain.removeHandler("config-update-system-config");
+    ipcMain.removeHandler("config-get-available-options");
+    ipcMain.removeHandler("config-get-theme-settings");
+    ipcMain.removeHandler("config-update-theme-settings");
+    ipcMain.removeHandler("config-export-settings");
+    ipcMain.removeHandler("config-import-settings");
+  }
+
   async openConfig() {
     try {
       console.log("Abrindo configurações...");

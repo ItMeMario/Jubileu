@@ -13,6 +13,22 @@ class CityHandlers {
     return this.controllers.city;
   }
 
+  register(ipcMain) {
+    ipcMain.handle("city-get-cities", this.getCities.bind(this));
+    ipcMain.handle("city-add-city", this.addCity.bind(this));
+    ipcMain.handle("city-update-city", this.updateCity.bind(this));
+    ipcMain.handle("city-delete-city", this.deleteCity.bind(this));
+    ipcMain.handle("city-get-by-id", this.getCityById.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("city-get-cities");
+    ipcMain.removeHandler("city-add-city");
+    ipcMain.removeHandler("city-update-city");
+    ipcMain.removeHandler("city-delete-city");
+    ipcMain.removeHandler("city-get-by-id");
+  }
+
   async getCities() {
     try {
       const controller = this.getCityController();

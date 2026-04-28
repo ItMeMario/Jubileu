@@ -33,6 +33,32 @@ class DeeJayHandlers {
         }
   }
 
+  register(ipcMain) {
+    ipcMain.handle("dee-jay-get-instances", this.getInstances.bind(this));
+    ipcMain.handle("dee-jay-create-instance", this.createInstance.bind(this));
+    ipcMain.handle("dee-jay-remove-instance", this.removeInstance.bind(this));
+    ipcMain.handle("dee-jay-start-instance", this.startInstance.bind(this));
+    ipcMain.handle("dee-jay-stop-instance", this.stopInstance.bind(this));
+    ipcMain.handle("dee-jay-start-loop", this.startLoop.bind(this));
+    ipcMain.handle("dee-jay-stop-loop", this.stopLoop.bind(this));
+    ipcMain.handle("dee-jay-get-config", this.getConfig.bind(this));
+    ipcMain.handle("dee-jay-set-config", this.setConfig.bind(this));
+    ipcMain.handle("open-dee-jay-window", this.openDeeJayWindow.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("dee-jay-get-instances");
+    ipcMain.removeHandler("dee-jay-create-instance");
+    ipcMain.removeHandler("dee-jay-remove-instance");
+    ipcMain.removeHandler("dee-jay-start-instance");
+    ipcMain.removeHandler("dee-jay-stop-instance");
+    ipcMain.removeHandler("dee-jay-start-loop");
+    ipcMain.removeHandler("dee-jay-stop-loop");
+    ipcMain.removeHandler("dee-jay-get-config");
+    ipcMain.removeHandler("dee-jay-set-config");
+    ipcMain.removeHandler("open-dee-jay-window");
+  }
+
   async getInstances() {
     return deeJayService.getInstances();
   }

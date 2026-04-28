@@ -21,6 +21,16 @@ class WhatsAppHandlers {
     console.log("WhatsAppHandlers inicializado com sistema de lembretes");
   }
 
+  register(ipcMain) {
+    ipcMain.handle("start-whatsapp", this.startWhatsApp.bind(this));
+    ipcMain.handle("stop-whatsapp", this.stopWhatsApp.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("start-whatsapp");
+    ipcMain.removeHandler("stop-whatsapp");
+  }
+
   // 🆕 Função para obter caminho da sessão
   getSessionPath() {
     try {

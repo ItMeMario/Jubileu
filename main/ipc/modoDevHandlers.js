@@ -5,6 +5,28 @@ class ModoDevHandlers {
     console.log("ModoDevHandlers inicializado");
   }
 
+  register(ipcMain) {
+    ipcMain.handle("modo-dev-toggle-dev-mode", this.toggleDevMode.bind(this));
+    ipcMain.handle("modo-dev-toggle-debug-mode", this.toggleDebugMode.bind(this));
+    ipcMain.handle("modo-dev-set-scout-time", this.setScoutTime.bind(this));
+    ipcMain.handle("modo-dev-get-scout-config", this.getScoutConfig.bind(this));
+    ipcMain.handle("modo-dev-get-current-mode", this.getCurrentMode.bind(this));
+    ipcMain.handle("modo-dev-get-current-locale", this.getCurrentLocale.bind(this));
+    ipcMain.handle("modo-dev-get-available-locales", this.getAvailableLocales.bind(this));
+    ipcMain.handle("modo-dev-set-locale", this.setLocale.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("modo-dev-toggle-dev-mode");
+    ipcMain.removeHandler("modo-dev-toggle-debug-mode");
+    ipcMain.removeHandler("modo-dev-set-scout-time");
+    ipcMain.removeHandler("modo-dev-get-scout-config");
+    ipcMain.removeHandler("modo-dev-get-current-mode");
+    ipcMain.removeHandler("modo-dev-get-current-locale");
+    ipcMain.removeHandler("modo-dev-get-available-locales");
+    ipcMain.removeHandler("modo-dev-set-locale");
+  }
+
   // Alternar modo Dev/Produção
   async toggleDevMode() {
     try {

@@ -5,6 +5,24 @@ class DataBaseHandlers {
     console.log("DataBaseHandlers inicializado");
   }
 
+  register(ipcMain) {
+    ipcMain.handle("database-get-all-tables", this.getAllTables.bind(this));
+    ipcMain.handle("database-get-table-info", this.getTableInfo.bind(this));
+    ipcMain.handle("database-get-table-counts", this.getTableCounts.bind(this));
+    ipcMain.handle("database-get-database-info", this.getDatabaseInfo.bind(this));
+    ipcMain.handle("database-get-primary-city", this.getPrimaryCity.bind(this));
+    ipcMain.handle("database-get-overview", this.getDatabaseOverview.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("database-get-all-tables");
+    ipcMain.removeHandler("database-get-table-info");
+    ipcMain.removeHandler("database-get-table-counts");
+    ipcMain.removeHandler("database-get-database-info");
+    ipcMain.removeHandler("database-get-primary-city");
+    ipcMain.removeHandler("database-get-overview");
+  }
+
   // Obter todas as tabelas do banco
   async getAllTables() {
     try {

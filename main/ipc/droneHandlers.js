@@ -33,6 +33,58 @@ class DroneHandlers {
     });
   }
 
+  register(ipcMain) {
+    ipcMain.handle("open-drone", this.openDrone.bind(this));
+    ipcMain.handle("drone-listar-mensagens", this.listarMensagens.bind(this));
+    ipcMain.handle("drone-listar-numeros-atuais", this.listarNumerosAtuais.bind(this));
+    ipcMain.handle("drone-remover-numero", this.removerNumero.bind(this));
+    ipcMain.handle("drone-limpar-lista-completa", this.limparListaCompleta.bind(this));
+    ipcMain.handle("drone-limpar-enviados", this.limparEnviados.bind(this));
+    ipcMain.handle("drone-limpar-falhas", this.limparFalhas.bind(this));
+    ipcMain.handle("drone-obter-estatisticas-numeros", this.obterEstatisticasNumeros.bind(this));
+    ipcMain.handle("drone-obter-status-cliente", this.obterStatusCliente.bind(this));
+    ipcMain.handle("drone-executar-disparo-drone", this.executarDisparoDrone.bind(this));
+    ipcMain.handle("drone-processar-arquivo-csv", this.processarArquivoCSV.bind(this));
+    ipcMain.handle("drone-preview-csv", this.previewCSV.bind(this));
+    ipcMain.handle("drone-validar-opcoes", this.validarOpcoes.bind(this));
+    ipcMain.handle("drone-gerar-relatorio-nomes", this.gerarRelatorioNomes.bind(this));
+    ipcMain.handle("drone-obter-status-todas-instancias", this.obterStatusTodasInstancias.bind(this));
+    ipcMain.handle("drone-listar-instancias-conectadas", this.listarInstanciasConectadas.bind(this));
+    ipcMain.handle("drone-instance-create", this.createInstance.bind(this));
+    ipcMain.handle("drone-instance-remove", this.removeInstance.bind(this));
+    ipcMain.handle("drone-instance-rename", this.renameInstance.bind(this));
+    ipcMain.handle("drone-instance-start", this.startInstance.bind(this));
+    ipcMain.handle("drone-instance-stop", this.stopInstance.bind(this));
+    ipcMain.handle("drone-instance-reconnect", this.reconnectInstance.bind(this));
+    ipcMain.handle("drone-instance-list", this.listInstances.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("open-drone");
+    ipcMain.removeHandler("drone-listar-mensagens");
+    ipcMain.removeHandler("drone-listar-numeros-atuais");
+    ipcMain.removeHandler("drone-remover-numero");
+    ipcMain.removeHandler("drone-limpar-lista-completa");
+    ipcMain.removeHandler("drone-limpar-enviados");
+    ipcMain.removeHandler("drone-limpar-falhas");
+    ipcMain.removeHandler("drone-obter-estatisticas-numeros");
+    ipcMain.removeHandler("drone-obter-status-cliente");
+    ipcMain.removeHandler("drone-executar-disparo-drone");
+    ipcMain.removeHandler("drone-processar-arquivo-csv");
+    ipcMain.removeHandler("drone-preview-csv");
+    ipcMain.removeHandler("drone-validar-opcoes");
+    ipcMain.removeHandler("drone-gerar-relatorio-nomes");
+    ipcMain.removeHandler("drone-obter-status-todas-instancias");
+    ipcMain.removeHandler("drone-listar-instancias-conectadas");
+    ipcMain.removeHandler("drone-instance-create");
+    ipcMain.removeHandler("drone-instance-remove");
+    ipcMain.removeHandler("drone-instance-rename");
+    ipcMain.removeHandler("drone-instance-start");
+    ipcMain.removeHandler("drone-instance-stop");
+    ipcMain.removeHandler("drone-instance-reconnect");
+    ipcMain.removeHandler("drone-instance-list");
+  }
+
   /**
    * Abre a janela do Drone
    */

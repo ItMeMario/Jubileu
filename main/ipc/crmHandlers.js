@@ -24,6 +24,28 @@ class CRMHandlers {
       }
   }
 
+  register(ipcMain) {
+    ipcMain.handle("open-crm", this.openCRM.bind(this));
+    ipcMain.handle("crm-create-instance", this.createCRMInstance.bind(this));
+    ipcMain.handle("crm-get-instances", this.getCRMInstances.bind(this));
+    ipcMain.handle("crm-start-instance", this.startInstance.bind(this));
+    ipcMain.handle("crm-stop-instance", this.stopInstance.bind(this));
+    ipcMain.handle("crm-remove-instance", this.removeInstance.bind(this));
+    ipcMain.handle("crm-get-manifests", this.getManifests.bind(this));
+    ipcMain.handle("crm-generate-pdf", this.generatePdf.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("open-crm");
+    ipcMain.removeHandler("crm-create-instance");
+    ipcMain.removeHandler("crm-get-instances");
+    ipcMain.removeHandler("crm-start-instance");
+    ipcMain.removeHandler("crm-stop-instance");
+    ipcMain.removeHandler("crm-remove-instance");
+    ipcMain.removeHandler("crm-get-manifests");
+    ipcMain.removeHandler("crm-generate-pdf");
+  }
+
   /**
    * Abre a janela do CRM
    */

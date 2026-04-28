@@ -4,6 +4,14 @@ class GoatHandlers {
     console.log("GoatHandlers inicializado");
   }
 
+  register(ipcMain) {
+    ipcMain.handle("open-goat", this.openGoat.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("open-goat");
+  }
+
   async openGoat() {
     try {
       console.log("Abrindo janela Goat...");

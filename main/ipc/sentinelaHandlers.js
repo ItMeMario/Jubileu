@@ -7,6 +7,28 @@ class SentinelaHandlers {
     console.log("SentinelaHandlers inicializado");
   }
 
+  register(ipcMain) {
+    ipcMain.handle("open-sentinela", this.openSentinela.bind(this));
+    ipcMain.handle("sentinela-import-csv", this.importCSV.bind(this));
+    ipcMain.handle("sentinela-get-area-codes", this.getAreaCodes.bind(this));
+    ipcMain.handle("sentinela-clear-area-codes", this.clearAreaCodes.bind(this));
+    ipcMain.handle("sentinela-get-import-stats", this.getImportStats.bind(this));
+    ipcMain.handle("sentinela-create-event", this.createCalendarEvent.bind(this));
+    ipcMain.handle("sentinela-get-events", this.getCalendarEvents.bind(this));
+    ipcMain.handle("sentinela-delete-event", this.deleteCalendarEvent.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("open-sentinela");
+    ipcMain.removeHandler("sentinela-import-csv");
+    ipcMain.removeHandler("sentinela-get-area-codes");
+    ipcMain.removeHandler("sentinela-clear-area-codes");
+    ipcMain.removeHandler("sentinela-get-import-stats");
+    ipcMain.removeHandler("sentinela-create-event");
+    ipcMain.removeHandler("sentinela-get-events");
+    ipcMain.removeHandler("sentinela-delete-event");
+  }
+
   /**
    * Abre a janela do Sentinela
    */

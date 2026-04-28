@@ -5,6 +5,22 @@ class IndicadoresHandlers {
     console.log("IndicadoresHandlers inicializado");
   }
 
+  register(ipcMain) {
+    ipcMain.handle("indicadores-get-statistics", this.getStatistics.bind(this));
+    ipcMain.handle("indicadores-get-hourly-statistics", this.getHourlyStatistics.bind(this));
+    ipcMain.handle("indicadores-get-summary-statistics", this.getSummaryStatistics.bind(this));
+    ipcMain.handle("indicadores-clear-statistics", this.clearStatistics.bind(this));
+    ipcMain.handle("indicadores-export-to-txt", this.exportToTxt.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("indicadores-get-statistics");
+    ipcMain.removeHandler("indicadores-get-hourly-statistics");
+    ipcMain.removeHandler("indicadores-get-summary-statistics");
+    ipcMain.removeHandler("indicadores-clear-statistics");
+    ipcMain.removeHandler("indicadores-export-to-txt");
+  }
+
   // Obter estatísticas completas
   async getStatistics() {
     try {

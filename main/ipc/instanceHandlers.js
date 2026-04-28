@@ -130,6 +130,40 @@ class InstanceHandlers {
     }
   }
 
+  register(ipcMain) {
+    ipcMain.handle("instance-initialize", this.initialize.bind(this));
+    ipcMain.handle("instance-list", this.listInstances.bind(this));
+    ipcMain.handle("instance-create", this.createInstance.bind(this));
+    ipcMain.handle("instance-remove", this.removeInstance.bind(this));
+    ipcMain.handle("instance-rename", this.renameInstance.bind(this));
+    ipcMain.handle("instance-start", this.startInstance.bind(this));
+    ipcMain.handle("instance-stop", this.stopInstance.bind(this));
+    ipcMain.handle("instance-reconnect", this.reconnectInstance.bind(this));
+    ipcMain.handle("instance-stop-all", this.stopAllInstances.bind(this));
+    ipcMain.handle("instance-status", this.getInstanceStatus.bind(this));
+    ipcMain.handle("instance-status-all", this.getAllInstancesStatus.bind(this));
+    ipcMain.handle("instance-client-info", this.getClientInfo.bind(this));
+    ipcMain.handle("instance-send-message", this.sendMessage.bind(this));
+    ipcMain.handle("instance-get-config", this.getConfig.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("instance-initialize");
+    ipcMain.removeHandler("instance-list");
+    ipcMain.removeHandler("instance-create");
+    ipcMain.removeHandler("instance-remove");
+    ipcMain.removeHandler("instance-rename");
+    ipcMain.removeHandler("instance-start");
+    ipcMain.removeHandler("instance-stop");
+    ipcMain.removeHandler("instance-reconnect");
+    ipcMain.removeHandler("instance-stop-all");
+    ipcMain.removeHandler("instance-status");
+    ipcMain.removeHandler("instance-status-all");
+    ipcMain.removeHandler("instance-client-info");
+    ipcMain.removeHandler("instance-send-message");
+    ipcMain.removeHandler("instance-get-config");
+  }
+
   /**
    * Inicializa o gerenciador de instâncias
    */

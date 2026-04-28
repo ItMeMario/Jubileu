@@ -4,6 +4,14 @@ const pathHelper = require('../../utils/pathHelper');
 const { instanceManager } = require('../../services/instanceManager');
 
 class CacheHandlers {
+    register(ipcMain) {
+        ipcMain.handle("clear-cache", this.clearCache.bind(this));
+    }
+
+    unregister(ipcMain) {
+        ipcMain.removeHandler("clear-cache");
+    }
+
     async clearCache() {
         try {
             const authPath = path.resolve(process.cwd(), '.wwebjs_auth');

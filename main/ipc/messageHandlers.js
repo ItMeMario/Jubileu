@@ -5,6 +5,38 @@ class MessageHandlers {
     console.log("MessageHandlers inicializado");
   }
 
+  register(ipcMain) {
+    ipcMain.handle("message-get-messages", this.getMessages.bind(this));
+    ipcMain.handle("message-add-message", this.addMessage.bind(this));
+    ipcMain.handle("message-update-message", this.updateMessage.bind(this));
+    ipcMain.handle("message-delete-message", this.deleteMessage.bind(this));
+    ipcMain.handle("message-get-last-message", this.getLastMessage.bind(this));
+    ipcMain.handle("message-add-message-with-audio", this.addMessageWithAudio.bind(this));
+    ipcMain.handle("message-update-message-with-audio", this.updateMessageWithAudio.bind(this));
+    ipcMain.handle("message-get-audio-files", this.getExistingAudioFiles.bind(this));
+    ipcMain.handle("message-validate-audio-file", this.validateAudioFile.bind(this));
+    ipcMain.handle("message-get-types", this.getMessageTypes.bind(this));
+    ipcMain.handle("message-get-locales", this.getMessageLocales.bind(this));
+    ipcMain.handle("message-check-completeness", this.checkMessageCompleteness.bind(this));
+    ipcMain.handle("message-get-available-options", this.getAvailableOptions.bind(this));
+  }
+
+  unregister(ipcMain) {
+    ipcMain.removeHandler("message-get-messages");
+    ipcMain.removeHandler("message-add-message");
+    ipcMain.removeHandler("message-update-message");
+    ipcMain.removeHandler("message-delete-message");
+    ipcMain.removeHandler("message-get-last-message");
+    ipcMain.removeHandler("message-add-message-with-audio");
+    ipcMain.removeHandler("message-update-message-with-audio");
+    ipcMain.removeHandler("message-get-audio-files");
+    ipcMain.removeHandler("message-validate-audio-file");
+    ipcMain.removeHandler("message-get-types");
+    ipcMain.removeHandler("message-get-locales");
+    ipcMain.removeHandler("message-check-completeness");
+    ipcMain.removeHandler("message-get-available-options");
+  }
+
   async getMessages() {
     try {
       return await messageControllerGui.handleListMessagesGUI();
