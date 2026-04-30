@@ -19,11 +19,9 @@
 }
 
 .instances-section h2 .instance-count {
-    background-color: #25d366;
-    color: white;
+    color: #666;
     font-size: 0.8rem;
     padding: 2px 8px;
-    border-radius: 12px;
 }
 
 /* Header com botão de adicionar */

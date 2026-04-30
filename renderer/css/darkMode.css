@@ -630,8 +630,7 @@ body.dark-mode .spinner {
 
 /* ========== INSTANCE COUNT BADGE ========== */
 body.dark-mode .instance-count {
-    background-color: var(--color-success);
-    color: white;
+    color: var(--text-secondary);
 }
 
 /* ========== SCROLLBAR (opcional) ========== */
