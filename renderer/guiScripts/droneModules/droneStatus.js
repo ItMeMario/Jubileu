@@ -22,6 +22,9 @@ export default class DroneStatus {
         await this.manager.instances.loadInstances();
       }
 
+      // Renderiza as instâncias na lista de status
+      this.renderInstancesStatus();
+
       // Atualiza status do WhatsApp da instância selecionada
       await this.updateWhatsAppStatus();
 
@@ -39,6 +42,81 @@ export default class DroneStatus {
       console.error("Erro ao atualizar status:", error);
       this.manager.utility.showStatus("Erro ao atualizar status", "error");
     }
+  }
+
+  /**
+   * Renderiza a lista de instâncias na aba de Status
+   */
+  renderInstancesStatus() {
+    const listDiv = this.manager.instancesStatusList;
+    if (!listDiv) return;
+
+    if (!this.manager.instances || !this.manager.instances.instances) {
+      listDiv.innerHTML = '<div class="loading-instances">Carregando instâncias...</div>';
+      return;
+    }
+
+    const instances = this.manager.instances.instances;
+
+    if (instances.length === 0) {
+      listDiv.innerHTML = '<div class="no-instances" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px;">Nenhuma instância cadastrada</div>';
+      return;
+    }
+
+    listDiv.innerHTML = '';
+    
+    instances.forEach(inst => {
+      const item = document.createElement('div');
+      
+      let stateClass = 'disconnected';
+      let stateText = 'Desconectado';
+      let icon = '📱';
+      
+      switch(inst.status) {
+        case 'connected':
+          stateClass = 'connected';
+          stateText = 'Conectado';
+          icon = '🟢';
+          break;
+        case 'connecting':
+          stateClass = 'connecting';
+          stateText = 'Conectando';
+          icon = '🟡';
+          break;
+        case 'qr_pending':
+          stateClass = 'connecting';
+          stateText = 'Aguardando QR';
+          icon = '🟠';
+          break;
+        case 'auth_failure':
+          stateClass = 'disconnected';
+          stateText = 'Falha Auth';
+          icon = '🔴';
+          break;
+        default:
+          stateClass = 'disconnected';
+          stateText = 'Desconectado';
+          icon = '⚪';
+      }
+      
+      item.className = `instance-status-item ${stateClass}`;
+      
+      let phoneStr = inst.phone_number || 'Sem número';
+      if (inst.phone_number && this.manager.instances.formatPhoneNumber) {
+        phoneStr = this.manager.instances.formatPhoneNumber(inst.phone_number);
+      }
+
+      item.innerHTML = `
+        <div class="instance-icon">${icon}</div>
+        <div class="instance-info">
+            <div class="instance-name" title="${inst.name}">${inst.name}</div>
+            <div class="instance-phone">${phoneStr}</div>
+        </div>
+        <div class="instance-state ${stateClass}">${stateText}</div>
+      `;
+      
+      listDiv.appendChild(item);
+    });
   }
 
   /**

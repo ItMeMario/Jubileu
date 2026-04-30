@@ -252,6 +252,7 @@ class DroneRenderer {
 
       // Atualiza status
       await this.status.updateStatusBreakdown();
+      this.status.renderInstancesStatus();
 
       // Verifica requisitos do disparo
       await this.dispatch.checkRequirements();
