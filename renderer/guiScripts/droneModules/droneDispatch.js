@@ -16,46 +16,53 @@ export default class DroneDispatch {
    * Verifica todos os requisitos para disparo
    */
   async checkRequirements() {
-    try {
-      // Check Instance
-      const hasInstance = this.manager.instances?.isInstanceReady() || false;
-      this.updateRequirement(
-        this.manager.reqInstance,
-        hasInstance,
-        hasInstance ? "Pelo menos uma instância conectada" : "Conecte uma instância"
-      );
+    if (this._checkReqTimer) clearTimeout(this._checkReqTimer);
 
-      // Check Message
-      const hasMessage = this.manager.allMessages && this.manager.allMessages.length > 0;
-      this.updateRequirement(
-        this.manager.reqMessage,
-        hasMessage,
-        hasMessage ? `${this.manager.allMessages.length} mensagens cadastradas` : "Nenhuma mensagem cadastrada"
-      );
+    return new Promise((resolve) => {
+      this._checkReqTimer = setTimeout(async () => {
+        try {
+          // Check Instance
+          const hasInstance = this.manager.instances?.isInstanceReady() || false;
+          this.updateRequirement(
+            this.manager.reqInstance,
+            hasInstance,
+            hasInstance ? "Pelo menos uma instância conectada" : "Conecte uma instância"
+          );
 
-      // Check Numbers (agora globais)
-      let hasNumbers = false;
-      let numbersText = "Adicione números";
+          // Check Message
+          const hasMessage = this.manager.allMessages && this.manager.allMessages.length > 0;
+          this.updateRequirement(
+            this.manager.reqMessage,
+            hasMessage,
+            hasMessage ? `${this.manager.allMessages.length} mensagens cadastradas` : "Nenhuma mensagem cadastrada"
+          );
 
-      const numbersResult = await window.droneAPI.listarNumerosAtuais(
-        "drone_global",
-        "all"
-      );
-      hasNumbers = numbersResult.success && numbersResult.total > 0;
-      numbersText = hasNumbers
-        ? `${numbersResult.total} número(s) cadastrado(s)`
-        : "Adicione números";
+          // Check Numbers (agora globais)
+          let hasNumbers = false;
+          let numbersText = "Adicione números";
 
-      this.updateRequirement(this.manager.reqNumbers, hasNumbers, numbersText);
+          const numbersResult = await window.droneAPI.listarNumerosAtuais(
+            "drone_global",
+            "all"
+          );
+          hasNumbers = numbersResult.success && numbersResult.total > 0;
+          numbersText = hasNumbers
+            ? `${numbersResult.total} número(s) cadastrado(s)`
+            : "Adicione números";
 
-      // Enable/disable execute button
-      const canExecute = hasInstance && hasMessage && hasNumbers;
-      if (this.manager.btnExecuteDisparo) {
-        this.manager.btnExecuteDisparo.disabled = !canExecute;
-      }
-    } catch (error) {
-      console.error("Erro ao verificar requisitos:", error);
-    }
+          this.updateRequirement(this.manager.reqNumbers, hasNumbers, numbersText);
+
+          // Enable/disable execute button
+          const canExecute = hasInstance && hasMessage && hasNumbers;
+          if (this.manager.btnExecuteDisparo) {
+            this.manager.btnExecuteDisparo.disabled = !canExecute;
+          }
+        } catch (error) {
+          console.error("Erro ao verificar requisitos:", error);
+        }
+        resolve();
+      }, 150);
+    });
   }
 
   /**
@@ -89,23 +96,30 @@ export default class DroneDispatch {
    * Carrega mensagens para o select de disparo
    */
   async loadMessagesForSelect() {
-    try {
-      const result = await window.droneAPI.listarMensagens();
+    if (this._loadMsgTimer) clearTimeout(this._loadMsgTimer);
 
-      if (result.success && result.mensagens) {
-        // Armazena as mensagens
-        this.manager.allMessages = result.mensagens;
+    return new Promise((resolve) => {
+      this._loadMsgTimer = setTimeout(async () => {
+        try {
+          const result = await window.droneAPI.listarMensagens();
 
-        if (this.manager.statusMessages) {
-          this.manager.statusMessages.textContent = result.mensagens.length;
+          if (result.success && result.mensagens) {
+            // Armazena as mensagens
+            this.manager.allMessages = result.mensagens;
+
+            if (this.manager.statusMessages) {
+              this.manager.statusMessages.textContent = result.mensagens.length;
+            }
+
+            // Atualiza requisitos após carregar mensagens
+            this.checkRequirements();
+          }
+        } catch (error) {
+          console.error("Erro ao carregar mensagens:", error);
         }
-
-        // Atualiza requisitos após carregar mensagens
-        this.checkRequirements();
-      }
-    } catch (error) {
-      console.error("Erro ao carregar mensagens:", error);
-    }
+        resolve();
+      }, 150);
+    });
   }
 
   /**
