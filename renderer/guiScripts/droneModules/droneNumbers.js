@@ -473,10 +473,6 @@ export default class DroneNumbers {
   }
 
   updateNumbersCount() {
-    if (this.manager.summaryTotal) {
-      this.manager.summaryTotal.textContent =
-        this.manager.currentNumbers.length;
-    }
     if (this.manager.statusTotal) {
       this.manager.statusTotal.textContent = this.manager.currentNumbers.length;
     }

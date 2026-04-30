@@ -84,7 +84,6 @@ class DroneRenderer {
 
     // Disparo
     this.reqInstance = document.getElementById("req-instance");
-    this.reqWhatsapp = document.getElementById("req-whatsapp");
     this.reqMessage = document.getElementById("req-message");
     this.reqNumbers = document.getElementById("req-numbers");
     this.messageSelect = document.getElementById("message-select");
@@ -92,7 +91,6 @@ class DroneRenderer {
     this.btnExecuteDisparo = document.getElementById("btn-execute-disparo");
 
     // Status
-    this.whatsappStatus = document.getElementById("whatsapp-status");
     this.statusTotal = document.getElementById("status-total");
     this.statusMessages = document.getElementById("status-messages");
     this.btnRefreshStatus = document.getElementById("btn-refresh-status");
@@ -113,10 +111,6 @@ class DroneRenderer {
 
     // Instances Status List (NOVO)
     this.instancesStatusList = document.getElementById("instances-status-list");
-    this.instancesConnectedCount = document.getElementById(
-      "instances-connected-count"
-    );
-    this.instancesTotalCount = document.getElementById("instances-total-count");
   }
 
   /**

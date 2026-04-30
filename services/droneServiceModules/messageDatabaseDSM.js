@@ -13,6 +13,7 @@ async function listarMensagensDisponiveis() {
       "SELECT * FROM messages WHERE message_type = ?",
       ["drone"],
       (err, rows) => {
+        db.close();
         if (err) {
           reject(err);
         } else {
@@ -36,6 +37,7 @@ async function buscarMensagemPorId(mensagemId) {
       "SELECT * FROM messages WHERE id = ? AND message_type = ?",
       [mensagemId, "drone"],
       (err, row) => {
+        db.close();
         if (err) {
           reject(err);
         } else {

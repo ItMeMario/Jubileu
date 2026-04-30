@@ -81,11 +81,6 @@ export default class DroneNavigation {
    * Carrega dados da seção Disparo
    */
   async loadDisparoSection() {
-    // Atualiza info da instância selecionada (NOVO)
-    if (this.manager.instances) {
-      this.manager.instances.updateDisparoInstanceInfo();
-    }
-
     // Verifica requisitos
     if (this.manager.dispatch) {
       await this.manager.dispatch.checkRequirements();

@@ -25,13 +25,6 @@ export default class DroneDispatch {
         hasInstance ? "Pelo menos uma instância conectada" : "Conecte uma instância"
       );
 
-      // Check WhatsApp
-      this.updateRequirement(
-        this.manager.reqWhatsapp,
-        hasInstance,
-        hasInstance ? "WhatsApp(s) pronto(s) para disparo" : "Aguardando conexão"
-      );
-
       // Check Message
       const hasMessage = this.manager.allMessages && this.manager.allMessages.length > 0;
       this.updateRequirement(

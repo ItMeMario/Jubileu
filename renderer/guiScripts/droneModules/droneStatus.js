@@ -25,9 +25,6 @@ export default class DroneStatus {
       // Renderiza as instâncias na lista de status
       this.renderInstancesStatus();
 
-      // Atualiza status do WhatsApp da instância selecionada
-      await this.updateWhatsAppStatus();
-
       // Atualiza total de números e mensagens
       await this.updateGeneralStats();
 
@@ -117,31 +114,6 @@ export default class DroneStatus {
       
       listDiv.appendChild(item);
     });
-  }
-
-  /**
-   * Atualiza status do WhatsApp (baseado em qualquer instância conectada)
-   */
-  async updateWhatsAppStatus() {
-    try {
-      const indicator =
-        this.manager.whatsappStatus?.querySelector(".indicator-dot");
-      const text =
-        this.manager.whatsappStatus?.querySelector(".indicator-text");
-
-      if (!indicator || !text) return;
-
-      // Verifica se há instância pronta
-      if (this.manager.instances?.isInstanceReady()) {
-        indicator.textContent = "🟢";
-        text.textContent = "Conectado (Global)";
-      } else {
-        indicator.textContent = "🔴";
-        text.textContent = "Desconectado";
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar status do WhatsApp:", error);
-    }
   }
 
   /**
@@ -252,35 +224,6 @@ export default class DroneStatus {
     }
 
     console.log("Breakdown zerado: nenhuma instância selecionada");
-  }
-
-  /**
-   * Atualiza contadores de instâncias na seção de status
-   */
-  async updateInstancesCount() {
-    try {
-      const result = await window.droneAPI.obterStatusTodasInstancias();
-
-      if (result.success) {
-        // Atualiza contador de instâncias conectadas se existir elemento
-        if (this.manager.instancesConnectedCount) {
-          this.manager.instancesConnectedCount.textContent =
-            result.connected || 0;
-        }
-
-        // Atualiza contador total de instâncias se existir elemento
-        if (this.manager.instancesTotalCount) {
-          this.manager.instancesTotalCount.textContent = result.total || 0;
-        }
-
-        console.log("Contadores de instâncias atualizados:", {
-          connected: result.connected,
-          total: result.total,
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar contadores de instâncias:", error);
-    }
   }
 
   /**
