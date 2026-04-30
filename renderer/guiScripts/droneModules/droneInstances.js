@@ -220,9 +220,8 @@ export default class DroneInstances {
         if(badge) { badge.classList.add("connected"); badge.textContent = "Conectado"; }
         if(info) {
             info.style.display = "block";
-            const phoneNumber = data.info?.phoneNumber || data.phone_number || "Número não disponível";
             const pn = info.querySelector(".phone-number");
-            if(pn) pn.textContent = this.formatPhoneNumber(phoneNumber);
+            if(pn) pn.style.display = "none";
         }
         if(btnStop) btnStop.style.display = "inline-flex";
         if(btnReconnect) btnReconnect.style.display = "inline-flex";
