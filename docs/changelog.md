@@ -674,3 +674,19 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 [Nenhuma correção registrada nesta versão.]
 
 📅 Data de Lançamento: [22/04/2026]
+
+---
+
+📌 Patch Notes - Versão 1.4.0
+
+✨ Novidades
+[Nenhuma nova funcionalidade adicionada nesta versão.]
+
+🛠️ Melhorias
+- Refatorado Drone, otimizado os processos, modificado a UI, trocado a lógica para ultilizar todas as instancias simultaneamente e de forma aleatória.
+- Refatorado ipc manager atribuido responsabilidade de gerenciar canais para os respectivos arquivos.
+
+🐛 Correções
+[Nenhuma correção registrada nesta versão.]
+
+📅 Data de Lançamento: [30/04/2026]
