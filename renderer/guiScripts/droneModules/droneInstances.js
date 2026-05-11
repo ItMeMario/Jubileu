@@ -27,6 +27,7 @@ export default class DroneInstances {
       removeMessage: document.getElementById("remove-instance-message"),
       btnRemoveCancel: document.getElementById("btn-remove-cancel"),
       btnRemoveConfirm: document.getElementById("btn-remove-confirm"),
+      btnRemoveAll: document.getElementById("btn-remove-all-instances"),
     };
 
     // Binds
@@ -65,6 +66,7 @@ export default class DroneInstances {
     this.elements.modalRemove?.addEventListener("click", (e) => {
       if (e.target === this.elements.modalRemove) this.closeRemoveModal();
     });
+    this.elements.btnRemoveAll?.addEventListener("click", () => this.openRemoveAllModal());
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
@@ -373,6 +375,13 @@ export default class DroneInstances {
     this.instanceToRemove = null;
   }
 
+  openRemoveAllModal() {
+    if (this.instances.length === 0) return;
+    this.instanceToRemove = "all";
+    if(this.elements.removeMessage) this.elements.removeMessage.textContent = `Tem certeza que deseja remover TODAS as instâncias do Drone?`;
+    if(this.elements.modalRemove) this.elements.modalRemove.style.display = "flex";
+  }
+
   async confirmRemove() {
     if (!this.instanceToRemove) return;
     const instanceId = this.instanceToRemove;
@@ -381,11 +390,19 @@ export default class DroneInstances {
         this.elements.btnRemoveConfirm.textContent = "Removendo...";
     }
     try {
-      const result = await window.droneAPI.removeInstance(instanceId);
-      if (result.success) {
+      if (instanceId === "all") {
+        const instancesToDelete = [...this.instances];
+        for (const instance of instancesToDelete) {
+           await window.droneAPI.removeInstance(instance.instance_id);
+        }
         this.closeRemoveModal();
       } else {
-        if(this.manager.utility) this.manager.utility.showStatus(`Erro: ${result.message}`, "error");
+        const result = await window.droneAPI.removeInstance(instanceId);
+        if (result.success) {
+          this.closeRemoveModal();
+        } else {
+          if(this.manager.utility) this.manager.utility.showStatus(`Erro: ${result.message}`, "error");
+        }
       }
     } catch (error) {
       if(this.manager.utility) this.manager.utility.showStatus("Erro ao remover instância", "error");

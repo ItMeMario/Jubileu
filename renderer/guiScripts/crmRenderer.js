@@ -397,6 +397,29 @@ function initializeCRM() {
     if (btnConfirm) btnConfirm.onclick = handleCreate;
     if (btnRefreshManifests) btnRefreshManifests.onclick = renderManifests;
     
+    const btnRemoveAll = document.getElementById('btn-remove-all-crm-instances');
+    if (btnRemoveAll) {
+        btnRemoveAll.onclick = async () => {
+            const confirmed = await window.customConfirm("Tem certeza que deseja remover TODAS as instâncias do CRM?");
+            if (!confirmed) return;
+            
+            // localInstances é um Map. Transformar em array
+            const instancesToDelete = Array.from(localInstances.values());
+            for (const instance of instancesToDelete) {
+                try {
+                    await window.crmAPI.removeInstance(instance.instanceId);
+                    document.getElementById(`card-${instance.instanceId}`)?.remove();
+                    localInstances.delete(instance.instanceId);
+                } catch(e) {
+                    console.error("Erro ao remover:", e);
+                }
+            }
+            if (instancesList && localInstances.size === 0) {
+                 instancesList.innerHTML = '<div class="empty-state">Nenhuma instância CRM criada.</div>';
+            }
+        };
+    }
+    
     // Fechar ao clicar fora
     if (modal) {
         modal.onclick = (e) => {

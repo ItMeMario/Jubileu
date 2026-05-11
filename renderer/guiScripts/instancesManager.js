@@ -29,6 +29,9 @@ class InstancesManager {
       removeMessage: document.getElementById("remove-instance-message"),
       btnRemoveCancel: document.getElementById("btn-remove-cancel"),
       btnRemoveConfirm: document.getElementById("btn-remove-confirm"),
+      
+      // Remover Todas
+      btnRemoveAll: document.getElementById("btn-remove-all-instances"),
     };
 
     // Bind dos métodos
@@ -126,6 +129,11 @@ class InstancesManager {
         this.closeRemoveModal();
       }
     });
+
+    // Remover Todas
+    if(this.elements.btnRemoveAll) {
+      this.elements.btnRemoveAll.addEventListener("click", () => this.openRemoveAllModal());
+    }
   }
 
   setupBackendListeners() {
@@ -496,23 +504,36 @@ class InstancesManager {
     this.instanceToRemove = null;
   }
 
+  openRemoveAllModal() {
+    if (this.instances.length === 0) return;
+    this.instanceToRemove = "all";
+    this.elements.removeMessage.textContent = `Tem certeza que deseja remover TODAS as ${this.instances.length} instâncias?`;
+    this.elements.modalRemove.classList.add("show");
+  }
+
   async confirmRemove() {
     if (!this.instanceToRemove) return;
-
-    const instanceId = this.instanceToRemove;
 
     // Desabilita botão durante a remoção
     this.elements.btnRemoveConfirm.disabled = true;
     this.elements.btnRemoveConfirm.textContent = "Removendo...";
 
     try {
-      const result = await window.electronAPI.instances.remove(instanceId);
-
-      if (result.success) {
+      if (this.instanceToRemove === "all") {
+        const instancesToDelete = [...this.instances];
+        for (const instance of instancesToDelete) {
+           await window.electronAPI.instances.remove(instance.instance_id);
+        }
         this.closeRemoveModal();
-        // A instância será removida via evento onRemoved
       } else {
-        this.showStatus(`Erro: ${result.message}`, "error");
+        const result = await window.electronAPI.instances.remove(this.instanceToRemove);
+
+        if (result.success) {
+          this.closeRemoveModal();
+          // A instância será removida via evento onRemoved
+        } else {
+          this.showStatus(`Erro: ${result.message}`, "error");
+        }
       }
     } catch (error) {
       console.error("Erro ao remover instância:", error);
