@@ -690,3 +690,18 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 [Nenhuma correção registrada nesta versão.]
 
 📅 Data de Lançamento: [30/04/2026]
+
+---
+
+📌 Patch Notes - Versão 1.4.1
+
+✨ Novidades
+- Adicionado botão de excluir todas as instâncias no Jubileu, Drone, CRM e Dee Jay.
+
+🛠️ Melhorias
+- Aumentado o número máximo de instâncias de 5 para 30.
+
+🐛 Correções
+[Nenhuma correção registrada nesta versão.]
+
+📅 Data de Lançamento: [12/05/2026]
