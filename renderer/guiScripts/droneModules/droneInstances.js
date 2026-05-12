@@ -4,7 +4,7 @@ export default class DroneInstances {
   constructor(manager) {
     this.manager = manager;
     this.instances = [];
-    this.maxInstances = 5;
+    this.maxInstances = 30;
     this.instanceToRemove = null;
 
     // Elementos do DOM (assumindo que o renderer passa ou achamos no document)

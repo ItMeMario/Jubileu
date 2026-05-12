@@ -6,7 +6,7 @@ class InstancesManager {
   constructor() {
     // Estado
     this.instances = [];
-    this.maxInstances = 5;
+    this.maxInstances = 30;
     this.instanceToRemove = null;
 
     // Elementos do DOM

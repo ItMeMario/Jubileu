@@ -9,7 +9,7 @@ const {
 /**
  * Constantes de configuração
  */
-const MAX_INSTANCES = 5;
+const MAX_INSTANCES = 30;
 
 const INSTANCE_STATUS = {
   DISCONNECTED: "disconnected",
