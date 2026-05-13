@@ -273,12 +273,15 @@ class DeeJayService {
     async stopInstance(instanceId) {
         const data = this.clients.get(instanceId);
         if (data && data.client) {
-            try {
-                await data.client.destroy();
-            } catch(e) {}
+            const { safeDestroyClient } = require("../utils/processCleanup");
+            await safeDestroyClient(data.client, `DeeJay ${instanceId}`);
             data.client = null;
             data.status = DEE_JAY_STATUS.DISCONNECTED;
-            await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.DISCONNECTED);
+            try {
+                await updateDeeJayInstanceStatus(instanceId, DEE_JAY_STATUS.DISCONNECTED);
+            } catch (e) {
+                console.error(`Dee Jay: Erro ao atualizar status de ${instanceId}:`, e.message);
+            }
             this.emit('instance-update', { instanceId, status: DEE_JAY_STATUS.DISCONNECTED });
         }
     }

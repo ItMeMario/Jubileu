@@ -214,14 +214,35 @@ class CrmService {
     async stopInstance(instanceId) {
         const data = this.clients.get(instanceId);
         if (data && data.client) {
-            try {
-                await data.client.destroy();
-            } catch(e) {}
+            const { safeDestroyClient } = require("../utils/processCleanup");
+            await safeDestroyClient(data.client, `CRM ${instanceId}`);
             data.client = null;
             data.status = CRM_STATUS.DISCONNECTED;
-            await updateCrmInstanceStatus(instanceId, CRM_STATUS.DISCONNECTED);
+            try {
+                await updateCrmInstanceStatus(instanceId, CRM_STATUS.DISCONNECTED);
+            } catch (e) {
+                console.error(`CRM: Erro ao atualizar status de ${instanceId}:`, e.message);
+            }
             this.emit('instance-update', { instanceId, status: CRM_STATUS.DISCONNECTED });
         }
+    }
+
+    /**
+     * Stops all CRM instances (used during app cleanup)
+     */
+    async stopAll() {
+        console.log("🛑 Parando todas as instâncias CRM...");
+        const instanceIds = Array.from(this.clients.keys());
+
+        for (const instanceId of instanceIds) {
+            try {
+                await this.stopInstance(instanceId);
+            } catch (error) {
+                console.error(`Erro ao parar instância CRM ${instanceId}:`, error.message);
+            }
+        }
+
+        console.log("✅ Todas as instâncias CRM paradas");
     }
 
     getInstances() {

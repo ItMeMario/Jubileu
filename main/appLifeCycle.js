@@ -1,6 +1,8 @@
 const { app } = require("electron");
 const { instanceManager } = require("../services/instanceManager");
 const deeJayService = require("../services/deeJayService");
+const crmService = require("../services/crmService");
+const { droneInstanceManager } = require("../services/droneServiceModules/droneInstanceManagerDSM");
 
 class AppLifecycle {
   constructor() {
@@ -71,11 +73,11 @@ class AppLifecycle {
 
       const cleanupTasks = [];
 
-      // 1. Para todas as instâncias do novo sistema
+      // 1. Para todas as instâncias do sistema principal (Jubileu)
       cleanupTasks.push(
         instanceManager.stopAll()
-          .then(() => console.log("✅ Todas as instâncias paradas"))
-          .catch(err => console.error("⚠️ Erro ao parar instâncias:", err.message))
+          .then(() => console.log("✅ Todas as instâncias Jubileu paradas"))
+          .catch(err => console.error("⚠️ Erro ao parar instâncias Jubileu:", err.message))
       );
 
       // 2. Para todas as instâncias Dee Jay
@@ -85,25 +87,50 @@ class AppLifecycle {
           .catch(err => console.error("⚠️ Erro ao parar instâncias Dee Jay:", err.message))
       );
 
-      // 3. Cleanup do cliente legado (se existir)
+      // 3. Para todas as instâncias CRM
+      cleanupTasks.push(
+        crmService.stopAll()
+          .then(() => console.log("✅ Todas as instâncias CRM paradas"))
+          .catch(err => console.error("⚠️ Erro ao parar instâncias CRM:", err.message))
+      );
+
+      // 4. Para todas as instâncias Drone
+      cleanupTasks.push(
+        droneInstanceManager.stopAll()
+          .then(() => console.log("✅ Todas as instâncias Drone paradas"))
+          .catch(err => console.error("⚠️ Erro ao parar instâncias Drone:", err.message))
+      );
+
+      // 5. Cleanup do cliente legado (se existir)
       if (this.client && this.client.pupPage) {
-         cleanupTasks.push(
-           this.client.destroy()
+        const { safeDestroyClient } = require("../utils/processCleanup");
+        cleanupTasks.push(
+           safeDestroyClient(this.client, "Cliente Legado")
              .then(() => console.log("✅ Cliente legado destruído"))
              .catch(err => console.error("⚠️ Erro ao destruir cliente legado:", err.message))
-         );
+        );
       }
 
-      // Race against a strict timeout (e.g. 5 seconds) to prevent frozen Puppeteer processes
+      // Race against a strict timeout (10s) to prevent frozen Puppeteer processes
       // from hanging the application forever and breaking NSIS installers.
+      // Notebooks mais lentos podem precisar de mais tempo.
       const timeoutPromise = new Promise((resolve) => {
         setTimeout(() => {
-          console.warn("⚠️ Cleanup atingiu tempo limite (5s). Forçando encerramento dos filhos.");
+          console.warn("⚠️ Cleanup atingiu tempo limite (10s). Forçando encerramento.");
           resolve(); 
-        }, 5000);
+        }, 10000);
       });
 
       await Promise.race([Promise.allSettled(cleanupTasks), timeoutPromise]);
+
+      // 6. Última linha de defesa: mata qualquer processo Chrome órfão
+      // que possa ter sobrevivido ao cleanup gracioso
+      try {
+        const { killOrphanedChromiumProcesses } = require("../utils/processCleanup");
+        killOrphanedChromiumProcesses();
+      } catch (e) {
+        // Ignora erros no force-kill final
+      }
 
       console.log("✅ Cleanup concluído");
     } catch (error) {

@@ -6,6 +6,14 @@ const AppLifecycle = require("./main/AppLifecycle");
 const { initializeAllConfigs } = require("./config/initialize");
 const ConsoleRedirect = require("./main/consoleRedirect");
 
+// Previne múltiplas instâncias do Electron rodando simultaneamente.
+// Isso evita processos duplicados que impedem o NSIS de atualizar.
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  console.log("⚠️ Outra instância do Jubileu já está em execução. Encerrando esta.");
+  app.quit();
+} else {
 class Application {
   constructor() {
     this.windowManager = new WindowManager();
@@ -110,3 +118,14 @@ class Application {
 // Inicia a aplicação
 const jubileuApp = new Application();
 jubileuApp.initialize();
+
+// Quando uma segunda instância tenta abrir, foca a janela existente
+app.on("second-instance", () => {
+  const mainWindow = jubileuApp.windowManager?.getMainWindow();
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  }
+});
+
+} // Fecha o bloco else do requestSingleInstanceLock

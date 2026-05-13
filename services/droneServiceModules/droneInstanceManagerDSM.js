@@ -293,9 +293,11 @@ class DroneInstanceManager {
     try {
       const { client } = instanceData;
       client.removeAllListeners();
-      if (client.pupPage) {
-        await client.destroy();
-      }
+
+      // Usa destruição robusta com timeout + force-kill
+      const { safeDestroyClient } = require("../../utils/processCleanup");
+      await safeDestroyClient(client, `Drone ${instanceId}`);
+
       await debug(`✅ Cliente Drone ${instanceId} destruído`);
     } catch (error) {
       console.error(`Erro ao destruir cliente Drone ${instanceId}:`, error.message);

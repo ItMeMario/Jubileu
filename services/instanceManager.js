@@ -423,10 +423,9 @@ class InstanceManager {
       // Remove listeners
       client.removeAllListeners();
 
-      // Destrói se tiver página aberta
-      if (client.pupPage) {
-        await client.destroy();
-      }
+      // Usa destruição robusta com timeout + force-kill
+      const { safeDestroyClient } = require("../utils/processCleanup");
+      await safeDestroyClient(client, `Instance ${instanceId}`);
 
       await debug(`✅ Cliente ${instanceId} destruído`);
     } catch (error) {
