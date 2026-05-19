@@ -705,3 +705,18 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 [Nenhuma correção registrada nesta versão.]
 
 📅 Data de Lançamento: [12/05/2026]
+
+---
+
+📌 Patch Notes - Versão 1.4.2
+
+✨ Novidades
+[Nenhuma nova funcionalidade adicionada nesta versão.]
+
+🛠️ Melhorias
+[Nenhuma nova funcionalidade adicionada nesta versão.]
+
+🐛 Correções
+- Corrigido bug crítico na inicialização dos módulos Jubileu, CRM e Dee Jay.
+
+📅 Data de Lançamento: [19/05/2026]
