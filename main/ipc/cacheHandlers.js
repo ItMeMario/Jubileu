@@ -14,10 +14,23 @@ class CacheHandlers {
 
     async clearCache() {
         try {
-            const authPath = path.resolve(process.cwd(), '.wwebjs_auth');
-            const cachePath = path.resolve(process.cwd(), '.wwebjs_cache');
-            const deeJayAuthPath = path.resolve(process.cwd(), '.wwebjs_auth_deejay');
-            const crmAuthPath = path.resolve(process.cwd(), '.wwebjs_auth_crm');
+            // Detecta se está empacotado para usar os caminhos corretos
+            const { app } = require("electron");
+            const isPackaged = app && app.isPackaged;
+            const userDataPath = isPackaged ? app.getPath("userData") : null;
+
+            const authPath = isPackaged
+                ? path.join(userDataPath, "whatsapp-sessions")
+                : path.resolve(process.cwd(), '.wwebjs_auth');
+            const cachePath = isPackaged
+                ? path.join(userDataPath, "wwebjs-cache")
+                : path.resolve(process.cwd(), '.wwebjs_cache');
+            const deeJayAuthPath = isPackaged
+                ? path.join(userDataPath, "whatsapp-sessions-deejay")
+                : path.resolve(process.cwd(), '.wwebjs_auth_deejay');
+            const crmAuthPath = isPackaged
+                ? path.join(userDataPath, "whatsapp-sessions-crm")
+                : path.resolve(process.cwd(), '.wwebjs_auth_crm');
 
             // 1. Parar todas as instâncias (Main + Dee Jay + CRM)
             console.log('Parando todas as instâncias...');
