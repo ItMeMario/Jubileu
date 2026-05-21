@@ -37,23 +37,25 @@ class AppLifecycle {
   }
 
   setupBeforeQuitHandler() {
-    app.on("before-quit", async (event) => {
-      // If we are already cleaned up, let Electron naturally exit
+    app.on("before-quit", (event) => {
       if (this.isCleanedUp) {
         return;
       }
 
       if (this.isCleaningUp) {
-         event.preventDefault();
-         return; // Already triggered cleanup
+         return; 
       }
 
-      // Prevent immediate exit to allow cleanup
-      event.preventDefault();
+      // IMPORTANTE: NÃO usar event.preventDefault() aqui no Windows!
+      // Se usarmos event.preventDefault(), o instalador (NSIS) entenderá 
+      // que o app recusou o fechamento e exibirá o erro fatal.
+      
+      this.isCleaningUp = true;
 
-      await this.cleanup();
+      // Executa a limpeza em background sem bloquear a saída imediata
+      this.cleanup().catch(e => console.error(e));
+      
       this.isCleanedUp = true;
-      app.quit(); // Retry quit now that cleanup is done
     });
   }
 
