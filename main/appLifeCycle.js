@@ -39,7 +39,7 @@ class AppLifecycle {
   setupBeforeQuitHandler() {
     app.on("before-quit", async (event) => {
       // If we are already cleaned up, let Electron naturally exit
-      if (this.isCleanedUp) {
+      if (this.isCleanedUp || global.isUpdateCleanupDone) {
         return;
       }
 

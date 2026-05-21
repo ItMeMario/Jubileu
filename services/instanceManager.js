@@ -567,21 +567,18 @@ class InstanceManager {
     return updated;
   }
 
-  /**
-   * Para todas as instâncias (usado no cleanup)
-   */
   async stopAll() {
     await debug("🛑 Parando todas as instâncias...");
 
     const instanceIds = Array.from(this.clients.keys());
 
-    for (const instanceId of instanceIds) {
+    await Promise.all(instanceIds.map(async (instanceId) => {
       try {
         await this.stopInstance(instanceId);
       } catch (error) {
         console.error(`Erro ao parar instância ${instanceId}:`, error.message);
       }
-    }
+    }));
 
     await debug("✅ Todas as instâncias paradas");
   }

@@ -114,7 +114,17 @@ class UpdateHandlers {
                 autoUpdater.once('update-downloaded', (info) => {
                     console.log("Update downloaded");
                     
-                    setTimeout(() => {
+                    setTimeout(async () => {
+                        console.log("Limpando instâncias antes da atualização...");
+                        try {
+                            const { instanceManager } = require("../../services/instanceManager");
+                            const deeJayService = require("../../services/deeJayService");
+                            await instanceManager.stopAll();
+                            await deeJayService.stopAll();
+                        } catch (e) {
+                            console.error("Erro no cleanup de update:", e);
+                        }
+                        global.isUpdateCleanupDone = true;
                         autoUpdater.quitAndInstall();
                     }, 3000); // 3 segundos para o usuário ler a mensagem
                     
