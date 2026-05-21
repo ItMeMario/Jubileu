@@ -113,10 +113,29 @@ class UpdateHandlers {
 
                 autoUpdater.once('update-downloaded', (info) => {
                     console.log("Update downloaded");
-                    
-                    setTimeout(() => {
-                        autoUpdater.quitAndInstall();
-                    }, 3000); // 3 segundos para o usuário ler a mensagem
+                    global.isUpdateCleanupDone = true;
+                        
+                    setTimeout(async () => {
+                        console.log("Limpando instâncias antes da atualização...");
+                        try {
+                            const { instanceManager } = require("../../services/instanceManager");
+                            const deeJayService = require("../../services/deeJayService");
+                            await instanceManager.stopAll();
+                            await deeJayService.stopAll();
+                        } catch (e) {
+                            console.error("Erro no cleanup de update:", e);
+                        }
+                        
+                        // isSilent = false (Executa o instalador visível, mostrando a desinstalação)
+                        // isForceRunAfter = true (Inicia o app novamente após instalar)
+                        autoUpdater.quitAndInstall(false, true);
+                        
+                        // Força o encerramento do processo imediatamente após chamar o instalador
+                        // para garantir que não fique nada travando os arquivos
+                        setTimeout(() => {
+                            app.exit(0);
+                        }, 1000);
+                    }, 3000);
                     
                     resolve({ success: true, message: "Nova versão baixada! O aplicativo será reiniciado em instantes para aplicar a atualização." });
                 });
