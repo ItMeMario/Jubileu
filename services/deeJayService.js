@@ -501,13 +501,13 @@ class DeeJayService {
 
         const instanceIds = Array.from(this.clients.keys());
 
-        await Promise.all(instanceIds.map(async (instanceId) => {
+        for (const instanceId of instanceIds) {
             try {
                 await this.stopInstance(instanceId);
             } catch (error) {
                 console.error(`Erro ao parar instância Dee Jay ${instanceId}:`, error.message);
             }
-        }));
+        }
 
         console.log("✅ Todas as instâncias Dee Jay paradas");
     }
