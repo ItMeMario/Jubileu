@@ -711,12 +711,14 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 📌 Patch Notes - Versão 1.4.2
 
 ✨ Novidades
-[Nenhuma nova funcionalidade adicionada nesta versão.]
+[Nenhuma novidade registrada nesta versão.]
 
 🛠️ Melhorias
-[Nenhuma nova funcionalidade adicionada nesta versão.]
+- Ativado o empacotamento ASAR (asar: true) para condensar os milhares de arquivos soltos em um único arquivo, mitigando problemas de bloqueio de pasta no Windows.
+- Otimização do instalador: implementada macro NSIS (`customInit`) para forçar o encerramento do Jubileu Bot e seus processos filhos (Chromium, Puppeteer) de forma silenciosa antes de sobrepor a instalação.
 
 🐛 Correções
-- Corrigido bug crítico na inicialização dos módulos Jubileu, CRM e Dee Jay.
+- Corrigido erro "Não é possível fechar o Jubileu Bot" durante a atualização da aplicação. Os diretórios de dados de runtime (`deeJayService`, `crmService`, `groupService`, e limpador de cache) foram migrados de `resources/app` para o diretório correto do usuário (`userData`), evitando o bloqueio de pastas por processos abertos.
+- Corrigido problema de case-sensitivity no carregamento do `AppLifecycle` no módulo principal (`main.js`) evidenciado pela ativação do ASAR.
 
-📅 Data de Lançamento: [19/05/2026]
+📅 Data de Lançamento: [21/05/2026]

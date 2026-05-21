@@ -36,7 +36,7 @@
     "appId": "com.itmemario.jubileubot",
     "productName": "Jubileu Bot",
     "artifactName": "jubileu-bot-setup-${version}.${ext}",
-    "asar": false,
+    "asar": true,
     "directories": {
       "output": "dist"
     },
@@ -54,6 +54,11 @@
       "!node_modules/puppeteer-core/.local-chromium/**/*",
       "!data/**/*",
       "!.wwebjs_auth/**/*",
+      "!.wwebjs_auth_crm/**/*",
+      "!.wwebjs_auth_deejay/**/*",
+      "!.wwebjs_auth_drone/**/*",
+      "!.wwebjs_cache/**/*",
+      "!scratch/**/*",
       "!*.log",
       "!.git/**/*",
       "!.gitignore",
@@ -62,13 +67,7 @@
     "asarUnpack": [
       "node_modules/whatsapp-web.js/**/*",
       "node_modules/sqlite3/**/*",
-      "services/**/*",
-      "config/**/*",
-      "utils/**/*",
-      "main/**/*",
-      "handlers/**/*",
-      "controllers/**/*",
-      "client/**/*"
+      "node_modules/clipboardy/**/*"
     ],
     "win": {
       "target": [

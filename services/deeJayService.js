@@ -45,7 +45,15 @@ class DeeJayService {
     }
 
     getBaseSessionPath() {
-        return path.join(__dirname, "../.wwebjs_auth_deejay");
+        try {
+            const { app } = require("electron");
+            if (app && app.isPackaged) {
+                return path.join(app.getPath("userData"), "whatsapp-sessions-deejay");
+            }
+            return path.join(__dirname, "../.wwebjs_auth_deejay");
+        } catch (error) {
+            return path.join(__dirname, "../.wwebjs_auth_deejay");
+        }
     }
 
     async initialize() {
@@ -75,7 +83,15 @@ class DeeJayService {
     }
 
     getConfigPath() {
-        return path.join(__dirname, "../config/deeJayConfig.json");
+        try {
+            const { app } = require("electron");
+            if (app && app.isPackaged) {
+                return path.join(app.getPath("userData"), "data", "deeJayConfig.json");
+            }
+            return path.join(__dirname, "../config/deeJayConfig.json");
+        } catch (error) {
+            return path.join(__dirname, "../config/deeJayConfig.json");
+        }
     }
 
     async loadConfig() {

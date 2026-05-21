@@ -38,7 +38,15 @@ class CrmService {
     }
 
     getBaseSessionPath() {
-        return path.join(__dirname, "../.wwebjs_auth_crm");
+        try {
+            const { app } = require("electron");
+            if (app && app.isPackaged) {
+                return path.join(app.getPath("userData"), "whatsapp-sessions-crm");
+            }
+            return path.join(__dirname, "../.wwebjs_auth_crm");
+        } catch (error) {
+            return path.join(__dirname, "../.wwebjs_auth_crm");
+        }
     }
 
     async initialize() {

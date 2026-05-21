@@ -4,7 +4,16 @@ const fs = require("fs");
 const db = require("../config/db");
 const { debug } = require("./debugService");
 
-const DATA_DIR = path.join(__dirname, "../data");
+function getDataDir() {
+    try {
+        const { app } = require("electron");
+        if (app && app.isPackaged) {
+            return path.join(app.getPath("userData"), "data");
+        }
+    } catch (e) {}
+    return path.join(__dirname, "../data");
+}
+const DATA_DIR = getDataDir();
 const CONFIG_FILE = path.join(DATA_DIR, "config.json");
 
 class GroupService {
