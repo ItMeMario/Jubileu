@@ -2,7 +2,7 @@ const { app } = require("electron");
 const WindowManager = require("./main/windowManager");
 const ModuleLoader = require("./main/moduleLoader");
 const IPCManager = require("./main/ipcManager");
-const AppLifecycle = require("./main/AppLifecycle");
+const AppLifecycle = require("./main/appLifeCycle");
 const { initializeAllConfigs } = require("./config/initialize");
 const ConsoleRedirect = require("./main/consoleRedirect");
 
