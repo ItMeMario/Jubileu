@@ -722,3 +722,19 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 - Corrigido problema de case-sensitivity no carregamento do `AppLifecycle` no módulo principal (`main.js`) evidenciado pela ativação do ASAR.
 
 📅 Data de Lançamento: [21/05/2026]
+
+---
+
+📌 Patch Notes - Versão 1.4.3
+
+✨ Novidades
+[Nenhuma novidade registrada nesta versão.]
+
+🛠️ Melhorias
+[Nenhuma melhoria registrada nesta versão.]
+
+🐛 Correções
+- Fix da instabilidade do drone com 4 ou mais instâncias.
+- Corrigidos problemas de case sensitive do asar.
+
+📅 Data de Lançamento: [26/05/2026]

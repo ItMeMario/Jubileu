@@ -62,18 +62,24 @@ function getDatabaseConnection() {
         console.error("❌ Erro ao conectar com o banco:", err);
         reject(err);
       } else {
-        db.get(
-          "SELECT name FROM sqlite_master WHERE type='table' LIMIT 1",
-          (err) => {
-            if (err) {
-              console.error("❌ Erro ao testar conexão do banco:", err);
-              db.close();
-              reject(err);
-            } else {
-              resolve(db);
+        db.serialize(() => {
+          // Ativa o modo WAL e adiciona timeout para evitar SQLITE_BUSY com múltiplas conexões concorrentes (ex: várias instâncias do Drone)
+          db.run("PRAGMA journal_mode = WAL;");
+          db.run("PRAGMA busy_timeout = 15000;");
+
+          db.get(
+            "SELECT name FROM sqlite_master WHERE type='table' LIMIT 1",
+            (err) => {
+              if (err) {
+                console.error("❌ Erro ao testar conexão do banco:", err);
+                db.close();
+                reject(err);
+              } else {
+                resolve(db);
+              }
             }
-          }
-        );
+          );
+        });
       }
     });
   });
