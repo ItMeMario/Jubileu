@@ -12,6 +12,10 @@ const db = new sqlite3.Database(DATABASE_PATH, (err) => {
     console.error("❌ Erro ao conectar ao banco:", err.message);
     console.error("❌ Caminho tentado:", DATABASE_PATH);
   } else {
+    db.serialize(() => {
+      db.run("PRAGMA journal_mode = WAL;");
+      db.run("PRAGMA busy_timeout = 15000;");
+    });
     console.log("✅ Conectado ao banco de dados SQLite.");
     console.log("📂 Caminho do banco:", DATABASE_PATH);
   }
