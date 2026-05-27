@@ -288,6 +288,21 @@ if (btnClearCache) {
   });
 }
 
+// Exibe a versão do aplicativo
+async function loadAppVersion() {
+  try {
+    if (window.electronAPI && window.electronAPI.getAppVersion) {
+      const version = await window.electronAPI.getAppVersion();
+      const versionEl = document.getElementById("app-version");
+      if (versionEl) {
+        versionEl.textContent = `v${version}`;
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao carregar a versão do aplicativo:", error);
+  }
+}
+
 // ========================================
 // Inicialização
 // ========================================
@@ -296,6 +311,9 @@ async function initializeApp() {
   console.log("🚀 Inicializando aplicação...");
 
   try {
+    // Carrega a versão
+    await loadAppVersion();
+
     // Inicializa o gerenciador de instâncias
     if (window.instancesManager) {
       await window.instancesManager.init();
