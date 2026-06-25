@@ -25,7 +25,9 @@ class DeeJayService {
         this.config = {
             minIntervalMinutes: 1,
             maxIntervalMinutes: 5,
-            active: false
+            active: false,
+            linkJubileu: false,
+            linkDrone: false
         };
         this.eventCallbacks = new Map();
     }
@@ -103,6 +105,8 @@ class DeeJayService {
             // Merge loaded config with defaults, ensuring valid types
             if (loadedConfig.minIntervalMinutes) this.config.minIntervalMinutes = loadedConfig.minIntervalMinutes;
             if (loadedConfig.maxIntervalMinutes) this.config.maxIntervalMinutes = loadedConfig.maxIntervalMinutes;
+            if (loadedConfig.hasOwnProperty('linkJubileu')) this.config.linkJubileu = !!loadedConfig.linkJubileu;
+            if (loadedConfig.hasOwnProperty('linkDrone')) this.config.linkDrone = !!loadedConfig.linkDrone;
             console.log("Dee Jay: Configuração carregada:", this.config);
         } catch (error) {
             if (error.code !== 'ENOENT') {

@@ -78,6 +78,48 @@ function isExpectedFallbackError(err) {
   }
 }
 
+/**
+ * Verifica se o remetente é um número de alguma de nossas instâncias (Jubileu, Drone, Dee Jay)
+ * @param {string} fromJid
+ * @returns {boolean}
+ */
+function isLinkedNumber(fromJid) {
+  if (!fromJid) return false;
+  const rawNumber = fromJid.split("@")[0];
+
+  try {
+    // 1. Instâncias do Jubileu
+    const { instanceManager } = require("../services/instanceManager");
+    const jubileuStatuses = instanceManager.getAllInstancesStatus();
+    if (jubileuStatuses.some((inst) => inst.info?.wid?.user === rawNumber)) {
+      return true;
+    }
+
+    // 2. Instâncias do Drone
+    const { droneInstanceManager } = require("../services/droneServiceModules/droneInstanceManagerDSM");
+    const droneStatuses = droneInstanceManager.getAllInstancesStatus();
+    if (droneStatuses.some((inst) => inst.info?.wid?.user === rawNumber)) {
+      return true;
+    }
+
+    // 3. Instâncias do Dee Jay
+    const deeJayService = require("../services/deeJayService");
+    const deeJayStatuses = deeJayService.getConnectedInstances();
+    if (
+      deeJayStatuses.some((inst) => {
+        const client = inst.client;
+        return client?.info?.wid?.user === rawNumber;
+      })
+    ) {
+      return true;
+    }
+  } catch (error) {
+    console.error("Erro ao verificar números vinculados:", error);
+  }
+
+  return false;
+}
+
 // Inicializa o anti-spam manager
 (async () => {
   await antiSpamManager.initialize();
@@ -101,6 +143,14 @@ async function messageHandler(msg, instanceId) {
 
   // Obtém o estado dos usuários desta instância
   const userStates = getUserStates(instanceId);
+
+  // 🛡️ Prevenção de Loops: Ignora mensagens de outros chips vinculados (Jubileu, Drone, Dee Jay)
+  if (isLinkedNumber(msg.from)) {
+    await debug(
+      `[${instanceId}] ℹ️ Ignorando mensagem de outro chip vinculado (warm-up): ${msg.from}`
+    );
+    return;
+  }
 
   try {
     // 🛡️ Verificação 1: Filtro de grupos
