@@ -15,7 +15,7 @@ const {
 
 const MessageType = require("../config/messageType");
 const { runQuery, getDatabaseConnection } = require("../config/initializeModules/databaseIM");
-const { EMOJIS, GIF_URLS } = require("../utils/randomContent");
+const { EMOJIS, GIF_URLS, STICKER_URLS } = require("../utils/randomContent");
 
 class DeeJayService {
     constructor() {
@@ -339,11 +339,62 @@ class DeeJayService {
 
     getConnectedInstances() {
         const connected = [];
+        
+        // 1. Instâncias nativas do Dee Jay
         this.clients.forEach((val, key) => {
             if (val.status === DEE_JAY_STATUS.CONNECTED && val.client) {
-                connected.push(val);
+                connected.push({
+                    client: val.client,
+                    status: val.status,
+                    name: val.name
+                });
             }
         });
+
+        // 2. Instâncias do Jubileu (se vinculadas)
+        if (this.config.linkJubileu) {
+            try {
+                const { instanceManager } = require("./instanceManager");
+                const jubileuStatuses = instanceManager.getAllInstancesStatus();
+                jubileuStatuses.forEach(inst => {
+                    if ((inst.status === 'connected' || inst.status === 'ready') && inst.info?.wid?.user) {
+                        const client = instanceManager.getClient(inst.instanceId);
+                        if (client) {
+                            connected.push({
+                                client: client,
+                                status: DEE_JAY_STATUS.CONNECTED,
+                                name: `[Jubileu] ${inst.name || 'Bot'}`
+                            });
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Dee Jay: Erro ao obter instâncias do Jubileu:", e);
+            }
+        }
+
+        // 3. Instâncias do Drone (se vinculadas)
+        if (this.config.linkDrone) {
+            try {
+                const { droneInstanceManager } = require("./droneServiceModules/droneInstanceManagerDSM");
+                const droneStatuses = droneInstanceManager.getAllInstancesStatus();
+                droneStatuses.forEach(inst => {
+                    if ((inst.status === 'connected' || inst.status === 'ready') && inst.info?.wid?.user) {
+                        const client = droneInstanceManager.getClient(inst.instanceId);
+                        if (client) {
+                            connected.push({
+                                client: client,
+                                status: DEE_JAY_STATUS.CONNECTED,
+                                name: `[Drone] ${inst.name || 'Disparador'}`
+                            });
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Dee Jay: Erro ao obter instâncias do Drone:", e);
+            }
+        }
+
         return connected;
     }
 
@@ -406,34 +457,33 @@ class DeeJayService {
 
             if (!this.isRunning) break;
 
-            // 5. Wait before next conversation
-            await debug(`Dee Jay: Aguardando próxima conversa...`);
             await smartDelay({ minMs, maxMs });
         }
     }
 
     async sendSingleMessage(from, to) {
         // Randomization Logic:
-        // 70% - Database Message
+        // 55% - Database Message
         // 15% - Emoji
         // 15% - GIF
+        // 15% - Sticker
 
         const rand = Math.random();
         let message = null;
         let options = undefined;
 
         try {
-             if (rand < 0.70) {
+             if (rand < 0.55) {
                 // Database Message
                 message = await this.getRandomDeeJayMessage();
                 if (!message) {
                     // Fallback if DB empty
                      message = this.getRandomEmoji();
                 }
-             } else if (rand < 0.85) {
+             } else if (rand < 0.70) {
                 // Emoji
                 message = this.getRandomEmoji();
-             } else {
+             } else if (rand < 0.85) {
                 // GIF
                 const gifUrl = this.getRandomGifUrl();
                 if (gifUrl) {
@@ -447,11 +497,25 @@ class DeeJayService {
                 } else {
                      message = this.getRandomEmoji();
                 }
+             } else {
+                // Sticker
+                const stickerUrl = this.getRandomStickerUrl();
+                if (stickerUrl) {
+                    try {
+                        message = await MessageMedia.fromUrl(stickerUrl, { unsafeMime: true });
+                        options = { sendMediaAsSticker: true };
+                    } catch (e) {
+                         console.error("Dee Jay: Erro ao carregar figurinha, enviando emoji em vez disso.", e);
+                         message = this.getRandomEmoji();
+                    }
+                } else {
+                     message = this.getRandomEmoji();
+                }
              }
              
              if (!message) {
-                 await debug("Dee Jay: Não foi possível gerar mensagem.");
-                 return;
+                  await debug("Dee Jay: Não foi possível gerar mensagem.");
+                  return;
              }
 
             const receiverNumber = to.client.info.wid.user + "@c.us";
@@ -460,7 +524,14 @@ class DeeJayService {
             const sendOptions = { ...options, sendSeen: false };
             await from.client.sendMessage(receiverNumber, message, sendOptions);
             
-            const logMsg = (typeof message === 'object') ? '[GIF]' : message;
+            let logMsg = message;
+            if (typeof message === 'object') {
+                if (options && options.sendMediaAsSticker) {
+                    logMsg = '[Figurinha]';
+                } else {
+                    logMsg = '[GIF]';
+                }
+            }
 
             this.emit('log', {
                 timestamp: new Date(),
@@ -483,6 +554,11 @@ class DeeJayService {
     getRandomGifUrl() {
         if (!GIF_URLS || GIF_URLS.length === 0) return null;
         return GIF_URLS[Math.floor(Math.random() * GIF_URLS.length)];
+    }
+    
+    getRandomStickerUrl() {
+        if (!STICKER_URLS || STICKER_URLS.length === 0) return null;
+        return STICKER_URLS[Math.floor(Math.random() * STICKER_URLS.length)];
     }
 
     async getRandomDeeJayMessage() {
