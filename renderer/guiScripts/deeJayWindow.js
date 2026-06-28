@@ -18,6 +18,8 @@ let btnStopLoop;
 let minIntervalInput;
 let maxIntervalInput;
 let btnSaveConfig;
+let chkLinkJubileu;
+let chkLinkDrone;
 
 // Initialize
 async function init() {
@@ -42,6 +44,8 @@ async function init() {
     minIntervalInput = document.getElementById('min-interval');
     maxIntervalInput = document.getElementById('max-interval');
     btnSaveConfig = document.getElementById('btn-save-config');
+    chkLinkJubileu = document.getElementById('chk-link-jubileu');
+    chkLinkDrone = document.getElementById('chk-link-drone');
 
     console.log("DOM Elements captured:", {
         btnAddInstance: !!btnAddInstance,
@@ -139,7 +143,9 @@ function setupEventListeners() {
 
         await window.deeJayAPI.setConfig({
             minIntervalMinutes: min,
-            maxIntervalMinutes: max
+            maxIntervalMinutes: max,
+            linkJubileu: chkLinkJubileu.checked,
+            linkDrone: chkLinkDrone.checked
         });
         alert('Configuração salva!');
     });
@@ -188,6 +194,8 @@ async function loadConfig() {
     if (config) {
         minIntervalInput.value = config.minIntervalMinutes || 1;
         maxIntervalInput.value = config.maxIntervalMinutes || 5;
+        chkLinkJubileu.checked = !!config.linkJubileu;
+        chkLinkDrone.checked = !!config.linkDrone;
     }
 }
 
