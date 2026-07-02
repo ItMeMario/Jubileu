@@ -7,6 +7,7 @@ let loopActive = false;
 
 // DOM Elements (will be initialized in init())
 let btnAddInstance;
+let btnRemoveAllInstances;
 let modalAdd;
 let btnCancelAdd;
 let btnConfirmAdd;
@@ -33,6 +34,7 @@ async function init() {
 
     // Get DOM Elements (AFTER DOM is ready)
     btnAddInstance = document.getElementById('btn-add-instance');
+    btnRemoveAllInstances = document.getElementById('btn-remove-all-instances');
     modalAdd = document.getElementById('modal-add');
     btnCancelAdd = document.getElementById('btn-cancel-add');
     btnConfirmAdd = document.getElementById('btn-confirm-add');
@@ -49,6 +51,7 @@ async function init() {
 
     console.log("DOM Elements captured:", {
         btnAddInstance: !!btnAddInstance,
+        btnRemoveAllInstances: !!btnRemoveAllInstances,
         modalAdd: !!modalAdd,
         btnCancelAdd: !!btnCancelAdd,
         btnConfirmAdd: !!btnConfirmAdd
@@ -176,6 +179,32 @@ function setupEventListeners() {
     btnStopLoop.addEventListener('click', async () => {
         await window.deeJayAPI.stopLoop();
     });
+
+    // Remove All
+    if (btnRemoveAllInstances) {
+        btnRemoveAllInstances.addEventListener('click', async () => {
+            if (instances.length === 0) return;
+            const confirmed = await window.customConfirm('Tem certeza que deseja remover TODAS as instâncias do Dee Jay?');
+            if (!confirmed) return;
+
+            btnRemoveAllInstances.disabled = true;
+            const originalText = btnRemoveAllInstances.textContent;
+            btnRemoveAllInstances.textContent = 'Removendo...';
+
+            try {
+                const instancesToDelete = [...instances];
+                for (const inst of instancesToDelete) {
+                    await window.deeJayAPI.removeInstance(inst.instanceId);
+                }
+            } catch (error) {
+                console.error("Erro ao remover instâncias do Dee Jay:", error);
+            } finally {
+                btnRemoveAllInstances.disabled = false;
+                btnRemoveAllInstances.textContent = originalText;
+                await loadInstances();
+            }
+        });
+    }
 }
 
 function setupIPClisteners() {
