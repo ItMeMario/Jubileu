@@ -757,5 +757,7 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 🐛 Correções
 - **Prevenção de Loops Infinitos**: Criado filtro de descarte antecipado que impede auto-respostas e loops infinitos no chatbot ao identificar se o remetente de uma mensagem recebida pertence a uma de nossas instâncias ativas (Jubileu, Drone ou Dee Jay).
 - **Prevenção de Auto-Mensagens**: Ajustado o loop de conversas do Dee Jay para evitar o envio de mensagens para o mesmo número (remetente e destinatário idênticos), pulando o ciclo com segurança se nenhum par distinto for encontrado.
+- **Diretório de Sessões do Drone**: Corrigido o caminho relativo das sessões em ambiente de desenvolvimento, que fazia a pasta `.wwebjs_auth_drone` ser criada fora da pasta do projeto (na pasta pai `Github/`). Agora, as sessões do Drone são salvas corretamente na raiz do projeto (`Jubileu/`).
+- **Limpeza de Cache do Drone**: Integrado o encerramento automático das instâncias do Drone e a remoção da pasta `.wwebjs_auth_drone` (ou `whatsapp-sessions-drone` no build de produção) ao utilizar a rotina de limpar cache.
 
 📅 Data de Lançamento: [02/07/2026]
