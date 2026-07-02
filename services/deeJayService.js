@@ -357,9 +357,10 @@ class DeeJayService {
                 const { instanceManager } = require("./instanceManager");
                 const jubileuStatuses = instanceManager.getAllInstancesStatus();
                 jubileuStatuses.forEach(inst => {
-                    if ((inst.status === 'connected' || inst.status === 'ready') && inst.info?.wid?.user) {
+                    if (inst.status === 'connected' || inst.status === 'ready') {
                         const client = instanceManager.getClient(inst.instanceId);
-                        if (client) {
+                        const userNumber = client?.info?.wid?.user || inst.info?.wid?.user;
+                        if (client && userNumber) {
                             connected.push({
                                 client: client,
                                 status: DEE_JAY_STATUS.CONNECTED,
@@ -379,9 +380,10 @@ class DeeJayService {
                 const { droneInstanceManager } = require("./droneServiceModules/droneInstanceManagerDSM");
                 const droneStatuses = droneInstanceManager.getAllInstancesStatus();
                 droneStatuses.forEach(inst => {
-                    if ((inst.status === 'connected' || inst.status === 'ready') && inst.info?.wid?.user) {
+                    if (inst.status === 'connected' || inst.status === 'ready') {
                         const client = droneInstanceManager.getClient(inst.instanceId);
-                        if (client) {
+                        const userNumber = client?.info?.wid?.user || inst.info?.wid?.user;
+                        if (client && userNumber) {
                             connected.push({
                                 client: client,
                                 status: DEE_JAY_STATUS.CONNECTED,
@@ -417,26 +419,39 @@ class DeeJayService {
                 break;
             }
 
+            const minMs = this.config.minIntervalMinutes * 60 * 1000;
+            const maxMs = this.config.maxIntervalMinutes * 60 * 1000;
+
             // --- Conversation Logic ---
 
             // 1. Pick Pair
             const senderIdx = Math.floor(Math.random() * connected.length);
             const sender = connected[senderIdx];
+            const senderNum = sender.client?.info?.wid?.user;
 
             let receiverIdx;
+            let receiver;
+            let receiverNum;
+            let attempts = 0;
+            const maxAttempts = 50;
+
             do {
                 receiverIdx = Math.floor(Math.random() * connected.length);
-            } while (receiverIdx === senderIdx);
-            const receiver = connected[receiverIdx];
+                receiver = connected[receiverIdx];
+                receiverNum = receiver.client?.info?.wid?.user;
+                attempts++;
+            } while (
+                (receiverIdx === senderIdx || (senderNum && receiverNum && senderNum === receiverNum)) && 
+                attempts < maxAttempts
+            );
 
             // 2. Sender -> Receiver
-            const senderNum = sender.client?.info?.wid?.user;
-            const receiverNum = receiver.client?.info?.wid?.user;
-            
             await debug(`Dee Jay DEBUG: Loop ${sender.name} (${senderNum}) -> ${receiver.name} (${receiverNum})`);
 
             if (senderNum && receiverNum && senderNum === receiverNum) {
-                console.warn(`Dee Jay AVISO: As instâncias '${sender.name}' e '${receiver.name}' estão conectadas no MESMO número de WhatsApp (${senderNum}). O Dee Jay precisa de números diferentes para conversar.`);
+                console.warn(`Dee Jay AVISO: Não foi possível encontrar um destinatário com número diferente de '${sender.name}' (${senderNum}). Ignorando este ciclo de conversa.`);
+                await smartDelay({ minMs: 5000, maxMs: 10000 });
+                continue;
             }
 
             await this.sendSingleMessage(sender, receiver);
@@ -444,9 +459,6 @@ class DeeJayService {
             if (!this.isRunning) break;
 
             // 3. Wait interval (1-3 min by default/config) before reply
-            const minMs = this.config.minIntervalMinutes * 60 * 1000;
-            const maxMs = this.config.maxIntervalMinutes * 60 * 1000;
-            
             await debug(`Dee Jay: Aguardando resposta...`);
             await smartDelay({ minMs, maxMs });
 

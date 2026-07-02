@@ -132,6 +132,21 @@ function setupEventListeners() {
     });
 
     // Config
+    const saveCheckboxConfig = async () => {
+        const min = parseInt(minIntervalInput.value) || 1;
+        const max = parseInt(maxIntervalInput.value) || 5;
+        await window.deeJayAPI.setConfig({
+            minIntervalMinutes: min,
+            maxIntervalMinutes: max,
+            linkJubileu: chkLinkJubileu.checked,
+            linkDrone: chkLinkDrone.checked
+        });
+        console.log("Dee Jay: Configuração de vínculo salva automaticamente.");
+    };
+
+    chkLinkJubileu.addEventListener('change', saveCheckboxConfig);
+    chkLinkDrone.addEventListener('change', saveCheckboxConfig);
+
     btnSaveConfig.addEventListener('click', async () => {
         const min = parseInt(minIntervalInput.value);
         const max = parseInt(maxIntervalInput.value);
