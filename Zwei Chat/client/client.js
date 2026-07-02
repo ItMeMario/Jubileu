@@ -13,8 +13,9 @@ if (Chat && Chat.prototype) {
 }
 
 // Função para obter o caminho correto da sessão
-function getSessionPath() {
-  return pathHelper.getSessionPath();
+function getSessionPath(instanceId) {
+  const basePath = pathHelper.getSessionPath();
+  return instanceId ? path.join(basePath, `instance_${instanceId}`) : basePath;
 }
 
 // Função para obter caminho do Chrome com fallbacks
@@ -35,117 +36,81 @@ function getChromeExecutablePath() {
   }
 }
 
-// Configuração do cliente WhatsApp usando Chromium do sistema
-const client = new Client({
-  authStrategy: new LocalAuth({
-    clientId: "zwei-chat-bot",
-    dataPath: getSessionPath(),
-  }),
-  puppeteer: {
-    executablePath: getChromeExecutablePath(),
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-accelerated-2d-canvas",
-      "--no-first-run",
-      "--no-zygote",
-      "--disable-gpu",
-      "--disable-background-timer-throttling",
-      "--disable-backgrounding-occluded-windows",
-      "--disable-renderer-backgrounding",
-      "--disable-features=TranslateUI",
-      "--disable-ipc-flooding-protection",
-      "--disable-extensions",
-      "--disable-default-apps",
-      "--disable-sync",
-      "--disable-translate",
-      "--hide-scrollbars",
-      "--mute-audio",
-      "--disable-software-rasterizer",
-      "--disable-dev-tools",
-      "--disable-webgl",
-      "--disable-threaded-animation",
-      "--disable-threaded-scrolling",
-      "--disable-in-process-stack-traces",
-      "--disable-histogram-customizer",
-      "--disable-gl-extensions",
-      "--disable-composited-antialiasing",
-      "--disable-canvas-aa",
-      "--disable-3d-apis",
-      "--disable-breakpad",
-      "--disable-component-update",
-      "--disable-print-preview",
-      "--disable-features=AudioServiceOutOfProcess",
-      "--disable-features=IsolateOrigins",
-      "--disable-features=site-per-process",
-      "--disable-blink-features=AutomationControlled",
-    ],
-    timeout: 60000, // 60 segundos
-  },
-});
+// Mapa de instâncias ativas do cliente WhatsApp (instanceId => Client)
+const clients = new Map();
 
-// Função de inicialização dos event listeners
-function setupClientEventListeners() {
-  client.removeAllListeners();
+// Função para criar uma nova instância de cliente WhatsApp
+function createClient(instanceId) {
+  if (clients.has(instanceId)) {
+    return clients.get(instanceId);
+  }
 
-  client.on("qr", async (qr) => {
-    await debug("📱 QR Code recebido");
+  const client = new Client({
+    authStrategy: new LocalAuth({
+      clientId: `zwei-chat-bot-${instanceId}`,
+      dataPath: getSessionPath(instanceId),
+    }),
+    puppeteer: {
+      executablePath: getChromeExecutablePath(),
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-first-run",
+        "--no-zygote",
+        "--disable-gpu",
+        "--disable-background-timer-throttling",
+        "--disable-backgrounding-occluded-windows",
+        "--disable-renderer-backgrounding",
+        "--disable-features=TranslateUI",
+        "--disable-ipc-flooding-protection",
+        "--disable-extensions",
+        "--disable-default-apps",
+        "--disable-sync",
+        "--disable-translate",
+        "--hide-scrollbars",
+        "--mute-audio",
+        "--disable-software-rasterizer",
+        "--disable-dev-tools",
+        "--disable-webgl",
+        "--disable-threaded-animation",
+        "--disable-threaded-scrolling",
+        "--disable-in-process-stack-traces",
+        "--disable-histogram-customizer",
+        "--disable-gl-extensions",
+        "--disable-composited-antialiasing",
+        "--disable-canvas-aa",
+        "--disable-3d-apis",
+        "--disable-breakpad",
+        "--disable-component-update",
+        "--disable-print-preview",
+        "--disable-features=AudioServiceOutOfProcess",
+        "--disable-features=IsolateOrigins",
+        "--disable-features=site-per-process",
+        "--disable-blink-features=AutomationControlled",
+      ],
+      timeout: 60000, // 60 segundos
+    },
   });
 
-  client.on("ready", async () => {
-    await debug("✅ Cliente WhatsApp está pronto!");
-  });
+  // Vincula o ID da instância à sua própria referência
+  client.clientId = instanceId;
 
-  client.on("authenticated", async () => {
-    await debug("✅ Cliente autenticado com sucesso!");
-  });
-
-  client.on("auth_failure", async (msg) => {
-    await debug(`⚠️ Falha na autenticação: ${msg}`);
-  });
-
-  client.on("disconnected", async (reason) => {
-    await debug(`🔌 Cliente desconectado: ${reason}`);
-  });
-
-  client.on("loading_screen", async (percent, message) => {
-    await debug(`⏳ Carregando WhatsApp Web: ${percent}% - ${message}`);
-  });
-
-  client.on("change_state", async (state) => {
-    await debug(`🔄 Estado do cliente mudou para: ${state}`);
-  });
-
-  client.on("message", async (msg) => {
-    try {
-      if (msg.fromMe) return;
-      const { handleIncomingMessage } = require("./flowExecutor");
-      await handleIncomingMessage(msg);
-    } catch (err) {
-      await debug(`❌ Erro no processador de fluxos de mensagens: ${err.message}`);
-    }
-  });
-}
-
-// Função de inicialização completa
-async function initializeClient() {
-  await debug("🚀 Inicializando cliente WhatsApp...");
-  setupClientEventListeners();
-  await client.initialize();
+  clients.set(instanceId, client);
   return client;
 }
 
 // Para CLI: Auto-inicialização se não estiver em ambiente Electron
 if (!process.versions.electron) {
   debug("🖥️ Modo CLI detectado - inicializando automaticamente...");
-  setupClientEventListeners();
+  const defaultClient = createClient("default");
+  defaultClient.initialize();
 }
 
 module.exports = {
-  client,
-  initializeClient,
-  setupClientEventListeners,
+  clients,
+  createClient,
   getSessionPath,
 };

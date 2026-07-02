@@ -1240,4 +1240,147 @@ textarea.step-input {
   line-height: 1.4;
 }
 
+/* ==========================================================================
+   SEÇÃO DE INSTÂNCIAS (SIDEBAR)
+   ========================================================================== */
+.instances-section {
+  margin-top: 10px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
+.instances-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.instances-header h3 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.icon-btn-add {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  color: var(--primary-hover);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.icon-btn-add:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+
+.instances-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.instances-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.instances-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.instances-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.instance-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.instance-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(139, 92, 246, 0.15);
+}
+
+.instance-item.active {
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.1);
+}
+
+.instance-item-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.instance-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.instance-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.instance-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dark);
+  cursor: pointer;
+  font-size: 12px;
+  transition: color 0.2s;
+  padding: 2px;
+  outline: none;
+}
+
+.instance-action-btn:hover {
+  color: var(--text-main);
+}
+
+.instance-action-btn.delete:hover {
+  color: var(--error);
+}
+
+.instances-placeholder {
+  text-align: center;
+  padding: 20px 10px;
+  color: var(--text-dark);
+  font-size: 13px;
+  border: 1px dashed rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+}

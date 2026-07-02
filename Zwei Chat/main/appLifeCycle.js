@@ -66,14 +66,16 @@ class AppLifecycle {
 
       const cleanupTasks = [];
 
-      // Destrói cliente whatsapp
+      // Destrói clientes whatsapp
       if (this.client) {
         const { safeDestroyClient } = require("../utils/processCleanup");
-        cleanupTasks.push(
-          safeDestroyClient(this.client, "Cliente WhatsApp")
-            .then(() => console.log("✅ Cliente WhatsApp destruído"))
-            .catch(err => console.error("⚠️ Erro ao destruir cliente WhatsApp:", err.message))
-        );
+        for (const [instanceId, clientInstance] of this.client.entries()) {
+          cleanupTasks.push(
+            safeDestroyClient(clientInstance, `Cliente WhatsApp ${instanceId}`)
+              .then(() => console.log(`✅ Cliente WhatsApp ${instanceId} destruído`))
+              .catch(err => console.error(`⚠️ Erro ao destruir cliente WhatsApp ${instanceId}:`, err.message))
+          );
+        }
       }
 
       const timeoutPromise = new Promise((resolve) => {

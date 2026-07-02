@@ -1,14 +1,24 @@
 // renderer/guiScripts/index.js
 
+// renderer/guiScripts/index.js
+
 const btnStart = document.getElementById("btn-start");
 const btnStop = document.getElementById("btn-stop");
 const btnClearLogs = document.getElementById("btn-clear-logs");
 const statusText = document.getElementById("status-text");
-const statusDot = document.getElementById("status-dot");
 const qrImg = document.getElementById("qr-img");
 const qrPlaceholder = document.getElementById("qr-placeholder");
 const qrLoading = document.getElementById("qr-loading");
 const terminalLogs = document.getElementById("terminal-logs");
+
+// Novos seletores para instâncias
+const btnAddInstance = document.getElementById("btn-add-instance");
+const instancesList = document.getElementById("instances-list");
+
+// Estado em memória
+let instances = [];
+let selectedInstanceId = null;
+const instanceStatuses = {}; // instanceId => { status: "not_initialized" | "connecting" | "ready" | "error", label: string, qrImage: string, loadingPercent: number, loadingMessage: string }
 
 // Adiciona um log no console visual
 function addLog(level, message, timestamp = null) {
@@ -46,123 +56,353 @@ function addLog(level, message, timestamp = null) {
   terminalLogs.scrollTop = terminalLogs.scrollHeight;
 }
 
-// Atualiza o estado visual da conexão
-function updateStatus(state, message = "") {
-  let label = "Desconectado";
-  if (state === "ready") {
-    label = "Conectado";
-  } else if (state === "connecting") {
-    label = message || "Conectando...";
-  } else if (state === "error") {
-    label = "Erro";
+// Atualiza a UI com base no status da instância selecionada
+function refreshSelectedInstanceUI() {
+  if (!selectedInstanceId) {
+    btnStart.disabled = true;
+    btnStop.disabled = true;
+    qrLoading.classList.remove("active");
+    qrImg.style.display = "none";
+    qrPlaceholder.style.display = "flex";
+    qrPlaceholder.innerHTML = `
+      <div class="qr-placeholder-icon">📱</div>
+      <p>Crie ou selecione uma instância de WhatsApp na barra lateral.</p>
+    `;
+    statusText.innerHTML = `<span id="status-dot" class="status-indicator not_initialized"></span> Sem Instância`;
+    return;
   }
+
+  const status = instanceStatuses[selectedInstanceId] || { status: "not_initialized", label: "Desconectado" };
   
-  statusText.innerHTML = `<span id="status-dot" class="status-indicator ${state}"></span> ${label}`;
+  // Atualiza botões de controle
+  if (status.status === "ready") {
+    btnStart.disabled = true;
+    btnStop.disabled = false;
+  } else if (status.status === "connecting") {
+    btnStart.disabled = true;
+    btnStop.disabled = false; // permite parar/cancelar a conexão
+  } else {
+    btnStart.disabled = false;
+    btnStop.disabled = true;
+  }
+
+  // Atualiza QR Code ou Tela de Carregamento
+  if (status.status === "connecting") {
+    if (status.loadingPercent !== undefined) {
+      qrLoading.classList.add("active");
+      qrLoading.querySelector("p").textContent = `${status.loadingMessage || "Carregando WhatsApp Web..."} (${status.loadingPercent}%)`;
+      qrPlaceholder.style.display = "none";
+      qrImg.style.display = "none";
+    } else if (status.qrImage) {
+      qrLoading.classList.remove("active");
+      qrPlaceholder.style.display = "none";
+      qrImg.src = status.qrImage;
+      qrImg.style.display = "block";
+    } else {
+      qrLoading.classList.add("active");
+      qrLoading.querySelector("p").textContent = status.label || "Inicializando...";
+      qrPlaceholder.style.display = "none";
+      qrImg.style.display = "none";
+    }
+  } else if (status.status === "ready") {
+    qrLoading.classList.remove("active");
+    qrPlaceholder.style.display = "none";
+    qrImg.style.display = "none";
+  } else {
+    qrLoading.classList.remove("active");
+    qrImg.style.display = "none";
+    qrPlaceholder.style.display = "flex";
+    qrPlaceholder.innerHTML = `
+      <div class="qr-placeholder-icon">📱</div>
+      <p>Clique em <strong>Iniciar</strong> para gerar o QR Code de conexão.</p>
+    `;
+  }
+
+  // Atualiza texto e bolinha de status
+  let dotClass = status.status;
+  let label = status.label || "Desconectado";
+  if (status.status === "not_initialized") {
+    dotClass = "not_initialized";
+    label = "Desconectado";
+  }
+  statusText.innerHTML = `<span id="status-dot" class="status-indicator ${dotClass}"></span> ${label}`;
 }
 
-// Inicia o bot
+// Renderiza a lista de instâncias na sidebar
+function renderInstances() {
+  instancesList.innerHTML = "";
+
+  if (instances.length === 0) {
+    instancesList.innerHTML = `<div class="instances-placeholder">Nenhuma instância cadastrada</div>`;
+    selectedInstanceId = null;
+    refreshSelectedInstanceUI();
+    return;
+  }
+
+  instances.forEach((inst) => {
+    const status = instanceStatuses[inst.id] || { status: "not_initialized" };
+    let dotClass = status.status;
+    if (status.status === "not_initialized") dotClass = "not_initialized";
+
+    const item = document.createElement("div");
+    item.className = `instance-item ${inst.id === selectedInstanceId ? "active" : ""}`;
+    item.innerHTML = `
+      <div class="instance-item-info">
+        <span class="status-indicator ${dotClass}" style="width: 8px; height: 8px; flex-shrink:0;"></span>
+        <span class="instance-item-name" title="${escapeHTML(inst.name)}">${escapeHTML(inst.name)}</span>
+      </div>
+      <div class="instance-item-actions">
+        <button class="instance-action-btn rename" title="Renomear">✏️</button>
+        <button class="instance-action-btn delete" title="Remover">🗑️</button>
+      </div>
+    `;
+
+    // Selecionar instância ao clicar
+    item.addEventListener("click", (e) => {
+      if (e.target.closest(".instance-action-btn")) return;
+      selectedInstanceId = inst.id;
+      renderInstances();
+      refreshSelectedInstanceUI();
+    });
+
+    // Ação de renomear
+    item.querySelector(".rename").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const newName = await window.customPrompt("Renomear Instância", "Digite o novo nome para a instância:", inst.name);
+      if (newName !== null && newName.trim() && newName.trim() !== inst.name) {
+        try {
+          await window.electronAPI.renameInstance(inst.id, newName.trim());
+          inst.name = newName.trim();
+          renderInstances();
+        } catch (err) {
+          alert("Erro ao renomear: " + err.message);
+        }
+      }
+    });
+
+    // Ação de deletar
+    item.querySelector(".delete").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const confirmed = await window.customConfirm(
+        `Tem certeza de que deseja remover a instância "${inst.name}"?\nTodos os dados da sessão serão excluídos de forma permanente.`,
+        "Remover Instância",
+        "Remover",
+        "Cancelar",
+        "btn-danger"
+      );
+      if (confirmed) {
+        try {
+          item.style.opacity = "0.5";
+          item.style.pointerEvents = "none";
+          
+          await window.electronAPI.deleteInstance(inst.id);
+          delete instanceStatuses[inst.id];
+          
+          instances = instances.filter((i) => i.id !== inst.id);
+          
+          if (selectedInstanceId === inst.id) {
+            selectedInstanceId = instances.length > 0 ? instances[0].id : null;
+          }
+          
+          renderInstances();
+          refreshSelectedInstanceUI();
+        } catch (err) {
+          alert("Erro ao remover instância: " + err.message);
+          renderInstances();
+        }
+      }
+    });
+
+    instancesList.appendChild(item);
+  });
+}
+
+// Inicia o bot para a instância selecionada
 btnStart.addEventListener("click", async () => {
+  if (!selectedInstanceId) return;
+
   btnStart.disabled = true;
-  qrLoading.classList.add("active");
-  qrPlaceholder.style.display = "none";
-  qrImg.style.display = "none";
+  instanceStatuses[selectedInstanceId] = {
+    status: "connecting",
+    label: "Inicializando...",
+  };
+  refreshSelectedInstanceUI();
+  renderInstances();
   
-  addLog("info", "Iniciando processo do WhatsApp...");
-  updateStatus("connecting", "Inicializando...");
+  addLog("info", "Iniciando processo do WhatsApp para a instância atual...");
   
   try {
-    const res = await window.electronAPI.startWhatsApp();
+    const res = await window.electronAPI.startWhatsApp(selectedInstanceId);
     if (res && !res.success) {
-      addLog("error", `Falha: ${res.message}`);
-      qrLoading.classList.remove("active");
-      qrPlaceholder.style.display = "flex";
-      btnStart.disabled = false;
-      updateStatus("not_initialized");
+      addLog("error", `Falha ao iniciar: ${res.message}`);
+      instanceStatuses[selectedInstanceId] = {
+        status: "not_initialized",
+        label: "Desconectado",
+      };
+      refreshSelectedInstanceUI();
+      renderInstances();
     }
   } catch (err) {
     addLog("error", `Erro IPC: ${err.message}`);
-    qrLoading.classList.remove("active");
-    qrPlaceholder.style.display = "flex";
-    btnStart.disabled = false;
-    updateStatus("not_initialized");
+    instanceStatuses[selectedInstanceId] = {
+      status: "not_initialized",
+      label: "Desconectado",
+    };
+    refreshSelectedInstanceUI();
+    renderInstances();
   }
 });
 
-// Para o bot
+// Para o bot para a instância selecionada
 btnStop.addEventListener("click", async () => {
+  if (!selectedInstanceId) return;
+
   btnStop.disabled = true;
-  addLog("info", "Parando conexão do WhatsApp...");
+  addLog("info", "Parando conexão do WhatsApp para a instância atual...");
   
   try {
-    await window.electronAPI.stopWhatsApp();
+    await window.electronAPI.stopWhatsApp(selectedInstanceId);
     addLog("info", "WhatsApp parado com sucesso.");
   } catch (err) {
     addLog("error", `Erro ao parar: ${err.message}`);
   }
   
-  resetUI();
+  instanceStatuses[selectedInstanceId] = {
+    status: "not_initialized",
+    label: "Desconectado",
+  };
+  refreshSelectedInstanceUI();
+  renderInstances();
 });
 
-// Limpa logs
+// Clique no botão de adicionar nova instância
+btnAddInstance.addEventListener("click", async () => {
+  // Se exceder 5 instâncias, exibe o pop-up de aviso sobre instabilidade
+  if (instances.length >= 5) {
+    const proceed = await window.customConfirm(
+      "Atenção: Executar 6 ou mais instâncias de WhatsApp simultaneamente pode causar instabilidade de sistema e alto uso de CPU/RAM, dependendo das especificações do computador.\n\nDeseja continuar mesmo assim?",
+      "Alerta de Instabilidade",
+      "Continuar",
+      "Cancelar",
+      "btn-primary"
+    );
+    if (!proceed) {
+      return; // Cancela
+    }
+  }
+
+  const name = await window.customPrompt("Nova Instância", "Digite um nome para a nova instância do WhatsApp (ex: Suporte, Vendas):");
+  if (name === null) return; // Cancelou
+  
+  const finalName = name.trim() || `WhatsApp ${instances.length + 1}`;
+  
+  try {
+    const newInst = await window.electronAPI.createInstance(finalName);
+    instances.push(newInst);
+    instanceStatuses[newInst.id] = { status: "not_initialized", label: "Desconectado" };
+    selectedInstanceId = newInst.id;
+    
+    renderInstances();
+    refreshSelectedInstanceUI();
+  } catch (err) {
+    alert("Erro ao criar nova instância: " + err.message);
+  }
+});
+
+// Limpa logs do terminal
 btnClearLogs.addEventListener("click", () => {
   terminalLogs.innerHTML = "";
   addLog("info", "Console de logs limpo.");
 });
 
-function resetUI() {
-  btnStart.disabled = false;
-  btnStop.disabled = true;
-  qrLoading.classList.remove("active");
-  qrImg.style.display = "none";
-  qrPlaceholder.style.display = "flex";
-  updateStatus("not_initialized");
-}
-
 // Configura eventos vindos do Processo Principal
 window.electronAPI.onQRGenerated((data) => {
-  qrLoading.classList.remove("active");
-  qrPlaceholder.style.display = "none";
-  qrImg.src = data.qrImage;
-  qrImg.style.display = "block";
-  addLog("info", "Novo QR Code gerado. Escaneie para conectar.");
-  updateStatus("connecting", "Aguardando QR Code");
+  const { instanceId, qrImage } = data;
+  if (!instanceStatuses[instanceId]) {
+    instanceStatuses[instanceId] = {};
+  }
+  instanceStatuses[instanceId].status = "connecting";
+  instanceStatuses[instanceId].label = "Aguardando QR Code";
+  instanceStatuses[instanceId].qrImage = qrImage;
+  instanceStatuses[instanceId].loadingPercent = undefined;
+
+  if (instanceId === selectedInstanceId) {
+    refreshSelectedInstanceUI();
+  }
+  renderInstances();
 });
 
 window.electronAPI.onWhatsAppLoading((data) => {
-  qrLoading.classList.add("active");
-  qrPlaceholder.style.display = "none";
-  qrImg.style.display = "none";
-  updateStatus("connecting", `Carregando (${data.percent}%)`);
-  addLog("info", `Carregando: ${data.message} (${data.percent}%)`);
+  const { instanceId, percent, message } = data;
+  if (!instanceStatuses[instanceId]) {
+    instanceStatuses[instanceId] = {};
+  }
+  instanceStatuses[instanceId].status = "connecting";
+  instanceStatuses[instanceId].label = `Carregando (${percent}%)`;
+  instanceStatuses[instanceId].loadingPercent = percent;
+  instanceStatuses[instanceId].loadingMessage = message;
+  instanceStatuses[instanceId].qrImage = null;
+
+  if (instanceId === selectedInstanceId) {
+    refreshSelectedInstanceUI();
+  }
+  renderInstances();
 });
 
-window.electronAPI.onWhatsAppAuthenticated(() => {
-  addLog("success", "Autenticado com sucesso! Carregando dados...");
-  updateStatus("connecting", "Autenticado");
+window.electronAPI.onWhatsAppAuthenticated((data) => {
+  const { instanceId } = data;
+  if (!instanceStatuses[instanceId]) {
+    instanceStatuses[instanceId] = {};
+  }
+  instanceStatuses[instanceId].status = "connecting";
+  instanceStatuses[instanceId].label = "Autenticado";
+  instanceStatuses[instanceId].loadingPercent = undefined;
+  instanceStatuses[instanceId].qrImage = null;
+
+  if (instanceId === selectedInstanceId) {
+    refreshSelectedInstanceUI();
+  }
+  renderInstances();
 });
 
-window.electronAPI.onWhatsAppReady(() => {
-  qrLoading.classList.remove("active");
-  qrPlaceholder.style.display = "none";
-  qrImg.style.display = "none";
-  btnStart.disabled = true;
-  btnStop.disabled = false;
-  
-  addLog("success", "WhatsApp está PRONTO e operacional!");
-  updateStatus("ready");
+window.electronAPI.onWhatsAppReady((data) => {
+  const { instanceId } = data;
+  if (!instanceStatuses[instanceId]) {
+    instanceStatuses[instanceId] = {};
+  }
+  instanceStatuses[instanceId].status = "ready";
+  instanceStatuses[instanceId].label = "Conectado";
+  instanceStatuses[instanceId].loadingPercent = undefined;
+  instanceStatuses[instanceId].qrImage = null;
+
+  if (instanceId === selectedInstanceId) {
+    refreshSelectedInstanceUI();
+  }
+  renderInstances();
 });
 
-window.electronAPI.onWhatsAppDisconnected((reason) => {
-  addLog("warn", `Conexão fechada: ${reason}`);
-  resetUI();
+window.electronAPI.onWhatsAppDisconnected((data) => {
+  const { instanceId, reason } = data;
+  if (!instanceStatuses[instanceId]) {
+    instanceStatuses[instanceId] = {};
+  }
+  instanceStatuses[instanceId].status = "not_initialized";
+  instanceStatuses[instanceId].label = "Desconectado";
+  instanceStatuses[instanceId].loadingPercent = undefined;
+  instanceStatuses[instanceId].qrImage = null;
+
+  if (instanceId === selectedInstanceId) {
+    refreshSelectedInstanceUI();
+  }
+  renderInstances();
 });
 
-window.electronAPI.onError((msg) => {
-  addLog("error", `Erro do sistema: ${msg}`);
+window.electronAPI.onError((data) => {
+  const { instanceId, message } = data;
+  addLog("error", `Erro no sistema [Instância: ${instanceId}]: ${message}`);
 });
 
 window.electronAPI.onConsoleMessage((data) => {
-  // Traduz os níveis de console tradicionais para o terminal de UI
   let level = data.level;
   if (data.message.includes("✅")) level = "success";
   if (data.message.includes("❌")) level = "error";
@@ -170,23 +410,38 @@ window.electronAPI.onConsoleMessage((data) => {
   addLog(level, data.message, data.timestamp);
 });
 
-// Verifica status inicial ao carregar a página
-async function checkInitialStatus() {
+// Inicialização de instâncias ao carregar a página
+async function initializeInstances() {
   try {
-    const status = await window.electronAPI.getWhatsAppStatus();
-    if (status && status.connected) {
-      btnStart.disabled = true;
-      btnStop.disabled = false;
-      qrPlaceholder.style.display = "none";
-      updateStatus(status.status);
-      addLog("info", "Conectado ao processo do WhatsApp já em execução.");
+    instances = await window.electronAPI.getInstances();
+    
+    // Consulta status de cada uma em paralelo
+    const statusPromises = instances.map(async (inst) => {
+      try {
+        const statusRes = await window.electronAPI.getWhatsAppStatus(inst.id);
+        instanceStatuses[inst.id] = {
+          status: statusRes.status,
+          label: statusRes.status === "ready" ? "Conectado" : (statusRes.status === "connecting" ? "Conectando..." : "Desconectado")
+        };
+      } catch (e) {
+        instanceStatuses[inst.id] = { status: "not_initialized", label: "Desconectado" };
+      }
+    });
+    
+    await Promise.all(statusPromises);
+
+    if (instances.length > 0) {
+      selectedInstanceId = instances[0].id;
     }
+    
+    renderInstances();
+    refreshSelectedInstanceUI();
   } catch (err) {
-    console.error("Erro ao obter status inicial:", err);
+    console.error("Erro ao obter lista de instâncias inicial:", err);
   }
 }
 
-checkInitialStatus();
+initializeInstances();
 
 // ==========================================================================
 // CONTROLE DE ABAS E NAVEGAÇÃO DO FLUXO

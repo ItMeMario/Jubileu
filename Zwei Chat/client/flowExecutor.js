@@ -2,7 +2,7 @@
 const flowService = require("../services/flowService");
 const { debug } = require("../services/debugService");
 
-// Mapa de sessões ativas: senderId => { flowId, stepIndex, lastInteraction }
+// Mapa de sessões ativas: `${clientId}:${senderId}` => { flowId, stepIndex, lastInteraction }
 const sessions = new Map();
 
 // Tempo limite de expiração de sessão: 30 minutos
@@ -11,10 +11,13 @@ const SESSION_TIMEOUT = 30 * 60 * 1000;
 /**
  * Função principal para processar mensagens de entrada
  * @param {object} msg - Objeto de mensagem do whatsapp-web.js
+ * @param {object} clientInstance - Instância do cliente WhatsApp
  */
-async function handleIncomingMessage(msg) {
+async function handleIncomingMessage(msg, clientInstance) {
   const senderId = msg.from;
   const bodyText = (msg.body || "").trim();
+  const clientId = clientInstance.clientId;
+  const sessionKey = `${clientId}:${senderId}`;
 
   // Ignora mensagens vazias ou de grupo (se o bot for apenas privado)
   // O Zwei Chat Lite é tipicamente focado em chats privados.
@@ -24,12 +27,12 @@ async function handleIncomingMessage(msg) {
   }
 
   const now = Date.now();
-  let session = sessions.get(senderId);
+  let session = sessions.get(sessionKey);
 
   // Verifica se a sessão expirou
   if (session && now - session.lastInteraction > SESSION_TIMEOUT) {
-    await debug(`[FlowExecutor] Sessão de ${senderId} expirou por inatividade.`);
-    sessions.delete(senderId);
+    await debug(`[FlowExecutor] Sessão de ${senderId} na instância ${clientId} expirou por inatividade.`);
+    sessions.delete(sessionKey);
     session = null;
   }
 
@@ -76,22 +79,22 @@ async function handleIncomingMessage(msg) {
     const flowToExecute = matchedFlow || fallbackFlow;
 
     if (flowToExecute) {
-      await debug(`[FlowExecutor] Iniciando fluxo '${flowToExecute.name}' para ${senderId}`);
+      await debug(`[FlowExecutor] Iniciando fluxo '${flowToExecute.name}' para ${senderId} na instância ${clientId}`);
       session = {
         flowId: flowToExecute.id,
         stepIndex: 0,
         lastInteraction: now,
       };
-      sessions.set(senderId, session);
+      sessions.set(sessionKey, session);
 
-      await executeFlowSteps(msg, flowToExecute, session);
+      await executeFlowSteps(clientInstance, msg, flowToExecute, session);
     }
   } else {
     // 🔗 Sessão ativa: processar resposta do passo atual (geralmente options_menu)
     const flow = activeFlows.find((f) => f.id === session.flowId);
     if (!flow) {
       // Fluxo foi desativado ou removido, remove sessão
-      sessions.delete(senderId);
+      sessions.delete(sessionKey);
       return;
     }
 
@@ -113,11 +116,11 @@ async function handleIncomingMessage(msg) {
       }
 
       if (matchedOption) {
-        await debug(`[FlowExecutor] Contato ${senderId} escolheu a opção: ${matchedOption.keyword}`);
+        await debug(`[FlowExecutor] Contato ${senderId} escolheu a opção: ${matchedOption.keyword} na instância ${clientId}`);
         
         // Envia a resposta da opção
         if (matchedOption.reply) {
-          await sendReply(senderId, matchedOption.reply);
+          await sendReply(clientInstance, senderId, matchedOption.reply);
         }
 
         // Avança para o próximo passo do fluxo
@@ -125,20 +128,20 @@ async function handleIncomingMessage(msg) {
         session.lastInteraction = Date.now();
 
         // Continua executando os passos seguintes
-        await executeFlowSteps(msg, flow, session);
+        await executeFlowSteps(clientInstance, msg, flow, session);
       } else {
-        await debug(`[FlowExecutor] Opção inválida digitada por ${senderId}: "${bodyText}"`);
+        await debug(`[FlowExecutor] Opção inválida digitada por ${senderId}: "${bodyText}" na instância ${clientId}`);
         
         // Envia mensagem de erro/fallback configurada no menu
         const fallbackText = currentStep.fallback || "Opção inválida. Por favor, selecione uma das opções válidas.";
-        await sendReply(senderId, fallbackText);
+        await sendReply(clientInstance, senderId, fallbackText);
         
         // Mantém o contato no mesmo passo esperando input válido
         session.lastInteraction = Date.now();
       }
     } else {
       // Se por algum motivo o passo atual não exigir interação, reseta a sessão
-      sessions.delete(senderId);
+      sessions.delete(sessionKey);
     }
   }
 }
@@ -146,20 +149,22 @@ async function handleIncomingMessage(msg) {
 /**
  * Executa sequencialmente os passos do fluxo a partir do stepIndex atual
  */
-async function executeFlowSteps(msg, flow, session) {
+async function executeFlowSteps(clientInstance, msg, flow, session) {
   const steps = flow.definition.steps || [];
   const senderId = msg.from;
+  const clientId = clientInstance.clientId;
+  const sessionKey = `${clientId}:${senderId}`;
 
   while (session.stepIndex < steps.length) {
     const step = steps[session.stepIndex];
-    await debug(`[FlowExecutor] Executando bloco ${session.stepIndex + 1}/${steps.length} (${step.type}) para ${senderId}`);
+    await debug(`[FlowExecutor] Executando bloco ${session.stepIndex + 1}/${steps.length} (${step.type}) para ${senderId} na instância ${clientId}`);
 
     if (step.type === "send_message") {
       // 💬 Enviar Mensagem de Texto
       if (step.delay && step.delay > 0) {
         await simulateDelay(step.delay);
       }
-      await sendReply(senderId, step.text);
+      await sendReply(clientInstance, senderId, step.text);
       session.stepIndex += 1;
       session.lastInteraction = Date.now();
     } else if (step.type === "options_menu") {
@@ -167,7 +172,7 @@ async function executeFlowSteps(msg, flow, session) {
       if (step.delay && step.delay > 0) {
         await simulateDelay(step.delay);
       }
-      await sendReply(senderId, step.text);
+      await sendReply(clientInstance, senderId, step.text);
       
       // Fica parado neste step aguardando input do usuário
       return;
@@ -178,8 +183,8 @@ async function executeFlowSteps(msg, flow, session) {
   }
 
   // Fim do fluxo: encerra a sessão
-  await debug(`[FlowExecutor] Fluxo '${flow.name}' concluído com sucesso para ${senderId}`);
-  sessions.delete(senderId);
+  await debug(`[FlowExecutor] Fluxo '${flow.name}' concluído com sucesso para ${senderId} na instância ${clientId}`);
+  sessions.delete(sessionKey);
 }
 
 /**
@@ -192,11 +197,10 @@ function simulateDelay(seconds) {
 /**
  * Envia uma mensagem usando o cliente do WhatsApp Web
  */
-async function sendReply(to, text) {
+async function sendReply(clientInstance, to, text) {
   try {
-    const { client } = require("./client");
-    if (client && client.info) {
-      await client.sendMessage(to, text);
+    if (clientInstance && clientInstance.info) {
+      await clientInstance.sendMessage(to, text);
     } else {
       await debug(`⚠️ Não foi possível enviar mensagem: Cliente WhatsApp não está conectado.`);
     }

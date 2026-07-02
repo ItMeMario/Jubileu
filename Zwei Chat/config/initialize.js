@@ -90,9 +90,20 @@ async function initializeDatabase() {
               return reject(err);
             }
 
-            db.close((closeErr) => {
-              if (closeErr) reject(closeErr);
-              else resolve(DATABASE_PATH);
+            db.run(`CREATE TABLE IF NOT EXISTS instances (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL
+            )`, (err) => {
+              if (err) {
+                console.error("❌ Erro ao criar tabela instances:", err);
+                db.close();
+                return reject(err);
+              }
+
+              db.close((closeErr) => {
+                if (closeErr) reject(closeErr);
+                else resolve(DATABASE_PATH);
+              });
             });
           });
         });

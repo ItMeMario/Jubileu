@@ -24,8 +24,8 @@ class ModuleLoader {
   async loadClientModule() {
     try {
       const clientModule = require("../client/client");
-      this.modules.client = clientModule.client;
-      this.modules.initializeClient = clientModule.initializeClient;
+      this.modules.client = clientModule.clients;
+      this.modules.createClient = clientModule.createClient;
 
       console.log("✅ Módulo client do Zwei Chat carregado");
     } catch (error) {

@@ -2,14 +2,20 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
-  startWhatsApp: () => ipcRenderer.invoke("start-whatsapp"),
-  stopWhatsApp: () => ipcRenderer.invoke("stop-whatsapp"),
-  getWhatsAppStatus: () => ipcRenderer.invoke("get-whatsapp-status"),
+  startWhatsApp: (instanceId) => ipcRenderer.invoke("start-whatsapp", instanceId),
+  stopWhatsApp: (instanceId) => ipcRenderer.invoke("stop-whatsapp", instanceId),
+  getWhatsAppStatus: (instanceId) => ipcRenderer.invoke("get-whatsapp-status", instanceId),
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   getFlows: () => ipcRenderer.invoke("get-flows"),
   saveFlow: (flow) => ipcRenderer.invoke("save-flow", flow),
   deleteFlow: (id) => ipcRenderer.invoke("delete-flow", id),
   toggleFlow: (id, active) => ipcRenderer.invoke("toggle-flow", { id, active }),
+
+  // Rotas de instâncias
+  getInstances: () => ipcRenderer.invoke("get-instances"),
+  createInstance: (name) => ipcRenderer.invoke("create-instance", name),
+  deleteInstance: (id) => ipcRenderer.invoke("delete-instance", id),
+  renameInstance: (id, name) => ipcRenderer.invoke("rename-instance", { id, name }),
 
   // Listeners de eventos
   onQRGenerated: (callback) => {
@@ -17,15 +23,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 
   onWhatsAppReady: (callback) => {
-    ipcRenderer.on("whatsapp-ready", (event, message) => callback(message));
+    ipcRenderer.on("whatsapp-ready", (event, data) => callback(data));
   },
 
   onWhatsAppAuthenticated: (callback) => {
-    ipcRenderer.on("whatsapp-authenticated", (event, message) => callback(message));
+    ipcRenderer.on("whatsapp-authenticated", (event, data) => callback(data));
   },
 
   onWhatsAppDisconnected: (callback) => {
-    ipcRenderer.on("whatsapp-disconnected", (event, reason) => callback(reason));
+    ipcRenderer.on("whatsapp-disconnected", (event, data) => callback(data));
   },
 
   onWhatsAppLoading: (callback) => {
@@ -33,7 +39,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 
   onError: (callback) => {
-    ipcRenderer.on("error", (event, message) => callback(message));
+    ipcRenderer.on("error", (event, data) => callback(data));
   },
 
   onConsoleMessage: (callback) => {
