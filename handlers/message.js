@@ -91,14 +91,26 @@ function isLinkedNumber(fromJid) {
     // 1. Instâncias do Jubileu
     const { instanceManager } = require("../services/instanceManager");
     const jubileuStatuses = instanceManager.getAllInstancesStatus();
-    if (jubileuStatuses.some((inst) => inst.info?.wid?.user === rawNumber)) {
+    if (
+      jubileuStatuses.some((inst) => {
+        const client = instanceManager.getClient(inst.instanceId);
+        const userNumber = client?.info?.wid?.user || inst.info?.wid?.user;
+        return userNumber === rawNumber;
+      })
+    ) {
       return true;
     }
 
     // 2. Instâncias do Drone
     const { droneInstanceManager } = require("../services/droneServiceModules/droneInstanceManagerDSM");
     const droneStatuses = droneInstanceManager.getAllInstancesStatus();
-    if (droneStatuses.some((inst) => inst.info?.wid?.user === rawNumber)) {
+    if (
+      droneStatuses.some((inst) => {
+        const client = droneInstanceManager.getClient(inst.instanceId);
+        const userNumber = client?.info?.wid?.user || inst.info?.wid?.user;
+        return userNumber === rawNumber;
+      })
+    ) {
       return true;
     }
 
