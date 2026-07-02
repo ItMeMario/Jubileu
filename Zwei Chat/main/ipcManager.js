@@ -1,17 +1,20 @@
 // main/ipcManager.js
 const { ipcMain } = require("electron");
 const WhatsAppHandlers = require("./ipc/whatsAppHandlers");
+const FlowHandlers = require("./ipc/flowHandlers");
 
 class IPCManager {
   constructor() {
     this.handlers = {
       whatsapp: null,
+      flows: null,
     };
   }
 
   registerAllHandlers(modules) {
     try {
       this.handlers.whatsapp = new WhatsAppHandlers(modules);
+      this.handlers.flows = new FlowHandlers();
 
       // Registra os handlers
       Object.values(this.handlers).forEach(handler => {

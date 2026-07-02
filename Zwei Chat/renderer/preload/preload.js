@@ -6,6 +6,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   stopWhatsApp: () => ipcRenderer.invoke("stop-whatsapp"),
   getWhatsAppStatus: () => ipcRenderer.invoke("get-whatsapp-status"),
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
+  getFlows: () => ipcRenderer.invoke("get-flows"),
+  saveFlow: (flow) => ipcRenderer.invoke("save-flow", flow),
+  deleteFlow: (id) => ipcRenderer.invoke("delete-flow", id),
+  toggleFlow: (id, active) => ipcRenderer.invoke("toggle-flow", { id, active }),
 
   // Listeners de eventos
   onQRGenerated: (callback) => {

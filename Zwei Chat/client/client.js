@@ -117,6 +117,16 @@ function setupClientEventListeners() {
   client.on("change_state", async (state) => {
     await debug(`🔄 Estado do cliente mudou para: ${state}`);
   });
+
+  client.on("message", async (msg) => {
+    try {
+      if (msg.fromMe) return;
+      const { handleIncomingMessage } = require("./flowExecutor");
+      await handleIncomingMessage(msg);
+    } catch (err) {
+      await debug(`❌ Erro no processador de fluxos de mensagens: ${err.message}`);
+    }
+  });
 }
 
 // Função de inicialização completa

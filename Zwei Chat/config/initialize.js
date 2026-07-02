@@ -78,9 +78,22 @@ async function initializeDatabase() {
             return reject(err);
           }
 
-          db.close((closeErr) => {
-            if (closeErr) reject(closeErr);
-            else resolve(DATABASE_PATH);
+          db.run(`CREATE TABLE IF NOT EXISTS flows (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            active INTEGER DEFAULT 1,
+            definition TEXT
+          )`, (err) => {
+            if (err) {
+              console.error("❌ Erro ao criar tabela flows:", err);
+              db.close();
+              return reject(err);
+            }
+
+            db.close((closeErr) => {
+              if (closeErr) reject(closeErr);
+              else resolve(DATABASE_PATH);
+            });
           });
         });
       });

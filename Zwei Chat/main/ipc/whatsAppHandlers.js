@@ -189,6 +189,16 @@ class WhatsAppHandlers {
       console.log(`⏳ Carregando WhatsApp Web: ${percent}% - ${message}`);
       mainWindow.webContents.send("whatsapp-loading", { percent, message });
     });
+
+    this.client.on("message", async (msg) => {
+      try {
+        if (msg.fromMe) return;
+        const { handleIncomingMessage } = require("../../client/flowExecutor");
+        await handleIncomingMessage(msg);
+      } catch (err) {
+        console.error(`❌ Erro no processador de fluxos de mensagens: ${err.message}`);
+      }
+    });
   }
 }
 

@@ -59,32 +59,119 @@
       </div>
     </aside>
 
-    <!-- Main / Visualizador de Logs -->
+    <!-- Main / Painel Principal com Abas -->
     <main class="glass-panel main-panel">
+      
+      <!-- Cabeçalho com Abas de Navegação -->
       <header class="panel-header">
-        <div class="panel-title-group">
-          <h2 class="panel-title">Console de Logs</h2>
-          <span class="panel-subtitle">Acompanhe a inicialização e eventos em tempo real</span>
+        <div class="tabs-navigation">
+          <button id="tab-btn-logs" class="tab-btn active">
+            <span>📊</span> Console de Logs
+          </button>
+          <button id="tab-btn-flows" class="tab-btn">
+            <span>⚙️</span> Editor de Fluxo
+          </button>
         </div>
-        <div class="terminal-controls">
-          <button id="btn-clear-logs" class="control-btn" title="Limpar Console">🗑️</button>
+        <div class="header-actions">
+          <div id="logs-controls" class="tab-controls active">
+            <button id="btn-clear-logs" class="control-btn" title="Limpar Console">🗑️</button>
+          </div>
+          <div id="flows-controls" class="tab-controls">
+            <!-- Controles extras para fluxos se necessário -->
+          </div>
         </div>
       </header>
 
-      <div class="terminal-container">
-        <div id="terminal-logs" class="terminal-scroll">
-          <!-- Os logs serão inseridos dinamicamente aqui -->
-          <div class="log-entry">
-            <span class="log-timestamp">[--:--:--]</span>
-            <span class="log-level info">[INFO]</span>
-            <span class="log-text">Zwei Chat inicializado. Aguardando comandos...</span>
+      <!-- Conteúdo da Aba 1: Console de Logs -->
+      <div id="tab-content-logs" class="tab-content active">
+        <div class="terminal-container">
+          <div id="terminal-logs" class="terminal-scroll">
+            <div class="log-entry">
+              <span class="log-timestamp">[--:--:--]</span>
+              <span class="log-level info">[INFO]</span>
+              <span class="log-text">Zwei Chat inicializado. Aguardando comandos...</span>
+            </div>
           </div>
         </div>
+      </div>
+
+      <!-- Conteúdo da Aba 2: Construtor de Fluxos -->
+      <div id="tab-content-flows" class="tab-content">
+        
+        <!-- Visão 1: Lista de Fluxos -->
+        <div id="flow-list-view" class="flow-view active">
+          <div class="view-header">
+            <div>
+              <h3>Fluxos Automáticos</h3>
+              <p class="subtitle">Ative e organize as sequências de respostas do bot</p>
+            </div>
+            <button id="btn-create-flow" class="btn btn-primary">
+              <span>➕</span> Novo Fluxo
+            </button>
+          </div>
+          
+          <div class="flows-scroll-container">
+            <div id="flows-list" class="flows-list">
+              <!-- Renderização dinâmica dos fluxos aqui -->
+              <div class="flow-placeholder-card">
+                <div class="placeholder-icon">🤖</div>
+                <p>Nenhum fluxo criado. Clique em "Novo Fluxo" para começar!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visão 2: Construtor de Bloco Individual (Builder) -->
+        <div id="flow-builder-view" class="flow-view">
+          <div class="builder-header">
+            <button id="btn-back-to-list" class="control-btn-back">
+              <span>⬅️</span> Voltar
+            </button>
+            <div class="flow-title-wrapper">
+              <input type="text" id="flow-name-input" placeholder="Nome do Fluxo (ex: Boas-vindas)" class="flow-name-input">
+            </div>
+            <button id="btn-save-flow" class="btn btn-primary btn-save">
+              <span>💾</span> Salvar Fluxo
+            </button>
+          </div>
+
+          <div class="builder-workspace">
+            <!-- Zona onde os blocos serão inseridos verticalmente -->
+            <div id="flow-steps-container" class="flow-steps-container">
+              <!-- O primeiro bloco (Gatilho) sempre existirá de forma fixa aqui -->
+            </div>
+
+            <!-- Botão de adicionar novo bloco (Ação) -->
+            <div class="add-step-container">
+              <button id="btn-add-step-trigger" class="btn btn-secondary">
+                <span>➕</span> Adicionar Bloco/Ação
+              </button>
+              <div id="add-step-dropdown" class="add-step-dropdown hidden">
+                <button class="dropdown-item" data-type="send_message">
+                  <span class="icon">💬</span>
+                  <div class="item-text">
+                    <strong>Enviar Mensagem</strong>
+                    <span>Manda um texto de resposta simples.</span>
+                  </div>
+                </button>
+                <button class="dropdown-item" data-type="options_menu">
+                  <span class="icon">📋</span>
+                  <div class="item-text">
+                    <strong>Menu de Opções</strong>
+                    <span>Manda perguntas e aguarda respostas.</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
 
   </div>
 
+  <script src="../guiScripts/utils/confirmModal.js"></script>
   <script src="../guiScripts/index.js"></script>
 </body>
 </html>
