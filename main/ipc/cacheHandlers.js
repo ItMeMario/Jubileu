@@ -31,8 +31,11 @@ class CacheHandlers {
             const crmAuthPath = isPackaged
                 ? path.join(userDataPath, "whatsapp-sessions-crm")
                 : path.resolve(process.cwd(), '.wwebjs_auth_crm');
+            const droneAuthPath = isPackaged
+                ? path.join(userDataPath, "whatsapp-sessions-drone")
+                : path.resolve(process.cwd(), '.wwebjs_auth_drone');
 
-            // 1. Parar todas as instâncias (Main + Dee Jay + CRM)
+            // 1. Parar todas as instâncias (Main + Dee Jay + CRM + Drone)
             console.log('Parando todas as instâncias...');
             await instanceManager.stopAll();
             
@@ -61,6 +64,19 @@ class CacheHandlers {
                 console.error("Erro ao remover CRM instances:", e);
             }
 
+            // Stop and Remove Drone Instances
+            try {
+                const { droneInstanceManager } = require('../../services/droneServiceModules/droneInstanceManagerDSM');
+                await droneInstanceManager.stopAll();
+                const droneInstances = await droneInstanceManager.listInstances();
+                for (const drone of droneInstances) {
+                    await droneInstanceManager.removeInstance(drone.instance_id);
+                    console.log(`Instância Drone removida: ${drone.instance_id}`);
+                }
+            } catch (e) {
+                console.error("Erro ao remover Drone instances:", e);
+            }
+
             // 2. Listar e remover todas as instâncias do banco
             console.log('Removendo registros de instâncias...');
             const instances = await instanceManager.listInstances();
@@ -78,6 +94,7 @@ class CacheHandlers {
                 cache: false,
                 deeJay: false,
                 crm: false,
+                drone: false,
                 message: ''
             };
 
@@ -113,9 +130,17 @@ class CacheHandlers {
                 console.error(`Erro ao remover .wwebjs_auth_crm: ${err.message}`);
             }
 
-            if (results.auth || results.cache || results.deeJay || results.crm) {
+            // Remove .wwebjs_auth_drone
+            try {
+                await fs.rm(droneAuthPath, { recursive: true, force: true });
+                results.drone = true;
+            } catch (err) {
+                console.error(`Erro ao remover .wwebjs_auth_drone: ${err.message}`);
+            }
+
+            if (results.auth || results.cache || results.deeJay || results.crm || results.drone) {
                 console.log('Cache limpo com sucesso');
-                return { success: true, message: 'Cache e sessões (WhatsApp, Dee Jay e CRM) limpos com sucesso! Reinicie o aplicativo para efetivar as mudanças.' };
+                return { success: true, message: 'Cache e sessões (WhatsApp, Dee Jay, CRM e Drone) limpos com sucesso! Reinicie o aplicativo para efetivar as mudanças.' };
             } else {
                 return { success: false, message: 'Não foi possível limpar o cache ou ele já estava vazio.' };
             }

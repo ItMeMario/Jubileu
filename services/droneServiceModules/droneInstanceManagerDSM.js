@@ -36,10 +36,10 @@ class DroneInstanceManager {
         const userDataPath = app.getPath("userData");
         return path.join(userDataPath, "whatsapp-sessions-drone");
       } else {
-        return path.join(__dirname, "../../../.wwebjs_auth_drone");
+        return path.join(__dirname, "../../.wwebjs_auth_drone");
       }
     } catch (error) {
-      return path.join(__dirname, "../../../.wwebjs_auth_drone");
+      return path.join(__dirname, "../../.wwebjs_auth_drone");
     }
   }
 
