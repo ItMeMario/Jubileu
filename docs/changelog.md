@@ -737,4 +737,25 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 - Fix da instabilidade do drone com 4 ou mais instâncias.
 - Corrigidos problemas de case sensitive do asar.
 
-📅 Data de Lançamento: [26/05/2026]
+📅 Data de Lançamento: [26/05/2026]
+
+---
+
+📌 Patch Notes - Versão 1.4.4
+
+✨ Novidades
+- **Vínculo de Instâncias no Dee Jay**: Implementada a integração das instâncias ativas do Jubileu e do Drone ao serviço do Dee Jay, permitindo rodar fluxos de conversas automáticas e interativas entre as instâncias vinculadas.
+- **Suporte a Figurinhas (Stickers) no Dee Jay**: Adicionado envio automático de figurinhas (com 15% de probabilidade) nas mensagens, utilizando URLs públicas pré-configuradas e convertidas via mídias do WhatsApp.
+- **Exibição Dinâmica de Versão**: Adicionado indicador visual no canto superior esquerdo da tela principal que exibe de forma dinâmica a versão atual da aplicação (carregada via processo principal IPC a partir do `package.json`).
+- **Exclusão em Lote no Dee Jay**: Adicionado botão "Excluir Todas" com modal de confirmação para remover todas as instâncias do Dee Jay simultaneamente.
+- **Documentação de Atualização**: Criado o documento explicativo `docs/processo_de_atualizacao.md` contendo detalhes técnicos sobre empacotamento ASAR e fluxo de updates em produção e desenvolvimento.
+
+🛠️ Melhorias
+- **Configuração Persistente e Silenciosa**: Implementado salvamento automático e em segundo plano ao ativar/desativar o vínculo com Jubileu/Drone na interface do Dee Jay, evitando alertas pop-up intrusivos.
+- **Robustez na Resolução de Números**: Melhorado o método de obtenção do número de telefone em instâncias conectadas, consultando dinamicamente `client.info` caso haja atrasos ou dessincronização no cache de status.
+
+🐛 Correções
+- **Prevenção de Loops Infinitos**: Criado filtro de descarte antecipado que impede auto-respostas e loops infinitos no chatbot ao identificar se o remetente de uma mensagem recebida pertence a uma de nossas instâncias ativas (Jubileu, Drone ou Dee Jay).
+- **Prevenção de Auto-Mensagens**: Ajustado o loop de conversas do Dee Jay para evitar o envio de mensagens para o mesmo número (remetente e destinatário idênticos), pulando o ciclo com segurança se nenhum par distinto for encontrado.
+
+📅 Data de Lançamento: [02/07/2026]
