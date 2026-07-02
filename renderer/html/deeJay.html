@@ -18,6 +18,18 @@
                     <input type="number" id="min-interval" min="1" value="1" placeholder="Min">
                     <span>a</span>
                     <input type="number" id="max-interval" min="1" value="5" placeholder="Max">
+                </div>
+                <div class="config-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="chk-link-jubileu">
+                        <span>Vincular Jubileu</span>
+                    </label>
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="chk-link-drone">
+                        <span>Vincular Drone</span>
+                    </label>
+                </div>
+                <div class="config-group">
                     <button id="btn-save-config">💾 Salvar</button>
                 </div>
                 <div class="action-group">
@@ -31,7 +43,10 @@
             <section class="dj-instances">
                 <div class="instances-header">
                     <h2>Instâncias Conectadas</h2>
-                    <button id="btn-add-instance">➕ Nova Conexão</button>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button id="btn-add-instance">➕ Nova Conexão</button>
+                        <button id="btn-remove-all-instances">🗑️ Excluir Todas</button>
+                    </div>
                 </div>
                 <div id="instances-list" class="instances-grid">
                     <!-- Cards de instâncias aqui -->

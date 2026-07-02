@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   clearCache: () => ipcRenderer.invoke("clear-cache"),
   checkUpdate: () => ipcRenderer.invoke("check-update"),
   triggerUpdate: () => ipcRenderer.invoke("trigger-update"),
+  getAppVersion: () => ipcRenderer.invoke("get-app-version"),
 
   // Listeners legados
   onQRGenerated: (callback) => {

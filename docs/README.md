@@ -19,7 +19,7 @@ Ele funciona de forma autônoma, simulando atendimento humano e operando inclusi
 - Funciona 24/7 (mesmo fora do expediente)
 - Modularidade para expansão de fluxos
 - Logging básico para depuração
-- Suporte a atualizações remotas via GitHub/Rust Desk
+- Suporte a atualizações remotas via GitHub (veja o [Guia de Processo de Atualização](processo_de_atualizacao.md))
 - Sistema de debug personalizado
 - Indicadores de desempenho com possibilidade de exportação de dados
 
@@ -37,16 +37,10 @@ Ele funciona de forma autônoma, simulando atendimento humano e operando inclusi
 
 Para executar o projeto:
 
-Abra o terminal na pasta do projeto
+1. Abra o terminal na pasta do projeto.
+2. Instale as dependências: `npm install`
+3. Escolha uma das opções:
+   - **Executar a aplicação**: `npm start`
+   - **Criar instalador (empacotamento)**: `npm run dist` → Acesse a pasta `dist` criada e use o executável.
 
-Instale as dependências: npm install
-
-Escolha uma das opções:
-
-Executar via terminal: node app
-
-Executar com interface: npm start
-
-Criar executável: npm run dist → Acesse a pasta dist criada e use o executável
-
-Crie um atalho do executável na área de trabalho para acesso rápido.
+Consulte o [Guia do Processo de Atualização e Empacotamento](processo_de_atualizacao.md) para saber mais sobre o funcionamento interno das atualizações automáticas e diretrizes do empacotamento ASAR.

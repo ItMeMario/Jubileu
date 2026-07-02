@@ -62,6 +62,12 @@ class IPCManager {
         }
       });
 
+      // Registra handler para obter a versão do aplicativo
+      ipcMain.handle("get-app-version", () => {
+        const { app } = require("electron");
+        return app.getVersion();
+      });
+
       console.log("Todos os handlers IPC registrados");
     } catch (error) {
       console.error("Erro ao registrar handlers IPC:", error);
@@ -77,6 +83,9 @@ class IPCManager {
   }
 
   removeAllHandlers() {
+    // Remove o handler da versão
+    ipcMain.removeHandler("get-app-version");
+
     // Delega a remoção de IPC para cada handler correspondente
     Object.values(this.handlers).forEach(handler => {
       if (handler && typeof handler.unregister === 'function') {

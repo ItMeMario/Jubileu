@@ -162,6 +162,20 @@ body {
     background: #005f9e;
 }
 
+#btn-remove-all-instances {
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#btn-remove-all-instances:hover {
+    background: #d32f2f;
+}
+
 .instances-grid {
     flex: 1;
     overflow-y: auto;
@@ -437,4 +451,22 @@ body {
 
 .btn-secondary:hover {
     background: var(--border-color, #e0e0e0);
+}
+
+/* Checkbox container for links */
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    user-select: none;
+    color: var(--text-primary, #333333);
+}
+
+.checkbox-container input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin: 0;
 }
