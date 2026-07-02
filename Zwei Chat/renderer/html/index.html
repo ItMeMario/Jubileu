@@ -1,0 +1,90 @@
+<!-- renderer/html/index.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zwei Chat - WhatsApp Bot Lite</title>
+  <link rel="stylesheet" href="../css/index.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Sidebar / Painel de Controle -->
+    <aside class="glass-panel sidebar">
+      <div>
+        <div class="brand-section">
+          <div class="brand-logo">Z</div>
+          <h1 class="brand-title">Zwei Chat</h1>
+        </div>
+
+        <div class="status-widget">
+          <div class="status-info">
+            <span class="status-label">Status da Conexão</span>
+            <span id="status-text" class="status-value">
+              <span id="status-dot" class="status-indicator not_initialized"></span>
+              Desconectado
+            </span>
+          </div>
+        </div>
+
+        <div class="qr-container">
+          <!-- Spinner de Carregamento -->
+          <div id="qr-loading" class="qr-loading">
+            <div class="spinner"></div>
+            <p>Carregando WhatsApp Web...</p>
+          </div>
+
+          <!-- Placeholder inicial -->
+          <div id="qr-placeholder" class="qr-placeholder">
+            <div class="qr-placeholder-icon">📱</div>
+            <p>Clique em <strong>Iniciar</strong> para gerar o QR Code de conexão.</p>
+          </div>
+
+          <!-- Imagem do QR Code -->
+          <img id="qr-img" class="qr-image" src="" alt="QR Code WhatsApp">
+        </div>
+      </div>
+
+      <div>
+        <div class="action-buttons">
+          <button id="btn-start" class="btn btn-primary">
+            <span>▶</span> Iniciar WhatsApp
+          </button>
+          <button id="btn-stop" class="btn btn-danger" disabled>
+            <span>■</span> Desconectar
+          </button>
+        </div>
+        <p class="footer-text">Zwei Chat v1.0.0 • Jubileu Lite Core</p>
+      </div>
+    </aside>
+
+    <!-- Main / Visualizador de Logs -->
+    <main class="glass-panel main-panel">
+      <header class="panel-header">
+        <div class="panel-title-group">
+          <h2 class="panel-title">Console de Logs</h2>
+          <span class="panel-subtitle">Acompanhe a inicialização e eventos em tempo real</span>
+        </div>
+        <div class="terminal-controls">
+          <button id="btn-clear-logs" class="control-btn" title="Limpar Console">🗑️</button>
+        </div>
+      </header>
+
+      <div class="terminal-container">
+        <div id="terminal-logs" class="terminal-scroll">
+          <!-- Os logs serão inseridos dinamicamente aqui -->
+          <div class="log-entry">
+            <span class="log-timestamp">[--:--:--]</span>
+            <span class="log-level info">[INFO]</span>
+            <span class="log-text">Zwei Chat inicializado. Aguardando comandos...</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <script src="../guiScripts/index.js"></script>
+</body>
+</html>
