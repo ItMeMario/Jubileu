@@ -151,6 +151,7 @@
   overflow-y: auto;
   flex-grow: 1;
   padding-right: 4px;
+  align-content: start;
 }
 
 .deejay-instances-grid::-webkit-scrollbar {

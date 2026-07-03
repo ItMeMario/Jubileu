@@ -23,12 +23,12 @@
   </div>
 
   <!-- Grid Principal (muda de acordo com a aba interna selecionada) -->
-  <div class="deejay-main-grid">
+  <div class="drone-content-container">
     
     <!-- SUB-ABA 1: INSTÂNCIAS -->
     <div id="drone-sec-instances" class="drone-section active-section">
-      <div class="deejay-main-grid" style="grid-template-columns: 1fr;">
-        <div class="deejay-section glass-panel">
+      <div class="deejay-main-grid" style="grid-template-columns: 1fr; align-items: start;">
+        <div class="deejay-section glass-panel" style="max-height: 100%;">
           <div class="section-header">
             <h3>🤖 Instâncias de WhatsApp Drone</h3>
             <div class="section-header-actions">
@@ -47,8 +47,8 @@
 
     <!-- SUB-ABA 2: MENSAGENS -->
     <div id="drone-sec-messages" class="drone-section">
-      <div class="deejay-main-grid" style="grid-template-columns: 1fr;">
-        <div class="deejay-section glass-panel">
+      <div class="deejay-main-grid" style="grid-template-columns: 1fr; align-items: start;">
+        <div class="deejay-section glass-panel" style="max-height: 100%;">
           <div class="section-header">
             <h3>📨 Modelos de Mensagens</h3>
             <span class="hint" style="font-size: 12px; color: var(--text-dark);">Use {{name}} para personalizar com o nome do contato.</span>
@@ -70,10 +70,10 @@
 
     <!-- SUB-ABA 3: CONTATOS / NÚMEROS -->
     <div id="drone-sec-numbers" class="drone-section">
-      <div class="deejay-main-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="deejay-main-grid" style="grid-template-columns: 1fr 1fr; align-items: start;">
         
         <!-- Formulário de Adicionar / Importar -->
-        <div class="deejay-section glass-panel">
+        <div class="deejay-section glass-panel" style="max-height: 100%;">
           <div class="section-header">
             <h3>📱 Importar e Tratar Números</h3>
           </div>
@@ -129,7 +129,7 @@
         </div>
         
         <!-- Lista de Números e Ações rápidas -->
-        <div class="deejay-section glass-panel">
+        <div class="deejay-section glass-panel" style="max-height: 100%;">
           <div class="section-header">
             <h3>📱 Lista de Envio</h3>
             <div class="section-header-actions">
@@ -150,10 +150,10 @@
 
     <!-- SUB-ABA 4: DISPARO & STATUS -->
     <div id="drone-sec-dispatch" class="drone-section">
-      <div class="deejay-main-grid" style="grid-template-columns: 1fr 1.2fr;">
+      <div class="deejay-main-grid" style="grid-template-columns: 1fr 1.2fr; align-items: start;">
         
         <!-- Painel de Controles de Disparo -->
-        <div class="deejay-section glass-panel" style="gap: 15px;">
+        <div class="deejay-section glass-panel" style="gap: 15px; max-height: 100%;">
           <div class="section-header">
             <h3>🚀 Executar Envio em Lote</h3>
           </div>
@@ -212,7 +212,7 @@
         </div>
         
         <!-- Logs de Envio -->
-        <div class="deejay-section glass-panel">
+        <div class="deejay-section glass-panel" style="max-height: 100%;">
           <div class="section-header">
             <h3>📊 Console de Atividades do Drone</h3>
             <button id="drone-btn-clear-logs" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">Limpar Logs</button>
