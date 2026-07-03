@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zwei Chat - WhatsApp Bot Lite</title>
   <link rel="stylesheet" href="../css/index.css">
+  <link rel="stylesheet" href="../css/deejay.css">
+  <link rel="stylesheet" href="../css/flows.css">
 </head>
 <body>
   <div class="app-container">
@@ -83,6 +85,9 @@
           <button id="tab-btn-flows" class="tab-btn">
             <span>⚙️</span> Editor de Fluxo
           </button>
+          <button id="tab-btn-deejay" class="tab-btn">
+            <span>🎧</span> Dee Jay
+          </button>
         </div>
         <div class="header-actions">
           <div id="logs-controls" class="tab-controls active">
@@ -108,82 +113,17 @@
       </div>
 
       <!-- Conteúdo da Aba 2: Construtor de Fluxos -->
-      <div id="tab-content-flows" class="tab-content">
-        
-        <!-- Visão 1: Lista de Fluxos -->
-        <div id="flow-list-view" class="flow-view active">
-          <div class="view-header">
-            <div>
-              <h3>Fluxos Automáticos</h3>
-              <p class="subtitle">Ative e organize as sequências de respostas do bot</p>
-            </div>
-            <button id="btn-create-flow" class="btn btn-primary">
-              <span>➕</span> Novo Fluxo
-            </button>
-          </div>
-          
-          <div class="flows-scroll-container">
-            <div id="flows-list" class="flows-list">
-              <!-- Renderização dinâmica dos fluxos aqui -->
-              <div class="flow-placeholder-card">
-                <div class="placeholder-icon">🤖</div>
-                <p>Nenhum fluxo criado. Clique em "Novo Fluxo" para começar!</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div id="tab-content-flows" class="tab-content"></div>
 
-        <!-- Visão 2: Construtor de Bloco Individual (Builder) -->
-        <div id="flow-builder-view" class="flow-view">
-          <div class="builder-header">
-            <button id="btn-back-to-list" class="control-btn-back">
-              <span>⬅️</span> Voltar
-            </button>
-            <div class="flow-title-wrapper">
-              <input type="text" id="flow-name-input" placeholder="Nome do Fluxo (ex: Boas-vindas)" class="flow-name-input">
-            </div>
-            <button id="btn-save-flow" class="btn btn-primary btn-save">
-              <span>💾</span> Salvar Fluxo
-            </button>
-          </div>
-
-          <div class="builder-workspace">
-            <!-- Zona onde os blocos serão inseridos verticalmente -->
-            <div id="flow-steps-container" class="flow-steps-container">
-              <!-- O primeiro bloco (Gatilho) sempre existirá de forma fixa aqui -->
-            </div>
-
-            <!-- Botão de adicionar novo bloco (Ação) -->
-            <div class="add-step-container">
-              <button id="btn-add-step-trigger" class="btn btn-secondary">
-                <span>➕</span> Adicionar Bloco/Ação
-              </button>
-              <div id="add-step-dropdown" class="add-step-dropdown hidden">
-                <button class="dropdown-item" data-type="send_message">
-                  <span class="icon">💬</span>
-                  <div class="item-text">
-                    <strong>Enviar Mensagem</strong>
-                    <span>Manda um texto de resposta simples.</span>
-                  </div>
-                </button>
-                <button class="dropdown-item" data-type="options_menu">
-                  <span class="icon">📋</span>
-                  <div class="item-text">
-                    <strong>Menu de Opções</strong>
-                    <span>Manda perguntas e aguarda respostas.</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      <!-- Conteúdo da Aba 3: Dee Jay -->
+      <div id="tab-content-deejay" class="tab-content"></div>
     </main>
 
   </div>
 
   <script src="../guiScripts/utils/confirmModal.js"></script>
+  <script src="../guiScripts/deejay.js" defer></script>
+  <script type="module" src="../guiScripts/flows.js" defer></script>
   <script src="../guiScripts/index.js"></script>
 </body>
 </html>

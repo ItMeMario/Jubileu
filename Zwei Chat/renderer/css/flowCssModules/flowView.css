@@ -1,0 +1,50 @@
+/* VISTA DE FLUXOS (FLOWS VIEW) */
+.flow-view {
+  display: none;
+  height: 100%;
+  flex-direction: column;
+  padding: 24px 32px;
+  overflow: hidden;
+}
+
+.flow-view.active {
+  display: flex;
+}
+
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.view-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.view-header .subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.flows-scroll-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.flows-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.flows-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+.flows-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

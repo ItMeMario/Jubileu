@@ -1,0 +1,113 @@
+/* Cartão do Bloco (Step) */
+.step-card {
+  background: rgba(18, 17, 28, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 1; /* Fica acima da linha conectora */
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.step-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Borda esquerda por tipo de bloco */
+.step-card.trigger-block {
+  border-left: 4px solid var(--primary);
+}
+.step-card.send_message-block {
+  border-left: 4px solid var(--success);
+}
+.step-card.options_menu-block {
+  border-left: 4px solid var(--warning);
+}
+
+/* Cabeçalho do Bloco */
+.step-card-header {
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.01);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.step-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.step-card.trigger-block .step-card-title { color: var(--primary-hover); }
+.step-card.send_message-block .step-card-title { color: var(--success); }
+.step-card.options_menu-block .step-card-title { color: var(--warning); }
+
+.step-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-card-actions .control-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* Corpo do Bloco */
+.step-card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.step-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step-input {
+  width: 100%;
+  background: rgba(7, 6, 12, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.step-input:focus {
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+
+textarea.step-input {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+/* Campos de Configuração Interna */
+.step-row-flex {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}

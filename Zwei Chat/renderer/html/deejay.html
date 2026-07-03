@@ -1,0 +1,85 @@
+<div class="deejay-workspace">
+  
+  <!-- Painel Superior de Controles (Loop & Config) -->
+  <div class="deejay-controls-panel">
+    <div class="control-col">
+      <h3 class="section-title">Controle do Loop</h3>
+      <div class="control-row">
+        <button id="dj-btn-start-loop" class="btn btn-primary" disabled>▶ Iniciar Dee Jay</button>
+        <button id="dj-btn-stop-loop" class="btn btn-danger hidden">⏹ Parar Dee Jay</button>
+      </div>
+    </div>
+    
+    <div class="control-col">
+      <h3 class="section-title">Configurações de Intervalo</h3>
+      <div class="control-row">
+        <div class="config-item">
+          <label for="dj-min-interval">Mín (min):</label>
+          <input type="number" id="dj-min-interval" min="1" value="1" class="dj-number-input">
+        </div>
+        <div class="config-item">
+          <label for="dj-max-interval">Máx (min):</label>
+          <input type="number" id="dj-max-interval" min="1" value="5" class="dj-number-input">
+        </div>
+        <div class="config-item checkbox-item">
+          <label class="checkbox-container">
+            <input type="checkbox" id="dj-chk-link-bot">
+            <span>Vincular Bot Principal</span>
+          </label>
+        </div>
+        <button id="dj-btn-save-config" class="btn btn-secondary btn-save-config">💾 Salvar Config</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid Principal do Dee Jay -->
+  <div class="deejay-main-grid">
+    
+    <!-- Coluna Esquerda: Instâncias e Mensagens -->
+    <div class="deejay-left-column">
+      
+      <!-- Seção de Instâncias -->
+      <div class="deejay-section glass-panel">
+        <div class="section-header">
+          <h3>Instâncias Conectadas</h3>
+          <button id="dj-btn-add-instance" class="btn btn-secondary btn-sm">➕ Nova Conexão</button>
+        </div>
+        <div id="dj-instances-list" class="deejay-instances-grid">
+          <!-- Inserido dinamicamente -->
+          <div class="dj-placeholder">Nenhuma instância cadastrada</div>
+        </div>
+      </div>
+      
+      <!-- Seção de Mensagens Customizadas -->
+      <div class="deejay-section glass-panel">
+        <div class="section-header">
+          <h3>Banco de Mensagens de Texto</h3>
+        </div>
+        <div class="dj-message-input-group">
+          <input type="text" id="dj-msg-input" placeholder="Digite uma nova mensagem para o loop de conversa...">
+          <button id="dj-btn-add-msg" class="btn btn-primary">Adicionar</button>
+        </div>
+        <div class="dj-messages-list-wrapper">
+          <ul id="dj-messages-list" class="dj-messages-list">
+            <!-- Mensagens inseridas dinamicamente -->
+          </ul>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- Coluna Direita: Logs de Conversação -->
+    <div class="deejay-right-column glass-panel">
+      <div class="section-header">
+        <h3>Console de Conversas em Tempo Real</h3>
+        <button id="dj-btn-clear-logs" class="control-btn" title="Limpar Logs">🗑️</button>
+      </div>
+      <div id="dj-logs-container" class="dj-logs-container">
+        <!-- Inserido dinamicamente -->
+        <div class="dj-log-placeholder">Nenhuma mensagem trocada ainda...</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

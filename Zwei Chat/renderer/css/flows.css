@@ -1,0 +1,16 @@
+/* renderer/css/flows.css */
+/* Folha de estilo indexadora da aba do Construtor de Fluxos */
+
+/* Módulos CSS Genéricos (reaproveitáveis) */
+@import "./cssModules/iconBtn.css";
+@import "./cssModules/switchToggle.css";
+@import "./cssModules/delayControl.css";
+
+/* Módulos CSS Exclusivos do Construtor de Fluxos */
+@import "./flowCssModules/flowView.css";
+@import "./flowCssModules/flowCard.css";
+@import "./flowCssModules/flowBuilder.css";
+@import "./flowCssModules/flowStepCard.css";
+@import "./flowCssModules/flowOptionsMenu.css";
+@import "./flowCssModules/flowDropdowns.css";
+@import "./flowCssModules/flowPlaceholders.css";

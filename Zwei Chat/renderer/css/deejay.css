@@ -1,0 +1,459 @@
+/* renderer/css/deejay.css */
+/* Estilos dedicados à aba Dee Jay do Zwei Chat */
+
+.deejay-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 24px 32px;
+  overflow: hidden;
+  gap: 20px;
+}
+
+/* Painel de Controles */
+.deejay-controls-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px 24px;
+  gap: 20px;
+}
+
+.deejay-controls-panel .control-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.deejay-controls-panel .section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.deejay-controls-panel .control-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.deejay-controls-panel .config-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.deejay-controls-panel .dj-number-input {
+  width: 65px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-main);
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.deejay-controls-panel .dj-number-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 5px var(--primary-glow);
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-container input {
+  cursor: pointer;
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+}
+
+/* Grid Principal */
+.deejay-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  flex-grow: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.deejay-left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+}
+
+.deejay-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex-grow: 1;
+}
+
+.deejay-section.glass-panel {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px 20px;
+}
+
+.deejay-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.deejay-section .section-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+/* Instâncias Grid e Cards */
+.deejay-instances-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  overflow-y: auto;
+  flex-grow: 1;
+  padding-right: 4px;
+}
+
+.deejay-instances-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.deejay-instances-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.dj-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.dj-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dj-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.dj-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dj-card-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+}
+
+.dj-card-badge.connected {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.dj-card-badge.connecting {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.dj-card-badge.qr_pending {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.dj-card-badge.disconnected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.dj-card-qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: white;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dj-card-qr-img {
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.dj-card-info {
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+}
+
+.dj-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.dj-card-actions button {
+  flex-grow: 1;
+  padding: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dj-card-actions .dj-btn-delete-card {
+  flex-grow: 0;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dj-card-actions .dj-btn-delete-card:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.dj-placeholder {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 30px 10px;
+  color: var(--text-dark);
+  font-size: 13px;
+  border: 1px dashed rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mensagens Section */
+.dj-message-input-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.dj-message-input-group input {
+  flex-grow: 1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-main);
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.dj-message-input-group input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 5px var(--primary-glow);
+}
+
+.dj-messages-list-wrapper {
+  overflow-y: auto;
+  flex-grow: 1;
+  padding-right: 4px;
+}
+
+.dj-messages-list-wrapper::-webkit-scrollbar {
+  width: 4px;
+}
+
+.dj-messages-list-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.dj-messages-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dj-message-item {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-main);
+  transition: all 0.2s;
+}
+
+.dj-message-item:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dj-message-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dj-btn-delete-msg {
+  background: transparent;
+  border: none;
+  color: var(--text-dark);
+  cursor: pointer;
+  font-size: 12px;
+  transition: color 0.2s;
+  outline: none;
+}
+
+.dj-btn-delete-msg:hover {
+  color: #ef4444;
+}
+
+/* Logs Column */
+.deejay-right-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px 20px;
+}
+
+.deejay-right-column h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.deejay-right-column .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.dj-logs-container {
+  flex-grow: 1;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: var(--font-mono, 'Consolas', 'Courier New', monospace);
+  font-size: 12px;
+}
+
+.dj-logs-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dj-logs-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.dj-log-placeholder {
+  text-align: center;
+  color: var(--text-dark);
+  padding: 40px 10px;
+  font-family: inherit;
+}
+
+.dj-log-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.dj-log-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dj-log-time {
+  color: var(--text-dark);
+}
+
+.dj-log-sender {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.dj-log-arrow {
+  color: var(--text-dark);
+}
+
+.dj-log-receiver {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.dj-log-text {
+  color: var(--text-main);
+  padding-left: 8px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

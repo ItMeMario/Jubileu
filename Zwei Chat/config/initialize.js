@@ -100,9 +100,66 @@ async function initializeDatabase() {
                 return reject(err);
               }
 
-              db.close((closeErr) => {
-                if (closeErr) reject(closeErr);
-                else resolve(DATABASE_PATH);
+              // Criação de tabelas adicionais para o Dee Jay
+              db.run(`CREATE TABLE IF NOT EXISTS dee_jay_instances (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                status TEXT DEFAULT 'disconnected',
+                phone_number TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_connected_at DATETIME
+              )`, (err) => {
+                if (err) {
+                  console.error("❌ Erro ao criar tabela dee_jay_instances:", err);
+                  db.close();
+                  return reject(err);
+                }
+
+                db.run(`CREATE TABLE IF NOT EXISTS dee_jay_messages (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  message_content TEXT NOT NULL,
+                  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )`, (err) => {
+                  if (err) {
+                    console.error("❌ Erro ao criar tabela dee_jay_messages:", err);
+                    db.close();
+                    return reject(err);
+                  }
+
+                  // Povoa mensagens iniciais se estiver vazia
+                  db.get("SELECT COUNT(*) as count FROM dee_jay_messages", [], (err, row) => {
+                    if (!err && row && row.count === 0) {
+                      const defaultMessages = [
+                        "Olá, tudo bem?",
+                        "Tudo ótimo por aqui, e com você?",
+                        "Tudo bem também! O que está fazendo de bom?",
+                        "Apenas trabalhando e estudando um pouco.",
+                        "Muito bom! Eu estou tomando um café agora.",
+                        "Café é sempre excelente! ☕",
+                        "Sim! Ajuda a manter o foco haha",
+                        "Verdade. Como foi o seu dia ontem?",
+                        "Foi bem produtivo, consegui finalizar bastante coisa.",
+                        "Show de bola! Eu também tive um dia corrido.",
+                        "Faz parte, o importante é progredir.",
+                        "Com certeza! Vamos nos falando.",
+                        "Beleza, um abraço!",
+                        "Outro! 👍"
+                      ];
+                      const stmt = db.prepare("INSERT INTO dee_jay_messages (message_content) VALUES (?)");
+                      defaultMessages.forEach((msg) => {
+                        stmt.run(msg);
+                      });
+                      stmt.finalize();
+                      console.log("🌱 Mensagens padrão do Dee Jay inseridas com sucesso.");
+                    }
+
+                    db.close((closeErr) => {
+                      if (closeErr) reject(closeErr);
+                      else resolve(DATABASE_PATH);
+                    });
+                  });
+                });
               });
             });
           });

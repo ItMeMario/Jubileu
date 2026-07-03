@@ -78,6 +78,18 @@ class AppLifecycle {
         }
       }
 
+      // Destrói clientes do Dee Jay
+      try {
+        const deeJayService = require("../services/deeJayService");
+        cleanupTasks.push(
+          deeJayService.stopAll()
+            .then(() => console.log("✅ Dee Jay Service parado"))
+            .catch(err => console.error("⚠️ Erro ao parar Dee Jay Service:", err.message))
+        );
+      } catch (err) {
+        console.error("⚠️ Erro ao carregar Dee Jay para cleanup:", err.message);
+      }
+
       const timeoutPromise = new Promise((resolve) => {
         setTimeout(() => {
           console.warn("⚠️ Cleanup atingiu tempo limite (10s). Forçando encerramento.");
