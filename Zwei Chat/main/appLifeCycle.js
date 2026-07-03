@@ -90,6 +90,18 @@ class AppLifecycle {
         console.error("⚠️ Erro ao carregar Dee Jay para cleanup:", err.message);
       }
 
+      // Destrói clientes do Drone
+      try {
+        const droneService = require("../services/droneService");
+        cleanupTasks.push(
+          droneService.stopAll()
+            .then(() => console.log("✅ Drone Service parado"))
+            .catch(err => console.error("⚠️ Erro ao parar Drone Service:", err.message))
+        );
+      } catch (err) {
+        console.error("⚠️ Erro ao carregar Drone para cleanup:", err.message);
+      }
+
       const timeoutPromise = new Promise((resolve) => {
         setTimeout(() => {
           console.warn("⚠️ Cleanup atingiu tempo limite (10s). Forçando encerramento.");

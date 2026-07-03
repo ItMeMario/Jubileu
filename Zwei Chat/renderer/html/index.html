@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="../css/index.css">
   <link rel="stylesheet" href="../css/deejay.css">
   <link rel="stylesheet" href="../css/flows.css">
+  <link rel="stylesheet" href="../css/drone.css">
 </head>
 <body>
   <div class="app-container">
@@ -91,6 +92,9 @@
           <button id="tab-btn-deejay" class="tab-btn">
             <span>🎧</span> Dee Jay
           </button>
+          <button id="tab-btn-drone" class="tab-btn">
+            <span>🛸</span> Drone
+          </button>
         </div>
         <div class="header-actions">
           <div id="logs-controls" class="tab-controls active">
@@ -120,12 +124,16 @@
 
       <!-- Conteúdo da Aba 3: Dee Jay -->
       <div id="tab-content-deejay" class="tab-content"></div>
+
+      <!-- Conteúdo da Aba 4: Drone -->
+      <div id="tab-content-drone" class="tab-content"></div>
     </main>
 
   </div>
 
   <script src="../guiScripts/utils/confirmModal.js"></script>
   <script src="../guiScripts/deejay.js" defer></script>
+  <script src="../guiScripts/drone.js" defer></script>
   <script type="module" src="../guiScripts/flows.js" defer></script>
   <script src="../guiScripts/index.js"></script>
 </body>

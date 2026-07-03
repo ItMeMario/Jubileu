@@ -50,6 +50,11 @@ if (!gotTheLock) {
         const deeJayService = require("./services/deeJayService");
         await deeJayService.initialize();
 
+        // Inicializa o serviço Drone
+        console.log("🚁 Inicializando Drone Service...");
+        const droneService = require("./services/droneService");
+        await droneService.initialize();
+
         console.log("🪟 Criando janela principal...");
         this.windowManager.createMainWindow();
 

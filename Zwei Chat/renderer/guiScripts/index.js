@@ -512,18 +512,24 @@ const flowsControls = document.getElementById("flows-controls");
 const tabBtnDeejay = document.getElementById("tab-btn-deejay");
 const tabContentDeejay = document.getElementById("tab-content-deejay");
 
+const tabBtnDrone = document.getElementById("tab-btn-drone");
+const tabContentDrone = document.getElementById("tab-content-drone");
+
 let flowsHtmlLoaded = false;
 let deejayHtmlLoaded = false;
+let droneHtmlLoaded = false;
 
 // Alternar Abas
 tabBtnLogs.addEventListener("click", () => {
   tabBtnLogs.classList.add("active");
   tabBtnFlows.classList.remove("active");
   tabBtnDeejay.classList.remove("active");
+  tabBtnDrone.classList.remove("active");
   
   tabContentLogs.classList.add("active");
   tabContentFlows.classList.remove("active");
   tabContentDeejay.classList.remove("active");
+  tabContentDrone.classList.remove("active");
   
   logsControls.classList.add("active");
   flowsControls.classList.remove("active");
@@ -533,10 +539,12 @@ tabBtnFlows.addEventListener("click", async () => {
   tabBtnFlows.classList.add("active");
   tabBtnLogs.classList.remove("active");
   tabBtnDeejay.classList.remove("active");
+  tabBtnDrone.classList.remove("active");
   
   tabContentFlows.classList.add("active");
   tabContentLogs.classList.remove("active");
   tabContentDeejay.classList.remove("active");
+  tabContentDrone.classList.remove("active");
   
   flowsControls.classList.add("active");
   logsControls.classList.remove("active");
@@ -566,10 +574,12 @@ tabBtnDeejay.addEventListener("click", async () => {
   tabBtnDeejay.classList.add("active");
   tabBtnLogs.classList.remove("active");
   tabBtnFlows.classList.remove("active");
+  tabBtnDrone.classList.remove("active");
   
   tabContentDeejay.classList.add("active");
   tabContentLogs.classList.remove("active");
   tabContentFlows.classList.remove("active");
+  tabContentDrone.classList.remove("active");
   
   flowsControls.classList.remove("active");
   logsControls.classList.remove("active");
@@ -592,6 +602,41 @@ tabBtnDeejay.addEventListener("click", async () => {
   } catch (err) {
     console.error("Erro ao carregar aba Dee Jay dinamicamente:", err);
     tabContentDeejay.innerHTML = `<div class="dj-placeholder" style="color:var(--error);">❌ Erro ao carregar aba Dee Jay: ${err.message}</div>`;
+  }
+});
+
+tabBtnDrone.addEventListener("click", async () => {
+  tabBtnDrone.classList.add("active");
+  tabBtnLogs.classList.remove("active");
+  tabBtnFlows.classList.remove("active");
+  tabBtnDeejay.classList.remove("active");
+  
+  tabContentDrone.classList.add("active");
+  tabContentLogs.classList.remove("active");
+  tabContentFlows.classList.remove("active");
+  tabContentDeejay.classList.remove("active");
+  
+  flowsControls.classList.remove("active");
+  logsControls.classList.remove("active");
+  
+  try {
+    if (!droneHtmlLoaded) {
+      // Carrega o layout de drone.html dinamicamente
+      const response = await fetch("drone.html");
+      const htmlText = await response.text();
+      tabContentDrone.innerHTML = htmlText;
+      droneHtmlLoaded = true;
+    }
+    
+    // Inicializa a lógica do Drone exposta por drone.js
+    if (typeof window.initDrone === "function") {
+      await window.initDrone();
+    } else {
+      console.error("window.initDrone não encontrada. O script drone.js foi carregado?");
+    }
+  } catch (err) {
+    console.error("Erro ao carregar aba Drone dinamicamente:", err);
+    tabContentDrone.innerHTML = `<div class="dj-placeholder" style="color:var(--error);">❌ Erro ao carregar aba Drone: ${err.message}</div>`;
   }
 });
 

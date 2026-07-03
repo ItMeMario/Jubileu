@@ -127,7 +127,7 @@ async function initializeDatabase() {
                     return reject(err);
                   }
 
-                  // Povoa mensagens iniciais se estiver vazia
+                   // Povoa mensagens iniciais se estiver vazia
                   db.get("SELECT COUNT(*) as count FROM dee_jay_messages", [], (err, row) => {
                     if (!err && row && row.count === 0) {
                       const defaultMessages = [
@@ -154,9 +154,70 @@ async function initializeDatabase() {
                       console.log("🌱 Mensagens padrão do Dee Jay inseridas com sucesso.");
                     }
 
-                    db.close((closeErr) => {
-                      if (closeErr) reject(closeErr);
-                      else resolve(DATABASE_PATH);
+                    // Criação de tabelas para o Drone
+                    db.run(`CREATE TABLE IF NOT EXISTS drone_instances (
+                      id TEXT PRIMARY KEY,
+                      name TEXT NOT NULL,
+                      status TEXT DEFAULT 'disconnected',
+                      phone_number TEXT,
+                      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                      last_connected_at DATETIME
+                    )`, (err) => {
+                      if (err) {
+                        console.error("❌ Erro ao criar tabela drone_instances:", err);
+                        db.close();
+                        return reject(err);
+                      }
+
+                      db.run(`CREATE TABLE IF NOT EXISTS drone_messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        message_content TEXT NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                      )`, (err) => {
+                        if (err) {
+                          console.error("❌ Erro ao criar tabela drone_messages:", err);
+                          db.close();
+                          return reject(err);
+                        }
+
+                        db.run(`CREATE TABLE IF NOT EXISTS drone_clients (
+                          id INTEGER PRIMARY KEY AUTOINCREMENT,
+                          name TEXT,
+                          tel TEXT NOT NULL UNIQUE,
+                          status TEXT DEFAULT 'pending',
+                          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )`, (err) => {
+                          if (err) {
+                            console.error("❌ Erro ao criar tabela drone_clients:", err);
+                            db.close();
+                            return reject(err);
+                          }
+
+                          // Povoa mensagens padrão do Drone se estiver vazia
+                          db.get("SELECT COUNT(*) as count FROM drone_messages", [], (err, row) => {
+                            if (!err && row && row.count === 0) {
+                              const defaultDroneMessages = [
+                                "Olá {{name}}, tudo bem? Passando para te desejar um excelente dia!",
+                                "Oi {{name}}! Como estão as coisas por aí?",
+                                "Tudo bem, {{name}}? Vi que você demonstrou interesse em nossos serviços e gostaria de tirar suas dúvidas!"
+                              ];
+                              const stmt = db.prepare("INSERT INTO drone_messages (message_content) VALUES (?)");
+                              defaultDroneMessages.forEach((msg) => {
+                                stmt.run(msg);
+                              });
+                              stmt.finalize();
+                              console.log("🌱 Mensagens padrão do Drone inseridas com sucesso.");
+                            }
+
+                            db.close((closeErr) => {
+                              if (closeErr) reject(closeErr);
+                              else resolve(DATABASE_PATH);
+                            });
+                          });
+                        });
+                      });
                     });
                   });
                 });

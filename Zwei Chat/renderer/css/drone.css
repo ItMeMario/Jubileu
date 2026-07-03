@@ -1,0 +1,140 @@
+/* renderer/css/drone.css */
+/* Estilos dedicados à aba Drone do Zwei Chat */
+
+.drone-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 24px 32px;
+  overflow: hidden;
+  gap: 20px;
+}
+
+/* Ocultação de seções inativas */
+.drone-section:not(.active-section) {
+  display: none !important;
+}
+
+.drone-section.active-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Botões de Sub-abas */
+.subtab-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.subtab-btn.active {
+  background: var(--primary) !important;
+  color: #fff !important;
+  box-shadow: 0 0 10px var(--primary-glow) !important;
+  border-color: var(--primary) !important;
+}
+
+.subtab-btn:not(.active) {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-color);
+  color: var(--text-main);
+}
+
+.subtab-btn:not(.active):hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Área de Upload de CSV */
+.file-upload-area {
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.01);
+  padding: 30px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.file-upload-area:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--primary);
+}
+
+.file-upload-area.dragover {
+  background: rgba(var(--primary-rgb), 0.05);
+  border-color: var(--primary);
+  box-shadow: inset 0 0 10px rgba(var(--primary-rgb), 0.1);
+}
+
+/* Grid de Status */
+.status-stats-grid .stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.01);
+  transition: all 0.2s ease;
+}
+
+.status-stats-grid .stat-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Elementos de Lista e Itens */
+.client-item-status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.client-item-status.pending {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.client-item-status.sent {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.client-item-status.failed {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Log lines especificidades */
+.dj-log-entry.success .dj-log-text {
+  color: #10b981;
+}
+
+.dj-log-entry.failed .dj-log-text {
+  color: #ef4444;
+}
+
+.dj-log-entry.sending .dj-log-text {
+  color: #f59e0b;
+}
+
+/* Text position helper */
+.text-right {
+  text-align: right;
+}
+
+.drone-workspace .checkbox-group label {
+  font-size: 13px;
+  color: var(--text-main);
+  user-select: none;
+  cursor: pointer;
+}
