@@ -453,7 +453,11 @@ const tabContentFlows = document.getElementById("tab-content-flows");
 const logsControls = document.getElementById("logs-controls");
 const flowsControls = document.getElementById("flows-controls");
 
+const tabBtnDeejay = document.getElementById("tab-btn-deejay");
+const tabContentDeejay = document.getElementById("tab-content-deejay");
+
 let flowsHtmlLoaded = false;
+let deejayHtmlLoaded = false;
 
 // Alternar Abas
 tabBtnLogs.addEventListener("click", () => {
