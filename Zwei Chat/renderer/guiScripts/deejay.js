@@ -10,7 +10,7 @@ let djInitialized = false;
 
 // DOM Elements
 let djBtnStartLoop, djBtnStopLoop, djMinInterval, djMaxInterval, djChkLinkBot, djBtnSaveConfig;
-let djBtnAddInstance, djInstancesList;
+let djBtnAddInstance, djInstancesList, djBtnClearAll;
 let djMsgInput, djBtnAddMsg, djMessagesList;
 let djLogsContainer, djBtnClearLogs;
 
@@ -44,6 +44,7 @@ window.initDeeJay = async function() {
   djBtnSaveConfig = document.getElementById("dj-btn-save-config");
 
   djBtnAddInstance = document.getElementById("dj-btn-add-instance");
+  djBtnClearAll = document.getElementById("dj-btn-clear-all");
   djInstancesList = document.getElementById("dj-instances-list");
 
   djMsgInput = document.getElementById("dj-msg-input");
@@ -255,6 +256,48 @@ function updateDjLoopButtons() {
 }
 
 function setupUIEventListeners() {
+  djBtnClearAll.addEventListener("click", async () => {
+    if (djInstances.length === 0) {
+      alert("Não há conexões do Dee Jay para limpar.");
+      return;
+    }
+
+    const confirmed = await window.customConfirm(
+      "Tem certeza de que deseja remover TODAS as conexões do Dee Jay?\nEsta ação é irreversível e excluirá permanentemente todos os dados de sessão associados.",
+      "Limpar Todas as Conexões Dee Jay",
+      "Remover Todas",
+      "Cancelar",
+      "btn-danger"
+    );
+
+    if (confirmed) {
+      djBtnClearAll.disabled = true;
+      djBtnAddInstance.disabled = true;
+
+      try {
+        // Armazena cópia local para evitar mutação do array durante iteração se houver falhas
+        const listToRemove = [...djInstances];
+        for (const inst of listToRemove) {
+          try {
+            await window.deeJayAPI.removeInstance(inst.instanceId);
+            djInstances = djInstances.filter(i => i.instanceId !== inst.instanceId);
+            delete djInstanceStatuses[inst.instanceId];
+          } catch (err) {
+            console.error(`Erro ao remover conexão Dee Jay ${inst.instanceId}:`, err);
+          }
+        }
+        
+        renderDeeJayInstances();
+        updateDjLoopButtons();
+      } catch (err) {
+        alert("Erro ao limpar conexões: " + err.message);
+      } finally {
+        djBtnClearAll.disabled = false;
+        djBtnAddInstance.disabled = false;
+      }
+    }
+  });
+
   djBtnAddInstance.addEventListener("click", async () => {
     const name = await window.customPrompt("Nova Conexão Dee Jay", "Digite um nome para identificar esta conexão de WhatsApp:");
     if (name === null) return;

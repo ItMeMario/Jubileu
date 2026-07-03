@@ -685,6 +685,34 @@ body {
   box-shadow: 0 0 10px var(--primary-glow);
 }
 
+.instances-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn-clear {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.icon-btn-clear:hover {
+  background: var(--error);
+  color: white;
+  border-color: var(--error);
+  box-shadow: 0 0 10px var(--error-glow);
+}
+
 .instances-list {
   display: flex;
   flex-direction: column;

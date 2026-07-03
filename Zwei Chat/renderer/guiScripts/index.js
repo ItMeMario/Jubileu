@@ -13,6 +13,7 @@ const terminalLogs = document.getElementById("terminal-logs");
 
 // Novos seletores para instâncias
 const btnAddInstance = document.getElementById("btn-add-instance");
+const btnClearAllInstances = document.getElementById("btn-clear-all-instances");
 const instancesList = document.getElementById("instances-list");
 
 // Estado em memória
@@ -306,6 +307,61 @@ btnAddInstance.addEventListener("click", async () => {
     refreshSelectedInstanceUI();
   } catch (err) {
     alert("Erro ao criar nova instância: " + err.message);
+  }
+});
+
+// Clique no botão de limpar todas as instâncias
+btnClearAllInstances.addEventListener("click", async () => {
+  if (instances.length === 0) {
+    alert("Não há instâncias para limpar.");
+    return;
+  }
+
+  const confirmed = await window.customConfirm(
+    "Tem certeza de que deseja remover TODAS as instâncias do Zwei Chat?\nEsta ação é irreversível e excluirá permanentemente todos os dados de sessão de todas as instâncias.",
+    "Limpar Todas as Instâncias",
+    "Remover Todas",
+    "Cancelar",
+    "btn-danger"
+  );
+
+  if (confirmed) {
+    btnClearAllInstances.disabled = true;
+    btnAddInstance.disabled = true;
+    
+    try {
+      addLog("info", "Iniciando remoção de todas as instâncias...");
+      
+      // Armazena cópia local para evitar mutação do array durante iteração se houver falhas
+      const listToRemove = [...instances];
+      for (const inst of listToRemove) {
+        try {
+          addLog("info", `Removendo instância "${inst.name}"...`);
+          await window.electronAPI.deleteInstance(inst.id);
+          delete instanceStatuses[inst.id];
+          instances = instances.filter((i) => i.id !== inst.id);
+        } catch (err) {
+          console.error(`Erro ao remover instância ${inst.id}:`, err);
+          addLog("error", `Falha ao remover "${inst.name}": ${err.message}`);
+        }
+      }
+      
+      if (instances.length === 0) {
+        selectedInstanceId = null;
+        addLog("success", "Todas as instâncias foram removidas.");
+      } else {
+        selectedInstanceId = instances[0].id;
+        addLog("warn", "Algumas instâncias não puderam ser removidas.");
+      }
+      
+      renderInstances();
+      refreshSelectedInstanceUI();
+    } catch (err) {
+      alert("Erro ao limpar instâncias: " + err.message);
+    } finally {
+      btnClearAllInstances.disabled = false;
+      btnAddInstance.disabled = false;
+    }
   }
 });
 

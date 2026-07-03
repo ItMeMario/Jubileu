@@ -39,10 +39,13 @@
     <div class="deejay-left-column">
       
       <!-- Seção de Instâncias -->
-      <div class="deejay-section glass-panel">
+      <div class="deejay-section deejay-instances-section glass-panel">
         <div class="section-header">
           <h3>Instâncias Conectadas</h3>
-          <button id="dj-btn-add-instance" class="btn btn-secondary btn-sm">➕ Nova Conexão</button>
+          <div class="section-header-actions">
+            <button id="dj-btn-clear-all" class="btn btn-danger btn-sm">🗑️ Limpar Todas</button>
+            <button id="dj-btn-add-instance" class="btn btn-secondary btn-sm">➕ Nova Conexão</button>
+          </div>
         </div>
         <div id="dj-instances-list" class="deejay-instances-grid">
           <!-- Inserido dinamicamente -->
@@ -51,7 +54,7 @@
       </div>
       
       <!-- Seção de Mensagens Customizadas -->
-      <div class="deejay-section glass-panel">
+      <div class="deejay-section deejay-messages-section glass-panel">
         <div class="section-header">
           <h3>Banco de Mensagens de Texto</h3>
         </div>

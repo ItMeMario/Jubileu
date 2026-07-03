@@ -108,6 +108,15 @@
   flex-grow: 1;
 }
 
+.deejay-section.deejay-instances-section {
+  flex-grow: 1.6;
+}
+
+.deejay-section.deejay-messages-section {
+  flex-grow: 0.8;
+  max-height: 280px;
+}
+
 .deejay-section.glass-panel {
   background: rgba(255, 255, 255, 0.01);
   border: 1px solid var(--border-color);
@@ -120,6 +129,11 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+}
+
+.section-header-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .deejay-section .section-header h3 {
@@ -218,10 +232,14 @@
   padding: 8px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 150px;
+  margin: 0 auto;
 }
 
 .dj-card-qr-img {
   width: 100%;
+  max-width: 134px;
+  height: auto;
   aspect-ratio: 1;
 }
 
