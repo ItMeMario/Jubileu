@@ -760,4 +760,19 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 - **Diretório de Sessões do Drone**: Corrigido o caminho relativo das sessões em ambiente de desenvolvimento, que fazia a pasta `.wwebjs_auth_drone` ser criada fora da pasta do projeto (na pasta pai `Github/`). Agora, as sessões do Drone são salvas corretamente na raiz do projeto (`Jubileu/`).
 - **Limpeza de Cache do Drone**: Integrado o encerramento automático das instâncias do Drone e a remoção da pasta `.wwebjs_auth_drone` (ou `whatsapp-sessions-drone` no build de produção) ao utilizar a rotina de limpar cache.
 
-📅 Data de Lançamento: [02/07/2026]
+📅 Data de Lançamento: [02/07/2026]
+
+---
+
+📌 Patch Notes - Versão 1.4.5
+
+✨ Novidades
+[Nenhuma novidade registrada nesta versão.]
+
+🛠️ Melhorias
+[Nenhuma melhoria registrada nesta versão.]
+
+🐛 Correções
+- **Mapa do Sentinela**: Corrigido o erro que impedia a renderização do mapa do Sentinela devido à ausência do arquivo `brazil-states.json`. A regra do `.gitignore` que ignorava qualquer diretório `data/` em qualquer nível foi ajustada para `/data/` (ancorada na raiz), permitindo que a pasta `renderer/data/` e o arquivo do mapa fossem rastreados corretamente.
+
+📅 Data de Lançamento: [05/07/2026]

@@ -1,6 +1,6 @@
 node_modules/
 .wwebjs_cache
-data/
+/data/
 dist/
 .wwebjs_auth/
 .wwebjs_auth_deejay
