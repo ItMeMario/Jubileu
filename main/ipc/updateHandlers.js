@@ -6,7 +6,8 @@ const fs = require("fs");
 // const { autoUpdater } = require("electron-updater"); // Optional: for production builds if configured
 
 class UpdateHandlers {
-  constructor() {
+  constructor(modules = {}) {
+    this.modules = modules;
     this.localPackage = require("../../package.json");
     this.remotePackageUrl = "https://raw.githubusercontent.com/ItMeMario/Jubileu/main/package.json";
   }
@@ -113,9 +114,38 @@ class UpdateHandlers {
 
                 autoUpdater.once('update-downloaded', (info) => {
                     console.log("Update downloaded");
+                    const installerPath = info.downloadedFile;
+                    console.log("Caminho do instalador:", installerPath);
                     
-                    setTimeout(() => {
-                        autoUpdater.quitAndInstall();
+                    setTimeout(async () => {
+                        console.log("Iniciando cleanup da aplicação...");
+                        
+                        // 1. Executa o cleanup completo das instâncias ativas
+                        if (this.modules && this.modules.appLifecycle) {
+                            this.modules.appLifecycle.isCleanedUp = true;
+                            await this.modules.appLifecycle.cleanup();
+                        }
+                        
+                        console.log("Iniciando instalador de forma independente...");
+                        try {
+                            const { spawn } = require("child_process");
+                            
+                            // Executa o instalador em modo destacado (detached)
+                            const child = spawn(installerPath, ["--updated", "--force-run"], {
+                                detached: true,
+                                stdio: "ignore"
+                            });
+                            
+                            child.unref();
+                            console.log("Instalador iniciado. Encerrando o aplicativo...");
+                            
+                            // Força a saída imediata da aplicação para liberar todos os recursos
+                            app.exit(0);
+                        } catch (spawnErr) {
+                            console.error("Erro ao executar instalador manualmente:", spawnErr);
+                            // Fallback para o quitAndInstall padrão da lib caso o spawn falhe
+                            autoUpdater.quitAndInstall();
+                        }
                     }, 3000); // 3 segundos para o usuário ler a mensagem
                     
                     resolve({ success: true, message: "Nova versão baixada! O aplicativo será reiniciado em instantes para aplicar a atualização." });

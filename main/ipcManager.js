@@ -50,7 +50,7 @@ class IPCManager {
       this.handlers.instance = new InstanceHandlers(modules);
       this.handlers.cache = new CacheHandlers();
       this.handlers.deeJay = new DeeJayHandlers(modules.windowManager);
-      this.handlers.update = new UpdateHandlers();
+      this.handlers.update = new UpdateHandlers(modules);
       this.handlers.crm = new CRMHandlers(modules.windowManager);
       this.handlers.goat = new GoatHandlers(modules.windowManager);
       this.handlers.sentinela = new SentinelaHandlers(modules.windowManager);

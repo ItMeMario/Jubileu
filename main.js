@@ -39,6 +39,7 @@ class Application {
       const modules = {
         ...this.moduleLoader.getModules(),
         windowManager: this.windowManager,
+        appLifecycle: this.appLifecycle,
       };
       this.ipcManager.registerAllHandlers(modules);
 
