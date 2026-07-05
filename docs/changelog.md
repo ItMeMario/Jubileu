@@ -774,5 +774,6 @@ Corrigido problema (HttpError: 404) que impedia a rotina do botão de Update de 
 
 🐛 Correções
 - **Mapa do Sentinela**: Corrigido o erro que impedia a renderização do mapa do Sentinela devido à ausência do arquivo `brazil-states.json`. A regra do `.gitignore` que ignorava qualquer diretório `data/` em qualquer nível foi ajustada para `/data/` (ancorada na raiz), permitindo que a pasta `renderer/data/` e o arquivo do mapa fossem rastreados corretamente.
+- **Auto-Updater**: Refatorada a lógica do atualizador automático. Para evitar conflitos de processos bloqueados no Windows, a limpeza completa das instâncias ativas (`cleanup()`) é realizada antes de iniciar o instalador. O instalador é executado em modo destacado (`child_process.spawn` com `detached: true`), e o aplicativo principal é encerrado imediatamente com `app.exit(0)`, evitando que o processo de cleanup em segundo plano cause um atraso que fazia o instalador abortar a execução.
 
 📅 Data de Lançamento: [05/07/2026]
