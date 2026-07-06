@@ -15,11 +15,16 @@ class ConsoleRedirect {
         const mainWindow = BrowserWindow.getAllWindows()[0];
 
         if (mainWindow && !mainWindow.isDestroyed()) {
-          const message = args
+          let message = args
             .map((arg) =>
               typeof arg === "object" ? JSON.stringify(arg) : String(arg)
             )
             .join(" ");
+
+          const MAX_LENGTH = 1000;
+          if (message.length > MAX_LENGTH) {
+            message = message.substring(0, MAX_LENGTH) + ` ... [TRUNCATED, total ${message.length} chars]`;
+          }
 
           mainWindow.webContents.send("console-message", {
             level,
