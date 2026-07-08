@@ -9,7 +9,7 @@ const djInstanceStatuses = {}; // instanceId => { status, qrCode }
 let djInitialized = false;
 
 // DOM Elements
-let djBtnStartLoop, djBtnStopLoop, djMinInterval, djMaxInterval, djChkLinkBot, djBtnSaveConfig;
+let djBtnStartLoop, djBtnStopLoop, djMinInterval, djMaxInterval, djChkLinkBot, djChkLinkDrone, djBtnSaveConfig;
 let djBtnAddInstance, djInstancesList, djBtnClearAll;
 let djMsgInput, djBtnAddMsg, djMessagesList;
 let djLogsContainer, djBtnClearLogs;
@@ -41,6 +41,7 @@ window.initDeeJay = async function() {
   djMinInterval = document.getElementById("dj-min-interval");
   djMaxInterval = document.getElementById("dj-max-interval");
   djChkLinkBot = document.getElementById("dj-chk-link-bot");
+  djChkLinkDrone = document.getElementById("dj-chk-link-drone");
   djBtnSaveConfig = document.getElementById("dj-btn-save-config");
 
   djBtnAddInstance = document.getElementById("dj-btn-add-instance");
@@ -80,6 +81,7 @@ async function loadDeeJayConfig() {
       djMinInterval.value = config.minIntervalMinutes || 1;
       djMaxInterval.value = config.maxIntervalMinutes || 5;
       djChkLinkBot.checked = !!config.linkBotPrincipal;
+      djChkLinkDrone.checked = !!config.linkDrone;
       djLoopActive = !!config.active;
       updateDjLoopButtons();
     }
@@ -247,11 +249,28 @@ function updateDjLoopButtons() {
   if (djLoopActive) {
     djBtnStartLoop.classList.add("hidden");
     djBtnStopLoop.classList.remove("hidden");
+    
+    // Desabilita os campos de configuração enquanto o loop estiver ativo
+    djMinInterval.disabled = true;
+    djMaxInterval.disabled = true;
+    djChkLinkBot.disabled = true;
+    djChkLinkDrone.disabled = true;
+    djBtnSaveConfig.disabled = true;
   } else {
     djBtnStartLoop.classList.remove("hidden");
     djBtnStopLoop.classList.add("hidden");
+    
+    // Habilita os campos de configuração quando o loop estiver parado
+    djMinInterval.disabled = false;
+    djMaxInterval.disabled = false;
+    djChkLinkBot.disabled = false;
+    djChkLinkDrone.disabled = false;
+    djBtnSaveConfig.disabled = false;
+    
     const linkBot = djChkLinkBot.checked;
-    djBtnStartLoop.disabled = (connectedCount < 2 && !linkBot) || (connectedCount < 1 && linkBot);
+    const linkDrone = djChkLinkDrone.checked;
+    const hasBinding = linkBot || linkDrone;
+    djBtnStartLoop.disabled = (connectedCount < 2 && !hasBinding) || (connectedCount < 1 && hasBinding);
   }
 }
 
@@ -348,7 +367,8 @@ function setupUIEventListeners() {
       await window.deeJayAPI.setConfig({
         minIntervalMinutes: min,
         maxIntervalMinutes: max,
-        linkBotPrincipal: djChkLinkBot.checked
+        linkBotPrincipal: djChkLinkBot.checked,
+        linkDrone: djChkLinkDrone.checked
       });
       alert("Configurações salvas!");
       updateDjLoopButtons();
@@ -358,7 +378,23 @@ function setupUIEventListeners() {
   });
 
   djBtnStartLoop.addEventListener("click", async () => {
+    const min = parseInt(djMinInterval.value) || 1;
+    const max = parseInt(djMaxInterval.value) || 5;
+    
+    if (min < 1 || max < min) {
+      alert("Intervalos inválidos. O intervalo mínimo deve ser pelo menos 1, e o máximo deve ser maior ou igual ao mínimo.");
+      return;
+    }
+
     try {
+      // Auto-salva a configuração atual antes de iniciar o loop
+      await window.deeJayAPI.setConfig({
+        minIntervalMinutes: min,
+        maxIntervalMinutes: max,
+        linkBotPrincipal: djChkLinkBot.checked,
+        linkDrone: djChkLinkDrone.checked
+      });
+
       const res = await window.deeJayAPI.startLoop();
       if (res && !res.success) {
         alert("Falha ao iniciar loop: " + res.message);
@@ -374,6 +410,14 @@ function setupUIEventListeners() {
     } catch (err) {
       alert("Erro ao parar loop: " + err.message);
     }
+  });
+
+  djChkLinkBot.addEventListener("change", () => {
+    updateDjLoopButtons();
+  });
+
+  djChkLinkDrone.addEventListener("change", () => {
+    updateDjLoopButtons();
   });
 
   djBtnClearLogs.addEventListener("click", () => {

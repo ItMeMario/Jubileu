@@ -39,7 +39,8 @@ class DeeJayService {
             minIntervalMinutes: 1,
             maxIntervalMinutes: 5,
             active: false,
-            linkBotPrincipal: false
+            linkBotPrincipal: false,
+            linkDrone: false
         };
         this.eventCallbacks = new Map();
     }
@@ -102,6 +103,7 @@ class DeeJayService {
             if (loadedConfig.minIntervalMinutes) this.config.minIntervalMinutes = loadedConfig.minIntervalMinutes;
             if (loadedConfig.maxIntervalMinutes) this.config.maxIntervalMinutes = loadedConfig.maxIntervalMinutes;
             if (loadedConfig.hasOwnProperty('linkBotPrincipal')) this.config.linkBotPrincipal = !!loadedConfig.linkBotPrincipal;
+            if (loadedConfig.hasOwnProperty('linkDrone')) this.config.linkDrone = !!loadedConfig.linkDrone;
             if (loadedConfig.hasOwnProperty('active')) this.config.active = !!loadedConfig.active;
             
             console.log("Dee Jay: Configuração carregada:", this.config);
@@ -442,6 +444,25 @@ class DeeJayService {
                 });
             } catch (e) {
                 console.error("Dee Jay: Erro ao obter instâncias do bot principal para vinculação:", e);
+            }
+        }
+
+        // 3. Instâncias do Drone (se a opção de vinculação estiver ativada)
+        if (this.config.linkDrone) {
+            try {
+                const droneService = require("./droneService");
+                const droneStatuses = droneService.getConnectedInstances();
+                droneStatuses.forEach(inst => {
+                    if (inst.client && inst.client.info) {
+                        connected.push({
+                            client: inst.client,
+                            status: DEE_JAY_STATUS.CONNECTED,
+                            name: `[Drone] ${inst.name || 'Disparador'}`
+                        });
+                    }
+                });
+            } catch (e) {
+                console.error("Dee Jay: Erro ao obter instâncias do drone para vinculação:", e);
             }
         }
 

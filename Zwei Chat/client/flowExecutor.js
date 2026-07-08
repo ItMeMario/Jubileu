@@ -9,6 +9,56 @@ const sessions = new Map();
 const SESSION_TIMEOUT = 30 * 60 * 1000;
 
 /**
+ * Verifica se o remetente é um número de alguma de nossas instâncias (Bot, Drone ou Dee Jay)
+ * para evitar loops de conversas automáticas.
+ * @param {string} fromJid
+ * @returns {boolean}
+ */
+function isLinkedNumber(fromJid) {
+  if (!fromJid) return false;
+  const rawNumber = fromJid.split("@")[0];
+
+  try {
+    // 1. Clientes do Bot Principal (Zwei Chat)
+    const clientModule = require("./client");
+    if (clientModule && clientModule.clients) {
+      for (const [instanceId, clientInstance] of clientModule.clients.entries()) {
+        const userNumber = clientInstance?.info?.wid?.user;
+        if (userNumber === rawNumber) return true;
+      }
+    }
+
+    // 2. Instâncias do Dee Jay
+    const deeJayService = require("../services/deeJayService");
+    const deeJayStatuses = deeJayService.getConnectedInstances();
+    if (
+      deeJayStatuses.some((inst) => {
+        const client = inst.client;
+        return client?.info?.wid?.user === rawNumber;
+      })
+    ) {
+      return true;
+    }
+
+    // 3. Instâncias do Drone (Disparador)
+    const droneService = require("../services/droneService");
+    const droneStatuses = droneService.getConnectedInstances();
+    if (
+      droneStatuses.some((inst) => {
+        const client = inst.client;
+        return client?.info?.wid?.user === rawNumber;
+      })
+    ) {
+      return true;
+    }
+  } catch (error) {
+    console.error("Erro ao verificar números vinculados no FlowExecutor:", error);
+  }
+
+  return false;
+}
+
+/**
  * Função principal para processar mensagens de entrada
  * @param {object} msg - Objeto de mensagem do whatsapp-web.js
  * @param {object} clientInstance - Instância do cliente WhatsApp
@@ -23,6 +73,12 @@ async function handleIncomingMessage(msg, clientInstance) {
   // O Zwei Chat Lite é tipicamente focado em chats privados.
   // Vamos verificar se a mensagem vem de um grupo: grupos terminam com @g.us
   if (!bodyText || senderId.endsWith("@g.us")) {
+    return;
+  }
+
+  // 🛡️ Prevenção de Loops: Ignora mensagens de outros chips vinculados (Bot, Drone, Dee Jay)
+  if (isLinkedNumber(senderId)) {
+    await debug(`[FlowExecutor] Ignorando mensagem de número vinculado/próprio: ${senderId}`);
     return;
   }
 

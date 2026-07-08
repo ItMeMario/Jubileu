@@ -1,5 +1,5 @@
 <div class="deejay-workspace">
-  
+
   <!-- Painel Superior de Controles (Loop & Config) -->
   <div class="deejay-controls-panel">
     <div class="control-col">
@@ -9,7 +9,7 @@
         <button id="dj-btn-stop-loop" class="btn btn-danger hidden">⏹ Parar Dee Jay</button>
       </div>
     </div>
-    
+
     <div class="control-col">
       <h3 class="section-title">Configurações de Intervalo</h3>
       <div class="control-row">
@@ -24,7 +24,13 @@
         <div class="config-item checkbox-item">
           <label class="checkbox-container">
             <input type="checkbox" id="dj-chk-link-bot">
-            <span>Vincular Bot Principal</span>
+            <span>Vincular No Zwei Chat</span>
+          </label>
+        </div>
+        <div class="config-item checkbox-item">
+          <label class="checkbox-container">
+            <input type="checkbox" id="dj-chk-link-drone">
+            <span>Vincular No Disparador (Drone)</span>
           </label>
         </div>
         <button id="dj-btn-save-config" class="btn btn-secondary btn-save-config">💾 Salvar Config</button>
@@ -34,10 +40,10 @@
 
   <!-- Grid Principal do Dee Jay -->
   <div class="deejay-main-grid">
-    
+
     <!-- Coluna Esquerda: Instâncias e Mensagens -->
     <div class="deejay-left-column">
-      
+
       <!-- Seção de Instâncias -->
       <div class="deejay-section deejay-instances-section glass-panel">
         <div class="section-header">
@@ -52,7 +58,7 @@
           <div class="dj-placeholder">Nenhuma instância cadastrada</div>
         </div>
       </div>
-      
+
       <!-- Seção de Mensagens Customizadas -->
       <div class="deejay-section deejay-messages-section glass-panel">
         <div class="section-header">
@@ -68,7 +74,7 @@
           </ul>
         </div>
       </div>
-      
+
     </div>
 
     <!-- Coluna Direita: Logs de Conversação -->
