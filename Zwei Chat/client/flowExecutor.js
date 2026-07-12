@@ -1,6 +1,7 @@
 // client/flowExecutor.js
 const flowService = require("../services/flowService");
 const { debug } = require("../services/debugService");
+const { matchMenuOption } = require("../utils/matchHelper");
 
 // Mapa de sessões ativas: `${clientId}:${senderId}` => { flowId, stepIndex, lastInteraction }
 const sessions = new Map();
@@ -160,16 +161,8 @@ async function handleIncomingMessage(msg, clientInstance) {
     if (currentStep && currentStep.type === "options_menu") {
       const options = currentStep.options || [];
       
-      // Procura se a mensagem corresponde a alguma opção
-      let matchedOption = null;
-      for (const opt of options) {
-        // Suporta opções separadas por vírgula na configuração (ex: "1, suporte, ajuda")
-        const keywords = (opt.keyword || "").split(",").map((k) => k.toLowerCase().trim());
-        if (keywords.includes(bodyText.toLowerCase())) {
-          matchedOption = opt;
-          break;
-        }
-      }
+      // Procura se a mensagem corresponde a alguma opção de forma inteligente
+      const matchedOption = matchMenuOption(bodyText, options);
 
       if (matchedOption) {
         await debug(`[FlowExecutor] Contato ${senderId} escolheu a opção: ${matchedOption.keyword} na instância ${clientId}`);
