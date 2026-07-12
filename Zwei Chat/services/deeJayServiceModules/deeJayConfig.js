@@ -9,6 +9,7 @@ async function loadConfig(configPath, currentConfig) {
         const config = { ...currentConfig };
         if (loadedConfig.minIntervalMinutes) config.minIntervalMinutes = loadedConfig.minIntervalMinutes;
         if (loadedConfig.maxIntervalMinutes) config.maxIntervalMinutes = loadedConfig.maxIntervalMinutes;
+        if (loadedConfig.deeJayInterval) config.deeJayInterval = loadedConfig.deeJayInterval;
         if (loadedConfig.hasOwnProperty('linkBotPrincipal')) config.linkBotPrincipal = !!loadedConfig.linkBotPrincipal;
         if (loadedConfig.hasOwnProperty('linkDrone')) config.linkDrone = !!loadedConfig.linkDrone;
         if (loadedConfig.hasOwnProperty('active')) config.active = !!loadedConfig.active;

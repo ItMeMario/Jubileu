@@ -16,14 +16,26 @@ export default class FlowsActions {
         id: "step_" + Date.now(),
         type: "send_message",
         text: "",
-        delay: 0
+        delay: {
+          type: "fixed",
+          unit: "seconds",
+          value: 0,
+          min: 0,
+          max: 0
+        }
       });
     } else if (type === "options_menu") {
       steps.push({
         id: "step_" + Date.now(),
         type: "options_menu",
         text: "",
-        delay: 0,
+        delay: {
+          type: "fixed",
+          unit: "seconds",
+          value: 0,
+          min: 0,
+          max: 0
+        },
         options: [],
         fallback: "Opção inválida. Digite uma das opções do menu."
       });

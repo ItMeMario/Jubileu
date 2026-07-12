@@ -3,6 +3,7 @@ const { MessageMedia } = require("whatsapp-web.js");
 const { debug } = require("../debugService");
 const { SERVICE_STATUS } = require("../servicesModules/constants");
 const { EMOJIS, GIF_URLS, STICKER_URLS } = require("../../utils/randomContent");
+const { calculateDelayMs } = require("../../utils/delayHelper");
 
 function getConnectedInstances(service) {
     const connected = [];
@@ -130,9 +131,12 @@ async function runConversationLoop(service) {
         if (!service.isRunning) break;
 
         // Calcula o tempo de espera do intervalo configurado
-        const minMs = service.config.minIntervalMinutes * 60 * 1000;
-        const maxMs = service.config.maxIntervalMinutes * 60 * 1000;
-        const waitTime = getRandomInt(minMs, maxMs);
+        const waitTime = calculateDelayMs(service.config.deeJayInterval || {
+            type: 'range',
+            unit: 'minutes',
+            min: service.config.minIntervalMinutes || 1,
+            max: service.config.maxIntervalMinutes || 5
+        });
 
         await debug(`Dee Jay: Aguardando resposta de ${receiver.name} em ${Math.round(waitTime / 1000)}s...`);
         await delay(waitTime);
@@ -145,7 +149,12 @@ async function runConversationLoop(service) {
         if (!service.isRunning) break;
 
         // Aguarda mais um intervalo antes de iniciar um novo ciclo
-        const nextCycleWait = getRandomInt(minMs, maxMs);
+        const nextCycleWait = calculateDelayMs(service.config.deeJayInterval || {
+            type: 'range',
+            unit: 'minutes',
+            min: service.config.minIntervalMinutes || 1,
+            max: service.config.maxIntervalMinutes || 5
+        });
         await debug(`Dee Jay: Ciclo concluído. Próximo ciclo em ${Math.round(nextCycleWait / 1000)}s...`);
         await delay(nextCycleWait);
     }

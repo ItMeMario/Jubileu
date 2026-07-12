@@ -28,7 +28,7 @@ let droneBtnClearFailed, droneBtnClearSent, droneBtnClearAllNums, droneNumbersLi
 
 // Elementos - Disparo
 let droneStatTotal, droneStatPending, droneStatSent, droneStatFailed;
-let droneDispatchMinSec, droneDispatchMaxSec;
+let droneIntervalSelector;
 let droneBtnStartDispatch, droneBtnStopDispatch;
 let droneLogsContainer, droneBtnClearLogs;
 
@@ -93,13 +93,11 @@ window.initDrone = async function() {
   droneBtnClearAllNums = document.getElementById("drone-btn-clear-all-nums");
   droneNumbersList = document.getElementById("drone-numbers-list");
 
-  // Disparo
   droneStatTotal = document.getElementById("drone-stat-total");
   droneStatPending = document.getElementById("drone-stat-pending");
   droneStatSent = document.getElementById("drone-stat-sent");
   droneStatFailed = document.getElementById("drone-stat-failed");
-  droneDispatchMinSec = document.getElementById("drone-dispatch-min-sec");
-  droneDispatchMaxSec = document.getElementById("drone-dispatch-max-sec");
+  droneIntervalSelector = window.IntervalSelector.init("drone-interval-container", { defaultUnit: "seconds", showSeconds: true });
   droneBtnStartDispatch = document.getElementById("drone-btn-start-dispatch");
   droneBtnStopDispatch = document.getElementById("drone-btn-stop-dispatch");
   droneLogsContainer = document.getElementById("drone-logs-container");
@@ -132,8 +130,14 @@ async function loadDroneConfig() {
       droneOptDDDVal.value = config.defaultDDD || "";
       droneOptPrefix.checked = !!config.addCountryPrefix;
       droneOptPrefixVal.value = config.defaultCountryPrefix || "55";
-      droneDispatchMinSec.value = config.minIntervalSeconds || 5;
-      droneDispatchMaxSec.value = config.maxIntervalSeconds || 15;
+      if (droneIntervalSelector) {
+        droneIntervalSelector.setValue(config.dispatchInterval || {
+          type: "range",
+          unit: "seconds",
+          min: config.minIntervalSeconds || 5,
+          max: config.maxIntervalSeconds || 15
+        });
+      }
     }
   } catch (err) {
     console.error("Erro ao carregar configurações do Drone:", err);
@@ -453,14 +457,20 @@ function setupDroneUIEventListeners() {
 
   // Salvar configurações de formatação do Drone
   droneBtnSaveFormat.addEventListener("click", async () => {
+    const selectorVal = droneIntervalSelector ? droneIntervalSelector.getValue() : { type: "range", unit: "seconds", min: 5, max: 15 };
+    if (selectorVal.type === "range" && selectorVal.min > selectorVal.max) {
+      alert("Intervalo mínimo de disparo não pode ser maior que o máximo!");
+      return;
+    }
     const config = {
       add9thDigit: droneOpt9Digit.checked,
       addDDD: droneOptDDD.checked,
       defaultDDD: droneOptDDDVal.value.trim(),
       addCountryPrefix: droneOptPrefix.checked,
       defaultCountryPrefix: droneOptPrefixVal.value.trim(),
-      minIntervalSeconds: parseInt(droneDispatchMinSec.value) || 5,
-      maxIntervalSeconds: parseInt(droneDispatchMaxSec.value) || 15
+      minIntervalSeconds: selectorVal.min || 0,
+      maxIntervalSeconds: selectorVal.max || 0,
+      dispatchInterval: selectorVal
     };
     try {
       await window.droneAPI.setConfig(config);
@@ -575,14 +585,20 @@ function setupDroneUIEventListeners() {
       droneBtnStartDispatch.disabled = true;
       
       // Salva configurações antes de iniciar para garantir dados mais recentes de delay
+      const selectorVal = droneIntervalSelector ? droneIntervalSelector.getValue() : { type: "range", unit: "seconds", min: 5, max: 15 };
+      if (selectorVal.type === "range" && selectorVal.min > selectorVal.max) {
+        alert("Intervalo mínimo de disparo não pode ser maior que o máximo!");
+        return;
+      }
       const config = {
         add9thDigit: droneOpt9Digit.checked,
         addDDD: droneOptDDD.checked,
         defaultDDD: droneOptDDDVal.value.trim(),
         addCountryPrefix: droneOptPrefix.checked,
         defaultCountryPrefix: droneOptPrefixVal.value.trim(),
-        minIntervalSeconds: parseInt(droneDispatchMinSec.value) || 5,
-        maxIntervalSeconds: parseInt(droneDispatchMaxSec.value) || 15
+        minIntervalSeconds: selectorVal.min || 0,
+        maxIntervalSeconds: selectorVal.max || 0,
+        dispatchInterval: selectorVal
       };
       await window.droneAPI.setConfig(config);
 

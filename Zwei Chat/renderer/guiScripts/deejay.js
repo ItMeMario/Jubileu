@@ -9,7 +9,7 @@ const djInstanceStatuses = {}; // instanceId => { status, qrCode }
 let djInitialized = false;
 
 // DOM Elements
-let djBtnStartLoop, djBtnStopLoop, djMinInterval, djMaxInterval, djChkLinkBot, djChkLinkDrone, djBtnSaveConfig;
+let djBtnStartLoop, djBtnStopLoop, djIntervalSelector, djChkLinkBot, djChkLinkDrone, djBtnSaveConfig;
 let djBtnAddInstance, djInstancesList, djBtnClearAll;
 let djMsgInput, djBtnAddMsg, djMessagesList;
 let djLogsContainer, djBtnClearLogs;
@@ -38,8 +38,7 @@ window.initDeeJay = async function() {
   // Mapeia os elementos do DOM
   djBtnStartLoop = document.getElementById("dj-btn-start-loop");
   djBtnStopLoop = document.getElementById("dj-btn-stop-loop");
-  djMinInterval = document.getElementById("dj-min-interval");
-  djMaxInterval = document.getElementById("dj-max-interval");
+  djIntervalSelector = window.IntervalSelector.init("dj-interval-container", { defaultUnit: "minutes", showSeconds: true });
   djChkLinkBot = document.getElementById("dj-chk-link-bot");
   djChkLinkDrone = document.getElementById("dj-chk-link-drone");
   djBtnSaveConfig = document.getElementById("dj-btn-save-config");
@@ -78,8 +77,14 @@ async function loadDeeJayConfig() {
   try {
     const config = await window.deeJayAPI.getConfig();
     if (config) {
-      djMinInterval.value = config.minIntervalMinutes || 1;
-      djMaxInterval.value = config.maxIntervalMinutes || 5;
+      if (djIntervalSelector) {
+        djIntervalSelector.setValue(config.deeJayInterval || {
+          type: "range",
+          unit: "minutes",
+          min: config.minIntervalMinutes || 1,
+          max: config.maxIntervalMinutes || 5
+        });
+      }
       djChkLinkBot.checked = !!config.linkBotPrincipal;
       djChkLinkDrone.checked = !!config.linkDrone;
       djLoopActive = !!config.active;
@@ -355,18 +360,17 @@ function setupUIEventListeners() {
   });
 
   djBtnSaveConfig.addEventListener("click", async () => {
-    const min = parseInt(djMinInterval.value) || 1;
-    const max = parseInt(djMaxInterval.value) || 5;
-    
-    if (min < 1 || max < min) {
-      alert("Intervalos inválidos. O intervalo mínimo deve ser pelo menos 1, e o máximo deve ser maior ou igual ao mínimo.");
+    const selectorVal = djIntervalSelector ? djIntervalSelector.getValue() : { type: "range", unit: "minutes", min: 1, max: 5 };
+    if (selectorVal.type === "range" && selectorVal.min > selectorVal.max) {
+      alert("O intervalo mínimo não pode ser maior que o máximo!");
       return;
     }
     
     try {
       await window.deeJayAPI.setConfig({
-        minIntervalMinutes: min,
-        maxIntervalMinutes: max,
+        minIntervalMinutes: selectorVal.min || 1,
+        maxIntervalMinutes: selectorVal.max || 5,
+        deeJayInterval: selectorVal,
         linkBotPrincipal: djChkLinkBot.checked,
         linkDrone: djChkLinkDrone.checked
       });
@@ -378,19 +382,18 @@ function setupUIEventListeners() {
   });
 
   djBtnStartLoop.addEventListener("click", async () => {
-    const min = parseInt(djMinInterval.value) || 1;
-    const max = parseInt(djMaxInterval.value) || 5;
-    
-    if (min < 1 || max < min) {
-      alert("Intervalos inválidos. O intervalo mínimo deve ser pelo menos 1, e o máximo deve ser maior ou igual ao mínimo.");
+    const selectorVal = djIntervalSelector ? djIntervalSelector.getValue() : { type: "range", unit: "minutes", min: 1, max: 5 };
+    if (selectorVal.type === "range" && selectorVal.min > selectorVal.max) {
+      alert("O intervalo mínimo não pode ser maior que o máximo!");
       return;
     }
 
     try {
       // Auto-salva a configuração atual antes de iniciar o loop
       await window.deeJayAPI.setConfig({
-        minIntervalMinutes: min,
-        maxIntervalMinutes: max,
+        minIntervalMinutes: selectorVal.min || 1,
+        maxIntervalMinutes: selectorVal.max || 5,
+        deeJayInterval: selectorVal,
         linkBotPrincipal: djChkLinkBot.checked,
         linkDrone: djChkLinkDrone.checked
       });

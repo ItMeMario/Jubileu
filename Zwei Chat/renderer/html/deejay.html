@@ -12,15 +12,8 @@
 
     <div class="control-col">
       <h3 class="section-title">Configurações de Intervalo</h3>
-      <div class="control-row">
-        <div class="config-item">
-          <label for="dj-min-interval">Mín (min):</label>
-          <input type="number" id="dj-min-interval" min="1" value="1" class="dj-number-input">
-        </div>
-        <div class="config-item">
-          <label for="dj-max-interval">Máx (min):</label>
-          <input type="number" id="dj-max-interval" min="1" value="5" class="dj-number-input">
-        </div>
+      <div class="control-row" style="flex-wrap: wrap; gap: 10px;">
+        <div id="dj-interval-container"></div>
         <div class="config-item checkbox-item">
           <label class="checkbox-container">
             <input type="checkbox" id="dj-chk-link-bot">

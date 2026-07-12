@@ -2,6 +2,7 @@
 const flowService = require("../services/flowService");
 const { debug } = require("../services/debugService");
 const { matchMenuOption } = require("../utils/matchHelper");
+const { calculateDelayMs } = require("../utils/delayHelper");
 
 // Mapa de sessões ativas: `${clientId}:${senderId}` => { flowId, stepIndex, lastInteraction }
 const sessions = new Map();
@@ -210,16 +211,18 @@ async function executeFlowSteps(clientInstance, msg, flow, session) {
 
     if (step.type === "send_message") {
       // 💬 Enviar Mensagem de Texto
-      if (step.delay && step.delay > 0) {
-        await simulateDelay(step.delay);
+      const delayMs = calculateDelayMs(step.delay);
+      if (delayMs > 0) {
+        await simulateDelayMs(delayMs);
       }
       await sendReply(clientInstance, senderId, step.text);
       session.stepIndex += 1;
       session.lastInteraction = Date.now();
     } else if (step.type === "options_menu") {
       // 📋 Enviar o menu de opções e parar. Aguarda a resposta no handleIncomingMessage.
-      if (step.delay && step.delay > 0) {
-        await simulateDelay(step.delay);
+      const delayMs = calculateDelayMs(step.delay);
+      if (delayMs > 0) {
+        await simulateDelayMs(delayMs);
       }
       await sendReply(clientInstance, senderId, step.text);
       
@@ -237,10 +240,10 @@ async function executeFlowSteps(clientInstance, msg, flow, session) {
 }
 
 /**
- * Simula um atraso de digitação (delay) em segundos
+ * Simula um atraso de digitação (delay) em milissegundos
  */
-function simulateDelay(seconds) {
-  return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+function simulateDelayMs(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**

@@ -2,6 +2,7 @@
 const { debug } = require("../debugService");
 const { SERVICE_STATUS } = require("../servicesModules/constants");
 const { aplicarTransformacoes } = require("./numberTransformer");
+const { calculateDelayMs } = require("../../utils/delayHelper");
 
 function getConnectedInstances(service) {
     const connected = [];
@@ -174,7 +175,12 @@ async function runDroneLoop(service, drone, tasks, messages) {
 
         // Aguarda delay configurado se não for o último item
         if (i < tasks.length - 1 && service.isDispatching) {
-            const waitTime = getRandomInt(service.config.minIntervalSeconds * 1000, service.config.maxIntervalSeconds * 1000);
+            const waitTime = calculateDelayMs(service.config.dispatchInterval || {
+                type: 'range',
+                unit: 'seconds',
+                min: service.config.minIntervalSeconds || 5,
+                max: service.config.maxIntervalSeconds || 15
+            });
             await delay(waitTime);
         }
     }

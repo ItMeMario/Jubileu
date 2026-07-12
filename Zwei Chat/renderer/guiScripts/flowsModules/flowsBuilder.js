@@ -122,13 +122,7 @@ export default class FlowsBuilder {
             <textarea class="step-input action-text-input" placeholder="Digite o texto que o bot irá mandar...">${this.manager.escapeHTML(step.text)}</textarea>
           </label>
           <div class="step-row-flex">
-            <label class="step-label">
-              Delay para envio (segundos):
-              <div class="delay-control">
-                <input type="range" class="delay-slider" min="0" max="15" value="${step.delay || 0}">
-                <span class="delay-value">${step.delay || 0}s</span>
-              </div>
-            </label>
+            <div class="step-delay-container" style="grid-column: span 2;"></div>
           </div>
           <p class="step-desc">Envia uma resposta de texto de volta ao cliente após o delay estipulado.</p>
         `;
@@ -153,13 +147,7 @@ export default class FlowsBuilder {
               Mensagem de Erro (Entrada inválida):
               <input type="text" class="step-input action-fallback-input" placeholder="Opção inválida. Escolha novamente." value="${this.manager.escapeHTML(step.fallback)}">
             </label>
-            <label class="step-label">
-              Delay para envio (segundos):
-              <div class="delay-control">
-                <input type="range" class="delay-slider" min="0" max="15" value="${step.delay || 0}">
-                <span class="delay-value">${step.delay || 0}s</span>
-              </div>
-            </label>
+            <div class="step-delay-container"></div>
           </div>
           <p class="step-desc">Apresenta uma pergunta e aguarda a resposta do cliente. Se a resposta casar com um gatilho, executa a ação respectiva.</p>
         `;
@@ -190,13 +178,15 @@ export default class FlowsBuilder {
         this.manager.currentFlow.definition.steps[index].text = e.target.value;
       });
 
-      const slider = card.querySelector(".delay-slider");
-      const sliderValue = card.querySelector(".delay-value");
-      slider.addEventListener("input", (e) => {
-        const val = parseInt(e.target.value) || 0;
-        sliderValue.textContent = val + "s";
-        this.manager.currentFlow.definition.steps[index].delay = val;
-      });
+      const delayContainer = card.querySelector(".step-delay-container");
+      if (delayContainer && window.IntervalSelector) {
+        const selector = window.IntervalSelector.init(delayContainer, { defaultUnit: "seconds", showSeconds: true }, (newVal) => {
+          this.manager.currentFlow.definition.steps[index].delay = newVal;
+        });
+        if (selector) {
+          selector.setValue(step.delay);
+        }
+      }
 
       // Se for bloco de opções
       if (step.type === "options_menu") {
