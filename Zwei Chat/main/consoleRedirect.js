@@ -1,5 +1,7 @@
 // main/consoleRedirect.js
-const { BrowserWindow } = require("electron");
+const { BrowserWindow, app } = require("electron");
+const path = require("path");
+const fs = require("fs");
 
 class ConsoleRedirect {
   static setup() {
@@ -8,6 +10,39 @@ class ConsoleRedirect {
     const originalError = console.error;
     const originalWarn = console.warn;
     const originalInfo = console.info;
+
+    // Configura o arquivo de log físico
+    let logStream = null;
+    try {
+      const userDataPath = app.getPath("userData");
+      const logsDir = path.join(userDataPath, "logs");
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+      }
+      const logFile = path.join(logsDir, "main.log");
+      // Abre em modo append
+      logStream = fs.createWriteStream(logFile, { flags: "a" });
+      originalLog(`📂 Logs físicos configurados em: ${logFile}`);
+    } catch (e) {
+      originalError("⚠️ Falha ao inicializar o logger em arquivo:", e);
+    }
+
+    // Função para escrever em arquivo
+    function logToFile(level, ...args) {
+      if (logStream) {
+        try {
+          const timestamp = new Date().toISOString();
+          const message = args
+            .map((arg) =>
+              typeof arg === "object" ? JSON.stringify(arg) : String(arg)
+            )
+            .join(" ");
+          logStream.write(`[${timestamp}] [${level.toUpperCase()}] ${message}\n`);
+        } catch (error) {
+          // Falha silenciosa
+        }
+      }
+    }
 
     // Função para enviar para o renderer
     function sendToRenderer(level, ...args) {
@@ -39,30 +74,34 @@ class ConsoleRedirect {
 
     // Sobrescreve console.log
     console.log = function (...args) {
-      originalLog.apply(console, args); // Log normal no terminal do processo principal
-      sendToRenderer("log", ...args); // Envia para o renderer
+      originalLog.apply(console, args);
+      logToFile("info", ...args);
+      sendToRenderer("log", ...args);
     };
 
     // Sobrescreve console.error
     console.error = function (...args) {
       originalError.apply(console, args);
+      logToFile("error", ...args);
       sendToRenderer("error", ...args);
     };
 
     // Sobrescreve console.warn
     console.warn = function (...args) {
       originalWarn.apply(console, args);
+      logToFile("warn", ...args);
       sendToRenderer("warn", ...args);
     };
 
     // Sobrescreve console.info
     console.info = function (...args) {
       originalInfo.apply(console, args);
+      logToFile("info", ...args);
       sendToRenderer("info", ...args);
     };
 
     console.log(
-      "🔧 Console redirect configurado - logs aparecerão nas DevTools"
+      "🔧 Console redirect configurado - logs aparecerão nas DevTools e em main.log"
     );
   }
 

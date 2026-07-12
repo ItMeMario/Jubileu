@@ -17,7 +17,7 @@ class WindowManager {
         nodeIntegration: false,
         contextIsolation: true,
       },
-      icon: path.join(__dirname, "../build/icon.ico"), // mantendo compatibilidade de ícone se houver pasta build
+      icon: path.join(__dirname, "../build/Zwei-chat-_Arte-Gimp_.ico"), // mantendo compatibilidade de ícone se houver pasta build
     });
 
     // Caminho para o HTML da UI lite
