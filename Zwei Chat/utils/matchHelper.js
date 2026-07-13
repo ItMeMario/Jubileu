@@ -89,12 +89,42 @@ function extractOptionNumber(text, maxOptions) {
 }
 
 /**
+ * Tenta extrair a descrição/label de uma opção a partir do texto do menu.
+ * Ex: "1. Joinville" com chave "1" retorna "Joinville".
+ */
+function extractLabelFromMenuText(menuText, key) {
+  if (!menuText) return null;
+  const lines = menuText.split(/\r?\n/);
+  const escapedKey = key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  
+  const regexes = [
+    new RegExp(`^\\s*${escapedKey}\\s*[\\.\\-\\)\\:\\/\\\\ ]\\s*(.+)$`, 'i'),
+    new RegExp(`^\\s*\\[\\s*${escapedKey}\\s*\\]\\s*(.+)$`, 'i'),
+    new RegExp(`^\\s*${escapedKey}\\s*-\\s*(.+)$`, 'i')
+  ];
+
+  for (const line of lines) {
+    for (const regex of regexes) {
+      const match = line.match(regex);
+      if (match) {
+        const label = match[1].trim();
+        if (label) {
+          return label;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Encontra a melhor opção correspondente para a mensagem do cliente.
  * @param {string} bodyText - Mensagem digitada pelo cliente
  * @param {Array} options - Lista de opções do menu: [{ keyword, reply }]
+ * @param {string} [menuText] - Texto do menu enviado para o cliente
  * @returns {object|null} A opção correspondente ou null
  */
-function matchMenuOption(bodyText, options) {
+function matchMenuOption(bodyText, options, menuText) {
   if (!bodyText || !options || options.length === 0) {
     return null;
   }
@@ -102,19 +132,44 @@ function matchMenuOption(bodyText, options) {
   const cleanInput = bodyText.trim();
   const normalizedInput = normalizeText(cleanInput);
 
-  // 1. Busca Exata (com e sem normalização) em qualquer palavra-chave
-  for (const opt of options) {
+  // Mapeia cada opção para um conjunto de palavras-chave estendido (incluindo o label do menu)
+  const extendedOptions = options.map((opt, idx) => {
     const rawKeywords = (opt.keyword || "").split(",").map(k => k.trim());
     
+    // Tenta obter o label a partir do menuText usando o index (1-based) e/ou a própria keyword
+    const candidates = new Set();
+    candidates.add((idx + 1).toString());
+    rawKeywords.forEach(k => {
+      if (k) candidates.add(k);
+    });
+
+    const labels = new Set();
+    if (menuText) {
+      for (const cand of candidates) {
+        const label = extractLabelFromMenuText(menuText, cand);
+        if (label) {
+          labels.add(label);
+        }
+      }
+    }
+
+    return {
+      original: opt,
+      keywords: Array.from(new Set([...rawKeywords, ...labels])).filter(Boolean)
+    };
+  });
+
+  // 1. Busca Exata (com e sem normalização) em qualquer palavra-chave
+  for (const ext of extendedOptions) {
     // Sem normalização (apenas case-insensitive)
-    if (rawKeywords.some(k => k.toLowerCase() === cleanInput.toLowerCase())) {
-      return opt;
+    if (ext.keywords.some(k => k.toLowerCase() === cleanInput.toLowerCase())) {
+      return ext.original;
     }
     
     // Com normalização
-    const normalizedKeywords = rawKeywords.map(k => normalizeText(k)).filter(Boolean);
+    const normalizedKeywords = ext.keywords.map(k => normalizeText(k)).filter(Boolean);
     if (normalizedKeywords.some(k => k === normalizedInput)) {
-      return opt;
+      return ext.original;
     }
   }
 
@@ -126,14 +181,13 @@ function matchMenuOption(bodyText, options) {
 
   // 3. Busca Parcial/Substring (mínimo de 3 caracteres)
   if (normalizedInput.length >= 3) {
-    for (const opt of options) {
-      const rawKeywords = (opt.keyword || "").split(",").map(k => k.trim());
-      const normalizedKeywords = rawKeywords.map(k => normalizeText(k)).filter(Boolean);
+    for (const ext of extendedOptions) {
+      const normalizedKeywords = ext.keywords.map(k => normalizeText(k)).filter(Boolean);
       
       for (const kw of normalizedKeywords) {
         // Se o usuário digitou parte da palavra-chave (ex: "joinv" para "joinville")
         if (kw.length >= 3 && kw.includes(normalizedInput)) {
-          return opt;
+          return ext.original;
         }
         
         // Se a entrada contém a palavra-chave como palavra inteira (ex: "quero joinville" contendo "joinville")
@@ -142,7 +196,7 @@ function matchMenuOption(bodyText, options) {
           const escapedKw = kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
           const regex = new RegExp(`\\b${escapedKw}\\b`, 'i');
           if (regex.test(normalizedInput)) {
-            return opt;
+            return ext.original;
           }
         }
       }
@@ -161,15 +215,14 @@ function matchMenuOption(bodyText, options) {
     minSimilarity = 0.65;
   }
 
-  for (const opt of options) {
-    const rawKeywords = (opt.keyword || "").split(",").map(k => k.trim());
-    const normalizedKeywords = rawKeywords.map(k => normalizeText(k)).filter(Boolean);
+  for (const ext of extendedOptions) {
+    const normalizedKeywords = ext.keywords.map(k => normalizeText(k)).filter(Boolean);
     
     for (const kw of normalizedKeywords) {
       const similarity = getDiceSimilarity(normalizedInput, kw);
       if (similarity > highestScore) {
         highestScore = similarity;
-        bestMatch = opt;
+        bestMatch = ext.original;
       }
     }
   }

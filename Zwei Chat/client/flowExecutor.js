@@ -163,7 +163,7 @@ async function handleIncomingMessage(msg, clientInstance) {
       const options = currentStep.options || [];
       
       // Procura se a mensagem corresponde a alguma opção de forma inteligente
-      const matchedOption = matchMenuOption(bodyText, options);
+      const matchedOption = matchMenuOption(bodyText, options, currentStep.text);
 
       if (matchedOption) {
         await debug(`[FlowExecutor] Contato ${senderId} escolheu a opção: ${matchedOption.keyword} na instância ${clientId}`);
