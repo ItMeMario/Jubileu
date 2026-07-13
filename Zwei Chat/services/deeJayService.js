@@ -143,6 +143,7 @@ class DeeJayService {
                 executablePath: executablePath,
                 headless: true,
                 args: [
+                    '--window-position=-10000,-10000',
                     '--no-sandbox', 
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',

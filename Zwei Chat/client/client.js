@@ -54,6 +54,7 @@ function createClient(instanceId) {
       executablePath: getChromeExecutablePath(),
       headless: true,
       args: [
+        "--window-position=-10000,-10000",
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
