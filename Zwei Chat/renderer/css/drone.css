@@ -8,6 +8,50 @@
   padding: 24px 32px;
   overflow: hidden;
   gap: 20px;
+  box-sizing: border-box;
+}
+
+/* Sub-abas Panel (Navegação + Status Global) */
+.drone-subtabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.drone-subtabs .control-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drone-subtabs .control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.drone-subtabs .status-global-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+#drone-global-indicator {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+#drone-global-status-text {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Ocultação de seções inativas */
@@ -29,6 +73,7 @@
   font-size: 13px;
   font-weight: 500;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .subtab-btn.active {
@@ -49,16 +94,117 @@
   border-color: rgba(255, 255, 255, 0.15);
 }
 
+/* Grid Layouts Responsivos do Drone */
+.drone-grid-1col {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 20px;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+.drone-grid-2col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: start;
+  gap: 20px;
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.drone-grid-dispatch {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: start;
+  gap: 20px;
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Seções e Cabeçalhos com Suporte a Wrap */
+.deejay-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+
+.deejay-section .section-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-header-action {
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  white-space: nowrap;
+  border-radius: 8px !important;
+  height: 28px;
+}
+
+/* Input Group de Adicionar Contato */
+.drone-contact-input-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.drone-contact-input-group .dj-input-name {
+  flex: 1 1 110px;
+  min-width: 0;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.drone-contact-input-group .dj-input-tel {
+  flex: 1.4 1 140px;
+  min-width: 0;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.drone-contact-input-group .dj-btn-add {
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
 /* Área de Upload de CSV */
 .file-upload-area {
   border: 2px dashed var(--border-color);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.01);
-  padding: 30px 20px;
+  padding: 20px 16px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .file-upload-area:hover {
@@ -72,22 +218,112 @@
   box-shadow: inset 0 0 10px rgba(var(--primary-rgb), 0.1);
 }
 
-/* Grid de Status */
+/* Opções de Formatação */
+.drone-format-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.drone-format-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.drone-format-row .checkbox-container {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.drone-format-row .dj-number-input {
+  width: 55px;
+  min-width: 55px;
+  height: 32px;
+  padding: 4px 8px;
+  text-align: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+/* Grid de Status & Stats */
+.status-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
 .status-stats-grid .stat-card {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 14px;
+  padding: 12px;
   border-radius: 12px;
   border: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.01);
+  background: rgba(255, 255, 255, 0.02);
   transition: all 0.2s ease;
 }
 
 .status-stats-grid .stat-card:hover {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.1);
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.stat-value.stat-success {
+  color: #10b981;
+}
+
+.stat-value.stat-error {
+  color: #ef4444;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Config Box & Action Buttons no Disparo */
+.drone-config-box {
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-color);
+  padding: 15px;
+  border-radius: 12px;
+}
+
+.drone-info-text {
+  font-size: 12px;
+  color: var(--text-dark);
+  line-height: 1.4;
+  margin-top: 5px;
+}
+
+.drone-dispatch-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.drone-btn-dispatch {
+  flex-grow: 1;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 /* Elementos de Lista e Itens */
@@ -127,7 +363,6 @@
   color: #f59e0b;
 }
 
-/* Text position helper */
 .text-right {
   text-align: right;
 }
@@ -145,4 +380,40 @@
   flex-grow: 1;
   overflow: hidden;
   min-height: 0;
+}
+
+/* Scrollbar responsivo em containers com rolagem */
+.drone-workspace ::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.drone-workspace ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.drone-workspace ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Media Queries para Resoluções Menores */
+@media (max-width: 900px) {
+  .drone-workspace {
+    padding: 16px;
+  }
+
+  .drone-subtabs {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .drone-subtabs .status-global-row {
+    justify-content: flex-start;
+  }
+
+  .drone-grid-2col,
+  .drone-grid-dispatch {
+    grid-template-columns: 1fr;
+  }
 }

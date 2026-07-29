@@ -15,9 +15,9 @@
     
     <div class="control-col text-right">
       <h3 class="section-title">Status Global</h3>
-      <div class="control-row">
-        <span class="status-indicator disconnected" id="drone-global-indicator" style="width: 10px; height: 10px;"></span>
-        <span id="drone-global-status-text" style="font-size: 13px; font-weight: 500;">Disparo Inativo</span>
+      <div class="control-row status-global-row">
+        <span class="status-indicator disconnected" id="drone-global-indicator"></span>
+        <span id="drone-global-status-text">Disparo Inativo</span>
       </div>
     </div>
   </div>
@@ -27,13 +27,13 @@
     
     <!-- SUB-ABA 1: INSTÂNCIAS -->
     <div id="drone-sec-instances" class="drone-section active-section">
-      <div class="deejay-main-grid" style="grid-template-columns: 1fr; align-items: start;">
-        <div class="deejay-section glass-panel" style="max-height: 100%;">
+      <div class="drone-grid-1col">
+        <div class="deejay-section glass-panel">
           <div class="section-header">
             <h3>🤖 Instâncias de WhatsApp Drone</h3>
             <div class="section-header-actions">
-              <button id="drone-btn-clear-instances" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">🗑️ Excluir Todas</button>
-              <button id="drone-btn-add-instance" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">➕ Nova Instância</button>
+              <button id="drone-btn-clear-instances" class="btn btn-danger btn-header-action">🗑️ Excluir Todas</button>
+              <button id="drone-btn-add-instance" class="btn btn-primary btn-header-action">➕ Nova Instância</button>
             </div>
           </div>
           
@@ -47,8 +47,8 @@
 
     <!-- SUB-ABA 2: MENSAGENS -->
     <div id="drone-sec-messages" class="drone-section">
-      <div class="deejay-main-grid" style="grid-template-columns: 1fr; align-items: start;">
-        <div class="deejay-section glass-panel" style="max-height: 100%;">
+      <div class="drone-grid-1col">
+        <div class="deejay-section glass-panel">
           <div class="section-header">
             <h3>📨 Modelos de Mensagens</h3>
             <span class="hint" style="font-size: 12px; color: var(--text-dark);">Use {{name}} para personalizar com o nome do contato.</span>
@@ -56,7 +56,7 @@
           
           <div class="dj-message-input-group">
             <input type="text" id="drone-msg-input" placeholder="Digite sua mensagem de disparo... Ex: Olá {{name}}, tudo bem?">
-            <button id="drone-btn-add-msg" class="btn btn-primary" style="padding: 0 20px;">Adicionar</button>
+            <button id="drone-btn-add-msg" class="btn btn-primary" style="height: 38px; padding: 0 20px; font-size: 13px; white-space: nowrap; flex-shrink: 0;">Adicionar</button>
           </div>
           
           <div class="dj-messages-list-wrapper">
@@ -70,10 +70,10 @@
 
     <!-- SUB-ABA 3: CONTATOS / NÚMEROS -->
     <div id="drone-sec-numbers" class="drone-section">
-      <div class="deejay-main-grid" style="grid-template-columns: 1fr 1fr; align-items: start;">
+      <div class="drone-grid-2col">
         
         <!-- Formulário de Adicionar / Importar -->
-        <div class="deejay-section glass-panel" style="max-height: 100%;">
+        <div class="deejay-section glass-panel">
           <div class="section-header">
             <h3>📱 Importar e Tratar Números</h3>
           </div>
@@ -81,17 +81,17 @@
           <!-- Adicionar Manual -->
           <div class="control-col" style="gap: 10px; margin-bottom: 20px;">
             <h4 class="section-title" style="margin-bottom: 2px;">Adicionar Contato</h4>
-            <div class="dj-message-input-group">
-              <input type="text" id="drone-num-name" placeholder="Nome (Ex: João)" style="flex-grow: 0.4;">
-              <input type="text" id="drone-num-tel" placeholder="Telefone com DDD (Ex: 47999999999)">
-              <button id="drone-btn-add-num" class="btn btn-primary">Add</button>
+            <div class="dj-message-input-group drone-contact-input-group">
+              <input type="text" id="drone-num-name" placeholder="Nome (Ex: João)" class="dj-input-name">
+              <input type="text" id="drone-num-tel" placeholder="Telefone com DDD (Ex: 47999999999)" class="dj-input-tel">
+              <button id="drone-btn-add-num" class="btn btn-primary dj-btn-add">Adicionar</button>
             </div>
           </div>
           
           <!-- Importar CSV -->
           <div class="control-col" style="gap: 10px; margin-bottom: 15px;">
             <h4 class="section-title" style="margin-bottom: 2px;">Importar CSV (Nome, Telefone)</h4>
-            <div class="file-upload-area" id="drone-csv-dropzone" style="border: 2px dashed var(--border-color); border-radius: 12px; padding: 25px; text-align: center; cursor: pointer; transition: background 0.2s;">
+            <div class="file-upload-area" id="drone-csv-dropzone">
               <span style="font-size: 24px;">📄</span>
               <p style="margin: 8px 0 0 0; font-size: 13px; color: var(--text-main);">Clique ou arraste seu arquivo CSV aqui</p>
               <input type="file" id="drone-csv-file" accept=".csv" style="display: none;">
@@ -101,41 +101,41 @@
           <!-- Parâmetros de Formatação -->
           <div class="control-col" style="gap: 10px;">
             <h4 class="section-title">Opções de Formatação</h4>
-            <div class="checkbox-group" style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="checkbox-group drone-format-options">
               <label class="checkbox-container">
                 <input type="checkbox" id="drone-opt-9digit">
                 <span>Adicionar 9º dígito (Celulares BR sem 9º dígito)</span>
               </label>
               
-              <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="drone-format-row">
                 <label class="checkbox-container">
                   <input type="checkbox" id="drone-opt-ddd">
                   <span>Adicionar DDD se faltar:</span>
                 </label>
-                <input type="text" id="drone-opt-ddd-val" class="dj-number-input" placeholder="Ex: 47" maxlength="2" style="width: 50px; text-align: center;">
+                <input type="text" id="drone-opt-ddd-val" class="dj-number-input" placeholder="Ex: 47" maxlength="2">
               </div>
 
-              <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="drone-format-row">
                 <label class="checkbox-container">
                   <input type="checkbox" id="drone-opt-prefix">
                   <span>Adicionar Prefixo de País se faltar:</span>
                 </label>
-                <input type="text" id="drone-opt-prefix-val" class="dj-number-input" placeholder="Ex: 55" maxlength="3" style="width: 50px; text-align: center;" value="55">
+                <input type="text" id="drone-opt-prefix-val" class="dj-number-input" placeholder="Ex: 55" maxlength="3" value="55">
               </div>
             </div>
             
-            <button id="drone-btn-save-format" class="btn btn-secondary" style="margin-top: 15px; align-self: flex-start; padding: 6px 16px;">Salvar Configurações</button>
+            <button id="drone-btn-save-format" class="btn btn-secondary" style="margin-top: 15px; align-self: flex-start; padding: 6px 16px; font-size: 13px;">Salvar Configurações</button>
           </div>
         </div>
         
         <!-- Lista de Números e Ações rápidas -->
-        <div class="deejay-section glass-panel" style="max-height: 100%;">
+        <div class="deejay-section glass-panel">
           <div class="section-header">
             <h3>📱 Lista de Envio</h3>
             <div class="section-header-actions">
-              <button id="drone-btn-clear-failed" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">Limpar Falhas</button>
-              <button id="drone-btn-clear-sent" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">Limpar Enviados</button>
-              <button id="drone-btn-clear-all-nums" class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;">Limpar Todos</button>
+              <button id="drone-btn-clear-failed" class="btn btn-secondary btn-header-action">Limpar Falhas</button>
+              <button id="drone-btn-clear-sent" class="btn btn-secondary btn-header-action">Limpar Enviados</button>
+              <button id="drone-btn-clear-all-nums" class="btn btn-danger btn-header-action">Limpar Todos</button>
             </div>
           </div>
           
@@ -150,64 +150,64 @@
 
     <!-- SUB-ABA 4: DISPARO & STATUS -->
     <div id="drone-sec-dispatch" class="drone-section">
-      <div class="deejay-main-grid" style="grid-template-columns: 1fr 1.2fr; align-items: start;">
+      <div class="drone-grid-dispatch">
         
         <!-- Painel de Controles de Disparo -->
-        <div class="deejay-section glass-panel" style="gap: 15px; max-height: 100%;">
+        <div class="deejay-section glass-panel" style="gap: 15px;">
           <div class="section-header">
             <h3>🚀 Executar Envio em Lote</h3>
           </div>
           
           <!-- Estatísticas em tempo real -->
-          <div class="status-stats-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 5px;">
-            <div class="stat-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center;">
+          <div class="status-stats-grid">
+            <div class="stat-card">
               <span style="font-size: 20px;">📱</span>
-              <div id="drone-stat-total" style="font-size: 22px; font-weight: bold; margin-top: 5px;">0</div>
-              <div style="font-size: 11px; color: var(--text-dark); text-transform: uppercase;">Total de Números</div>
+              <div id="drone-stat-total" class="stat-value">0</div>
+              <div class="stat-label">Total de Números</div>
             </div>
             
-            <div class="stat-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center;">
+            <div class="stat-card">
               <span style="font-size: 20px;">⏳</span>
-              <div id="drone-stat-pending" style="font-size: 22px; font-weight: bold; margin-top: 5px;">0</div>
-              <div style="font-size: 11px; color: var(--text-dark); text-transform: uppercase;">Pendentes</div>
+              <div id="drone-stat-pending" class="stat-value">0</div>
+              <div class="stat-label">Pendentes</div>
             </div>
 
-            <div class="stat-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center;">
+            <div class="stat-card">
               <span style="font-size: 20px;">✅</span>
-              <div id="drone-stat-sent" style="font-size: 22px; font-weight: bold; margin-top: 5px; color: #10b981;">0</div>
-              <div style="font-size: 11px; color: var(--text-dark); text-transform: uppercase;">Enviados</div>
+              <div id="drone-stat-sent" class="stat-value stat-success">0</div>
+              <div class="stat-label">Enviados</div>
             </div>
 
-            <div class="stat-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center;">
+            <div class="stat-card">
               <span style="font-size: 20px;">❌</span>
-              <div id="drone-stat-failed" style="font-size: 22px; font-weight: bold; margin-top: 5px; color: #ef4444;">0</div>
-              <div style="font-size: 11px; color: var(--text-dark); text-transform: uppercase;">Falhas</div>
+              <div id="drone-stat-failed" class="stat-value stat-error">0</div>
+              <div class="stat-label">Falhas</div>
             </div>
           </div>
 
           <!-- Configurações Adicionais de Disparo -->
-          <div class="control-col" style="gap: 10px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px;">
+          <div class="control-col drone-config-box">
             <h4 class="section-title">Configurações do Disparo</h4>
             
             <div id="drone-interval-container" style="margin-top: 5px;"></div>
 
-            <div style="font-size: 12px; color: var(--text-dark); line-height: 1.4; margin-top: 5px;">
+            <div class="drone-info-text">
               ℹ️ O disparo distribuirá automaticamente a lista de contatos pelas contas de Drone conectadas e sorteará mensagens diferentes para evitar bloqueios.
             </div>
           </div>
           
           <!-- Botões de Ação de Disparo -->
-          <div style="display: flex; gap: 10px; margin-top: auto;">
-            <button id="drone-btn-start-dispatch" class="btn btn-primary" style="flex-grow: 1; padding: 12px; font-size: 14px; font-weight: 600;">🚀 Iniciar Disparo</button>
-            <button id="drone-btn-stop-dispatch" class="btn btn-danger hidden" style="flex-grow: 1; padding: 12px; font-size: 14px; font-weight: 600;">⏹️ Parar Disparo</button>
+          <div class="drone-dispatch-actions">
+            <button id="drone-btn-start-dispatch" class="btn btn-primary drone-btn-dispatch">🚀 Iniciar Disparo</button>
+            <button id="drone-btn-stop-dispatch" class="btn btn-danger drone-btn-dispatch hidden">⏹️ Parar Disparo</button>
           </div>
         </div>
         
         <!-- Logs de Envio -->
-        <div class="deejay-section glass-panel" style="max-height: 100%;">
+        <div class="deejay-section glass-panel">
           <div class="section-header">
             <h3>📊 Console de Atividades do Drone</h3>
-            <button id="drone-btn-clear-logs" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">Limpar Logs</button>
+            <button id="drone-btn-clear-logs" class="btn btn-secondary btn-header-action">Limpar Logs</button>
           </div>
           
           <div id="drone-logs-container" class="dj-logs-container">
