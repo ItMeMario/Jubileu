@@ -5,9 +5,9 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 24px 32px;
+  padding: clamp(10px, 1.5vh, 24px) clamp(14px, 2vw, 32px);
   overflow: hidden;
-  gap: 20px;
+  gap: clamp(10px, 1.2vh, 20px);
 }
 
 /* Painel de Controles */
@@ -18,8 +18,9 @@
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 16px 24px;
-  gap: 20px;
+  padding: clamp(10px, 1.2vh, 16px) clamp(12px, 1.5vw, 24px);
+  gap: clamp(10px, 1vw, 20px);
+  flex-wrap: wrap;
 }
 
 .deejay-controls-panel .control-col {
@@ -87,17 +88,17 @@
 /* Grid Principal */
 .deejay-main-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: clamp(10px, 1.2vw, 20px);
   flex-grow: 1;
-  overflow: hidden;
+  overflow-y: auto;
   min-height: 0;
 }
 
 .deejay-left-column {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: clamp(10px, 1.2vh, 20px);
   min-height: 0;
 }
 
@@ -114,20 +115,22 @@
 
 .deejay-section.deejay-messages-section {
   flex-grow: 0.8;
-  max-height: 280px;
+  max-height: clamp(140px, 25vh, 280px);
 }
 
 .deejay-section.glass-panel {
   background: rgba(255, 255, 255, 0.01);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 16px 20px;
+  padding: clamp(10px, 1.2vh, 16px) clamp(12px, 1.5vw, 20px);
 }
 
 .deejay-section .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
@@ -146,7 +149,7 @@
 /* Instâncias Grid e Cards */
 .deejay-instances-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(clamp(140px, 15vw, 180px), 1fr));
   gap: 12px;
   overflow-y: auto;
   flex-grow: 1;
@@ -390,7 +393,7 @@
   background: rgba(255, 255, 255, 0.01);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 16px 20px;
+  padding: clamp(10px, 1.2vh, 16px) clamp(12px, 1.5vw, 20px);
 }
 
 .deejay-right-column h3 {
@@ -476,3 +479,11 @@
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* Fallback de altura reduzida para a aba Dee Jay */
+@media (max-height: 700px) {
+  .deejay-controls-panel { padding: 8px 12px; }
+  .deejay-section.deejay-messages-section { max-height: 130px; }
+  .dj-placeholder { padding: 15px 10px; }
+}
+
