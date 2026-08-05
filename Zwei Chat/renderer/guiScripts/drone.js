@@ -221,18 +221,28 @@ function renderDroneInstances() {
       badgeClass = "qr_pending";
     }
 
+    const isConnectingOrQr = (statusData.status === "qr_pending" || statusData.status === "connecting" || statusData.status === "authenticated") && statusData.status !== "connected";
+    const qrSrc = statusData.qrCode 
+      ? (statusData.qrCode.startsWith("data:") ? statusData.qrCode : `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(statusData.qrCode)}`)
+      : "";
+
     card.innerHTML = `
       <div class="dj-card-header">
         <span class="dj-card-name" title="${escapeHTML(inst.name)}">${escapeHTML(inst.name)}</span>
         <span class="dj-card-badge ${badgeClass}">${badgeLabel}</span>
       </div>
       <div class="dj-card-body">
-        <div class="dj-card-qr-container" style="display: ${statusData.status === "qr_pending" && statusData.qrCode ? "flex" : "none"}">
-          <img class="dj-card-qr-img" src="${statusData.qrCode ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(statusData.qrCode)}` : ''}" alt="QR Code">
-          <span class="dj-card-info" style="margin-top: 4px; font-size: 10px;">Escaneie o QR Code</span>
+        <div class="dj-card-qr-container" style="display: ${isConnectingOrQr ? "flex" : "none"}">
+          ${statusData.qrCode ? `
+            <img class="dj-card-qr-img" src="${qrSrc}" alt="QR Code WhatsApp">
+            <span class="dj-card-info">📱 Escaneie o QR Code no seu WhatsApp</span>
+          ` : `
+            <div class="spinner" style="width: 28px; height: 28px; border-width: 3px;"></div>
+            <span class="dj-card-info" style="margin-top: 6px;">Gerando QR Code... Aguarde</span>
+          `}
         </div>
-        <div class="dj-card-status-info" style="display: ${statusData.status === "connected" ? "block" : "none"}; text-align: center; padding: 10px 0; color: var(--text-muted); font-size: 13px;">
-          🟢 Conectado e pronto
+        <div class="dj-card-status-info" style="display: ${statusData.status === "connected" ? "block" : "none"}; text-align: center; padding: 12px 0; color: var(--success); font-size: 13px; font-weight: 500;">
+          🟢 Instância Conectada e Pronta
         </div>
       </div>
       <div class="dj-card-actions">
