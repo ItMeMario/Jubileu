@@ -39,6 +39,7 @@ class DeeJayHandlers {
     ipcMain.handle("dee-jay-stop-loop", this.stopLoop.bind(this));
     ipcMain.handle("dee-jay-get-config", this.getConfig.bind(this));
     ipcMain.handle("dee-jay-set-config", this.setConfig.bind(this));
+    ipcMain.handle("dee-jay-get-connected-count", this.getConnectedCount.bind(this));
     
     // Rotas de CRUD de mensagens
     ipcMain.handle("dee-jay-get-messages", this.getMessages.bind(this));
@@ -56,6 +57,7 @@ class DeeJayHandlers {
     ipcMain.removeHandler("dee-jay-stop-loop");
     ipcMain.removeHandler("dee-jay-get-config");
     ipcMain.removeHandler("dee-jay-set-config");
+    ipcMain.removeHandler("dee-jay-get-connected-count");
     ipcMain.removeHandler("dee-jay-get-messages");
     ipcMain.removeHandler("dee-jay-add-message");
     ipcMain.removeHandler("dee-jay-delete-message");
@@ -63,6 +65,10 @@ class DeeJayHandlers {
 
   async getInstances() {
     return deeJayService.getInstances();
+  }
+
+  async getConnectedCount() {
+    return deeJayService.getConnectedCount();
   }
 
   async createInstance(event, name) {

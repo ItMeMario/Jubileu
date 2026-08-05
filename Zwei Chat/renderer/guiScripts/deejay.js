@@ -243,39 +243,46 @@ function renderDeeJayMessages() {
   });
 }
 
-function updateDjLoopButtons() {
+async function updateDjLoopButtons() {
   if (!djBtnStartLoop || !djBtnStopLoop) return;
 
-  const connectedCount = djInstances.filter(i => {
+  let totalConnected = djInstances.filter(i => {
     const status = djInstanceStatuses[i.instanceId]?.status;
     return status === "connected";
   }).length;
+
+  if (window.deeJayAPI && window.deeJayAPI.getConnectedCount) {
+    try {
+      totalConnected = await window.deeJayAPI.getConnectedCount();
+    } catch (err) {
+      console.error("Dee Jay: Erro ao obter total de instâncias conectadas:", err);
+    }
+  }
   
   if (djLoopActive) {
     djBtnStartLoop.classList.add("hidden");
     djBtnStopLoop.classList.remove("hidden");
     
     // Desabilita os campos de configuração enquanto o loop estiver ativo
-    djMinInterval.disabled = true;
-    djMaxInterval.disabled = true;
-    djChkLinkBot.disabled = true;
-    djChkLinkDrone.disabled = true;
-    djBtnSaveConfig.disabled = true;
+    if (djIntervalSelector && djIntervalSelector.setDisabled) {
+      djIntervalSelector.setDisabled(true);
+    }
+    if (djChkLinkBot) djChkLinkBot.disabled = true;
+    if (djChkLinkDrone) djChkLinkDrone.disabled = true;
+    if (djBtnSaveConfig) djBtnSaveConfig.disabled = true;
   } else {
     djBtnStartLoop.classList.remove("hidden");
     djBtnStopLoop.classList.add("hidden");
     
     // Habilita os campos de configuração quando o loop estiver parado
-    djMinInterval.disabled = false;
-    djMaxInterval.disabled = false;
-    djChkLinkBot.disabled = false;
-    djChkLinkDrone.disabled = false;
-    djBtnSaveConfig.disabled = false;
+    if (djIntervalSelector && djIntervalSelector.setDisabled) {
+      djIntervalSelector.setDisabled(false);
+    }
+    if (djChkLinkBot) djChkLinkBot.disabled = false;
+    if (djChkLinkDrone) djChkLinkDrone.disabled = false;
+    if (djBtnSaveConfig) djBtnSaveConfig.disabled = false;
     
-    const linkBot = djChkLinkBot.checked;
-    const linkDrone = djChkLinkDrone.checked;
-    const hasBinding = linkBot || linkDrone;
-    djBtnStartLoop.disabled = (connectedCount < 2 && !hasBinding) || (connectedCount < 1 && hasBinding);
+    djBtnStartLoop.disabled = totalConnected < 2;
   }
 }
 
@@ -415,12 +422,36 @@ function setupUIEventListeners() {
     }
   });
 
-  djChkLinkBot.addEventListener("change", () => {
-    updateDjLoopButtons();
+  djChkLinkBot.addEventListener("change", async () => {
+    try {
+      const selectorVal = djIntervalSelector ? djIntervalSelector.getValue() : { type: "range", unit: "minutes", min: 1, max: 5 };
+      await window.deeJayAPI.setConfig({
+        minIntervalMinutes: selectorVal.min || 1,
+        maxIntervalMinutes: selectorVal.max || 5,
+        deeJayInterval: selectorVal,
+        linkBotPrincipal: djChkLinkBot.checked,
+        linkDrone: djChkLinkDrone.checked
+      });
+    } catch (e) {
+      console.error("Dee Jay: Erro ao atualizar vinculação com Bot:", e);
+    }
+    await updateDjLoopButtons();
   });
 
-  djChkLinkDrone.addEventListener("change", () => {
-    updateDjLoopButtons();
+  djChkLinkDrone.addEventListener("change", async () => {
+    try {
+      const selectorVal = djIntervalSelector ? djIntervalSelector.getValue() : { type: "range", unit: "minutes", min: 1, max: 5 };
+      await window.deeJayAPI.setConfig({
+        minIntervalMinutes: selectorVal.min || 1,
+        maxIntervalMinutes: selectorVal.max || 5,
+        deeJayInterval: selectorVal,
+        linkBotPrincipal: djChkLinkBot.checked,
+        linkDrone: djChkLinkDrone.checked
+      });
+    } catch (e) {
+      console.error("Dee Jay: Erro ao atualizar vinculação com Drone:", e);
+    }
+    await updateDjLoopButtons();
   });
 
   djBtnClearLogs.addEventListener("click", () => {

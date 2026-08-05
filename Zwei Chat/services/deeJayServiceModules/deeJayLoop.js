@@ -205,6 +205,11 @@ async function sendSingleMessage(service, from, to) {
          
          if (!message) return;
 
+        if (!from?.client?.info?.wid?.user || !to?.client?.info?.wid?.user) {
+            console.warn(`Dee Jay: Instância "${!from?.client?.info?.wid?.user ? from?.name : to?.name}" não possui número de telefone (WID) válido.`);
+            return;
+        }
+
         const receiverNumber = to.client.info.wid.user + "@c.us";
         const sendOptions = { ...options, sendSeen: false }; // Evita erro de leitura
         

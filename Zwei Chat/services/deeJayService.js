@@ -56,6 +56,12 @@ class DeeJayService {
         // Carrega configurações salvas
         await this.loadConfig();
 
+        // Sempre reseta o estado 'active' do loop para false ao inicializar a aplicação
+        if (this.config.active) {
+            this.config.active = false;
+            await this.saveConfig();
+        }
+
         // Reseta status de instâncias presas no banco (devido a fechamento abrupto)
         try {
             await this.dbResetAllDeeJayInstancesStatus();
@@ -288,6 +294,10 @@ class DeeJayService {
 
     getConnectedInstances() {
         return deeJayLoop.getConnectedInstances(this);
+    }
+
+    getConnectedCount() {
+        return deeJayLoop.getConnectedInstances(this).length;
     }
 
     async setConfig(config) {

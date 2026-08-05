@@ -69,6 +69,7 @@ contextBridge.exposeInMainWorld("deeJayAPI", {
     
     getConfig: () => ipcRenderer.invoke('dee-jay-get-config'),
     setConfig: (config) => ipcRenderer.invoke('dee-jay-set-config', config),
+    getConnectedCount: () => ipcRenderer.invoke('dee-jay-get-connected-count'),
 
     getMessages: () => ipcRenderer.invoke('dee-jay-get-messages'),
     addMessage: (content) => ipcRenderer.invoke('dee-jay-add-message', content),

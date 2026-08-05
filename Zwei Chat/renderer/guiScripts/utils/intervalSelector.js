@@ -123,12 +123,21 @@ window.IntervalSelector = {
     minVal.addEventListener("input", triggerChange);
     maxVal.addEventListener("input", triggerChange);
 
+    const setDisabled = (disabled) => {
+      typeSelect.disabled = !!disabled;
+      unitSelect.disabled = !!disabled;
+      fixedVal.disabled = !!disabled;
+      minVal.disabled = !!disabled;
+      maxVal.disabled = !!disabled;
+    };
+
     // Ajusta a visibilidade condicional na inicialização
     updateVisibility();
 
     return {
       setValue,
       getValue,
+      setDisabled,
       parent
     };
   }
