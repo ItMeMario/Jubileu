@@ -465,6 +465,13 @@ function setupDroneUIEventListeners() {
     }
   });
 
+  droneMsgInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      droneBtnAddMsg.click();
+    }
+  });
+
   // Salvar configurações de formatação do Drone
   droneBtnSaveFormat.addEventListener("click", async () => {
     const selectorVal = droneIntervalSelector ? droneIntervalSelector.getValue() : { type: "range", unit: "seconds", min: 5, max: 15 };
