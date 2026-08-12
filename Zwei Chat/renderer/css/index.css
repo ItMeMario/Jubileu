@@ -2,15 +2,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-main: #0B0A13;
-  --bg-panel: rgba(18, 17, 28, 0.7);
+  --bg-main: #080E0C;
+  --bg-panel: rgba(13, 22, 19, 0.75);
   --border-color: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(139, 92, 246, 0.2);
+  --border-glow: rgba(18, 202, 98, 0.2);
   
   /* Palette */
-  --primary: #8B5CF6;
-  --primary-hover: #A78BFA;
-  --primary-glow: rgba(139, 92, 246, 0.4);
+  --primary: #12CA62;
+  --primary-hover: #22E077;
+  --primary-glow: rgba(18, 202, 98, 0.35);
   
   --success: #10B981;
   --success-glow: rgba(16, 185, 129, 0.3);
@@ -25,7 +25,7 @@
   --text-muted: #9CA3AF;
   --text-dark: #6B7280;
   
-  --terminal-bg: rgba(7, 6, 12, 0.85);
+  --terminal-bg: rgba(6, 12, 10, 0.85);
 }
 
 * {
@@ -38,8 +38,8 @@ body {
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-main);
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 45%);
+    radial-gradient(circle at 10% 20%, rgba(18, 202, 98, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(0, 101, 91, 0.12) 0%, transparent 45%);
   color: var(--text-main);
   height: 100vh;
   overflow: hidden;
@@ -72,8 +72,8 @@ body {
 }
 
 .glass-panel:hover {
-  border-color: rgba(139, 92, 246, 0.15);
-  box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.05);
+  border-color: rgba(18, 202, 98, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 101, 91, 0.12);
 }
 
 /* Left Panel Style */
@@ -92,7 +92,7 @@ body {
 .brand-logo {
   width: clamp(28px, 3vw, 38px);
   height: clamp(28px, 3vw, 38px);
-  background: linear-gradient(135deg, var(--primary), #EC4899);
+  background: linear-gradient(135deg, #12CA62, #00655B);
   border-radius: 10px;
   display: flex;
   justify-content: center;
@@ -106,7 +106,7 @@ body {
 .brand-title {
   font-size: clamp(16px, 1.8vw, 24px);
   font-weight: 700;
-  background: linear-gradient(to right, #FFFFFF, #D8B4FE);
+  background: linear-gradient(to right, #FFFFFF, #6EE7B7);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -224,7 +224,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(11, 10, 19, 0.85);
+  background: rgba(8, 14, 12, 0.85);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -244,7 +244,7 @@ body {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(139, 92, 246, 0.1);
+  border: 3px solid rgba(18, 202, 98, 0.15);
   border-radius: 50%;
   border-top-color: var(--primary);
   animation: spin 1s linear infinite;
@@ -529,9 +529,9 @@ body {
 
 .tab-btn.active {
   color: white;
-  background: rgba(139, 92, 246, 0.15);
-  border-color: rgba(139, 92, 246, 0.3);
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.1);
+  background: rgba(18, 202, 98, 0.14);
+  border-color: rgba(18, 202, 98, 0.35);
+  box-shadow: 0 0 10px rgba(18, 202, 98, 0.12);
 }
 
 .tab-content {
@@ -565,7 +565,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(7, 6, 12, 0.8);
+  background-color: rgba(6, 12, 10, 0.82);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -666,9 +666,9 @@ body {
 }
 
 .icon-btn-add {
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  color: var(--primary-hover);
+  background: rgba(18, 202, 98, 0.1);
+  border: 1px solid rgba(18, 202, 98, 0.25);
+  color: #34D399;
   width: 28px;
   height: 28px;
   border-radius: 6px;
@@ -752,13 +752,13 @@ body {
 
 .instance-item:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(139, 92, 246, 0.15);
+  border-color: rgba(18, 202, 98, 0.2);
 }
 
 .instance-item.active {
-  background: rgba(139, 92, 246, 0.08);
-  border-color: rgba(139, 92, 246, 0.3);
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.1);
+  background: rgba(18, 202, 98, 0.08);
+  border-color: rgba(18, 202, 98, 0.35);
+  box-shadow: 0 0 8px rgba(18, 202, 98, 0.12);
 }
 
 .instance-item-info {
@@ -814,7 +814,7 @@ body {
 
 /* Estilo unificado para inputs numéricos do sistema */
 .dj-number-input {
-  background: rgba(7, 6, 12, 0.6);
+  background: rgba(6, 12, 10, 0.6);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   color: var(--text-main);
@@ -826,7 +826,7 @@ body {
 }
 
 .dj-number-input:focus {
-  border-color: rgba(139, 92, 246, 0.4);
+  border-color: rgba(18, 202, 98, 0.45);
   box-shadow: 0 0 10px var(--primary-glow);
 }
 
