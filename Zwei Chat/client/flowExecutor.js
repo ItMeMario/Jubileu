@@ -16,6 +16,26 @@ const SESSION_TIMEOUT = 30 * 60 * 1000;
  * @param {string} fromJid
  * @returns {boolean}
  */
+function normalizeBrNumber(num) {
+  if (!num) return "";
+  const clean = num.replace(/\D/g, "");
+  if (clean.startsWith("55") && (clean.length === 12 || clean.length === 13)) {
+    const ddd = clean.substring(2, 4);
+    const rest = clean.substring(4);
+    const restWithout9 = rest.length === 9 && rest.startsWith("9") ? rest.substring(1) : rest;
+    return `55${ddd}${restWithout9}`;
+  }
+  return clean;
+}
+
+function numbersMatch(num1, num2) {
+  if (!num1 || !num2) return false;
+  if (num1 === num2) return true;
+  const n1 = normalizeBrNumber(num1);
+  const n2 = normalizeBrNumber(num2);
+  return n1.length > 0 && n1 === n2;
+}
+
 function isLinkedNumber(fromJid) {
   if (!fromJid) return false;
   const rawNumber = fromJid.split("@")[0];
@@ -26,7 +46,7 @@ function isLinkedNumber(fromJid) {
     if (clientModule && clientModule.clients) {
       for (const [instanceId, clientInstance] of clientModule.clients.entries()) {
         const userNumber = clientInstance?.info?.wid?.user;
-        if (userNumber === rawNumber) return true;
+        if (numbersMatch(userNumber, rawNumber)) return true;
       }
     }
 
@@ -36,7 +56,7 @@ function isLinkedNumber(fromJid) {
     if (
       deeJayStatuses.some((inst) => {
         const client = inst.client;
-        return client?.info?.wid?.user === rawNumber;
+        return numbersMatch(client?.info?.wid?.user, rawNumber);
       })
     ) {
       return true;
@@ -48,7 +68,7 @@ function isLinkedNumber(fromJid) {
     if (
       droneStatuses.some((inst) => {
         const client = inst.client;
-        return client?.info?.wid?.user === rawNumber;
+        return numbersMatch(client?.info?.wid?.user, rawNumber);
       })
     ) {
       return true;

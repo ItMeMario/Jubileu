@@ -195,26 +195,9 @@ async function initializeDatabase() {
                             return reject(err);
                           }
 
-                          // Povoa mensagens padrão do Drone se estiver vazia
-                          db.get("SELECT COUNT(*) as count FROM drone_messages", [], (err, row) => {
-                            if (!err && row && row.count === 0) {
-                              const defaultDroneMessages = [
-                                "Olá {{name}}, tudo bem? Passando para te desejar um excelente dia!",
-                                "Oi {{name}}! Como estão as coisas por aí?",
-                                "Tudo bem, {{name}}? Vi que você demonstrou interesse em nossos serviços e gostaria de tirar suas dúvidas!"
-                              ];
-                              const stmt = db.prepare("INSERT INTO drone_messages (message_content) VALUES (?)");
-                              defaultDroneMessages.forEach((msg) => {
-                                stmt.run(msg);
-                              });
-                              stmt.finalize();
-                              console.log("🌱 Mensagens padrão do Drone inseridas com sucesso.");
-                            }
-
-                            db.close((closeErr) => {
-                              if (closeErr) reject(closeErr);
-                              else resolve(DATABASE_PATH);
-                            });
+                          db.close((closeErr) => {
+                            if (closeErr) reject(closeErr);
+                            else resolve(DATABASE_PATH);
                           });
                         });
                       });
