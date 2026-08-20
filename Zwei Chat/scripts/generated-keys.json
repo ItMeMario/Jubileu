@@ -1,0 +1,32 @@
+[
+  {
+    "key": "ZWEI-HY7W-NG6A-Q7SY",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-20T20:27:21.412Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-HADL-HFYD-DF4W",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-20T20:27:21.412Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-BLW5-JW53-FQDJ",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-20T20:27:21.412Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  }
+]
