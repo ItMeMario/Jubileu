@@ -4,6 +4,7 @@ const WhatsAppHandlers = require("./ipc/whatsAppHandlers");
 const FlowHandlers = require("./ipc/flowHandlers");
 const DeeJayHandlers = require("./ipc/deeJayHandlers");
 const DroneHandlers = require("./ipc/droneHandlers");
+const AuthHandlers = require("./ipc/authHandlers");
 
 class IPCManager {
   constructor() {
@@ -12,6 +13,7 @@ class IPCManager {
       flows: null,
       deejay: null,
       drone: null,
+      auth: null,
     };
   }
 
@@ -21,6 +23,7 @@ class IPCManager {
       this.handlers.flows = new FlowHandlers();
       this.handlers.deejay = new DeeJayHandlers(modules.windowManager);
       this.handlers.drone = new DroneHandlers(modules.windowManager);
+      this.handlers.auth = new AuthHandlers(modules.windowManager);
 
       // Registra os handlers
       Object.values(this.handlers).forEach(handler => {

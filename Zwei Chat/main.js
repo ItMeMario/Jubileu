@@ -55,6 +55,11 @@ if (!gotTheLock) {
         const droneService = require("./services/droneService");
         await droneService.initialize();
 
+        // Inicializa o serviço de Autenticação e Licença (Firebase)
+        console.log("🔐 Inicializando AuthService & Firebase...");
+        const authService = require("./services/authService");
+        await authService.initialize();
+
         console.log("🪟 Criando janela principal...");
         this.windowManager.createMainWindow();
 

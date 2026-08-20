@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "electron-log": "^5.4.3",
+    "firebase": "^12.17.1",
     "puppeteer": "^24.15.0",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",

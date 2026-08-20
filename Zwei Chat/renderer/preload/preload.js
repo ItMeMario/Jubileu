@@ -139,4 +139,20 @@ contextBridge.exposeInMainWorld("droneAPI", {
     }
 });
 
+contextBridge.exposeInMainWorld("authAPI", {
+    getAuthState: () => ipcRenderer.invoke("auth:get-state"),
+    login: (email, password) => ipcRenderer.invoke("auth:login", { email, password }),
+    register: (name, email, password) => ipcRenderer.invoke("auth:register", { name, email, password }),
+    resetPassword: (email) => ipcRenderer.invoke("auth:reset-password", { email }),
+    logout: () => ipcRenderer.invoke("auth:logout"),
+    activateKey: (key) => ipcRenderer.invoke("auth:activate-key", { key }),
+    saveFirebaseConfig: (config) => ipcRenderer.invoke("auth:save-firebase-config", config),
+    onAuthStateChanged: (callback) => {
+        ipcRenderer.on("auth:state-changed", (event, data) => callback(data));
+    },
+    removeAuthListeners: () => {
+        ipcRenderer.removeAllListeners("auth:state-changed");
+    }
+});
+
 console.log("🔧 Preload do Zwei Chat carregado com sucesso!");
