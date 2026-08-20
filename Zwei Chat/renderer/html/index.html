@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../css/deejay.css">
   <link rel="stylesheet" href="../css/flows.css">
   <link rel="stylesheet" href="../css/drone.css">
+  <link rel="stylesheet" href="../css/auth.css">
 </head>
 <body>
   <div class="app-container">
@@ -19,6 +20,15 @@
         <div class="brand-section">
           <div class="brand-logo">Z</div>
           <h1 class="brand-title">Zwei Chat</h1>
+        </div>
+
+        <!-- Widget de Perfil e Licença do Usuário -->
+        <div id="sidebar-user-widget" class="sidebar-user-widget" style="display: none;">
+          <div class="sidebar-user-info">
+            <span id="sidebar-user-email" class="sidebar-user-email">usuario@email.com</span>
+            <span id="sidebar-license-badge" class="sidebar-license-badge">Ativo</span>
+          </div>
+          <button id="sidebar-btn-logout" class="sidebar-btn-logout" title="Encerrar Sessão">🚪</button>
         </div>
         
         <!-- Seção de Múltiplas Instâncias -->
@@ -131,11 +141,211 @@
 
   </div>
 
+  <!-- OVERLAY DE AUTENTICAÇÃO E ATIVAÇÃO DE PRODUTO -->
+  <div id="auth-overlay" class="auth-overlay">
+    <div id="auth-card" class="auth-card">
+      <button id="btn-auth-config-toggle" class="auth-config-toggle" title="Configurar Firebase">⚙️</button>
+
+      <!-- Cabeçalho -->
+      <div class="auth-header">
+        <div class="auth-logo">Z</div>
+        <h2 class="auth-title">Zwei Chat</h2>
+        <p class="auth-subtitle">Acesso Seguro & Ativação de Licença</p>
+      </div>
+
+      <!-- Alerta / Notificação -->
+      <div id="auth-alert" class="auth-alert"></div>
+
+      <!-- Abas de Navegação (Login / Cadastro) -->
+      <div id="auth-tabs" class="auth-tabs">
+        <button id="tab-login" class="auth-tab-btn active">Entrar</button>
+        <button id="tab-register" class="auth-tab-btn">Criar Conta</button>
+      </div>
+
+      <!-- VIEW 1: LOGIN -->
+      <div id="auth-view-login" class="auth-view active">
+        <form id="form-login" class="auth-form">
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="login-email">E-mail</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">✉️</span>
+              <input type="email" id="login-email" class="auth-input" placeholder="seu.email@exemplo.com" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="login-password">Senha</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">🔒</span>
+              <input type="password" id="login-password" class="auth-input" placeholder="••••••••" required autocomplete="current-password">
+              <button type="button" class="auth-input-toggle-pwd" data-target="login-password" title="Mostrar senha">👁️</button>
+            </div>
+          </div>
+
+          <div class="auth-links">
+            <span id="link-to-forgot" class="auth-link">Esqueceu a senha?</span>
+          </div>
+
+          <button type="submit" class="btn-auth-primary">
+            <span>Entrar no Zwei Chat</span>
+          </button>
+        </form>
+
+        <p class="auth-footer-action">
+          Não tem uma conta?<strong id="link-to-register">Criar Conta</strong>
+        </p>
+      </div>
+
+      <!-- VIEW 2: CADASTRO -->
+      <div id="auth-view-register" class="auth-view">
+        <form id="form-register" class="auth-form">
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="register-name">Nome Completo</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">👤</span>
+              <input type="text" id="register-name" class="auth-input" placeholder="Seu Nome" autocomplete="name">
+            </div>
+          </div>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="register-email">E-mail</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">✉️</span>
+              <input type="email" id="register-email" class="auth-input" placeholder="seu.email@exemplo.com" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="register-password">Senha</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">🔒</span>
+              <input type="password" id="register-password" class="auth-input" placeholder="Mínimo 6 caracteres" required autocomplete="new-password">
+              <button type="button" class="auth-input-toggle-pwd" data-target="register-password" title="Mostrar senha">👁️</button>
+            </div>
+          </div>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="register-confirm-password">Confirmar Senha</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">🔒</span>
+              <input type="password" id="register-confirm-password" class="auth-input" placeholder="Repita a senha" required autocomplete="new-password">
+              <button type="button" class="auth-input-toggle-pwd" data-target="register-confirm-password" title="Mostrar senha">👁️</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-auth-primary">
+            <span>Criar Conta & Continuar</span>
+          </button>
+        </form>
+
+        <p class="auth-footer-action">
+          Já tem uma conta?<strong id="link-to-login">Fazer Login</strong>
+        </p>
+      </div>
+
+      <!-- VIEW 3: RECUPERAR SENHA -->
+      <div id="auth-view-forgot" class="auth-view">
+        <form id="form-forgot" class="auth-form">
+          <p class="auth-subtitle" style="margin-bottom: 6px;">
+            Digite o e-mail associado à sua conta para receber um link de redefinição de senha.
+          </p>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="forgot-email">E-mail</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon">✉️</span>
+              <input type="email" id="forgot-email" class="auth-input" placeholder="seu.email@exemplo.com" required autocomplete="email">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-auth-primary">
+            <span>Enviar Link de Recuperação</span>
+          </button>
+        </form>
+
+        <p class="auth-footer-action">
+          Lembrou a senha?<strong id="link-back-to-login">Voltar ao Login</strong>
+        </p>
+      </div>
+
+      <!-- VIEW 4: ATIVAÇÃO DE CHAVE DE PRODUTO -->
+      <div id="auth-view-activate" class="auth-view">
+        <div class="auth-user-badge">
+          <span id="activate-user-email" class="auth-user-badge-email">usuario@email.com</span>
+          <span class="auth-user-badge-status">Pendente de Ativação</span>
+        </div>
+
+        <form id="form-activate" class="auth-form">
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="input-license-key">Chave de Ativação (License Key)</label>
+            <input 
+              type="text" 
+              id="input-license-key" 
+              class="auth-input auth-key-input" 
+              placeholder="ZWEI-XXXX-XXXX-XXXX" 
+              maxlength="19" 
+              required
+              autocomplete="off"
+              spellcheck="false"
+            >
+          </div>
+
+          <button type="submit" class="btn-auth-primary">
+            <span>🚀 Ativar Produto</span>
+          </button>
+        </form>
+
+        <p class="auth-footer-action">
+          Deseja entrar com outra conta?<strong id="btn-logout-activate">Sair</strong>
+        </p>
+      </div>
+
+      <!-- VIEW 5: CONFIGURAÇÃO DE CREDENCIAIS FIREBASE -->
+      <div id="auth-view-config" class="auth-view">
+        <form id="form-config" class="auth-form">
+          <p class="auth-subtitle" style="margin-bottom: 6px;">
+            Insira as credenciais do seu projeto Firebase (Web App):
+          </p>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="config-apikey">API Key</label>
+            <input type="text" id="config-apikey" class="auth-input" placeholder="AIzaSy..." required>
+          </div>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="config-projectid">Project ID</label>
+            <input type="text" id="config-projectid" class="auth-input" placeholder="meu-projeto-firebase" required>
+          </div>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="config-authdomain">Auth Domain (opcional)</label>
+            <input type="text" id="config-authdomain" class="auth-input" placeholder="meu-projeto.firebaseapp.com">
+          </div>
+
+          <div class="auth-input-group">
+            <label class="auth-input-label" for="config-appid">App ID (opcional)</label>
+            <input type="text" id="config-appid" class="auth-input" placeholder="1:123456:web:abcdef">
+          </div>
+
+          <button type="submit" class="btn-auth-primary">
+            <span>Salvar Credenciais</span>
+          </button>
+
+          <button type="button" id="btn-close-config" class="btn-auth-primary" style="background: rgba(255,255,255,0.08); box-shadow: none;">
+            <span>Voltar</span>
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
   <script src="../guiScripts/utils/confirmModal.js"></script>
   <script src="../guiScripts/utils/intervalSelector.js"></script>
   <script src="../guiScripts/deejay.js" defer></script>
   <script src="../guiScripts/drone.js" defer></script>
   <script type="module" src="../guiScripts/flows.js" defer></script>
+  <script src="../guiScripts/auth.js" defer></script>
   <script src="../guiScripts/index.js"></script>
 </body>
 </html>
