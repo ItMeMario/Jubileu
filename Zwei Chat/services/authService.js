@@ -22,6 +22,7 @@ class AuthService {
     this.isActivated = false;
     this.initialized = false;
     this.listeners = new Set();
+    this.heartbeatTimer = null;
   }
 
   /**
@@ -49,10 +50,12 @@ class AuthService {
           };
           // Valida licença associada ao usuário no Firestore
           await this.refreshUserLicenseStatus();
+          this.startHeartbeat();
         } else {
           this.currentUser = null;
           this.currentLicense = null;
           this.isActivated = false;
+          this.stopHeartbeat();
         }
 
         this.notifyListeners();
@@ -65,6 +68,33 @@ class AuthService {
       console.error("❌ Erro ao inicializar AuthService:", error);
       this.initialized = true;
       return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Inicia o timer de verificação periódica de expiração (a cada 30 minutos)
+   */
+  startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setInterval(async () => {
+      if (this.currentUser && firebaseService.isFirebaseReady()) {
+        const wasActivated = this.isActivated;
+        await this.refreshUserLicenseStatus();
+        if (wasActivated !== this.isActivated) {
+          console.log(`⏱️ Verificação de assinatura: Status alterado para ${this.isActivated ? 'ATIVO' : 'EXPIRADO'}`);
+          this.notifyListeners();
+        }
+      }
+    }, 30 * 60 * 1000); // 30 minutos
+  }
+
+  /**
+   * Para o timer de verificação periódica
+   */
+  stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
     }
   }
 
@@ -225,6 +255,8 @@ class AuthService {
    */
   async logout() {
     try {
+      this.stopHeartbeat();
+
       if (firebaseService.isFirebaseReady()) {
         const auth = firebaseService.getAuth();
         await signOut(auth);
@@ -287,40 +319,58 @@ class AuthService {
 
         if (licenseData.expiresAt) {
           const expirationDate = new Date(licenseData.expiresAt);
-          if (expirationDate < new Date()) {
+          if (expirationDate <= new Date()) {
             throw new Error("CHAVE_EXPIRADA: Esta chave de ativação já expirou.");
           }
         }
 
         const nowIso = new Date().toISOString();
+        let calculatedExpiresAt = licenseData.expiresAt || null;
+
+        // Se for plano mensal e ainda não tiver data de expiração, define para 30 dias a partir da ativação
+        if (licenseData.plan === "monthly" && !calculatedExpiresAt) {
+          const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+          calculatedExpiresAt = new Date(Date.now() + thirtyDaysMs).toISOString();
+        }
 
         // 1. Atualiza documento da licença
         transaction.update(licenseRef, {
           status: "active",
           usedByUid: this.currentUser.uid,
           usedByEmail: this.currentUser.email,
-          activatedAt: nowIso
+          activatedAt: nowIso,
+          expiresAt: calculatedExpiresAt
         });
 
         // 2. Atualiza documento do usuário
         transaction.set(userRef, {
+          uid: this.currentUser.uid,
+          email: this.currentUser.email,
           isActivated: true,
           licenseKey: cleanKey,
-          licensePlan: licenseData.plan || "lifetime",
+          licensePlan: licenseData.plan || "monthly",
+          licenseExpiresAt: calculatedExpiresAt,
           activatedAt: nowIso,
           updatedAt: nowIso
         }, { merge: true });
 
+        const daysRemaining = calculatedExpiresAt
+          ? Math.max(0, Math.ceil((new Date(calculatedExpiresAt) - new Date()) / (1000 * 60 * 60 * 24)))
+          : null;
+
         return {
           key: cleanKey,
-          plan: licenseData.plan || "lifetime",
+          plan: licenseData.plan || "monthly",
           activatedAt: nowIso,
-          expiresAt: licenseData.expiresAt || null
+          expiresAt: calculatedExpiresAt,
+          daysRemaining,
+          isExpired: false
         };
       });
 
       this.isActivated = true;
       this.currentLicense = activationResult;
+      this.startHeartbeat();
       this.notifyListeners();
 
       console.log(`🎉 Produto ativado com sucesso para ${this.currentUser.email} com a chave ${cleanKey}`);
@@ -368,7 +418,7 @@ class AuthService {
 
       const userData = userSnap.data();
 
-      if (!userData.isActivated || !userData.licenseKey) {
+      if (!userData.licenseKey) {
         this.isActivated = false;
         this.currentLicense = null;
         return false;
@@ -386,26 +436,55 @@ class AuthService {
 
       const licenseData = licenseSnap.data();
 
-      // Verifica revogação ou expiração
+      // 1. Verifica revogação
       if (licenseData.status === "revoked") {
         this.isActivated = false;
-        this.currentLicense = null;
+        this.currentLicense = {
+          key: userData.licenseKey,
+          plan: licenseData.plan || "monthly",
+          isRevoked: true,
+          isExpired: false,
+          expiresAt: licenseData.expiresAt || null
+        };
         return false;
       }
 
-      if (licenseData.expiresAt && new Date(licenseData.expiresAt) < new Date()) {
-        this.isActivated = false;
-        this.currentLicense = null;
-        return false;
+      // 2. Verifica expiração da assinatura
+      const expiresAt = licenseData.expiresAt || userData.licenseExpiresAt || null;
+      if (expiresAt) {
+        const expirationDate = new Date(expiresAt);
+        const now = new Date();
+
+        if (expirationDate <= now) {
+          this.isActivated = false;
+          this.currentLicense = {
+            key: userData.licenseKey,
+            plan: licenseData.plan || "monthly",
+            isExpired: true,
+            isRevoked: false,
+            expiresAt: expiresAt,
+            daysRemaining: 0,
+            formattedExpiration: expirationDate.toLocaleDateString("pt-BR")
+          };
+          return false;
+        }
       }
 
-      // Licença válida
+      // 3. Licença ativa e válida
+      const daysRemaining = expiresAt
+        ? Math.max(0, Math.ceil((new Date(expiresAt) - new Date()) / (1000 * 60 * 60 * 24)))
+        : null;
+
       this.isActivated = true;
       this.currentLicense = {
         key: userData.licenseKey,
-        plan: licenseData.plan || userData.licensePlan || "lifetime",
+        plan: licenseData.plan || userData.licensePlan || "monthly",
+        isExpired: false,
+        isRevoked: false,
         activatedAt: licenseData.activatedAt || userData.activatedAt,
-        expiresAt: licenseData.expiresAt || null
+        expiresAt: expiresAt,
+        daysRemaining: daysRemaining,
+        formattedExpiration: expiresAt ? new Date(expiresAt).toLocaleDateString("pt-BR") : null
       };
 
       return true;
@@ -413,6 +492,19 @@ class AuthService {
       console.error("Erro ao verificar status da licença:", error);
       return false;
     }
+  }
+
+  /**
+   * Força uma checagem de renovação no Firestore
+   */
+  async checkRenewal() {
+    await this.refreshUserLicenseStatus();
+    this.notifyListeners();
+    return {
+      success: true,
+      isActivated: this.isActivated,
+      license: this.currentLicense
+    };
   }
 
   /**

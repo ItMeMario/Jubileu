@@ -52,6 +52,11 @@ class AuthHandlers {
       }
     });
 
+    // 8. Checagem manual de renovação
+    ipcMain.handle("auth:check-renewal", async () => {
+      return authService.checkRenewal();
+    });
+
     // Escuta mudanças de estado no AuthService e transmite para a janela do Renderer
     this.removeStateListener = authService.addStateListener((state) => {
       const mainWindow = this.windowManager?.getMainWindow();
@@ -71,6 +76,7 @@ class AuthHandlers {
     ipcMain.removeHandler("auth:logout");
     ipcMain.removeHandler("auth:activate-key");
     ipcMain.removeHandler("auth:save-firebase-config");
+    ipcMain.removeHandler("auth:check-renewal");
 
     if (this.removeStateListener) {
       this.removeStateListener();

@@ -17,6 +17,7 @@
   const viewForgot = document.getElementById("auth-view-forgot");
   const viewActivate = document.getElementById("auth-view-activate");
   const viewConfig = document.getElementById("auth-view-config");
+  const viewExpired = document.getElementById("auth-view-expired");
 
   // Formulários
   const formLogin = document.getElementById("form-login");
@@ -34,6 +35,13 @@
   const inputRegisterConfirm = document.getElementById("register-confirm-password");
   const inputForgotEmail = document.getElementById("forgot-email");
   const inputLicenseKey = document.getElementById("input-license-key");
+
+  // Elementos da Tela de Expiração
+  const expiredUserEmail = document.getElementById("expired-user-email");
+  const expiredDate = document.getElementById("expired-date");
+  const btnCheckRenewal = document.getElementById("btn-check-renewal");
+  const linkToActivateFromExpired = document.getElementById("link-to-activate-from-expired");
+  const btnLogoutExpired = document.getElementById("btn-logout-expired");
 
   // Botões e Links de Navegação
   const linkToRegister = document.getElementById("link-to-register");
@@ -97,7 +105,7 @@
   }
 
   /**
-   * Alterna a visualização ativa (Login, Cadastro, Recuperação, Ativação, Configuração)
+   * Alterna a visualização ativa (Login, Cadastro, Recuperação, Ativação, Configuração, Expirado)
    */
   function showView(viewName) {
     hideAlert();
@@ -107,7 +115,8 @@
       register: viewRegister,
       forgot: viewForgot,
       activate: viewActivate,
-      config: viewConfig
+      config: viewConfig,
+      expired: viewExpired
     };
 
     // Oculta todas as views
@@ -139,12 +148,25 @@
     currentAuthState = state;
 
     if (!state.isAuthenticated) {
-      // Usuário não está logado -> Exibe modal e vai para tela de login
+      // 1. Não autenticado -> Exibe tela de login
       if (authOverlay) authOverlay.classList.remove("hidden");
       if (sidebarUserWidget) sidebarUserWidget.style.display = "none";
       showView("login");
+    } else if (state.isAuthenticated && state.license && state.license.isExpired) {
+      // 2. Autenticado mas com assinatura expirada -> Tela de bloqueio por expiração
+      if (authOverlay) authOverlay.classList.remove("hidden");
+      if (sidebarUserWidget) sidebarUserWidget.style.display = "none";
+
+      if (expiredUserEmail && state.user) {
+        expiredUserEmail.textContent = state.user.email;
+      }
+      if (expiredDate && state.license.formattedExpiration) {
+        expiredDate.textContent = state.license.formattedExpiration;
+      }
+
+      showView("expired");
     } else if (state.isAuthenticated && !state.isActivated) {
-      // Usuário logado mas sem licença ativa -> Tela de ativação de chave
+      // 3. Autenticado mas nunca ativou uma chave -> Tela de ativação de chave
       if (authOverlay) authOverlay.classList.remove("hidden");
       if (sidebarUserWidget) sidebarUserWidget.style.display = "none";
 
@@ -155,7 +177,7 @@
 
       showView("activate");
     } else if (state.isAuthenticated && state.isActivated) {
-      // Usuário logado e produto ativado -> Desbloqueia app e atualiza sidebar
+      // 4. Autenticado e com assinatura ativa -> Desbloqueia Zwei Chat e atualiza sidebar
       if (authOverlay) authOverlay.classList.add("hidden");
 
       if (sidebarUserWidget) {
@@ -164,8 +186,26 @@
           sidebarUserEmail.textContent = state.user.displayName || state.user.email;
           sidebarUserEmail.title = state.user.email;
         }
+
         if (sidebarLicenseBadge && state.license) {
-          sidebarLicenseBadge.textContent = state.license.plan === "lifetime" ? "Vitalício" : "Ativo";
+          sidebarLicenseBadge.className = "sidebar-license-badge";
+
+          if (state.license.plan === "lifetime") {
+            sidebarLicenseBadge.textContent = "Vitalício";
+            sidebarLicenseBadge.classList.add("badge-active");
+          } else if (state.license.daysRemaining !== null && state.license.daysRemaining !== undefined) {
+            if (state.license.daysRemaining <= 5) {
+              sidebarLicenseBadge.textContent = state.license.daysRemaining === 0 ? "Expira hoje" : `Expira em ${state.license.daysRemaining}d`;
+              sidebarLicenseBadge.classList.add("badge-warning");
+            } else {
+              const dateStr = state.license.formattedExpiration ? state.license.formattedExpiration.slice(0, 5) : "";
+              sidebarLicenseBadge.textContent = dateStr ? `Vence ${dateStr}` : "Ativo";
+              sidebarLicenseBadge.classList.add("badge-active");
+            }
+          } else {
+            sidebarLicenseBadge.textContent = "Ativo";
+            sidebarLicenseBadge.classList.add("badge-active");
+          }
         }
       }
     }
@@ -435,6 +475,40 @@
       });
     }
 
+    // Ações da tela de Assinatura Expirada
+    if (btnCheckRenewal) {
+      btnCheckRenewal.addEventListener("click", async () => {
+        hideAlert();
+        setButtonLoading(btnCheckRenewal, true, "Verificando renovação...");
+
+        try {
+          const res = await window.authAPI.checkRenewal();
+          if (res && res.isActivated) {
+            showAlert("🎉 Assinatura renovada com sucesso! Desbloqueando...", "success", 2500);
+          } else {
+            showAlert("⚠️ Nenhuma renovação identificada ainda. Caso já tenha efetuado o pagamento, aguarde alguns instantes ou contate o administrador.", "warning", 7000);
+          }
+        } catch (err) {
+          showAlert(err.message || "Erro ao consultar renovação no servidor.");
+        } finally {
+          setButtonLoading(btnCheckRenewal, false, "🔄 Já Paguei / Verificar Renovação");
+        }
+      });
+    }
+
+    if (linkToActivateFromExpired) {
+      linkToActivateFromExpired.addEventListener("click", () => {
+        showView("activate");
+      });
+    }
+
+    if (btnLogoutExpired) {
+      btnLogoutExpired.addEventListener("click", async () => {
+        await window.authAPI.logout();
+        showView("login");
+      });
+    }
+
     // Logout da Sidebar
     if (sidebarBtnLogout) {
       sidebarBtnLogout.addEventListener("click", async () => {
@@ -451,7 +525,9 @@
     }
     if (btnCloseConfig) {
       btnCloseConfig.addEventListener("click", () => {
-        if (currentAuthState.isAuthenticated && !currentAuthState.isActivated) {
+        if (currentAuthState.isAuthenticated && currentAuthState.license && currentAuthState.license.isExpired) {
+          showView("expired");
+        } else if (currentAuthState.isAuthenticated && !currentAuthState.isActivated) {
           showView("activate");
         } else {
           showView("login");

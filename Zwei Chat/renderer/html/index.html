@@ -337,6 +337,35 @@
         </form>
       </div>
 
+      <!-- VIEW 6: ASSINATURA EXPIRADA -->
+      <div id="auth-view-expired" class="auth-view">
+        <div class="auth-user-badge expired">
+          <span id="expired-user-email" class="auth-user-badge-email">usuario@email.com</span>
+          <span class="auth-user-badge-status expired">Assinatura Expirada</span>
+        </div>
+
+        <div class="auth-expired-card">
+          <div class="auth-expired-icon">⏳</div>
+          <h3 class="auth-expired-title">Sua Assinatura Venceu</h3>
+          <p class="auth-expired-text">
+            O período da sua assinatura mensal expirou em <strong id="expired-date">--/--/----</strong>.
+          </p>
+          <p class="auth-expired-subtext">
+            Para continuar utilizando o Zwei Chat, realize o pagamento da sua mensalidade e clique no botão abaixo para reativar o acesso.
+          </p>
+        </div>
+
+        <button type="button" id="btn-check-renewal" class="btn-auth-primary">
+          <span>🔄 Já Paguei / Verificar Renovação</span>
+        </button>
+
+        <div class="auth-links" style="justify-content: center; gap: 16px; margin-top: 6px;">
+          <span id="link-to-activate-from-expired" class="auth-link">Inserir nova chave</span>
+          <span style="color: var(--text-dark);">•</span>
+          <span id="btn-logout-expired" class="auth-link">Sair da conta</span>
+        </div>
+      </div>
+
     </div>
   </div>
 

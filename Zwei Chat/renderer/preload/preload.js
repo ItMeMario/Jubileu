@@ -147,6 +147,7 @@ contextBridge.exposeInMainWorld("authAPI", {
     logout: () => ipcRenderer.invoke("auth:logout"),
     activateKey: (key) => ipcRenderer.invoke("auth:activate-key", { key }),
     saveFirebaseConfig: (config) => ipcRenderer.invoke("auth:save-firebase-config", config),
+    checkRenewal: () => ipcRenderer.invoke("auth:check-renewal"),
     onAuthStateChanged: (callback) => {
         ipcRenderer.on("auth:state-changed", (event, data) => callback(data));
     },

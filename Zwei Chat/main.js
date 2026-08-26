@@ -60,6 +60,23 @@ if (!gotTheLock) {
         const authService = require("./services/authService");
         await authService.initialize();
 
+        // Monitor de segurança: se a licença expirar ou for revogada durante o uso, encerra todas as conexões
+        authService.addStateListener(async (state) => {
+          if (!state.isActivated) {
+            console.log("🔒 Licença inativa/expirada. Interrompendo instâncias e loops em execução...");
+            try {
+              if (deeJayService) await deeJayService.stopAll();
+              if (droneService) await droneService.stopAll();
+              const clientModule = this.moduleLoader.getModule("client");
+              if (clientModule && typeof clientModule.cleanupAll === "function") {
+                await clientModule.cleanupAll();
+              }
+            } catch (cleanupErr) {
+              console.warn("Aviso durante interrupção de serviços por expiração:", cleanupErr.message);
+            }
+          }
+        });
+
         console.log("🪟 Criando janela principal...");
         this.windowManager.createMainWindow();
 
