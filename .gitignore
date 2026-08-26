@@ -5,3 +5,5 @@ dist/
 .wwebjs_auth/
 .wwebjs_auth_deejay
 .wwebjs_auth_crm
+serviceAccountKey*.json
+*firebase-config.json

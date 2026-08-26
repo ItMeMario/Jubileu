@@ -28,5 +28,165 @@
     "usedByUid": null,
     "usedByEmail": null,
     "activatedAt": null
+  },
+  {
+    "key": "ZWEI-2DKM-GPYZ-SGXY",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T15:50:35.313Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-9DWG-N3LT-H53L",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T15:56:31.136Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-MRX3-U5TA-ATGA",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T15:56:31.136Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-RFEW-TMG6-UHKL",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T15:56:31.136Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-Y4FK-CSUU-UGZ9",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T15:56:38.210Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-86L7-293Y-7UNP",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T15:56:38.210Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-A3DT-TUCV-5EKN",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T15:56:38.210Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-BMHH-F54F-Y445",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T16:02:23.208Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-NYVV-97CV-QHLS",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T16:02:23.208Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-A4WR-7QJ8-PSLC",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T16:02:23.208Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-2QMY-XMHG-AKRJ",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T16:03:39.722Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-V7XX-LHLX-8ZUA",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T16:03:39.722Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-BZW3-TGWC-PTDB",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T16:03:39.722Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-X6RE-Q6XP-KRX6",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T16:07:48.005Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-N835-6838-ARH5",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T16:07:48.005Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
+  },
+  {
+    "key": "ZWEI-55RZ-HXGZ-VA5W",
+    "status": "available",
+    "plan": "lifetime",
+    "createdAt": "2026-08-26T16:07:48.005Z",
+    "expiresAt": null,
+    "usedByUid": null,
+    "usedByEmail": null,
+    "activatedAt": null
   }
 ]

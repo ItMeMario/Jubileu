@@ -59,26 +59,64 @@ function parseArgs() {
 }
 
 /**
- * Tenta salvar as chaves diretamente no Firestore (se Firebase estiver configurado)
+ * Tenta salvar as chaves diretamente no Firestore usando Firebase Admin SDK ou Client SDK
  */
 async function saveToFirestore(licenses) {
+  // 1. Tenta usar Firebase Admin SDK se houver serviceAccountKey.json
+  const serviceAccountPaths = [
+    path.join(__dirname, "serviceAccountKey.json"),
+    path.join(__dirname, "../serviceAccountKey.json"),
+    path.join(__dirname, "../data/serviceAccountKey.json")
+  ];
+
+  let serviceAccountPath = serviceAccountPaths.find(p => fs.existsSync(p));
+
+  if (serviceAccountPath) {
+    try {
+      console.log(`🔐 Autenticando com Firebase Admin SDK (${path.basename(serviceAccountPath)})...`);
+      const { initializeApp: initAdminApp, cert, getApps: getAdminApps } = require("firebase-admin/app");
+      const { getFirestore: getAdminFirestore } = require("firebase-admin/firestore");
+
+      if (!getAdminApps().length) {
+        const serviceAccount = require(serviceAccountPath);
+        initAdminApp({
+          credential: cert(serviceAccount)
+        });
+      }
+
+      const db = getAdminFirestore();
+      const batch = db.batch();
+
+      for (const lic of licenses) {
+        const docRef = db.collection("licenses").doc(lic.key);
+        batch.set(docRef, lic);
+      }
+
+      await batch.commit();
+      console.log(`✅ ${licenses.length} chave(s) gravada(s) com sucesso no Cloud Firestore via Admin SDK!`);
+      return true;
+    } catch (adminErr) {
+      console.warn("⚠️ Falha ao salvar via Firebase Admin SDK:", adminErr.message);
+    }
+  }
+
+  // 2. Fallback para Client SDK
   try {
     const { loadFirebaseConfig } = require("../config/firebaseConfig");
     const fbConfig = loadFirebaseConfig();
 
     if (!fbConfig.isConfigured) {
-      console.log("ℹ️ Firebase ainda não configurado no projeto local. As chaves foram geradas e salvas em arquivo JSON.");
+      console.log("ℹ️ Firebase ainda não configurado no projeto local.");
       return false;
     }
 
-    // Tenta usar Firebase Client SDK local
     const { initializeApp, getApps, getApp } = require("firebase/app");
     const { getFirestore, doc, setDoc } = require("firebase/firestore");
 
     const app = getApps().length === 0 ? initializeApp(fbConfig) : getApp();
     const db = getFirestore(app);
 
-    console.log("☁️ Conectando ao Cloud Firestore...");
+    console.log("☁️ Conectando ao Cloud Firestore via Client SDK...");
 
     let successCount = 0;
     for (const lic of licenses) {
@@ -87,11 +125,15 @@ async function saveToFirestore(licenses) {
       successCount++;
     }
 
-    console.log(`✅ ${successCount} chave(s) inserida(s) com sucesso na coleção 'licenses' do Firestore!`);
+    console.log(`✅ ${successCount} chave(s) inserida(s) no Firestore!`);
     return true;
   } catch (error) {
-    console.warn("⚠️ Não foi possível sincronizar diretamente com o Firestore:", error.message);
-    console.log("💡 Dica: Você poderá sincronizar ou cadastrar as chaves no Firestore quando o projeto Firebase for provisionado.");
+    console.warn("⚠️ Permissão negada pelo Firestore (as regras de segurança bloqueiam escrita direta de clientes).");
+    console.log("\n💡 Para gravar chaves automaticamente pelo script:");
+    console.log("   1. Acesse o Firebase Console -> Project Settings -> Service accounts (Contas de serviço)");
+    console.log("   2. Clique em 'Generate new private key' (Gerar nova chave privada)");
+    console.log("   3. Salve o arquivo baixado como 'serviceAccountKey.json' na pasta do Zwei Chat.");
+    console.log("   4. Execute este script novamente!\n");
     return false;
   }
 }

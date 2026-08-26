@@ -2,14 +2,14 @@
 const fs = require("fs");
 const path = require("path");
 
-// Configuração padrão do Firebase (Placeholders para serem preenchidos ou carregados de arquivo)
+// Configuração oficial do Firebase para o Zwei Chat
 const defaultFirebaseConfig = {
-  apiKey: "AIzaSyYOUR_API_KEY_HERE",
-  authDomain: "zwei-chat-app.firebaseapp.com",
-  projectId: "zwei-chat-app",
-  storageBucket: "zwei-chat-app.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef1234567890"
+  apiKey: "AIzaSyDSwWT2P5vI4roRMe0OUgv7StgI1GkWqzo",
+  authDomain: "zwei-chat-c9d1f.firebaseapp.com",
+  projectId: "zwei-chat-c9d1f",
+  storageBucket: "zwei-chat-c9d1f.firebasestorage.app",
+  messagingSenderId: "96312421890",
+  appId: "1:96312421890:web:5b59b1c683d82c8325c11b"
 };
 
 /**

@@ -20,7 +20,8 @@
   },
   "devDependencies": {
     "electron": "^39.2.3",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.0.12",
+    "firebase-admin": "^14.3.0"
   },
   "build": {
     "appId": "com.itmemario.zweichat",
