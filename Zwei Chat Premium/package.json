@@ -1,0 +1,75 @@
+{
+  "name": "zwei-chat-premium",
+  "version": "1.0.0",
+  "description": "Zwei Chat Premium - Versão Corporativa com Meta WhatsApp Cloud API e Firebase",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test:webhook": "node tests/testWebhookSimulator.js",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "electron-log": "^5.4.3",
+    "firebase": "^12.17.1",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "electron": "^39.2.3",
+    "electron-builder": "^26.0.12",
+    "firebase-admin": "^14.3.0"
+  },
+  "build": {
+    "appId": "com.itmemario.zweichatpremium",
+    "productName": "Zwei Chat Premium",
+    "artifactName": "zwei-chat-premium-setup-${version}.${ext}",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/.cache/**/*",
+      "!dist/**/*",
+      "!data/**/*",
+      "!scratch/**/*",
+      "!tests/**/*",
+      "!firebase-backend/**/*",
+      "!serviceAccountKey*.json",
+      "!firestore.rules",
+      "!*.log",
+      "!.git/**/*",
+      "!.gitignore",
+      "!README.md"
+    ],
+    "asarUnpack": [
+      "node_modules/sqlite3/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "allowElevation": true
+    },
+    "compression": "normal",
+    "npmRebuild": true,
+    "buildDependenciesFromSource": false
+  }
+}
