@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zwei Chat Premium - Meta WhatsApp Cloud API</title>
+  <link rel="stylesheet" href="../css/premium.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Barra Lateral de Navegação -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-logo-icon">⚡</div>
+        <div class="brand-info">
+          <h1>Zwei Chat</h1>
+          <span class="brand-badge">PREMIUM (META API)</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <div class="nav-item active" data-tab="tab-dashboard" id="nav-dashboard">
+          <span class="nav-icon">📊</span>
+          <span>Dashboard</span>
+        </div>
+        <div class="nav-item" data-tab="tab-templates" id="nav-templates">
+          <span class="nav-icon">📄</span>
+          <span>Templates Meta</span>
+        </div>
+        <div class="nav-item" data-tab="tab-broadcast" id="nav-broadcast">
+          <span class="nav-icon">🚀</span>
+          <span>Disparador Oficial</span>
+        </div>
+        <div class="nav-item" data-tab="tab-flows" id="nav-flows">
+          <span class="nav-icon">🤖</span>
+          <span>Fluxos & Bot</span>
+        </div>
+        <div class="nav-item" data-tab="tab-settings" id="nav-settings">
+          <span class="nav-icon">⚙️</span>
+          <span>Configurações</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="bot-switch-container">
+          <span>Chatbot Ativo</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-bot-switch" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Área de Conteúdo Principal -->
+    <main class="main-content">
+      <!-- 1. ABA DASHBOARD -->
+      <section class="tab-pane active" id="tab-dashboard">
+        <div class="page-header">
+          <div class="page-title">
+            <h2>Diagnóstico & Visão Geral</h2>
+            <p>Status em tempo real da conexão com a Meta WhatsApp Cloud Platform</p>
+          </div>
+          <button class="btn btn-primary" id="btn-refresh-health">
+            <span>🔄</span> Atualizar Diagnóstico
+          </button>
+        </div>
+
+        <div class="cards-grid">
+          <div class="card">
+            <div class="card-label">Status da Conexão</div>
+            <div class="card-value" id="dash-conn-status">
+              <span class="status-pill status-yellow"><span class="status-dot"></span> Verificando...</span>
+            </div>
+            <div class="card-subtext" id="dash-phone-number">Telefone: --</div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Quality Rating (Saúde)</div>
+            <div class="card-value" id="dash-quality-rating">
+              <span class="status-pill status-green"><span class="status-dot"></span> GREEN</span>
+            </div>
+            <div class="card-subtext">Risco zero de banimento</div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Limite de Mensagens (Tier)</div>
+            <div class="card-value" id="dash-limit-tier">TIER_1K</div>
+            <div class="card-subtext">Capacidade diária de novos clientes</div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">Nome Comercial Verificado</div>
+            <div class="card-value" id="dash-verified-name" style="font-size: 16px;">--</div>
+            <div class="card-subtext">Certificado pela Meta</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="page-header" style="margin-bottom: 16px;">
+            <h3>Ações Rápidas</h3>
+          </div>
+          <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+            <button class="btn btn-secondary" id="btn-quick-sync-templates">📄 Sincronizar Templates</button>
+            <button class="btn btn-secondary" id="btn-quick-new-broadcast">🚀 Criar Campanha de Disparo</button>
+            <button class="btn btn-secondary" id="btn-quick-config">⚙️ Ajustar Credenciais Meta</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. ABA TEMPLATES META -->
+      <section class="tab-pane" id="tab-templates">
+        <div class="page-header">
+          <div class="page-title">
+            <h2>Message Templates Oficiais</h2>
+            <p>Gerencie e pré-visualize seus templates aprovados pela Meta</p>
+          </div>
+          <button class="btn btn-primary" id="btn-sync-templates-action">
+            <span>🔄</span> Sincronizar com a Meta
+          </button>
+        </div>
+
+        <div class="simulator-container">
+          <!-- Lista e Seleção de Template -->
+          <div class="simulator-form">
+            <div class="card" style="margin-bottom: 20px;">
+              <div class="form-group">
+                <label for="template-select">Selecione o Template:</label>
+                <select class="form-control" id="template-select">
+                  <option value="">Carregando templates...</option>
+                </select>
+              </div>
+
+              <div id="template-meta-info" style="display: none; margin-bottom: 16px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                  <span class="status-pill status-green" id="tmpl-badge-status">APPROVED</span>
+                  <span class="status-pill status-yellow" id="tmpl-badge-cat">UTILITY</span>
+                  <span class="status-pill status-green" id="tmpl-badge-lang">pt_BR</span>
+                </div>
+              </div>
+
+              <div id="template-variables-inputs">
+                <!-- Inputs dinâmicos para cada variável {{1}}, {{2}} -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Simulador de Visualização WhatsApp no Celular -->
+          <div class="simulator-phone">
+            <div class="simulator-phone-header">
+              <div class="sim-avatar">Z</div>
+              <div class="sim-header-text">
+                <h4 id="sim-company-name">Zwei Chat Oficial</h4>
+                <p>Conta comercial oficial</p>
+              </div>
+            </div>
+
+            <div class="simulator-phone-body">
+              <div class="wa-message-bubble">
+                <div class="wa-bubble-header" id="sim-bubble-header" style="display: none;"></div>
+                <div class="wa-bubble-body" id="sim-bubble-body">Selecione um template para visualizar a mensagem aqui.</div>
+                <div class="wa-bubble-footer" id="sim-bubble-footer" style="display: none;"></div>
+                <div class="wa-buttons-container" id="sim-bubble-buttons"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. ABA DISPARADOR OFICIAL (BROADCAST) -->
+      <section class="tab-pane" id="tab-broadcast">
+        <div class="page-header">
+          <div class="page-title">
+            <h2>Disparador Oficial em Massa</h2>
+            <p>Envio seguro com Message Templates homologados pela Meta</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="form-group">
+            <label for="broadcast-template-select">Template Homologado para a Campanha:</label>
+            <select class="form-control" id="broadcast-template-select">
+              <option value="">Selecione um template aprovado...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="broadcast-recipients-input">Lista de Destinatários (Telefone, Nome, Variáveis separadas por vírgula):</label>
+            <textarea class="form-control" id="broadcast-recipients-input" rows="5" placeholder="5511999991111, João Silva, 150.00, 15/09&#10;5511999992222, Maria Santos, 230.00, 18/09"></textarea>
+            <small style="color: var(--text-dim); margin-top: 4px; display: block;">Um contato por linha no formato: <code>Telefone, Var1, Var2...</code></small>
+          </div>
+
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <button class="btn btn-primary" id="btn-start-broadcast">🚀 Iniciar Campanha</button>
+            <button class="btn btn-secondary" id="btn-pause-broadcast" style="display: none;">⏸️ Pausar</button>
+            <button class="btn btn-secondary" id="btn-resume-broadcast" style="display: none;">▶️ Retomar</button>
+            <button class="btn btn-danger" id="btn-stop-broadcast" style="display: none;">🛑 Cancelar</button>
+          </div>
+
+          <!-- Barra de Progresso em Tempo Real -->
+          <div id="broadcast-progress-panel" style="display: none; margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+              <span id="broadcast-status-label">Enviando mensagens...</span>
+              <span id="broadcast-percent-label">0%</span>
+            </div>
+            <div class="progress-container">
+              <div class="progress-bar" id="broadcast-progress-bar"></div>
+            </div>
+            <div style="display: flex; gap: 20px; font-size: 13px; color: var(--text-muted);">
+              <span>Total: <b id="bc-total" style="color: #fff;">0</b></span>
+              <span>Enviados: <b id="bc-sent" style="color: var(--status-green);">0</b></span>
+              <span>Falhas: <b id="bc-failed" style="color: var(--status-red);">0</b></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Histórico de Campanhas -->
+        <div class="card">
+          <div class="page-header" style="margin-bottom: 16px;">
+            <h3>Histórico de Campanhas</h3>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Campanha</th>
+                  <th>Template</th>
+                  <th>Total</th>
+                  <th>Enviados</th>
+                  <th>Falhas</th>
+                  <th>Data</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="broadcast-history-tbody">
+                <tr>
+                  <td colspan="7" style="text-align: center; color: var(--text-dim);">Nenhuma campanha executada ainda.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. ABA FLUXOS & BOT -->
+      <section class="tab-pane" id="tab-flows">
+        <div class="page-header">
+          <div class="page-title">
+            <h2>Fluxos de Chatbot Interativo</h2>
+            <p>Árvores de decisão automáticas com Botões e Menus de Lista da Meta</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="page-header" style="margin-bottom: 14px;">
+            <h3 id="active-flow-title">Fluxo Ativo</h3>
+            <span class="status-pill status-green">EM EXECUÇÃO</span>
+          </div>
+          <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 18px;" id="active-flow-desc">
+            Este fluxo responde automaticamente às saudações de entrada utilizando botões de resposta rápida e menus suspensos nativos.
+          </p>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Passo / Nó</th>
+                  <th>Tipo de Componente</th>
+                  <th>Conteúdo</th>
+                  <th>Opções Interativas</th>
+                </tr>
+              </thead>
+              <tbody id="flow-steps-tbody">
+                <!-- Preenchido via script -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. ABA CONFIGURAÇÕES META -->
+      <section class="tab-pane" id="tab-settings">
+        <div class="page-header">
+          <div class="page-title">
+            <h2>Credenciais da Meta API</h2>
+            <p>Configure os identificadores da sua conta no Meta for Developers</p>
+          </div>
+        </div>
+
+        <div class="card" style="max-width: 680px;">
+          <form id="form-meta-config">
+            <div class="form-group">
+              <label for="cfg-phone-id">Phone Number ID:</label>
+              <input type="text" class="form-control" id="cfg-phone-id" placeholder="Ex: 109876543210987" required>
+            </div>
+
+            <div class="form-group">
+              <label for="cfg-waba-id">WhatsApp Business Account ID (WABA ID):</label>
+              <input type="text" class="form-control" id="cfg-waba-id" placeholder="Ex: 987654321098765" required>
+            </div>
+
+            <div class="form-group">
+              <label for="cfg-access-token">System User Permanent Access Token:</label>
+              <input type="password" class="form-control" id="cfg-access-token" placeholder="Bearer EAAG..." required>
+            </div>
+
+            <div class="form-group">
+              <label for="cfg-app-secret">App Secret (Segredo do Aplicativo):</label>
+              <input type="password" class="form-control" id="cfg-app-secret" placeholder="Segredo para validação de Webhooks">
+            </div>
+
+            <div class="form-group">
+              <label for="cfg-verify-token">Webhook Verify Token:</label>
+              <input type="text" class="form-control" id="cfg-verify-token" placeholder="Token personalizado para handshake do Webhook">
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+              <button type="submit" class="btn btn-primary" id="btn-save-meta-config">💾 Salvar Credenciais</button>
+              <button type="button" class="btn btn-secondary" id="btn-test-meta-config">🔍 Testar Conexão</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../guiScripts/appGui.js"></script>
+</body>
+</html>
