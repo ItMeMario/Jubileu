@@ -13,8 +13,10 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
   // 2. Message Templates
   syncTemplates: () => ipcRenderer.invoke("templates:sync"),
   getApprovedTemplates: (language) => ipcRenderer.invoke("templates:get-approved", language),
+  getTemplates: (language) => ipcRenderer.invoke("templates:get-approved", language),
   renderTemplatePreview: (templateName, values) =>
     ipcRenderer.invoke("templates:render-preview", { templateName, values }),
+
 
   // 3. Disparador Oficial (Broadcast)
   startBroadcast: (params) => ipcRenderer.invoke("broadcast:start", params),
