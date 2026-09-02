@@ -115,7 +115,11 @@ function registerIpcHandlers() {
   // 4. Fluxos e Chatbot
   ipcMain.handle("flows:get-all", () => flowService.getAllFlows());
   ipcMain.handle("flows:get-active", () => flowService.getActiveFlow());
+  ipcMain.handle("flows:get-by-id", (_event, flowId) => flowService.getFlowById(flowId));
+  ipcMain.handle("flows:create-empty", (_event, name) => flowService.createEmptyFlow(name));
   ipcMain.handle("flows:save", (_event, flow) => flowService.saveFlow(flow));
+  ipcMain.handle("flows:delete", (_event, flowId) => flowService.deleteFlow(flowId));
+  ipcMain.handle("flows:duplicate", (_event, flowId) => flowService.duplicateFlow(flowId));
   ipcMain.handle("flows:set-active", (_event, flowId) => {
     flowService.setActiveFlow(flowId);
     return true;

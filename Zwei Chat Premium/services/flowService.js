@@ -100,6 +100,77 @@ class FlowService {
   }
 
   /**
+   * Remove um fluxo por ID
+   * @param {string} flowId
+   * @returns {boolean}
+   */
+  deleteFlow(flowId) {
+    const initialLength = this.flows.length;
+    const isDeletingActive = this.flows.some((f) => f.id === flowId && f.isActive);
+
+    this.flows = this.flows.filter((f) => f.id !== flowId);
+
+    // Se excluiu o fluxo ativo e ainda restam outros, ativa o primeiro disponível
+    if (isDeletingActive && this.flows.length > 0) {
+      this.flows[0].isActive = true;
+    }
+
+    this.saveFlows();
+    return this.flows.length < initialLength;
+  }
+
+  /**
+   * Duplica um fluxo existente
+   * @param {string} flowId
+   * @returns {object|null}
+   */
+  duplicateFlow(flowId) {
+    const original = this.getFlowById(flowId);
+    if (!original) return null;
+
+    const copy = JSON.parse(JSON.stringify(original));
+    copy.id = `flow_${Date.now()}`;
+    copy.name = `${original.name} (Cópia)`;
+    copy.isActive = false;
+
+    this.flows.push(copy);
+    this.saveFlows();
+    return copy;
+  }
+
+  /**
+   * Cria um novo fluxo em branco com estrutura inicial mínima
+   * @param {string} [name='Novo Fluxo']
+   * @returns {object}
+   */
+  createEmptyFlow(name = "Novo Fluxo") {
+    const newFlow = {
+      id: `flow_${Date.now()}`,
+      name: name,
+      isActive: this.flows.length === 0, // Se for o primeiro, ativa automaticamente
+      triggerKeywords: ["oi", "ola", "menu"],
+      initialStepId: "step_1",
+      steps: {
+        step_1: {
+          id: "step_1",
+          type: "interactive_buttons",
+          header: "Atendimento",
+          body: "Olá! Como podemos te ajudar?",
+          footer: "Selecione uma opção:",
+          buttons: [
+            { id: "btn_opcao_1", title: "Opção 1", nextStepId: null },
+            { id: "btn_opcao_2", title: "Opção 2", nextStepId: null },
+          ],
+        },
+      },
+    };
+
+    this.flows.push(newFlow);
+    this.saveFlows();
+    return newFlow;
+  }
+
+  /**
    * Define um fluxo como ativo (desativando os outros)
    * @param {string} flowId
    */

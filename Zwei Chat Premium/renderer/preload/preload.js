@@ -28,7 +28,11 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
   // 4. Fluxos Interativos e Chatbot
   getAllFlows: () => ipcRenderer.invoke("flows:get-all"),
   getActiveFlow: () => ipcRenderer.invoke("flows:get-active"),
+  getFlowById: (flowId) => ipcRenderer.invoke("flows:get-by-id", flowId),
+  createEmptyFlow: (name) => ipcRenderer.invoke("flows:create-empty", name),
   saveFlow: (flow) => ipcRenderer.invoke("flows:save", flow),
+  deleteFlow: (flowId) => ipcRenderer.invoke("flows:delete", flowId),
+  duplicateFlow: (flowId) => ipcRenderer.invoke("flows:duplicate", flowId),
   setActiveFlow: (flowId) => ipcRenderer.invoke("flows:set-active", flowId),
   getBotStatus: () => ipcRenderer.invoke("bot:get-status"),
   toggleBot: (enabled) => ipcRenderer.invoke("bot:toggle", enabled),
