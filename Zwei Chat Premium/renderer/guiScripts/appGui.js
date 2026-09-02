@@ -51,11 +51,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   const bcFailed = document.getElementById("bc-failed");
   const broadcastHistoryTbody = document.getElementById("broadcast-history-tbody");
 
-  // Elementos de Fluxos & Bot
+  // Elementos de Fluxos & Bot (Flow Builder)
   const toggleBotSwitch = document.getElementById("toggle-bot-switch");
-  const flowStepsTbody = document.getElementById("flow-steps-tbody");
-  const activeFlowTitle = document.getElementById("active-flow-title");
-  const activeFlowDesc = document.getElementById("active-flow-desc");
+  const flowListView = document.getElementById("flow-list-view");
+  const flowBuilderView = document.getElementById("flow-builder-view");
+  const flowsCardsContainer = document.getElementById("flows-cards-container");
+  const btnCreateNewFlow = document.getElementById("btn-create-new-flow");
+  const btnBackToFlowsList = document.getElementById("btn-back-to-flows-list");
+  const builderFlowName = document.getElementById("builder-flow-name");
+  const btnSaveBuilderFlow = document.getElementById("btn-save-builder-flow");
+  const triggerTypeSelect = document.getElementById("trigger-type-select");
+  const triggerKeywordsInput = document.getElementById("trigger-keywords-input");
+  const triggerKeywordsGroup = document.getElementById("trigger-keywords-group");
+  const builderStepsContainer = document.getElementById("builder-steps-container");
+  const btnAddStepButtons = document.getElementById("btn-add-step-buttons");
+  const btnAddStepList = document.getElementById("btn-add-step-list");
+  const btnAddStepText = document.getElementById("btn-add-step-text");
+
+  let currentEditingFlow = null;
 
   // Elementos de Configurações
   const formMetaConfig = document.getElementById("form-meta-config");
