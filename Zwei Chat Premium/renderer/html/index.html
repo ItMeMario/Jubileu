@@ -172,73 +172,321 @@
         <div class="page-header">
           <div class="page-title">
             <h2>Disparador Oficial em Massa</h2>
-            <p>Envio seguro com Message Templates homologados pela Meta</p>
+            <p>Envio seguro e escalável com Message Templates homologados pela Meta</p>
+          </div>
+          <div class="broadcast-global-status-badge">
+            <span class="status-indicator disconnected" id="broadcast-global-indicator"></span>
+            <span id="broadcast-global-status-text">Disparo Inativo</span>
           </div>
         </div>
 
-        <div class="card" style="margin-bottom: 24px;">
-          <div class="form-group">
-            <label for="broadcast-template-select">Template Homologado para a Campanha:</label>
-            <select class="form-control" id="broadcast-template-select">
-              <option value="">Selecione um template aprovado...</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="broadcast-recipients-input">Lista de Destinatários (Telefone, Nome, Variáveis separadas por vírgula):</label>
-            <textarea class="form-control" id="broadcast-recipients-input" rows="5" placeholder="5511999991111, João Silva, 150.00, 15/09&#10;5511999992222, Maria Santos, 230.00, 18/09"></textarea>
-            <small style="color: var(--text-dim); margin-top: 4px; display: block;">Um contato por linha no formato: <code>Telefone, Var1, Var2...</code></small>
-          </div>
-
-          <div style="display: flex; gap: 12px; align-items: center;">
-            <button class="btn btn-primary" id="btn-start-broadcast">🚀 Iniciar Campanha</button>
-            <button class="btn btn-secondary" id="btn-pause-broadcast" style="display: none;">⏸️ Pausar</button>
-            <button class="btn btn-secondary" id="btn-resume-broadcast" style="display: none;">▶️ Retomar</button>
-            <button class="btn btn-danger" id="btn-stop-broadcast" style="display: none;">🛑 Cancelar</button>
-          </div>
-
-          <!-- Barra de Progresso em Tempo Real -->
-          <div id="broadcast-progress-panel" style="display: none; margin-top: 20px;">
-            <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
-              <span id="broadcast-status-label">Enviando mensagens...</span>
-              <span id="broadcast-percent-label">0%</span>
-            </div>
-            <div class="progress-container">
-              <div class="progress-bar" id="broadcast-progress-bar"></div>
-            </div>
-            <div style="display: flex; gap: 20px; font-size: 13px; color: var(--text-muted);">
-              <span>Total: <b id="bc-total" style="color: #fff;">0</b></span>
-              <span>Enviados: <b id="bc-sent" style="color: var(--status-green);">0</b></span>
-              <span>Falhas: <b id="bc-failed" style="color: var(--status-red);">0</b></span>
-            </div>
-          </div>
+        <!-- Sub-abas de Navegação do Disparador -->
+        <div class="broadcast-subtabs-nav">
+          <button id="bc-subtab-template" class="subtab-btn active" data-subtab="bc-sec-template">
+            <span>📄</span> Template & Preview
+          </button>
+          <button id="bc-subtab-contacts" class="subtab-btn" data-subtab="bc-sec-contacts">
+            <span>📱</span> Contatos & Importação (<span id="bc-badge-count">0</span>)
+          </button>
+          <button id="bc-subtab-dispatch" class="subtab-btn" data-subtab="bc-sec-dispatch">
+            <span>🚀</span> Disparo & Console ao Vivo
+          </button>
+          <button id="bc-subtab-history" class="subtab-btn" data-subtab="bc-sec-history">
+            <span>📊</span> Histórico de Campanhas
+          </button>
         </div>
 
-        <!-- Histórico de Campanhas -->
-        <div class="card">
-          <div class="page-header" style="margin-bottom: 16px;">
-            <h3>Histórico de Campanhas</h3>
+        <!-- Conteúdo das Sub-abas -->
+        <div class="broadcast-subtab-content">
+          
+          <!-- SUB-ABA 1: TEMPLATE & VARIÁVEIS -->
+          <div id="bc-sec-template" class="bc-section active">
+            <div class="simulator-container">
+              <div class="simulator-form">
+                <div class="card" style="margin-bottom: 20px;">
+                  <div class="form-group">
+                    <label for="broadcast-template-select">Selecione o Template Homologado:</label>
+                    <select class="form-control" id="broadcast-template-select">
+                      <option value="">Carregando templates...</option>
+                    </select>
+                  </div>
+
+                  <div id="bc-template-meta-info" style="display: none; margin-bottom: 16px;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                      <span class="status-pill status-green" id="bc-tmpl-badge-status">APPROVED</span>
+                      <span class="status-pill status-yellow" id="bc-tmpl-badge-cat">MARKETING</span>
+                      <span class="status-pill status-green" id="bc-tmpl-badge-lang">pt_BR</span>
+                    </div>
+                  </div>
+
+                  <div class="info-callout" id="bc-template-vars-guide">
+                    <h4 style="font-size: 13px; margin-bottom: 6px; color: var(--primary);">ℹ️ Variáveis do Template</h4>
+                    <p style="font-size: 12px; color: var(--text-muted);" id="bc-template-vars-desc">
+                      Selecione um template para visualizar suas variáveis e parâmetros dinâmicos.
+                    </p>
+                    <div id="bc-template-vars-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pré-visualização WhatsApp -->
+              <div class="simulator-phone">
+                <div class="simulator-phone-header">
+                  <div class="sim-avatar">⚡</div>
+                  <div class="sim-header-text">
+                    <h4 id="bc-sim-company-name">Zwei Chat Oficial</h4>
+                    <p>Mensagem Oficial Meta Cloud</p>
+                  </div>
+                </div>
+
+                <div class="simulator-phone-body">
+                  <div class="wa-message-bubble">
+                    <div class="wa-bubble-header" id="bc-sim-bubble-header" style="display: none;"></div>
+                    <div class="wa-bubble-body" id="bc-sim-bubble-body">Selecione um template para visualizar a mensagem aqui.</div>
+                    <div class="wa-bubble-footer" id="bc-sim-bubble-footer" style="display: none;"></div>
+                    <div class="wa-buttons-container" id="bc-sim-bubble-buttons"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Campanha</th>
-                  <th>Template</th>
-                  <th>Total</th>
-                  <th>Enviados</th>
-                  <th>Falhas</th>
-                  <th>Data</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="broadcast-history-tbody">
-                <tr>
-                  <td colspan="7" style="text-align: center; color: var(--text-dim);">Nenhuma campanha executada ainda.</td>
-                </tr>
-              </tbody>
-            </table>
+
+          <!-- SUB-ABA 2: CONTATOS & IMPORTAÇÃO -->
+          <div id="bc-sec-contacts" class="bc-section" style="display: none;">
+            <div class="broadcast-grid-2col">
+              
+              <!-- Coluna da Esquerda: Adicionar e Importar -->
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                
+                <!-- Adicionar Manual -->
+                <div class="card">
+                  <h3 class="section-card-title">➕ Adicionar Contato Manual</h3>
+                  <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label style="font-size: 12px; color: var(--text-muted);">Telefone com DDD:</label>
+                      <input type="text" id="bc-input-phone" class="form-control" placeholder="Ex: 11999998888 ou 47988887777">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label style="font-size: 12px; color: var(--text-muted);">Nome / Variável 1 (Opcional):</label>
+                      <input type="text" id="bc-input-name" class="form-control" placeholder="Ex: João Silva">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label style="font-size: 12px; color: var(--text-muted);">Outras Variáveis (separadas por vírgula):</label>
+                      <input type="text" id="bc-input-vars" class="form-control" placeholder="Ex: 150.00, 20/10/2026">
+                    </div>
+                    <button class="btn btn-primary" id="bc-btn-add-contact" style="margin-top: 4px;">
+                      ➕ Adicionar à Fila
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Importar CSV -->
+                <div class="card">
+                  <h3 class="section-card-title">📄 Importar Planilha CSV</h3>
+                  <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                    Formatos suportados: <code>Telefone, Nome, Var2, Var3...</code> ou <code>Nome, Telefone</code>
+                  </p>
+                  
+                  <div class="file-dropzone" id="bc-csv-dropzone">
+                    <span class="dropzone-icon">📥</span>
+                    <p class="dropzone-text">Clique ou arraste seu arquivo <b>.CSV</b> aqui</p>
+                    <span class="dropzone-hint">Delimitadores suportados: vírgula (,) ou ponto-e-vírgula (;)</span>
+                    <input type="file" id="bc-csv-file-input" accept=".csv" style="display: none;">
+                  </div>
+
+                  <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <button class="btn btn-secondary" id="bc-btn-toggle-bulk-paste" style="font-size: 12px; padding: 6px 12px;">
+                      📋 Colar Lista de Texto
+                    </button>
+                  </div>
+
+                  <!-- Caixa de Texto Colar em Lote (Retrátil) -->
+                  <div id="bc-bulk-paste-container" style="display: none; margin-top: 12px;">
+                    <textarea class="form-control" id="bc-bulk-paste-input" rows="4" placeholder="Cole aqui linhas como:&#10;5511999991111, João, 100&#10;5511999992222, Maria, 200"></textarea>
+                    <button class="btn btn-primary" id="bc-btn-import-bulk" style="margin-top: 8px; width: 100%;">
+                      📥 Importar Texto Colado
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Opções de Formatação Automática -->
+                <div class="card">
+                  <h3 class="section-card-title">⚙️ Opções de Formatação Automática</h3>
+                  <div class="formatting-options-grid" style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+                    <label class="custom-checkbox">
+                      <input type="checkbox" id="bc-opt-9digit" checked>
+                      <span>Adicionar 9º dígito automaticamente (Celulares BR com 8 dígitos)</span>
+                    </label>
+
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <label class="custom-checkbox" style="margin-bottom: 0;">
+                        <input type="checkbox" id="bc-opt-ddd" checked>
+                        <span>Adicionar DDD padrão se ausente:</span>
+                      </label>
+                      <input type="text" id="bc-opt-ddd-val" class="form-control" style="width: 70px; height: 32px; text-align: center;" placeholder="11" maxlength="2" value="11">
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <label class="custom-checkbox" style="margin-bottom: 0;">
+                        <input type="checkbox" id="bc-opt-prefix" checked>
+                        <span>Adicionar Prefixo de País (DDI) se faltar:</span>
+                      </label>
+                      <input type="text" id="bc-opt-prefix-val" class="form-control" style="width: 70px; height: 32px; text-align: center;" placeholder="55" maxlength="3" value="55">
+                    </div>
+
+                    <button class="btn btn-secondary" id="bc-btn-save-format-config" style="align-self: flex-start; margin-top: 4px; padding: 6px 14px; font-size: 12px;">
+                      💾 Salvar Regras de Formatação
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Coluna da Direita: Lista de Contatos -->
+              <div class="card" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="section-header-row">
+                  <div>
+                    <h3 class="section-card-title">📱 Fila de Destinatários</h3>
+                    <p style="font-size: 12px; color: var(--text-muted);">Total de contatos prontos para envio</p>
+                  </div>
+                  <div class="section-actions-row">
+                    <button class="btn btn-secondary btn-sm" id="bc-btn-clear-failed" title="Limpar números com erro">Limpar Falhas</button>
+                    <button class="btn btn-secondary btn-sm" id="bc-btn-clear-sent" title="Limpar números enviados com sucesso">Limpar Enviados</button>
+                    <button class="btn btn-danger btn-sm" id="bc-btn-clear-all" title="Esvaziar fila">Limpar Todos</button>
+                  </div>
+                </div>
+
+                <div class="contacts-list-wrapper" id="bc-contacts-list-container" style="margin-top: 14px; flex: 1; max-height: 580px; overflow-y: auto;">
+                  <div class="contacts-placeholder" id="bc-contacts-placeholder">
+                    <span>📭</span>
+                    <p>Nenhum destinatário na fila. Adicione manualmente ou importe um arquivo CSV.</p>
+                  </div>
+                  <ul class="contacts-list" id="bc-contacts-list" style="display: none;"></ul>
+                </div>
+              </div>
+
+            </div>
           </div>
+
+          <!-- SUB-ABA 3: DISPARO & CONSOLE AO VIVO -->
+          <div id="bc-sec-dispatch" class="bc-section" style="display: none;">
+            <div class="broadcast-grid-dispatch">
+              
+              <!-- Painel de Controles & Estatísticas -->
+              <div class="card" style="display: flex; flex-direction: column; gap: 18px;">
+                <h3 class="section-card-title">🚀 Execução do Disparo Oficial</h3>
+
+                <!-- Cards de Estatísticas em Tempo Real -->
+                <div class="stat-cards-grid">
+                  <div class="stat-card">
+                    <span class="stat-icon">📱</span>
+                    <div class="stat-val" id="bc-stat-total">0</div>
+                    <div class="stat-lbl">Total de Contatos</div>
+                  </div>
+                  <div class="stat-card">
+                    <span class="stat-icon">⏳</span>
+                    <div class="stat-val" id="bc-stat-pending">0</div>
+                    <div class="stat-lbl">Pendentes</div>
+                  </div>
+                  <div class="stat-card stat-success">
+                    <span class="stat-icon">✅</span>
+                    <div class="stat-val" id="bc-stat-sent">0</div>
+                    <div class="stat-lbl">Enviados</div>
+                  </div>
+                  <div class="stat-card stat-error">
+                    <span class="stat-icon">❌</span>
+                    <div class="stat-val" id="bc-stat-failed">0</div>
+                    <div class="stat-lbl">Falhas</div>
+                  </div>
+                </div>
+
+                <!-- Configuração de Intervalo / Cadência -->
+                <div class="cadence-box">
+                  <h4 style="font-size: 13px; color: var(--text-main); margin-bottom: 8px;">⏱️ Cadência de Envio (Intervalo)</h4>
+                  <div id="bc-interval-selector-container"></div>
+                  <small style="color: var(--text-dim); display: block; margin-top: 6px;">
+                    Controla o intervalo entre requisições enviadas à Meta WhatsApp Cloud API.
+                  </small>
+                </div>
+
+                <!-- Barra de Progresso -->
+                <div class="broadcast-progress-box">
+                  <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                    <span id="bc-dispatch-status-label" style="font-weight: 500;">Pronto para iniciar</span>
+                    <span id="bc-dispatch-percent-label" style="font-weight: 600; color: var(--primary);">0%</span>
+                  </div>
+                  <div class="progress-container">
+                    <div class="progress-bar" id="bc-dispatch-progress-bar" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <!-- Botões de Ação de Disparo -->
+                <div class="dispatch-action-buttons" style="display: flex; gap: 12px; margin-top: 4px;">
+                  <button class="btn btn-primary btn-lg" id="btn-start-broadcast" style="flex: 1;">
+                    🚀 Iniciar Campanha
+                  </button>
+                  <button class="btn btn-secondary btn-lg" id="btn-pause-broadcast" style="display: none; flex: 1;">
+                    ⏸️ Pausar
+                  </button>
+                  <button class="btn btn-secondary btn-lg" id="btn-resume-broadcast" style="display: none; flex: 1;">
+                    ▶️ Retomar
+                  </button>
+                  <button class="btn btn-danger btn-lg" id="btn-stop-broadcast" style="display: none;">
+                    🛑 Interromper
+                  </button>
+                </div>
+              </div>
+
+              <!-- Console de Logs em Tempo Real -->
+              <div class="card" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="section-header-row">
+                  <div>
+                    <h3 class="section-card-title">📊 Console de Atividades ao Vivo</h3>
+                    <p style="font-size: 12px; color: var(--text-muted);">Eventos e respostas da Meta em tempo real</p>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" id="bc-btn-clear-logs">Limpar Logs</button>
+                </div>
+
+                <div class="terminal-console-container" id="bc-logs-terminal-container">
+                  <div class="terminal-placeholder" id="bc-terminal-placeholder">
+                    Nenhuma atividade de disparo iniciada ainda.
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SUB-ABA 4: HISTÓRICO DE CAMPANHAS -->
+          <div id="bc-sec-history" class="bc-section" style="display: none;">
+            <div class="card">
+              <div class="page-header" style="margin-bottom: 16px;">
+                <h3>Histórico de Campanhas Executadas</h3>
+                <button class="btn btn-secondary btn-sm" id="bc-btn-refresh-history">🔄 Atualizar</button>
+              </div>
+              <div class="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID da Campanha</th>
+                      <th>Template</th>
+                      <th>Total</th>
+                      <th>Enviados</th>
+                      <th>Falhas</th>
+                      <th>Data de Início</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="broadcast-history-tbody">
+                    <tr>
+                      <td colspan="7" style="text-align: center; color: var(--text-dim);">Nenhuma campanha executada ainda.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
