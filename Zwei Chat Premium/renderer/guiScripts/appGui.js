@@ -6,7 +6,12 @@ import { initNavigation } from "./appGuiModules/navigationModule.js";
 import { initDashboard, refreshAccountHealth } from "./appGuiModules/dashboardModule.js";
 import { initSettings, loadConfigForm } from "./appGuiModules/settingsModule.js";
 import { initTemplates, loadTemplatesList, getLoadedTemplates } from "./appGuiModules/templatesModule.js";
-import { initBroadcast, loadBroadcastHistory } from "./appGuiModules/broadcastModule.js";
+import {
+  initBroadcast,
+  loadBroadcastHistory,
+  loadBroadcastRecipients,
+  loadBroadcastConfig,
+} from "./appGuiModules/broadcastModule.js";
 import { initFlows, loadFlowsList } from "./appGuiModules/flowsModule.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -58,6 +63,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadConfigForm(api);
     await refreshAccountHealth(api);
     await loadTemplatesList(api);
+    await loadBroadcastConfig(api);
+    await loadBroadcastRecipients(api);
     await loadBroadcastHistory(api);
     await loadFlowsList(api);
     console.log("✅ Todos os módulos e dados foram carregados com sucesso!");
