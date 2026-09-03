@@ -27,6 +27,11 @@ const {
   getCurrentEditingFlow,
   getActiveEditingStepId,
 } = require("../renderer/guiScripts/appGuiModules/flowsModule.js");
+const {
+  customConfirm,
+  customAlert,
+  customPrompt,
+} = require("../renderer/guiScripts/utils/confirmModal.js");
 
 console.log("==================================================");
 console.log("🧪 TESTES UNITÁRIOS DOS MÓDULOS DE INTERFACE (ETAPAS 1, 2, 3 E 4)");
@@ -163,9 +168,12 @@ global.document = {
   querySelector: (sel) => mockQuerySelector(sel),
   querySelectorAll: (sel) => mockQuerySelectorAll(sel),
   body: new MockElement("body"),
+  addEventListener: () => {},
+  removeEventListener: () => {},
 };
 global.alert = () => {};
 global.confirm = () => true;
+global.prompt = () => "test_var";
 
 // ---------------------------------------------------------
 // TESTE 1: domUtils
@@ -632,12 +640,51 @@ assert(typeof dashboardController.refreshAccountHealth === "function", "initDash
   assert(savedFlowData.name === "Fluxo de Vendas Atualizado", "Nome atualizado salvo no backend");
   assert(savedFlowData.triggerKeywords.includes("comprar"), "Palavras-chave atualizadas salvas");
 
+  // ---------------------------------------------------------
+  // TESTE 9: confirmModal (Modais customizados sem travamento do Electron)
+  // ---------------------------------------------------------
+  console.log("\n--- 9. Testando confirmModal (customConfirm, customAlert, customPrompt) ---");
+
+  assert(typeof customConfirm === "function", "customConfirm é uma função");
+  assert(typeof customAlert === "function", "customAlert é uma função");
+  assert(typeof customPrompt === "function", "customPrompt é uma função");
+
+  // Teste 9.1: customConfirm (Confirmação)
+  const confirmPromise = customConfirm("Deseja prosseguir?", "Atenção", "Sim", "Não");
+  const confirmOverlay = document.body.children[document.body.children.length - 1];
+  assert(confirmOverlay.classList.contains("modal-overlay"), "Modal overlay criado no DOM");
+  const btnConfirmModal = confirmOverlay.querySelector(".confirm-btn-confirm");
+  btnConfirmModal.click();
+  const confirmedResult = await confirmPromise;
+  assert(confirmedResult === true, "customConfirm resolve true ao clicar em Confirmar");
+
+  // Teste 9.2: customAlert com emoji de Warning (como no print do usuário)
+  const alertPromise = customAlert("⚠️ Falha ao sincronizar: Token de Acesso da Meta expirou");
+  const alertOverlay = document.body.children[document.body.children.length - 1];
+  assert(alertOverlay.querySelector("h3").textContent.includes("Atenção"), "customAlert detecta emoji de Warning e formata o título");
+  assert(alertOverlay.querySelector("p").textContent.includes("Token de Acesso da Meta expirou"), "customAlert exibe o corpo do aviso");
+  const btnAlertOk = alertOverlay.querySelector(".alert-btn-ok");
+  btnAlertOk.click();
+  await alertPromise;
+  assert(true, "customAlert finalizado e resolvido com sucesso");
+
+  // Teste 9.3: customPrompt (Entrada de variável)
+  const promptPromise = customPrompt("Nova Variável", "Digite o nome da variável:", "produto");
+  const promptOverlay = document.body.children[document.body.children.length - 1];
+  const promptInput = promptOverlay.querySelector(".prompt-input");
+  assert(promptInput.value === "produto", "customPrompt inicializa com o placeholder/valor correto");
+  promptInput.value = "cidade";
+  const btnPromptConfirm = promptOverlay.querySelector(".prompt-btn-confirm");
+  btnPromptConfirm.click();
+  const promptResult = await promptPromise;
+  assert(promptResult === "cidade", "customPrompt retorna o valor digitado pelo usuário");
+
   console.log("\n==================================================");
   console.log(`📊 RESULTADO DOS TESTES: ${passedTests}/${totalTests} testes passaram com sucesso!`);
   console.log("==================================================");
 
   if (passedTests === totalTests) {
-    console.log("🎉 Validação das Etapas 1, 2, 3 e 4 concluída com 100% de êxito!\n");
+    console.log("🎉 Validação dos módulos e confirmModal concluída com 100% de êxito!\n");
     process.exit(0);
   } else {
     process.exit(1);

@@ -2,6 +2,7 @@
 // Disparador Oficial em Lote (Broadcast) com Message Templates homologados pela Meta
 
 import { $, $$, formatDate, downloadCsvFile } from "./domUtils.js";
+import { customAlert, customConfirm } from "../utils/confirmModal.js";
 
 /**
  * Faz o parse da lista de contatos em formato de linhas separadas por vírgula
@@ -77,10 +78,10 @@ export async function loadBroadcastHistory(api) {
           if (res && res.success && res.csv) {
             downloadCsvFile(`relatorio_${campId}.csv`, res.csv);
           } else {
-            alert("Não foi possível gerar o arquivo CSV.");
+            await customAlert("Não foi possível gerar o arquivo CSV.");
           }
         } catch (err) {
-          alert(`Erro ao exportar CSV: ${err.message}`);
+          await customAlert(`Erro ao exportar CSV: ${err.message}`);
         }
       });
     });
@@ -124,18 +125,18 @@ export function initBroadcast(api, options = {}) {
       const rawText = broadcastRecipientsInput?.value?.trim();
 
       if (!templateName) {
-        alert("Por favor, selecione um template aprovado para o disparo.");
+        await customAlert("Por favor, selecione um template aprovado para o disparo.");
         return;
       }
 
       if (!rawText) {
-        alert("Por favor, insira a lista de destinatários.");
+        await customAlert("Por favor, insira a lista de destinatários.");
         return;
       }
 
       const recipients = parseRecipientsInput(rawText);
       if (recipients.length === 0) {
-        alert("Nenhum contato válido informado.");
+        await customAlert("Nenhum contato válido informado.");
         return;
       }
 
@@ -157,7 +158,7 @@ export function initBroadcast(api, options = {}) {
           delayBetweenMessagesMs: 1500,
         });
       } catch (err) {
-        alert(`❌ Falha ao iniciar disparo: ${err.message}`);
+        await customAlert(`❌ Falha ao iniciar disparo: ${err.message}`);
         resetBroadcastControls();
       }
     });
@@ -194,7 +195,14 @@ export function initBroadcast(api, options = {}) {
   // 4. Parar / Cancelar Disparo
   if (btnStopBroadcast) {
     btnStopBroadcast.addEventListener("click", async () => {
-      if (confirm("Deseja realmente interromper esta campanha?")) {
+      const confirmed = await customConfirm(
+        "Deseja realmente interromper esta campanha?",
+        "Interromper Campanha",
+        "Sim, Interromper",
+        "Continuar",
+        "btn-danger"
+      );
+      if (confirmed) {
         try {
           await api.stopBroadcast();
           resetBroadcastControls();
@@ -220,10 +228,10 @@ export function initBroadcast(api, options = {}) {
 
   // 6. Listener de Conclusão de Campanha
   if (typeof api.onBroadcastCompleted === "function") {
-    api.onBroadcastCompleted((stats) => {
+    api.onBroadcastCompleted(async (stats) => {
       resetBroadcastControls();
       if (broadcastStatusLabel) broadcastStatusLabel.textContent = "✅ Campanha Concluída!";
-      alert(`🎉 Campanha finalizada!\nEnviados com sucesso: ${stats?.sent || 0}\nFalhas: ${stats?.failed || 0}`);
+      await customAlert(`🎉 Campanha finalizada!\nEnviados com sucesso: ${stats?.sent || 0}\nFalhas: ${stats?.failed || 0}`);
       loadBroadcastHistory(api);
     });
   }

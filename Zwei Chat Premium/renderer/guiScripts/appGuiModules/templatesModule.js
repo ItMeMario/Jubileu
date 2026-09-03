@@ -3,6 +3,7 @@
 
 import { $, $$ } from "./domUtils.js";
 import { renderWhatsAppBubble } from "./whatsAppPreviewHelper.js";
+import { customAlert } from "../utils/confirmModal.js";
 
 let loadedTemplates = [];
 
@@ -184,13 +185,13 @@ export function initTemplates(api) {
       try {
         const res = await api.syncTemplates();
         if (res && res.success) {
-          alert(`✅ Sincronização concluída! ${res.count || (res.templates && res.templates.length) || 0} templates encontrados.`);
+          await customAlert(`✅ Sincronização concluída! ${res.count || (res.templates && res.templates.length) || 0} templates encontrados.`);
           await loadTemplatesList(api);
         } else {
-          alert(`⚠️ Falha ao sincronizar: ${res?.error || "Erro desconhecido"}`);
+          await customAlert(`⚠️ Falha ao sincronizar: ${res?.error || "Erro desconhecido"}`);
         }
       } catch (err) {
-        alert(`❌ Erro: ${err.message}`);
+        await customAlert(`❌ Erro: ${err.message}`);
       } finally {
         btnSyncTemplates.disabled = false;
         btnSyncTemplates.textContent = "🔄 Sincronizar com a Meta";

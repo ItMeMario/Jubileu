@@ -2,6 +2,7 @@
 // Gestão de credenciais da Meta WhatsApp Cloud API e testes de conectividade
 
 import { $ } from "./domUtils.js";
+import { customAlert } from "../utils/confirmModal.js";
 
 /**
  * Carrega as credenciais salvas no formulário de configurações
@@ -61,15 +62,15 @@ export function initSettings(api, callbacks = {}) {
       try {
         const res = await api.saveConfig(newConfig);
         if (res && res.success) {
-          alert("✅ Credenciais salvas com sucesso!");
+          await customAlert("✅ Credenciais salvas com sucesso!");
           if (typeof callbacks.onConfigSaved === "function") {
             await callbacks.onConfigSaved();
           }
         } else {
-          alert("❌ Falha ao salvar configurações.");
+          await customAlert("❌ Falha ao salvar configurações.");
         }
       } catch (err) {
-        alert(`❌ Erro ao salvar: ${err.message}`);
+        await customAlert(`❌ Erro ao salvar: ${err.message}`);
       }
     });
   }
@@ -92,13 +93,13 @@ export function initSettings(api, callbacks = {}) {
         if (res && res.success && res.data) {
           const name = res.data.verified_name || res.data.displayPhoneNumber || "OK";
           const rating = res.data.quality_rating || "GREEN";
-          alert(`✅ Conexão bem-sucedida com a Meta!\nNome Verificado: ${name}\nQuality Rating: ${rating}`);
+          await customAlert(`✅ Conexão bem-sucedida com a Meta!\nNome Verificado: ${name}\nQuality Rating: ${rating}`);
         } else {
           const errDetail = res?.error || "Verifique o Access Token e os IDs informados.";
-          alert(`⚠️ Falha no teste de conexão: ${errDetail}`);
+          await customAlert(`⚠️ Falha no teste de conexão: ${errDetail}`);
         }
       } catch (error) {
-        alert(`❌ Erro no teste de conexão: ${error.message}`);
+        await customAlert(`❌ Erro no teste de conexão: ${error.message}`);
       } finally {
         btnTestMetaConfig.disabled = false;
         btnTestMetaConfig.textContent = "🔍 Testar Conexão";

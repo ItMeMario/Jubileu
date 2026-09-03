@@ -3,6 +3,7 @@
 
 import { $, $$, escapeHtml } from "./domUtils.js";
 import { renderWhatsAppBubble } from "./whatsAppPreviewHelper.js";
+import { customAlert, customConfirm, customPrompt } from "../utils/confirmModal.js";
 
 let currentEditingFlow = null;
 let activeEditingStepId = null;
@@ -134,9 +135,12 @@ export async function loadFlowsList(api) {
     $$(".btn-delete-flow", flowsGridContainer).forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         const flowId = e.currentTarget.getAttribute("data-id");
-        if (flowId && confirm("Tem certeza que deseja excluir este fluxo?")) {
-          await api.deleteFlow(flowId);
-          await loadFlowsList(api);
+        if (flowId) {
+          const confirmed = await customConfirm("Tem certeza que deseja excluir este fluxo?", "Excluir Fluxo", "Excluir", "Cancelar", "btn-danger");
+          if (confirmed) {
+            await api.deleteFlow(flowId);
+            await loadFlowsList(api);
+          }
         }
       });
     });
@@ -256,8 +260,8 @@ function bindChipsClickEvents(container) {
 
   const btnAddCustom = $(".btn-add-custom-var-chip", container);
   if (btnAddCustom) {
-    btnAddCustom.addEventListener("click", () => {
-      const customName = prompt("Digite o nome da variável desejada (ex: estado, pais, plano, produto):");
+    btnAddCustom.addEventListener("click", async () => {
+      const customName = await customPrompt("Variável Personalizada", "Digite o nome da variável desejada (ex: estado, pais, plano, produto):");
       if (customName && customName.trim()) {
         const cleanVar = customName.trim().replace(/[{}]/g, "").toLowerCase();
         const varTag = `{{${cleanVar}}}`;
@@ -504,14 +508,17 @@ export function bindBuilderStepEvents() {
 
   // Excluir bloco
   $$(".btn-delete-step-card", builderStepsContainer).forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+    btn.addEventListener("click", async (e) => {
       const stepId = e.currentTarget.getAttribute("data-step-id");
-      if (stepId && confirm(`Excluir o bloco "${stepId}"?`)) {
-        delete currentEditingFlow.steps[stepId];
-        const remaining = Object.keys(currentEditingFlow.steps);
-        activeEditingStepId = remaining[0] || null;
-        renderBuilderSteps();
-        updateBuilderSimulator(activeEditingStepId);
+      if (stepId) {
+        const confirmed = await customConfirm(`Excluir o bloco "${stepId}"?`, "Excluir Bloco", "Excluir", "Cancelar", "btn-danger");
+        if (confirmed) {
+          delete currentEditingFlow.steps[stepId];
+          const remaining = Object.keys(currentEditingFlow.steps);
+          activeEditingStepId = remaining[0] || null;
+          renderBuilderSteps();
+          updateBuilderSimulator(activeEditingStepId);
+        }
       }
     });
   });
@@ -818,7 +825,7 @@ export function initFlows(api) {
           openFlowBuilder(newFlow);
         }
       } catch (err) {
-        alert(`Erro ao criar novo fluxo: ${err.message}`);
+        await customAlert(`Erro ao criar novo fluxo: ${err.message}`);
       }
     });
   }
@@ -893,7 +900,7 @@ export function initFlows(api) {
 
       const name = builderFlowName?.value?.trim();
       if (!name) {
-        alert("Por favor, dê um nome ao seu fluxo.");
+        await customAlert("Por favor, dê um nome ao seu fluxo.");
         return;
       }
 
@@ -908,7 +915,7 @@ export function initFlows(api) {
 
       const stepKeys = Object.keys(currentEditingFlow.steps || {});
       if (stepKeys.length === 0) {
-        alert("O fluxo precisa de ao menos 1 passo/bloco de mensagem.");
+        await customAlert("O fluxo precisa de ao menos 1 passo/bloco de mensagem.");
         return;
       }
 
@@ -918,10 +925,10 @@ export function initFlows(api) {
 
       try {
         await api.saveFlow(currentEditingFlow);
-        alert("✅ Fluxo salvo com sucesso!");
+        await customAlert("✅ Fluxo salvo com sucesso!");
         btnBackToFlowsList?.click();
       } catch (err) {
-        alert(`Erro ao salvar fluxo: ${err.message}`);
+        await customAlert(`Erro ao salvar fluxo: ${err.message}`);
       }
     });
   }
