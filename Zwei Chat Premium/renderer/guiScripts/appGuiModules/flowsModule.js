@@ -174,6 +174,114 @@ export function openFlowBuilder(flow) {
 }
 
 /**
+ * Extrai dinamicamente todas as variáveis declaradas nos blocos do fluxo atual
+ * @param {object} flow
+ * @returns {Array<string>}
+ */
+export function getAvailableFlowVariables(flow) {
+  const discovered = new Set(["telefone", "link"]);
+
+  if (flow && flow.steps) {
+    for (const [stepId, stepData] of Object.entries(flow.steps)) {
+      if (stepData.variableName && stepData.variableName.trim()) {
+        discovered.add(stepData.variableName.trim().toLowerCase());
+      }
+      discovered.add(stepId);
+
+      for (const btn of stepData.buttons || []) {
+        if (btn.variableName && btn.variableName.trim()) {
+          discovered.add(btn.variableName.trim().toLowerCase());
+        }
+      }
+
+      for (const sec of stepData.sections || []) {
+        for (const row of sec.rows || []) {
+          if (row.variableName && row.variableName.trim()) {
+            discovered.add(row.variableName.trim().toLowerCase());
+          }
+        }
+      }
+    }
+  }
+
+  return Array.from(discovered);
+}
+
+/**
+ * Atualiza todos os botões de chips de variáveis no Canvas em tempo real
+ */
+export function updateAllVariableChips() {
+  const availableVars = getAvailableFlowVariables(currentEditingFlow);
+  const chipsContainers = $$(".var-chips-container");
+  chipsContainers.forEach((container) => {
+    container.innerHTML = `
+      <span class="var-chips-label">🏷️ Variáveis disponíveis:</span>
+      ${availableVars
+        .map(
+          (v) =>
+            `<button type="button" class="btn-var-chip" data-var="{{${escapeHtml(v)}}}">+ {{${escapeHtml(v)}}}</button>`
+        )
+        .join("")}
+      <button type="button" class="btn-var-chip btn-add-custom-var-chip" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; border-color: rgba(59, 130, 246, 0.3);">+ Outra Variável</button>
+    `;
+
+    bindChipsClickEvents(container);
+  });
+}
+
+/**
+ * Vincula cliques nos chips de variáveis de um container
+ */
+function bindChipsClickEvents(container) {
+  $$(".btn-var-chip:not(.btn-add-custom-var-chip)", container).forEach((chip) => {
+    chip.addEventListener("click", (e) => {
+      const varTag = e.currentTarget.getAttribute("data-var");
+      const card = container.closest(".builder-step-card");
+      const bodyInput = $(".step-body-input", card);
+      const stepId = card?.getAttribute("data-step-id");
+      const step = currentEditingFlow?.steps?.[stepId];
+      if (bodyInput && varTag && step) {
+        const start = bodyInput.selectionStart || bodyInput.value.length;
+        const end = bodyInput.selectionEnd || bodyInput.value.length;
+        const text = bodyInput.value;
+        bodyInput.value = text.substring(0, start) + varTag + text.substring(end);
+        step.body = bodyInput.value;
+        bodyInput.focus();
+        const newPos = start + varTag.length;
+        bodyInput.setSelectionRange(newPos, newPos);
+        if (activeEditingStepId === stepId) updateBuilderSimulator(stepId);
+      }
+    });
+  });
+
+  const btnAddCustom = $(".btn-add-custom-var-chip", container);
+  if (btnAddCustom) {
+    btnAddCustom.addEventListener("click", () => {
+      const customName = prompt("Digite o nome da variável desejada (ex: estado, pais, plano, produto):");
+      if (customName && customName.trim()) {
+        const cleanVar = customName.trim().replace(/[{}]/g, "").toLowerCase();
+        const varTag = `{{${cleanVar}}}`;
+        const card = container.closest(".builder-step-card");
+        const bodyInput = $(".step-body-input", card);
+        const stepId = card?.getAttribute("data-step-id");
+        const step = currentEditingFlow?.steps?.[stepId];
+        if (bodyInput && step) {
+          const start = bodyInput.selectionStart || bodyInput.value.length;
+          const end = bodyInput.selectionEnd || bodyInput.value.length;
+          const text = bodyInput.value;
+          bodyInput.value = text.substring(0, start) + varTag + text.substring(end);
+          step.body = bodyInput.value;
+          bodyInput.focus();
+          const newPos = start + varTag.length;
+          bodyInput.setSelectionRange(newPos, newPos);
+          if (activeEditingStepId === stepId) updateBuilderSimulator(stepId);
+        }
+      }
+    });
+  }
+}
+
+/**
  * Renderiza os blocos/passos no Canvas do Flow Builder
  */
 export function renderBuilderSteps() {
@@ -192,6 +300,8 @@ export function renderBuilderSteps() {
     `;
     return;
   }
+
+  const availableVars = getAvailableFlowVariables(currentEditingFlow);
 
   stepKeys.forEach((stepId) => {
     const step = steps[stepId];
@@ -218,27 +328,54 @@ export function renderBuilderSteps() {
     ];
 
     let contentEditorHtml = "";
+    const variableBoxHtml = `
+      <div class="step-variable-box">
+        <label>💾 Salvar resposta na variável:</label>
+        <input type="text" class="form-control step-var-name-input" value="${escapeHtml(step.variableName || "")}" placeholder="Ex: estado, pais, plano, produto" title="Qualquer palavra que você digitar aqui vira uma variável dinâmica (ex: {{estado}}, {{pais}})">
+      </div>
+    `;
+
+    const varChipsHtml = `
+      <div class="var-chips-container">
+        <span class="var-chips-label">🏷️ Variáveis disponíveis:</span>
+        ${availableVars
+          .map(
+            (v) =>
+              `<button type="button" class="btn-var-chip" data-var="{{${escapeHtml(v)}}}">+ {{${escapeHtml(v)}}}</button>`
+          )
+          .join("")}
+        <button type="button" class="btn-var-chip btn-add-custom-var-chip" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; border-color: rgba(59, 130, 246, 0.3);">+ Outra Variável</button>
+      </div>
+    `;
 
     if (step.type === "interactive_buttons") {
       const buttons = step.buttons || [];
       const buttonsRowsHtml = buttons
         .map(
           (btn, btnIdx) => `
-          <div class="step-item-row" data-btn-idx="${btnIdx}">
-            <span style="font-size: 12px; color: var(--text-dim); width: 16px;">${btnIdx + 1}.</span>
-            <input type="text" class="form-control btn-title-input" value="${escapeHtml(btn.title || "")}" placeholder="Título do Botão (máx 20)" maxlength="20" style="flex: 2;">
-            <select class="form-control btn-dest-select" style="flex: 2;">
-              ${destinationOptions
-                .map((opt) => opt.replace(`value="${btn.nextStepId}"`, `value="${btn.nextStepId}" selected`))
-                .join("")}
-            </select>
-            <button class="btn-icon-delete btn-remove-button" data-btn-idx="${btnIdx}" title="Excluir Botão">✕</button>
+          <div class="step-item-wrapper">
+            <div class="step-item-row" data-btn-idx="${btnIdx}">
+              <span style="font-size: 12px; color: var(--text-dim); width: 16px;">${btnIdx + 1}.</span>
+              <input type="text" class="form-control btn-title-input" value="${escapeHtml(btn.title || "")}" placeholder="Título do Botão (máx 20)" maxlength="20" style="flex: 2;">
+              <select class="form-control btn-dest-select" style="flex: 2;">
+                ${destinationOptions
+                  .map((opt) => opt.replace(`value="${btn.nextStepId}"`, `value="${btn.nextStepId}" selected`))
+                  .join("")}
+              </select>
+              <button type="button" class="btn-toggle-link ${btn.link ? "is-active" : ""}" data-btn-idx="${btnIdx}" title="${btn.link ? "Editar Link/URL anexado" : "Anexar Link/URL opcional"}">🔗 ${btn.link ? "Link Ativo" : "Link"}</button>
+              <button class="btn-icon-delete btn-remove-button" data-btn-idx="${btnIdx}" title="Excluir Botão">✕</button>
+            </div>
+            <div class="step-item-subrow btn-link-subrow" data-btn-idx="${btnIdx}" style="${btn.link ? "display: flex;" : "display: none;"}">
+              <span>🔗 Link / URL ({{link}}):</span>
+              <input type="text" class="form-control btn-link-input" value="${escapeHtml(btn.link || "")}" placeholder="Ex: https://chat.whatsapp.com/... ou https://seusite.com/checkout" title="Link ou URL vinculado a esta opção">
+            </div>
           </div>
         `
         )
         .join("");
 
       contentEditorHtml = `
+        ${variableBoxHtml}
         <div class="form-group" style="margin-bottom: 10px;">
           <label style="font-size: 11px;">Cabeçalho (Opcional):</label>
           <input type="text" class="form-control step-header-input" value="${escapeHtml(step.header || "")}" placeholder="Ex: Atendimento Zwei Chat">
@@ -246,6 +383,7 @@ export function renderBuilderSteps() {
         <div class="form-group" style="margin-bottom: 10px;">
           <label style="font-size: 11px;">Mensagem Principal:</label>
           <textarea class="form-control step-body-input" rows="3" placeholder="Digite o texto da mensagem...">${escapeHtml(step.body || "")}</textarea>
+          ${varChipsHtml}
         </div>
         <div class="form-group" style="margin-bottom: 12px;">
           <label style="font-size: 11px;">Rodapé (Opcional):</label>
@@ -266,24 +404,33 @@ export function renderBuilderSteps() {
       sections.forEach((sec, sIdx) => {
         (sec.rows || []).forEach((row, rIdx) => {
           rowsHtml += `
-            <div class="step-item-row" data-sec-idx="${sIdx}" data-row-idx="${rIdx}">
-              <input type="text" class="form-control list-row-title-input" value="${escapeHtml(row.title || "")}" placeholder="Opção (máx 24)" maxlength="24" style="flex: 2;">
-              <input type="text" class="form-control list-row-desc-input" value="${escapeHtml(row.description || "")}" placeholder="Descrição (máx 72)" maxlength="72" style="flex: 3;">
-              <select class="form-control list-row-dest-select" style="flex: 2;">
-                ${destinationOptions
-                  .map((opt) => opt.replace(`value="${row.nextStepId}"`, `value="${row.nextStepId}" selected`))
-                  .join("")}
-              </select>
-              <button class="btn-icon-delete btn-remove-row" data-sec-idx="${sIdx}" data-row-idx="${rIdx}" title="Excluir Linha">✕</button>
+            <div class="step-item-wrapper">
+              <div class="step-item-row" data-sec-idx="${sIdx}" data-row-idx="${rIdx}">
+                <input type="text" class="form-control list-row-title-input" value="${escapeHtml(row.title || "")}" placeholder="Opção (máx 24)" maxlength="24" style="flex: 2;">
+                <input type="text" class="form-control list-row-desc-input" value="${escapeHtml(row.description || "")}" placeholder="Descrição (máx 72)" maxlength="72" style="flex: 3;">
+                <select class="form-control list-row-dest-select" style="flex: 2;">
+                  ${destinationOptions
+                    .map((opt) => opt.replace(`value="${row.nextStepId}"`, `value="${row.nextStepId}" selected`))
+                    .join("")}
+                </select>
+                <button type="button" class="btn-toggle-link ${row.link ? "is-active" : ""}" data-sec-idx="${sIdx}" data-row-idx="${rIdx}" title="${row.link ? "Editar Link/URL anexado" : "Anexar Link/URL opcional"}">🔗 ${row.link ? "Link Ativo" : "Link"}</button>
+                <button class="btn-icon-delete btn-remove-row" data-sec-idx="${sIdx}" data-row-idx="${rIdx}" title="Excluir Linha">✕</button>
+              </div>
+              <div class="step-item-subrow list-link-subrow" data-sec-idx="${sIdx}" data-row-idx="${rIdx}" style="${row.link ? "display: flex;" : "display: none;"}">
+                <span>🔗 Link / URL ({{link}}):</span>
+                <input type="text" class="form-control list-row-link-input" value="${escapeHtml(row.link || "")}" placeholder="Ex: https://chat.whatsapp.com/... ou https://seusite.com/checkout" title="Link ou URL vinculado a esta opção">
+              </div>
             </div>
           `;
         });
       });
 
       contentEditorHtml = `
+        ${variableBoxHtml}
         <div class="form-group" style="margin-bottom: 10px;">
           <label style="font-size: 11px;">Mensagem Principal:</label>
           <textarea class="form-control step-body-input" rows="2" placeholder="Digite a orientação do menu...">${escapeHtml(step.body || "")}</textarea>
+          ${varChipsHtml}
         </div>
         <div class="form-group" style="margin-bottom: 10px;">
           <label style="font-size: 11px;">Texto do Botão que Abre o Menu (máx 20):</label>
@@ -299,9 +446,11 @@ export function renderBuilderSteps() {
       `;
     } else if (step.type === "text") {
       contentEditorHtml = `
+        ${variableBoxHtml}
         <div class="form-group" style="margin-bottom: 10px;">
           <label style="font-size: 11px;">Mensagem de Texto:</label>
           <textarea class="form-control step-body-input" rows="3" placeholder="Digite a resposta que o bot enviará...">${escapeHtml(step.body || "")}</textarea>
+          ${varChipsHtml}
         </div>
         <div class="form-group">
           <label style="font-size: 11px;">Próximo Passo Automático:</label>
@@ -372,6 +521,21 @@ export function bindBuilderStepEvents() {
     const stepId = card.getAttribute("data-step-id");
     const step = currentEditingFlow.steps?.[stepId];
     if (!step) return;
+
+    // Nome da variável capturada (com atualização em tempo real dos chips de outros blocos)
+    const varNameInput = $(".step-var-name-input", card);
+    if (varNameInput) {
+      varNameInput.addEventListener("input", (e) => {
+        step.variableName = e.target.value.trim() || undefined;
+        updateAllVariableChips();
+      });
+    }
+
+    // Inserção rápida de chips de variáveis
+    const chipsContainer = $(".var-chips-container", card);
+    if (chipsContainer) {
+      bindChipsClickEvents(chipsContainer);
+    }
 
     // Header
     const headerInput = $(".step-header-input", card);
@@ -447,6 +611,45 @@ export function bindBuilderStepEvents() {
       });
     });
 
+    // Toggle de visibilidade do campo de Link/URL
+    $$(".btn-toggle-link", card).forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const itemWrapper = e.currentTarget.closest(".step-item-wrapper");
+        const subrow = $(".step-item-subrow", itemWrapper);
+        if (subrow) {
+          const isVisible = subrow.style.display === "flex";
+          subrow.style.display = isVisible ? "none" : "flex";
+          if (!isVisible) {
+            const input = $("input", subrow);
+            input?.focus();
+          }
+        }
+      });
+    });
+
+    // Link do Botão
+    $$(".btn-link-input", card).forEach((inp) => {
+      inp.addEventListener("input", (e) => {
+        const subrow = e.target.closest(".step-item-subrow");
+        const wrapper = e.target.closest(".step-item-wrapper");
+        const toggleBtn = $(".btn-toggle-link", wrapper);
+        const idx = parseInt(subrow?.getAttribute("data-btn-idx"), 10);
+        const val = e.target.value.trim();
+        if (step.buttons?.[idx]) {
+          step.buttons[idx].link = val || undefined;
+        }
+        if (toggleBtn) {
+          if (val) {
+            toggleBtn.classList.add("is-active");
+            toggleBtn.textContent = "🔗 Link Ativo";
+          } else {
+            toggleBtn.classList.remove("is-active");
+            toggleBtn.textContent = "🔗 Link";
+          }
+        }
+      });
+    });
+
     // Destino do Botão
     $$(".btn-dest-select", card).forEach((sel) => {
       sel.addEventListener("change", (e) => {
@@ -511,6 +714,30 @@ export function bindBuilderStepEvents() {
         const rIdx = parseInt(row?.getAttribute("data-row-idx"), 10);
         if (step.sections?.[sIdx]?.rows?.[rIdx]) {
           step.sections[sIdx].rows[rIdx].description = e.target.value;
+        }
+      });
+    });
+
+    // Link da Linha
+    $$(".list-row-link-input", card).forEach((inp) => {
+      inp.addEventListener("input", (e) => {
+        const subrow = e.target.closest(".step-item-subrow");
+        const wrapper = e.target.closest(".step-item-wrapper");
+        const toggleBtn = $(".btn-toggle-link", wrapper);
+        const sIdx = parseInt(subrow?.getAttribute("data-sec-idx"), 10);
+        const rIdx = parseInt(subrow?.getAttribute("data-row-idx"), 10);
+        const val = e.target.value.trim();
+        if (step.sections?.[sIdx]?.rows?.[rIdx]) {
+          step.sections[sIdx].rows[rIdx].link = val || undefined;
+        }
+        if (toggleBtn) {
+          if (val) {
+            toggleBtn.classList.add("is-active");
+            toggleBtn.textContent = "🔗 Link Ativo";
+          } else {
+            toggleBtn.classList.remove("is-active");
+            toggleBtn.textContent = "🔗 Link";
+          }
         }
       });
     });
@@ -730,5 +957,7 @@ if (typeof module !== "undefined" && module.exports) {
     initFlows,
     getCurrentEditingFlow,
     getActiveEditingStepId,
+    getAvailableFlowVariables,
+    updateAllVariableChips,
   };
 }

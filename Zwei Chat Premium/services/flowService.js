@@ -279,6 +279,62 @@ class FlowService {
           },
         },
       },
+      {
+        id: "flow_selecao_cidade_horario",
+        name: "Seleção de Cidade, Horário e Grupo VIP (Variáveis Dinâmicas)",
+        isActive: false,
+        triggerKeywords: ["quero participar", "evento", "cidade", "inscricao", "inscrição"],
+        initialStepId: "step_cidades",
+        steps: {
+          step_cidades: {
+            id: "step_cidades",
+            variableName: "cidade",
+            type: "interactive_buttons",
+            header: "Evento Oficial",
+            body: "Olá! Seja bem-vindo! Para qual cidade você deseja participar?",
+            footer: "Selecione sua cidade:",
+            buttons: [
+              {
+                id: "btn_cidade_sp",
+                title: "São Paulo",
+                link: "https://chat.whatsapp.com/SP_GRUPO_VIP",
+                nextStepId: "step_horarios",
+              },
+              {
+                id: "btn_cidade_rj",
+                title: "Rio de Janeiro",
+                link: "https://chat.whatsapp.com/RJ_GRUPO_VIP",
+                nextStepId: "step_horarios",
+              },
+              {
+                id: "btn_cidade_bh",
+                title: "Belo Horizonte",
+                link: "https://chat.whatsapp.com/BH_GRUPO_VIP",
+                nextStepId: "step_horarios",
+              },
+            ],
+          },
+          step_horarios: {
+            id: "step_horarios",
+            variableName: "horario",
+            type: "interactive_buttons",
+            header: "Cidade: {{cidade}}",
+            body: "Excelente! Para {{cidade}}, selecione o melhor horário para participar:",
+            footer: "Selecione um horário:",
+            buttons: [
+              { id: "btn_horario_12", title: "12:00", nextStepId: "step_confirmacao" },
+              { id: "btn_horario_18", title: "18:00", nextStepId: "step_confirmacao" },
+              { id: "btn_horario_20", title: "20:00", nextStepId: "step_confirmacao" },
+            ],
+          },
+          step_confirmacao: {
+            id: "step_confirmacao",
+            type: "text",
+            body: "🎉 *Inscrição Confirmada!*\n\nVocê escolheu a cidade de *{{cidade}}* para o horário de *{{horario}}*.\n\n📲 Entre agora no grupo oficial de WhatsApp:\n👉 {{link}}\n\nTe esperamos lá! 🚀",
+            nextStepId: null,
+          },
+        },
+      },
     ];
   }
 }

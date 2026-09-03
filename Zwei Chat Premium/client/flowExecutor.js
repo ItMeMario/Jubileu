@@ -15,6 +15,35 @@ class FlowExecutor {
   }
 
   /**
+   * Substitui tags do tipo {{variavel}} no texto utilizando o contexto acumulado da sessão
+   * @param {string} templateText
+   * @param {object} context
+   * @returns {string}
+   */
+  interpolateVariables(templateText, context = {}) {
+    if (!templateText || typeof templateText !== "string") return templateText || "";
+
+    return templateText.replace(/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g, (match, rawKey) => {
+      const key = rawKey.trim();
+
+      // 1. Busca direta por chave exata
+      if (context[key] !== undefined && context[key] !== null && context[key] !== "") {
+        return String(context[key]);
+      }
+
+      // 2. Busca case-insensitive
+      const lowerKey = key.toLowerCase();
+      for (const [k, v] of Object.entries(context)) {
+        if (k.toLowerCase() === lowerKey && v !== undefined && v !== null && v !== "") {
+          return String(v);
+        }
+      }
+
+      return match;
+    });
+  }
+
+  /**
    * Processa uma mensagem de entrada e conduz o fluxo interativo
    * @param {object} message - Mensagem normalizada recebida da Meta (via Webhook/Sync)
    * @returns {Promise<{ handled: boolean, actionTaken?: string, error?: string }>}
@@ -25,7 +54,7 @@ class FlowExecutor {
     }
 
     const contactPhone = normalizePhoneNumber(message.from);
-    const session = this._getSession(contactPhone);
+    let session = this._getSession(contactPhone);
     const activeFlow = session ? flowService.getFlowById(session.flowId) : flowService.getActiveFlow();
 
     if (!activeFlow) {
@@ -37,6 +66,19 @@ class FlowExecutor {
     const isTriggerWord = (activeFlow.triggerKeywords || []).some((kw) => textBody === kw.toLowerCase());
 
     if (isTriggerWord || !session) {
+      // Inicia nova sessão com contexto básico
+      session = {
+        flowId: activeFlow.id,
+        currentStepId: null,
+        lastInteraction: Date.now(),
+        context: {
+          phone: contactPhone,
+          telefone: contactPhone,
+          contactPhone: contactPhone,
+        },
+      };
+      this.sessions.set(contactPhone, session);
+
       // Inicia novo fluxo do passo inicial
       const initialStepId = activeFlow.initialStepId || Object.keys(activeFlow.steps || {})[0];
       return this._executeStep(contactPhone, activeFlow, initialStepId);
@@ -49,28 +91,52 @@ class FlowExecutor {
       return { handled: false, error: "Passo atual não encontrado no fluxo" };
     }
 
-    const nextStepId = this._resolveNextStep(message, currentStep);
+    const resolution = this._resolveNextStep(message, currentStep);
 
-    if (nextStepId) {
-      return this._executeStep(contactPhone, activeFlow, nextStepId);
+    if (resolution && resolution.nextStepId) {
+      // Salva as variáveis capturadas nesta etapa no contexto da sessão
+      if (resolution.variables) {
+        Object.assign(session.context, resolution.variables);
+      }
+      return this._executeStep(contactPhone, activeFlow, resolution.nextStepId);
     } else {
       // Fallback: Resposta não reconhecida para o menu atual
-      // Reenvia o menu ou opção de ajuda
       console.log(`ℹ️ Resposta não reconhecida de ${contactPhone}. Reenviando opções...`);
       return this._executeStep(contactPhone, activeFlow, session.currentStepId);
     }
   }
 
   /**
-   * Determina qual o próximo passo com base no clique em botão, seleção de lista ou digitação de texto
+   * Determina qual o próximo passo e extrai variáveis da escolha do usuário
    * @private
+   * @returns {{ nextStepId: string, variables: object }|null}
    */
   _resolveNextStep(message, currentStep) {
+    const varName = currentStep.variableName || currentStep.id;
+
     // Caso A: Clique em Botão de Resposta Rápida (button_reply)
     if (message.interactiveType === "button_reply" && message.buttonReply?.id) {
       const clickedId = message.buttonReply.id;
       const button = (currentStep.buttons || []).find((b) => b.id === clickedId);
-      return button ? button.nextStepId : null;
+      if (button) {
+        const chosenValue = button.value || button.title || button.id;
+        const variables = {
+          [varName]: chosenValue,
+          [currentStep.id]: chosenValue,
+        };
+
+        if (button.link) {
+          variables.link = button.link;
+          variables[`${varName}_link`] = button.link;
+        }
+
+        if (button.variableName) {
+          variables[button.variableName] = chosenValue;
+        }
+
+        return { nextStepId: button.nextStepId, variables };
+      }
+      return null;
     }
 
     // Caso B: Seleção em Menu de Lista (list_reply)
@@ -78,13 +144,31 @@ class FlowExecutor {
       const selectedId = message.listReply.id;
       for (const section of currentStep.sections || []) {
         const row = (section.rows || []).find((r) => r.id === selectedId);
-        if (row && row.nextStepId) return row.nextStepId;
+        if (row && row.nextStepId) {
+          const chosenValue = row.value || row.title || row.id;
+          const variables = {
+            [varName]: chosenValue,
+            [currentStep.id]: chosenValue,
+          };
+
+          if (row.link) {
+            variables.link = row.link;
+            variables[`${varName}_link`] = row.link;
+          }
+
+          if (row.variableName) {
+            variables[row.variableName] = chosenValue;
+          }
+
+          return { nextStepId: row.nextStepId, variables };
+        }
       }
       return null;
     }
 
     // Caso C: Resposta em Texto Livre (Fallback inteligente por número ou título)
     const textInput = (message.body || "").trim().toLowerCase();
+    const rawText = (message.body || "").trim();
 
     // C.1 Se o passo atual possui botões
     if (currentStep.buttons && currentStep.buttons.length > 0) {
@@ -94,7 +178,19 @@ class FlowExecutor {
         const title = (btn.title || "").toLowerCase();
 
         if (textInput === indexStr || textInput === title || textInput === btn.id.toLowerCase()) {
-          return btn.nextStepId;
+          const chosenValue = btn.value || btn.title || btn.id;
+          const variables = {
+            [varName]: chosenValue,
+            [currentStep.id]: chosenValue,
+          };
+          if (btn.link) {
+            variables.link = btn.link;
+            variables[`${varName}_link`] = btn.link;
+          }
+          if (btn.variableName) {
+            variables[btn.variableName] = chosenValue;
+          }
+          return { nextStepId: btn.nextStepId, variables };
         }
       }
     }
@@ -108,11 +204,32 @@ class FlowExecutor {
           const title = (row.title || "").toLowerCase();
 
           if (textInput === indexStr || textInput === title || textInput === row.id.toLowerCase()) {
-            return row.nextStepId;
+            const chosenValue = row.value || row.title || row.id;
+            const variables = {
+              [varName]: chosenValue,
+              [currentStep.id]: chosenValue,
+            };
+            if (row.link) {
+              variables.link = row.link;
+              variables[`${varName}_link`] = row.link;
+            }
+            if (row.variableName) {
+              variables[row.variableName] = chosenValue;
+            }
+            return { nextStepId: row.nextStepId, variables };
           }
           globalIndex++;
         }
       }
+    }
+
+    // C.3 Se o passo atual é de texto que captura dados livres (ex: Nome) e tem próximo passo
+    if (currentStep.type === "text" && currentStep.nextStepId) {
+      const variables = {
+        [varName]: rawText,
+        [currentStep.id]: rawText,
+      };
+      return { nextStepId: currentStep.nextStepId, variables };
     }
 
     return null;
@@ -129,44 +246,79 @@ class FlowExecutor {
       return { handled: true, actionTaken: "FLOW_FINISHED" };
     }
 
-    // Atualiza a sessão ativa
-    this.sessions.set(contactPhone, {
-      flowId: flow.id,
-      currentStepId: stepId,
-      lastInteraction: Date.now(),
-    });
+    let session = this.sessions.get(contactPhone);
+    if (!session) {
+      session = {
+        flowId: flow.id,
+        currentStepId: stepId,
+        lastInteraction: Date.now(),
+        context: {
+          phone: contactPhone,
+          telefone: contactPhone,
+          contactPhone: contactPhone,
+        },
+      };
+      this.sessions.set(contactPhone, session);
+    } else {
+      session.currentStepId = stepId;
+      session.lastInteraction = Date.now();
+      if (!session.context) {
+        session.context = { phone: contactPhone, telefone: contactPhone };
+      }
+    }
 
+    const context = session.context;
     let sendResult = null;
 
     try {
+      // Interpolação dinâmica de variáveis no conteúdo antes do envio
+      const interpolatedBody = this.interpolateVariables(step.body || "", context);
+      const interpolatedHeader = step.header ? this.interpolateVariables(step.header, context) : null;
+      const interpolatedFooter = step.footer ? this.interpolateVariables(step.footer, context) : null;
+
       switch (step.type) {
-        case "interactive_buttons":
+        case "interactive_buttons": {
+          const interpolatedButtons = (step.buttons || []).map((btn) => ({
+            ...btn,
+            title: this.interpolateVariables(btn.title, context),
+          }));
+
           sendResult = await metaApiClient.sendInteractiveButtons(
             contactPhone,
-            step.body,
-            step.buttons,
-            step.header || null,
-            step.footer || null
+            interpolatedBody,
+            interpolatedButtons,
+            interpolatedHeader,
+            interpolatedFooter
           );
           break;
+        }
 
-        case "interactive_list":
+        case "interactive_list": {
+          const interpolatedButtonTitle = this.interpolateVariables(step.buttonTitle || "Opções", context);
+          const interpolatedSections = (step.sections || []).map((sec) => ({
+            ...sec,
+            title: this.interpolateVariables(sec.title || "", context),
+            rows: (sec.rows || []).map((r) => ({
+              ...r,
+              title: this.interpolateVariables(r.title || "", context),
+              description: r.description ? this.interpolateVariables(r.description, context) : undefined,
+            })),
+          }));
+
           sendResult = await metaApiClient.sendInteractiveList(
             contactPhone,
-            step.body,
-            step.buttonTitle || "Opções",
-            step.sections,
-            step.header || null,
-            step.footer || null
+            interpolatedBody,
+            interpolatedButtonTitle,
+            interpolatedSections,
+            interpolatedHeader,
+            interpolatedFooter
           );
           break;
+        }
 
         case "text":
-          sendResult = await metaApiClient.sendTextMessage(contactPhone, step.body);
-          break;
-
         default:
-          sendResult = await metaApiClient.sendTextMessage(contactPhone, step.body || "");
+          sendResult = await metaApiClient.sendTextMessage(contactPhone, interpolatedBody);
           break;
       }
 
@@ -206,6 +358,16 @@ class FlowExecutor {
     }
 
     return session;
+  }
+
+  /**
+   * Obtém o contexto atual de variáveis de uma sessão
+   * @param {string} contactPhone
+   * @returns {object|null}
+   */
+  getSessionContext(contactPhone) {
+    const session = this._getSession(contactPhone);
+    return session ? { ...session.context } : null;
   }
 
   /**

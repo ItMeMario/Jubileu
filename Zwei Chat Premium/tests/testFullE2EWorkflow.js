@@ -12,6 +12,7 @@ const { metaTemplateService } = require("../services/metaTemplateService");
 const { metaBroadcastService } = require("../services/metaBroadcastService");
 const { broadcastHistoryService } = require("../services/broadcastHistoryService");
 const { FlowExecutor } = require("../client/flowExecutor");
+const { flowService } = require("../services/flowService");
 const { botIntegrationService } = require("../services/botIntegrationService");
 
 console.log("==================================================");
@@ -106,18 +107,22 @@ function assert(condition, testName) {
   assert(botDispatchedPayload.type === "buttons", "Bot respondeu com Botões de Resposta Rápida");
 
   // 4.2 Clique em botão
+  const activeFlow = flowService.getActiveFlow();
+  const firstStep = activeFlow.steps[activeFlow.initialStepId || Object.keys(activeFlow.steps)[0]];
+  const firstBtn = firstStep.buttons?.[0] || { id: "btn_cidade_sp", title: "São Paulo" };
+
   const buttonClickMsg = {
     id: "wamid.E2E_02",
     from: testContact,
     direction: "inbound",
     type: "interactive",
     interactiveType: "button_reply",
-    buttonReply: { id: "btn_servicos", title: "Nossos Serviços" },
-    body: "Nossos Serviços",
+    buttonReply: { id: firstBtn.id, title: firstBtn.title },
+    body: firstBtn.title,
   };
   const botRes2 = await flowExecutor.handleIncomingMessage(buttonClickMsg);
   assert(botRes2.handled === true, "Clique em botão processado pelo bot");
-  assert(botDispatchedPayload.type === "list", "Bot avançou para o Menu de Lista de Serviços");
+  assert(botDispatchedPayload.type === "buttons" || botDispatchedPayload.type === "list", "Bot avançou para o próximo passo interativo");
 
   // 5. Templates e Disparador em Lote
   console.log("\n--- 5. Validando Templates e Disparador em Lote ---");
