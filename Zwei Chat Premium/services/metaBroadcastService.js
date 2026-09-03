@@ -1,9 +1,38 @@
 // services/metaBroadcastService.js
-// Disparador Oficial em Lote (Broadcast) com Templates da Meta (Substituto Oficial do Drone)
+// Disparador Oficial em Lote (Broadcast) com Templates da Meta e Gestão de Cadência
 
 const EventEmitter = require("events");
 const { metaApiClient, normalizePhoneNumber } = require("../client/metaApiClient");
 const { metaTemplateService } = require("./metaTemplateService");
+const { broadcastRecipientsService } = require("./broadcastRecipientsService");
+const { aplicarTransformacoes } = require("./numberTransformer");
+
+/**
+ * Calcula o tempo de espera em milissegundos com base no formato de intervalo configurado
+ * @param {object|number} intervalConfig - Configuração de intervalo
+ * @returns {number} Milissegundos
+ */
+function calculateDelayMs(intervalConfig) {
+  if (typeof intervalConfig === "number") {
+    return Math.max(intervalConfig, 0);
+  }
+
+  if (!intervalConfig || typeof intervalConfig !== "object") {
+    return 1500; // Padrão: 1.5s
+  }
+
+  const unitMultiplier = intervalConfig.unit === "minutes" ? 60000 : 1000;
+
+  if (intervalConfig.type === "range") {
+    const minMs = (Number(intervalConfig.min) || 1) * unitMultiplier;
+    const maxMs = (Number(intervalConfig.max) || 3) * unitMultiplier;
+    if (maxMs <= minMs) return minMs;
+    return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+  }
+
+  const val = Number(intervalConfig.value !== undefined ? intervalConfig.value : intervalConfig.min) || 2;
+  return Math.max(val * unitMultiplier, 0);
+}
 
 class MetaBroadcastService extends EventEmitter {
   constructor() {
@@ -37,18 +66,20 @@ class MetaBroadcastService extends EventEmitter {
   /**
    * Inicia o disparo em lote de uma campanha utilizando um Message Template aprovado
    * @param {object} params
-   * @param {string} params.campaignId - Identificador único da campanha
+   * @param {string} [params.campaignId] - Identificador único da campanha
    * @param {string} params.templateName - Nome do template cadastrado na Meta
    * @param {string} [params.languageCode='pt_BR'] - Idioma do template
-   * @param {Array<{ phone: string, name?: string, variables?: Array<string>|object, headerMedia?: object }>} params.recipients - Lista de destinatários com suas variáveis
-   * @param {number} [params.delayBetweenMs=100] - Intervalo entre envios (em ms) para controle de vazão
+   * @param {Array<object>} [params.recipients] - Lista opcional de destinatários (se vazio, busca os pendentes do serviço)
+   * @param {number|object} [params.dispatchInterval] - Cadência de envio configurada
+   * @param {number} [params.delayBetweenMessagesMs] - Alias legado para delay fixo em ms
    */
   async startBroadcast({
     campaignId = `campaign_${Date.now()}`,
     templateName,
     languageCode = "pt_BR",
-    recipients = [],
-    delayBetweenMs = 100,
+    recipients = null,
+    dispatchInterval = null,
+    delayBetweenMessagesMs = null,
   }) {
     if (this.isRunning) {
       throw new Error("Uma campanha de disparo já está em execução.");
@@ -58,9 +89,22 @@ class MetaBroadcastService extends EventEmitter {
       throw new Error("Nome do template é obrigatório para disparos oficiais.");
     }
 
-    if (!Array.isArray(recipients) || recipients.length === 0) {
-      throw new Error("A lista de destinatários está vazia.");
+    const config = broadcastRecipientsService.getConfig();
+
+    // 1. Obtém lista de contatos para envio (pendentes e com falha)
+    let targetList = [];
+    if (Array.isArray(recipients) && recipients.length > 0) {
+      targetList = recipients;
+    } else {
+      targetList = broadcastRecipientsService.getPendingAndFailedRecipients();
     }
+
+    if (!Array.isArray(targetList) || targetList.length === 0) {
+      throw new Error("Nenhum destinatário pendente encontrado para disparo.");
+    }
+
+    // Configura a cadência de envio
+    const intervalSettings = dispatchInterval || delayBetweenMessagesMs || config.dispatchInterval || 1500;
 
     this.isRunning = true;
     this.isPaused = false;
@@ -69,7 +113,7 @@ class MetaBroadcastService extends EventEmitter {
     this.stats = {
       campaignId,
       templateName,
-      total: recipients.length,
+      total: targetList.length,
       processed: 0,
       sent: 0,
       failed: 0,
@@ -84,9 +128,16 @@ class MetaBroadcastService extends EventEmitter {
     // Busca o template normalizado para validar estrutura
     const template = metaTemplateService.getTemplateByName(templateName, languageCode);
 
-    for (let i = 0; i < recipients.length; i++) {
+    for (let i = 0; i < targetList.length; i++) {
       if (this.shouldStop) {
-        console.log("🛑 Disparo interrompido pelo usuário.");
+        const stopLog = {
+          timestamp: Date.now(),
+          phone: "-",
+          name: "Sistema",
+          status: "info",
+          message: "🛑 Campanha interrompida pelo usuário.",
+        };
+        this.emit("broadcast:log", stopLog);
         break;
       }
 
@@ -95,9 +146,9 @@ class MetaBroadcastService extends EventEmitter {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
-      const item = recipients[i];
+      const item = targetList[i];
       const rawPhone = item.phone || item.numero || item.telefone;
-      const cleanPhone = normalizePhoneNumber(rawPhone);
+      const cleanPhone = aplicarTransformacoes(rawPhone, config) || normalizePhoneNumber(rawPhone);
 
       if (!cleanPhone) {
         this._recordResult(item, false, "Número de telefone inválido ou ausente", null);
@@ -129,9 +180,12 @@ class MetaBroadcastService extends EventEmitter {
       // Emite atualização de progresso
       this.emit("broadcast:progress", this.getStats());
 
-      // Intervalo entre requisições
-      if (delayBetweenMs > 0 && i < recipients.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, delayBetweenMs));
+      // Intervalo entre requisições (se não for o último item)
+      if (i < targetList.length - 1 && !this.shouldStop) {
+        const delayMs = calculateDelayMs(intervalSettings);
+        if (delayMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
       }
     }
 
@@ -150,6 +204,13 @@ class MetaBroadcastService extends EventEmitter {
     if (this.isRunning && !this.isPaused) {
       this.isPaused = true;
       this.emit("broadcast:paused", this.getStats());
+      this.emit("broadcast:log", {
+        timestamp: Date.now(),
+        phone: "-",
+        name: "Sistema",
+        status: "warning",
+        message: "⏸️ Campanha pausada.",
+      });
     }
   }
 
@@ -160,6 +221,13 @@ class MetaBroadcastService extends EventEmitter {
     if (this.isRunning && this.isPaused) {
       this.isPaused = false;
       this.emit("broadcast:resumed", this.getStats());
+      this.emit("broadcast:log", {
+        timestamp: Date.now(),
+        phone: "-",
+        name: "Sistema",
+        status: "info",
+        message: "▶️ Campanha retomada.",
+      });
     }
   }
 
@@ -175,7 +243,7 @@ class MetaBroadcastService extends EventEmitter {
   }
 
   /**
-   * Registra o resultado individual de cada envio
+   * Registra o resultado individual de cada envio e emite evento de log em tempo real
    * @private
    */
   _recordResult(item, success, errorMessage, messageId) {
@@ -188,16 +256,40 @@ class MetaBroadcastService extends EventEmitter {
 
     this.stats.progressPercent = Math.round((this.stats.processed / this.stats.total) * 100);
 
+    const contactPhone = item.phone || item.numero || item.telefone || "";
+    const contactName = item.name || item.nome || "";
+
     const logEntry = {
-      phone: item.phone || item.numero || item.telefone,
-      name: item.name || item.nome || null,
-      success,
-      messageId,
-      error: errorMessage,
       timestamp: Date.now(),
+      phone: contactPhone,
+      name: contactName,
+      status: success ? "success" : "failed",
+      messageId: messageId || null,
+      error: errorMessage || null,
+      message: success
+        ? `✅ Enviado com sucesso para ${contactName ? `${contactName} (${contactPhone})` : contactPhone} ${messageId ? `[ID: ${messageId}]` : ""}`
+        : `❌ Falha no envio para ${contactName ? `${contactName} (${contactPhone})` : contactPhone}: ${errorMessage}`,
     };
 
     this.stats.logs.push(logEntry);
+
+    // Atualiza status do contato no serviço de persistência
+    if (item.id || contactPhone) {
+      broadcastRecipientsService.updateRecipientStatus(
+        item.id || contactPhone,
+        success ? "sent" : "failed",
+        errorMessage,
+        messageId
+      );
+      this.emit("broadcast:recipient_updated", {
+        id: item.id,
+        phone: contactPhone,
+        status: success ? "sent" : "failed",
+      });
+    }
+
+    // Emite o log detalhado para o frontend em tempo real
+    this.emit("broadcast:log", logEntry);
   }
 }
 
@@ -206,4 +298,5 @@ const metaBroadcastService = new MetaBroadcastService();
 module.exports = {
   MetaBroadcastService,
   metaBroadcastService,
+  calculateDelayMs,
 };

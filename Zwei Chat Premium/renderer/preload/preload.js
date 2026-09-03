@@ -24,6 +24,13 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
   resumeBroadcast: () => ipcRenderer.invoke("broadcast:resume"),
   stopBroadcast: () => ipcRenderer.invoke("broadcast:stop"),
   getBroadcastStats: () => ipcRenderer.invoke("broadcast:get-stats"),
+  getRecipients: () => ipcRenderer.invoke("broadcast:get-recipients"),
+  addRecipient: (contact) => ipcRenderer.invoke("broadcast:add-recipient", contact),
+  addRecipientsBatch: (contacts) => ipcRenderer.invoke("broadcast:add-recipients-batch", contacts),
+  removeRecipient: (id) => ipcRenderer.invoke("broadcast:remove-recipient", id),
+  clearRecipients: (type) => ipcRenderer.invoke("broadcast:clear-recipients", type),
+  getBroadcastConfig: () => ipcRenderer.invoke("broadcast:get-config"),
+  saveBroadcastConfig: (config) => ipcRenderer.invoke("broadcast:save-config", config),
   getCampaignHistory: () => ipcRenderer.invoke("broadcast:get-history"),
   exportCampaignCsv: (campaignId) => ipcRenderer.invoke("broadcast:export-csv", campaignId),
 
@@ -44,6 +51,11 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
   getConversations: () => ipcRenderer.invoke("sync:get-conversations"),
 
   // 6. Listeners de Eventos em Tempo Real
+  onBroadcastLog: (callback) => {
+    const subscription = (_event, logEntry) => callback(logEntry);
+    ipcRenderer.on("broadcast:log", subscription);
+    return () => ipcRenderer.removeListener("broadcast:log", subscription);
+  },
   onBroadcastProgress: (callback) => {
     const subscription = (_event, stats) => callback(stats);
     ipcRenderer.on("broadcast:progress", subscription);
@@ -53,6 +65,11 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
     const subscription = (_event, stats) => callback(stats);
     ipcRenderer.on("broadcast:completed", subscription);
     return () => ipcRenderer.removeListener("broadcast:completed", subscription);
+  },
+  onRecipientUpdated: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("broadcast:recipient_updated", subscription);
+    return () => ipcRenderer.removeListener("broadcast:recipient_updated", subscription);
   },
   onMessageInbound: (callback) => {
     const subscription = (_event, message) => callback(message);

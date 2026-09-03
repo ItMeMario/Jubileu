@@ -11,6 +11,7 @@ const { metaApiClient } = require("./client/metaApiClient");
 const { metaAccountService } = require("./services/metaAccountService");
 const { metaTemplateService } = require("./services/metaTemplateService");
 const { metaBroadcastService } = require("./services/metaBroadcastService");
+const { broadcastRecipientsService } = require("./services/broadcastRecipientsService");
 const { broadcastHistoryService } = require("./services/broadcastHistoryService");
 const { flowService } = require("./services/flowService");
 const { window24hService } = require("./services/window24hService");
@@ -100,7 +101,35 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle("broadcast:get-stats", () => {
-    return metaBroadcastService.getStats();
+    return broadcastRecipientsService.getStats();
+  });
+
+  ipcMain.handle("broadcast:get-recipients", () => {
+    return broadcastRecipientsService.getRecipients();
+  });
+
+  ipcMain.handle("broadcast:add-recipient", (_event, contact) => {
+    return broadcastRecipientsService.addRecipient(contact);
+  });
+
+  ipcMain.handle("broadcast:add-recipients-batch", (_event, contacts) => {
+    return broadcastRecipientsService.addRecipientsBatch(contacts);
+  });
+
+  ipcMain.handle("broadcast:remove-recipient", (_event, id) => {
+    return broadcastRecipientsService.removeRecipient(id);
+  });
+
+  ipcMain.handle("broadcast:clear-recipients", (_event, type) => {
+    return broadcastRecipientsService.clearRecipients(type);
+  });
+
+  ipcMain.handle("broadcast:get-config", () => {
+    return broadcastRecipientsService.getConfig();
+  });
+
+  ipcMain.handle("broadcast:save-config", (_event, config) => {
+    return broadcastRecipientsService.saveConfig(config);
   });
 
   ipcMain.handle("broadcast:get-history", () => {
@@ -142,7 +171,13 @@ function registerIpcHandlers() {
  * Encaminha eventos em tempo real do backend para a janela do Electron
  */
 function setupEventForwarding() {
-  // Eventos de Progresso do Disparador
+  // Eventos de Progresso e Logs do Disparador
+  metaBroadcastService.on("broadcast:log", (logEntry) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("broadcast:log", logEntry);
+    }
+  });
+
   metaBroadcastService.on("broadcast:progress", (stats) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send("broadcast:progress", stats);
@@ -153,6 +188,12 @@ function setupEventForwarding() {
     broadcastHistoryService.saveCampaignResult(stats);
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send("broadcast:completed", stats);
+    }
+  });
+
+  metaBroadcastService.on("broadcast:recipient_updated", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("broadcast:recipient_updated", data);
     }
   });
 
