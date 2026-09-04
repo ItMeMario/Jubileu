@@ -1,0 +1,59 @@
+<!-- renderer/html/tabs/templates.html -->
+<!-- 2. ABA TEMPLATES META -->
+<section class="tab-pane" id="tab-templates">
+  <div class="page-header">
+    <div class="page-title">
+      <h2>Message Templates Oficiais</h2>
+      <p>Gerencie e pré-visualize seus templates aprovados pela Meta</p>
+    </div>
+    <button class="btn btn-primary" id="btn-sync-templates-action">
+      <span>🔄</span> Sincronizar com a Meta
+    </button>
+  </div>
+
+  <div class="simulator-container">
+    <!-- Lista e Seleção de Template -->
+    <div class="simulator-form">
+      <div class="card" style="margin-bottom: 20px;">
+        <div class="form-group">
+          <label for="template-select">Selecione o Template:</label>
+          <select class="form-control" id="template-select">
+            <option value="">Carregando templates...</option>
+          </select>
+        </div>
+
+        <div id="template-meta-info" style="display: none; margin-bottom: 16px;">
+          <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+            <span class="status-pill status-green" id="tmpl-badge-status">APPROVED</span>
+            <span class="status-pill status-yellow" id="tmpl-badge-cat">UTILITY</span>
+            <span class="status-pill status-green" id="tmpl-badge-lang">pt_BR</span>
+          </div>
+        </div>
+
+        <div id="template-variables-inputs">
+          <!-- Inputs dinâmicos para cada variável {{1}}, {{2}} -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulador de Visualização WhatsApp no Celular -->
+    <div class="simulator-phone">
+      <div class="simulator-phone-header">
+        <div class="sim-avatar">Z</div>
+        <div class="sim-header-text">
+          <h4 id="sim-company-name">Zwei Chat Oficial</h4>
+          <p>Conta comercial oficial</p>
+        </div>
+      </div>
+
+      <div class="simulator-phone-body">
+        <div class="wa-message-bubble">
+          <div class="wa-bubble-header" id="sim-bubble-header" style="display: none;"></div>
+          <div class="wa-bubble-body" id="sim-bubble-body">Selecione um template para visualizar a mensagem aqui.</div>
+          <div class="wa-bubble-footer" id="sim-bubble-footer" style="display: none;"></div>
+          <div class="wa-buttons-container" id="sim-bubble-buttons"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

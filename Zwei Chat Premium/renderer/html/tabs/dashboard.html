@@ -1,0 +1,54 @@
+<!-- renderer/html/tabs/dashboard.html -->
+<!-- 1. ABA DASHBOARD -->
+<section class="tab-pane active" id="tab-dashboard">
+  <div class="page-header">
+    <div class="page-title">
+      <h2>Diagnóstico & Visão Geral</h2>
+      <p>Status em tempo real da conexão com a Meta WhatsApp Cloud Platform</p>
+    </div>
+    <button class="btn btn-primary" id="btn-refresh-health">
+      <span>🔄</span> Atualizar Diagnóstico
+    </button>
+  </div>
+
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-label">Status da Conexão</div>
+      <div class="card-value" id="dash-conn-status">
+        <span class="status-pill status-yellow"><span class="status-dot"></span> Verificando...</span>
+      </div>
+      <div class="card-subtext" id="dash-phone-number">Telefone: --</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Quality Rating (Saúde)</div>
+      <div class="card-value" id="dash-quality-rating">
+        <span class="status-pill status-green"><span class="status-dot"></span> GREEN</span>
+      </div>
+      <div class="card-subtext">Risco zero de banimento</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Limite de Mensagens (Tier)</div>
+      <div class="card-value" id="dash-limit-tier">TIER_1K</div>
+      <div class="card-subtext">Capacidade diária de novos clientes</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Nome Comercial Verificado</div>
+      <div class="card-value" id="dash-verified-name" style="font-size: 16px;">--</div>
+      <div class="card-subtext">Certificado pela Meta</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="page-header" style="margin-bottom: 16px;">
+      <h3>Ações Rápidas</h3>
+    </div>
+    <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+      <button class="btn btn-secondary" id="btn-quick-sync-templates">📄 Sincronizar Templates</button>
+      <button class="btn btn-secondary" id="btn-quick-new-broadcast">🚀 Criar Campanha de Disparo</button>
+      <button class="btn btn-secondary" id="btn-quick-config">⚙️ Ajustar Credenciais Meta</button>
+    </div>
+  </div>
+</section>

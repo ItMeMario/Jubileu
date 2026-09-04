@@ -1,0 +1,44 @@
+<!-- renderer/html/tabs/settings.html -->
+<!-- 5. ABA CONFIGURAÇÕES META -->
+<section class="tab-pane" id="tab-settings">
+  <div class="page-header">
+    <div class="page-title">
+      <h2>Credenciais da Meta API</h2>
+      <p>Configure os identificadores da sua conta no Meta for Developers</p>
+    </div>
+  </div>
+
+  <div class="card" style="max-width: 680px;">
+    <form id="form-meta-config">
+      <div class="form-group">
+        <label for="cfg-phone-id">Phone Number ID:</label>
+        <input type="text" class="form-control" id="cfg-phone-id" placeholder="Ex: 109876543210987" required>
+      </div>
+
+      <div class="form-group">
+        <label for="cfg-waba-id">WhatsApp Business Account ID (WABA ID):</label>
+        <input type="text" class="form-control" id="cfg-waba-id" placeholder="Ex: 987654321098765" required>
+      </div>
+
+      <div class="form-group">
+        <label for="cfg-access-token">System User Permanent Access Token:</label>
+        <input type="password" class="form-control" id="cfg-access-token" placeholder="Bearer EAAG..." required>
+      </div>
+
+      <div class="form-group">
+        <label for="cfg-app-secret">App Secret (Segredo do Aplicativo):</label>
+        <input type="password" class="form-control" id="cfg-app-secret" placeholder="Segredo para validação de Webhooks">
+      </div>
+
+      <div class="form-group">
+        <label for="cfg-verify-token">Webhook Verify Token:</label>
+        <input type="text" class="form-control" id="cfg-verify-token" placeholder="Token personalizado para handshake do Webhook">
+      </div>
+
+      <div style="display: flex; gap: 12px; margin-top: 24px;">
+        <button type="submit" class="btn btn-primary" id="btn-save-meta-config">💾 Salvar Credenciais</button>
+        <button type="button" class="btn btn-secondary" id="btn-test-meta-config">🔍 Testar Conexão</button>
+      </div>
+    </form>
+  </div>
+</section>

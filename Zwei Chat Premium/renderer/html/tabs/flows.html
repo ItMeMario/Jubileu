@@ -1,0 +1,107 @@
+<!-- renderer/html/tabs/flows.html -->
+<!-- 4. ABA FLUXOS & BOT -->
+<section class="tab-pane" id="tab-flows">
+  <!-- 4.1 VISÃO 1: LISTA E GESTÃO DE FLUXOS -->
+  <div id="flow-list-view">
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Fluxos de Chatbot Interativo</h2>
+        <p>Gerencie, ative e crie árvores de decisão automáticas com Botões e Listas da Meta</p>
+      </div>
+      <button class="btn btn-primary" id="btn-create-new-flow">
+        <span>➕</span> Criar Novo Fluxo
+      </button>
+    </div>
+
+    <!-- Grid Dinâmico de Cartões de Fluxos -->
+    <div class="flows-cards-grid" id="flows-grid-container">
+      <!-- Renderizado dinamicamente via JS -->
+    </div>
+  </div>
+
+  <!-- 4.2 VISÃO 2: CONSTRUTOR VISUAL DE FLUXO (FLOW BUILDER) -->
+  <div id="flow-builder-view" style="display: none;">
+    <div class="builder-top-header">
+      <div style="display: flex; align-items: center; gap: 14px; flex: 1;">
+        <button class="btn btn-secondary" id="btn-back-to-flows-list">
+          <span>⬅️</span> Voltar
+        </button>
+        <div style="flex: 1; max-width: 320px;">
+          <input type="text" class="form-control" id="builder-flow-name" placeholder="Nome do Fluxo (ex: Atendimento Vendas)" style="font-weight: 600; font-size: 15px;">
+        </div>
+        <div style="flex: 1; max-width: 380px;">
+          <input type="text" class="form-control" id="builder-trigger-keywords" placeholder="Palavras de disparo separadas por vírgula (ex: oi, ola, menu)" style="font-size: 13px;">
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-primary" id="btn-save-current-flow">
+          <span>💾</span> Salvar Fluxo
+        </button>
+      </div>
+    </div>
+
+    <div class="builder-workspace-grid">
+      <!-- Coluna da Esquerda: Blocos / Passos do Fluxo -->
+      <div class="builder-canvas">
+        <div id="builder-steps-container">
+          <!-- Blocos renderizados dinamicamente -->
+        </div>
+
+        <!-- Menu para Adicionar Novo Bloco -->
+        <div class="add-step-dropdown-wrapper">
+          <button class="btn btn-secondary" id="btn-toggle-add-step" style="width: 100%; border-style: dashed; padding: 14px;">
+            <span>➕</span> Adicionar Bloco / Passo
+          </button>
+          <div class="add-step-menu" id="add-step-menu" style="display: none;">
+            <div class="add-step-option" data-type="interactive_buttons">
+              <span class="step-opt-icon">🔘</span>
+              <div>
+                <strong>Botões Rápidos (Quick Reply)</strong>
+                <p>Até 3 botões clicáveis no WhatsApp com cabeçalho e rodapé.</p>
+              </div>
+            </div>
+            <div class="add-step-option" data-type="interactive_list">
+              <span class="step-opt-icon">📋</span>
+              <div>
+                <strong>Menu de Lista (List Message)</strong>
+                <p>Menu suspenso com seções e linhas para catálogos e opções.</p>
+              </div>
+            </div>
+            <div class="add-step-option" data-type="text">
+              <span class="step-opt-icon">💬</span>
+              <div>
+                <strong>Mensagem de Texto</strong>
+                <p>Resposta de texto livre ou transferência para atendente.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna da Direita: Simulador de WhatsApp em Tempo Real -->
+      <div class="builder-simulator-pane">
+        <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">📱 Prévia do Passo Selecionado</span>
+          <span class="status-pill status-green" id="sim-step-badge" style="font-size: 10px;">PASSO ATIVO</span>
+        </div>
+        <div class="simulator-phone" style="height: 480px;">
+          <div class="simulator-phone-header">
+            <div class="sim-avatar">Z</div>
+            <div class="sim-header-text">
+              <h4>Zwei Chat Oficial</h4>
+              <p>Visualização ao vivo</p>
+            </div>
+          </div>
+          <div class="simulator-phone-body">
+            <div class="wa-message-bubble">
+              <div class="wa-bubble-header" id="builder-sim-header" style="display: none;"></div>
+              <div class="wa-bubble-body" id="builder-sim-body">Edite um bloco para ver o conteúdo aqui.</div>
+              <div class="wa-bubble-footer" id="builder-sim-footer" style="display: none;"></div>
+              <div class="wa-buttons-container" id="builder-sim-buttons"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

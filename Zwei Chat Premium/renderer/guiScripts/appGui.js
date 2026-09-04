@@ -2,6 +2,7 @@
 // Orquestrador Principal de Interface Gráfica do Zwei Chat Premium
 
 import { $ } from "./appGuiModules/domUtils.js";
+import { loadTabsLayout } from "./utils/templateLoader.js";
 import { initNavigation } from "./appGuiModules/navigationModule.js";
 import { initDashboard, refreshAccountHealth } from "./appGuiModules/dashboardModule.js";
 import { initSettings, loadConfigForm } from "./appGuiModules/settingsModule.js";
@@ -20,6 +21,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   const api = window.zweiPremiumApi;
   if (!api) {
     console.error("❌ API do Zwei Chat Premium não está disponível no contexto global.");
+    return;
+  }
+
+  // ==========================================
+  // 0. CARREGAMENTO DOS TEMPLATES MODULARES
+  // ==========================================
+  try {
+    await loadTabsLayout("main.main-content");
+  } catch (err) {
+    console.error("❌ Falha crítica ao carregar templates HTML das abas:", err);
     return;
   }
 
