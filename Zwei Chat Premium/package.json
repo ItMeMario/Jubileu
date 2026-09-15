@@ -20,7 +20,9 @@
   "devDependencies": {
     "electron": "^39.2.3",
     "electron-builder": "^26.0.12",
-    "firebase-admin": "^14.3.0"
+    "firebase-admin": "^14.3.0",
+    "localtunnel": "^2.0.2",
+    "untun": "^0.2.2"
   },
   "build": {
     "appId": "com.itmemario.zweichatpremium",
