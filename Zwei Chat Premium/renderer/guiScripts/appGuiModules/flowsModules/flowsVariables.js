@@ -14,23 +14,28 @@ import { updateBuilderSimulator } from "./flowsSimulator.js";
 export function getAvailableFlowVariables(flow) {
   const discovered = new Set(["telefone", "link"]);
 
+  const cleanVar = (name) => String(name || "").replace(/[{}]/g, "").trim().toLowerCase();
+
   if (flow && flow.steps) {
     for (const [stepId, stepData] of Object.entries(flow.steps)) {
       if (stepData.variableName && stepData.variableName.trim()) {
-        discovered.add(stepData.variableName.trim().toLowerCase());
+        const clean = cleanVar(stepData.variableName);
+        if (clean) discovered.add(clean);
       }
       discovered.add(stepId);
 
       for (const btn of stepData.buttons || []) {
         if (btn.variableName && btn.variableName.trim()) {
-          discovered.add(btn.variableName.trim().toLowerCase());
+          const clean = cleanVar(btn.variableName);
+          if (clean) discovered.add(clean);
         }
       }
 
       for (const sec of stepData.sections || []) {
         for (const row of sec.rows || []) {
           if (row.variableName && row.variableName.trim()) {
-            discovered.add(row.variableName.trim().toLowerCase());
+            const clean = cleanVar(row.variableName);
+            if (clean) discovered.add(clean);
           }
         }
       }

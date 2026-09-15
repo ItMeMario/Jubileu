@@ -23,6 +23,5 @@ serviceAccountKey*.json
 *.log
 npm-debug.log*
 
-
 .DS_Store
 Thumbs.db

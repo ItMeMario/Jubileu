@@ -267,7 +267,13 @@ export function bindBuilderStepEvents() {
     const varNameInput = $(".step-var-name-input", card);
     if (varNameInput) {
       varNameInput.addEventListener("input", (e) => {
-        step.variableName = e.target.value.trim() || undefined;
+        step.variableName = e.target.value.replace(/[{}]/g, "").trim() || undefined;
+        updateAllVariableChips();
+      });
+      varNameInput.addEventListener("blur", (e) => {
+        const clean = e.target.value.replace(/[{}]/g, "").trim();
+        e.target.value = clean;
+        step.variableName = clean || undefined;
         updateAllVariableChips();
       });
     }

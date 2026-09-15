@@ -199,8 +199,21 @@ async function startTunnel() {
     console.log(`👉 URL Pública do Webhook: ${publicUrl}`);
     console.log(`🔑 Verify Token: ${VERIFY_TOKEN}`);
 
-    // Registra na Meta
-    await registerWebhookOnMeta(publicUrl);
+    console.log(`⏳ Aguardando propagação do túnel (3s)...`);
+    await new Promise((r) => setTimeout(r, 3000));
+
+    // Registra na Meta com retry
+    let registered = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await registerWebhookOnMeta(publicUrl);
+        registered = true;
+        break;
+      } catch (e) {
+        console.log(`Tentativa ${attempt} falhou, tentando novamente...`);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
   } catch (err) {
     console.error("❌ Erro ao iniciar Cloudflare tunnel:", err.message);
     setTimeout(startTunnel, 5000);

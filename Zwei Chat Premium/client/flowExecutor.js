@@ -23,18 +23,31 @@ class FlowExecutor {
   interpolateVariables(templateText, context = {}) {
     if (!templateText || typeof templateText !== "string") return templateText || "";
 
-    return templateText.replace(/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g, (match, rawKey) => {
+    const normalizeStr = (str) =>
+      String(str || "")
+        .replace(/[{}]/g, "")
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+
+    return templateText.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match, rawKey) => {
       const key = rawKey.trim();
 
-      // 1. Busca direta por chave exata
+      // 1. Busca direta por chave exata (ex: "cidade")
       if (context[key] !== undefined && context[key] !== null && context[key] !== "") {
         return String(context[key]);
       }
 
-      // 2. Busca case-insensitive
-      const lowerKey = key.toLowerCase();
+      // 2. Busca por chave envolvida por chaves (ex: "{{cidade}}")
+      if (context[`{{${key}}}`] !== undefined && context[`{{${key}}}`] !== null && context[`{{${key}}}`] !== "") {
+        return String(context[`{{${key}}}`]);
+      }
+
+      // 3. Busca normalizada: case-insensitive, sem acentos e sem chaves
+      const targetNormalized = normalizeStr(key);
       for (const [k, v] of Object.entries(context)) {
-        if (k.toLowerCase() === lowerKey && v !== undefined && v !== null && v !== "") {
+        if (normalizeStr(k) === targetNormalized && v !== undefined && v !== null && v !== "") {
           return String(v);
         }
       }
@@ -107,33 +120,47 @@ class FlowExecutor {
   }
 
   /**
+   * Constrói mapa de variáveis da etapa garantindo compatibilidade com ou sem chaves
+   * @private
+   */
+  _buildStepVariables(currentStep, chosenValue, itemLink = null, itemVarName = null) {
+    const rawVarName = currentStep.variableName || currentStep.id;
+    const cleanVarName = String(rawVarName).replace(/[{}]/g, "").trim();
+
+    const variables = {
+      [cleanVarName]: chosenValue,
+      [rawVarName]: chosenValue,
+      [currentStep.id]: chosenValue,
+    };
+
+    if (itemLink) {
+      variables.link = itemLink;
+      variables[`${cleanVarName}_link`] = itemLink;
+      variables[`${rawVarName}_link`] = itemLink;
+    }
+
+    if (itemVarName) {
+      const cleanItemVar = String(itemVarName).replace(/[{}]/g, "").trim();
+      variables[cleanItemVar] = chosenValue;
+      variables[itemVarName] = chosenValue;
+    }
+
+    return variables;
+  }
+
+  /**
    * Determina qual o próximo passo e extrai variáveis da escolha do usuário
    * @private
    * @returns {{ nextStepId: string, variables: object }|null}
    */
   _resolveNextStep(message, currentStep) {
-    const varName = currentStep.variableName || currentStep.id;
-
     // Caso A: Clique em Botão de Resposta Rápida (button_reply)
     if (message.interactiveType === "button_reply" && message.buttonReply?.id) {
       const clickedId = message.buttonReply.id;
       const button = (currentStep.buttons || []).find((b) => b.id === clickedId);
       if (button) {
         const chosenValue = button.value || button.title || button.id;
-        const variables = {
-          [varName]: chosenValue,
-          [currentStep.id]: chosenValue,
-        };
-
-        if (button.link) {
-          variables.link = button.link;
-          variables[`${varName}_link`] = button.link;
-        }
-
-        if (button.variableName) {
-          variables[button.variableName] = chosenValue;
-        }
-
+        const variables = this._buildStepVariables(currentStep, chosenValue, button.link, button.variableName);
         return { nextStepId: button.nextStepId, variables };
       }
       return null;
@@ -146,20 +173,7 @@ class FlowExecutor {
         const row = (section.rows || []).find((r) => r.id === selectedId);
         if (row && row.nextStepId) {
           const chosenValue = row.value || row.title || row.id;
-          const variables = {
-            [varName]: chosenValue,
-            [currentStep.id]: chosenValue,
-          };
-
-          if (row.link) {
-            variables.link = row.link;
-            variables[`${varName}_link`] = row.link;
-          }
-
-          if (row.variableName) {
-            variables[row.variableName] = chosenValue;
-          }
-
+          const variables = this._buildStepVariables(currentStep, chosenValue, row.link, row.variableName);
           return { nextStepId: row.nextStepId, variables };
         }
       }
@@ -179,17 +193,7 @@ class FlowExecutor {
 
         if (textInput === indexStr || textInput === title || textInput === btn.id.toLowerCase()) {
           const chosenValue = btn.value || btn.title || btn.id;
-          const variables = {
-            [varName]: chosenValue,
-            [currentStep.id]: chosenValue,
-          };
-          if (btn.link) {
-            variables.link = btn.link;
-            variables[`${varName}_link`] = btn.link;
-          }
-          if (btn.variableName) {
-            variables[btn.variableName] = chosenValue;
-          }
+          const variables = this._buildStepVariables(currentStep, chosenValue, btn.link, btn.variableName);
           return { nextStepId: btn.nextStepId, variables };
         }
       }
@@ -205,17 +209,7 @@ class FlowExecutor {
 
           if (textInput === indexStr || textInput === title || textInput === row.id.toLowerCase()) {
             const chosenValue = row.value || row.title || row.id;
-            const variables = {
-              [varName]: chosenValue,
-              [currentStep.id]: chosenValue,
-            };
-            if (row.link) {
-              variables.link = row.link;
-              variables[`${varName}_link`] = row.link;
-            }
-            if (row.variableName) {
-              variables[row.variableName] = chosenValue;
-            }
+            const variables = this._buildStepVariables(currentStep, chosenValue, row.link, row.variableName);
             return { nextStepId: row.nextStepId, variables };
           }
           globalIndex++;
@@ -225,10 +219,7 @@ class FlowExecutor {
 
     // C.3 Se o passo atual é de texto que captura dados livres (ex: Nome) e tem próximo passo
     if (currentStep.type === "text" && currentStep.nextStepId) {
-      const variables = {
-        [varName]: rawText,
-        [currentStep.id]: rawText,
-      };
+      const variables = this._buildStepVariables(currentStep, rawText);
       return { nextStepId: currentStep.nextStepId, variables };
     }
 
