@@ -49,6 +49,7 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
   // 5. Janela de 24 Horas e Conversas
   check24hWindow: (phone) => ipcRenderer.invoke("window24h:check", phone),
   getConversations: () => ipcRenderer.invoke("sync:get-conversations"),
+  getGatewayStatus: () => ipcRenderer.invoke("gateway:get-status"),
 
   // 6. Listeners de Eventos em Tempo Real
   onBroadcastLog: (callback) => {

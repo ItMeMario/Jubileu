@@ -18,6 +18,7 @@ const { window24hService } = require("./services/window24hService");
 const { syncService } = require("./services/syncService");
 const { botIntegrationService } = require("./services/botIntegrationService");
 const { firebaseService } = require("./services/firebaseService");
+const { cloudGatewayService } = require("./cloud-gateway/server");
 
 let mainWindow = null;
 
@@ -156,10 +157,20 @@ function registerIpcHandlers() {
 
   ipcMain.handle("bot:get-status", () => botIntegrationService.isEnabled());
   ipcMain.handle("bot:toggle", (_event, enabled) => {
-    if (enabled) botIntegrationService.enable();
-    else botIntegrationService.disable();
-    return botIntegrationService.isEnabled();
+    if (enabled) {
+      botIntegrationService.enable();
+    } else {
+      botIntegrationService.disable();
+    }
+    return botIntegrationService.isBotEnabled;
   });
+
+  // 6. Gateway e Webhook Status
+  ipcMain.handle("gateway:get-status", () => ({
+    isRunning: cloudGatewayService.isRunning,
+    publicUrl: cloudGatewayService.publicUrl,
+    port: cloudGatewayService.port,
+  }));
 
   // 5. Janela de 24 Horas
   ipcMain.handle("window24h:check", (_event, phone) => {
@@ -230,6 +241,7 @@ app.whenReady().then(async () => {
     await firebaseService.initialize();
     botIntegrationService.initialize();
     await metaAccountService.checkConnectionStatus();
+    await cloudGatewayService.start();
   } catch (err) {
     log.error("Aviso na inicialização dos serviços:", err.message);
   }
@@ -239,6 +251,10 @@ app.whenReady().then(async () => {
       createWindow();
     }
   });
+});
+
+app.on("before-quit", async () => {
+  await cloudGatewayService.stop();
 });
 
 app.on("window-all-closed", () => {
