@@ -1,7 +1,7 @@
 // main.js
 // Processo Principal Electron para Zwei Chat Premium (Meta Official API Edition)
 
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const log = require("electron-log");
 
@@ -42,6 +42,27 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, "renderer/html/index.html"));
+
+  // 🛡️ Segurança: Bloqueia navegações internas indevidas e abre links externos no navegador padrão do SO
+  mainWindow.webContents.on("will-navigate", (event, navigationUrl) => {
+    try {
+      const parsedUrl = new URL(navigationUrl);
+      if (parsedUrl.protocol !== "file:") {
+        event.preventDefault();
+        shell.openExternal(navigationUrl);
+      }
+    } catch (err) {
+      event.preventDefault();
+    }
+  });
+
+  // 🛡️ Segurança: Intercepta window.open() do renderer, impedindo popups arbitrários e abrindo links externos no browser
+  mainWindow.webContents.setWindowOpenHandler(({ url: targetUrl }) => {
+    if (targetUrl.startsWith("http:") || targetUrl.startsWith("https:")) {
+      shell.openExternal(targetUrl);
+    }
+    return { action: "deny" };
+  });
 
   mainWindow.on("closed", () => {
     mainWindow = null;
