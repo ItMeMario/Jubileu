@@ -43,6 +43,90 @@
     <div class="builder-workspace-grid">
       <!-- Coluna da Esquerda: Blocos / Passos do Fluxo -->
       <div class="builder-canvas">
+        <!-- Painel de Mensagens Fora do Padrão (Mídias, Vídeos, Áudios, Stickers) -->
+        <div class="out-of-pattern-panel" id="out-of-pattern-panel">
+          <div class="out-of-pattern-header" id="out-of-pattern-header">
+            <div class="out-of-pattern-title-wrap">
+              <span class="out-of-pattern-icon">🛡️</span>
+              <div>
+                <h4>Mensagens Fora do Padrão (Mídias & Arquivos)</h4>
+                <p>Responda fotos, vídeos, áudios e figurinhas com uma mensagem programada antes de retomar o fluxo</p>
+              </div>
+            </div>
+            <div class="out-of-pattern-switch-wrap" onclick="event.stopPropagation()">
+              <label class="switch">
+                <input type="checkbox" id="toggle-out-of-pattern">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="out-of-pattern-body" id="out-of-pattern-body" style="display: none;">
+            <!-- Tipos considerados fora do padrão -->
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label style="font-weight: 600; font-size: 12px; margin-bottom: 8px; display: block; color: var(--text-color);">
+                📌 Tipos considerados fora do padrão:
+              </label>
+              <div class="media-types-grid">
+                <label class="media-type-chip">
+                  <input type="checkbox" value="image" class="out-type-cb" checked>
+                  <span class="chip-content">🖼️ Imagens / Fotos</span>
+                </label>
+                <label class="media-type-chip">
+                  <input type="checkbox" value="video" class="out-type-cb" checked>
+                  <span class="chip-content">🎥 Vídeos / GIFs</span>
+                </label>
+                <label class="media-type-chip">
+                  <input type="checkbox" value="audio" class="out-type-cb" checked>
+                  <span class="chip-content">🎙️ Áudios / Voz</span>
+                </label>
+                <label class="media-type-chip">
+                  <input type="checkbox" value="document" class="out-type-cb" checked>
+                  <span class="chip-content">📄 Documentos / PDFs</span>
+                </label>
+                <label class="media-type-chip">
+                  <input type="checkbox" value="sticker" class="out-type-cb" checked>
+                  <span class="chip-content">🎭 Figurinhas / Stickers</span>
+                </label>
+                <label class="media-type-chip">
+                  <input type="checkbox" value="location" class="out-type-cb">
+                  <span class="chip-content">📍 Localização</span>
+                </label>
+                <label class="media-type-chip">
+                  <input type="checkbox" value="contacts" class="out-type-cb">
+                  <span class="chip-content">👤 Contatos</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Mensagem programada -->
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label for="out-of-pattern-message" style="font-weight: 600; font-size: 12px; margin-bottom: 6px; display: flex; justify-content: space-between;">
+                <span>💬 Mensagem programada de resposta:</span>
+                <span style="color: var(--text-dim); font-size: 11px;">Suporta variáveis {{cidade}}, {{nome}}, etc.</span>
+              </label>
+              <textarea id="out-of-pattern-message" class="form-control" rows="3" placeholder="Ex: Desculpe, nosso atendimento automático não consegue processar fotos ou áudios por aqui. Por favor, utilize as opções abaixo para prosseguir: 👇" style="font-size: 13px; line-height: 1.5; resize: vertical;"></textarea>
+            </div>
+
+            <!-- Ação de Retomada -->
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-weight: 600; font-size: 12px; margin-bottom: 6px; display: block;">
+                🔄 Ação após o envio da resposta programada:
+              </label>
+              <div class="out-action-radios">
+                <label class="out-radio-label">
+                  <input type="radio" name="out-of-pattern-action" value="resume" checked>
+                  <span><strong>Retomar o passo atual</strong> (Reapresenta onde o cliente parou ou o menu inicial se novo contato)</span>
+                </label>
+                <label class="out-radio-label">
+                  <input type="radio" name="out-of-pattern-action" value="restart">
+                  <span><strong>Sempre reiniciar do início</strong> (Volta ao primeiro passo do fluxo)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div id="builder-steps-container">
           <!-- Blocos renderizados dinamicamente -->
         </div>

@@ -61,9 +61,37 @@ class CloudGatewayService extends EventEmitter {
         break;
       case "image":
         normalized.body = message.image?.caption || "[Imagem]";
+        normalized.mediaId = message.image?.id || null;
+        normalized.mimeType = message.image?.mime_type || null;
+        break;
+      case "video":
+        normalized.body = message.video?.caption || "[Vídeo/GIF]";
+        normalized.mediaId = message.video?.id || null;
+        normalized.mimeType = message.video?.mime_type || null;
         break;
       case "audio":
-        normalized.body = "[Áudio]";
+        normalized.body = message.audio?.voice ? "[Mensagem de Voz]" : "[Áudio]";
+        normalized.mediaId = message.audio?.id || null;
+        normalized.mimeType = message.audio?.mime_type || null;
+        break;
+      case "document":
+        normalized.body = message.document?.caption || message.document?.filename || "[Documento]";
+        normalized.filename = message.document?.filename || null;
+        normalized.mediaId = message.document?.id || null;
+        normalized.mimeType = message.document?.mime_type || null;
+        break;
+      case "sticker":
+        normalized.body = message.sticker?.animated ? "[Figurinha Animada]" : "[Figurinha]";
+        normalized.mediaId = message.sticker?.id || null;
+        normalized.mimeType = message.sticker?.mime_type || null;
+        break;
+      case "location":
+        normalized.body = message.location?.name ? `[Localização: ${message.location.name}]` : "[Localização]";
+        normalized.location = message.location || null;
+        break;
+      case "contacts":
+        normalized.body = "[Contato Compartilhado]";
+        normalized.contacts = message.contacts || null;
         break;
       default:
         normalized.body = `[${message.type || "Mensagem"}]`;

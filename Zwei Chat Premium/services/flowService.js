@@ -150,6 +150,12 @@ class FlowService {
       isActive: this.flows.length === 0, // Se for o primeiro, ativa automaticamente
       triggerKeywords: ["oi", "ola", "menu"],
       initialStepId: "step_1",
+      outOfPatternConfig: {
+        enabled: true,
+        types: ["image", "video", "audio", "document", "sticker"],
+        message: "Desculpe, nosso atendimento automático não aceita fotos, vídeos ou áudios por aqui. Por favor, utilize as opções abaixo para prosseguir: 👇",
+        action: "resume",
+      },
       steps: {
         step_1: {
           id: "step_1",

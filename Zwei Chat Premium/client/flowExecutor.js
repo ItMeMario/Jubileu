@@ -7,6 +7,7 @@ const { window24hService } = require("../services/window24hService");
 
 // Tempo limite de expiração da sessão ativa: 30 minutos
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 class FlowExecutor {
   constructor() {
@@ -74,7 +75,54 @@ class FlowExecutor {
       return { handled: false, error: "Nenhum fluxo configurado ou ativo" };
     }
 
-    // 1. Verifica se a mensagem de entrada aciona o gatilho de início/reinício de fluxo
+    // 1. Tratamento de mensagens fora do padrão (imagens, vídeos, áudios, documentos, stickers, etc.)
+    const outOfPattern = activeFlow.outOfPatternConfig;
+    const msgType = message.type || "text";
+    const isConfiguredOutOfPattern =
+      outOfPattern &&
+      outOfPattern.enabled &&
+      Array.isArray(outOfPattern.types) &&
+      outOfPattern.types.includes(msgType);
+
+    if (isConfiguredOutOfPattern) {
+      console.log(`⚠️ [OUT_OF_PATTERN] Mensagem fora do padrão recebida de ${contactPhone} (Tipo: ${msgType}). Aplicando resposta programada...`);
+
+      const defaultWarning = "Desculpe, nosso atendimento automático não aceita este tipo de arquivo ou mídia. Por favor, utilize as opções abaixo para prosseguirmos: 👇";
+      const warningText = outOfPattern.message || defaultWarning;
+      const context = session?.context || { phone: contactPhone, telefone: contactPhone };
+      const interpolatedWarning = this.interpolateVariables(warningText, context);
+
+      // Envia a mensagem de aviso programada
+      await metaApiClient.sendTextMessage(contactPhone, interpolatedWarning);
+
+      // Pausa estratégica de 800ms para ordenação natural das mensagens no WhatsApp
+      await sleep(800);
+
+      // Decisão de retomada: reiniciar fluxo ou retomar o passo atual
+      const action = outOfPattern.action || "resume";
+      const initialStepId = activeFlow.initialStepId || Object.keys(activeFlow.steps || {})[0];
+
+      if (action === "restart" || !session || !session.currentStepId) {
+        session = {
+          flowId: activeFlow.id,
+          currentStepId: null,
+          lastInteraction: Date.now(),
+          context: {
+            phone: contactPhone,
+            telefone: contactPhone,
+            contactPhone: contactPhone,
+            ...(session?.context || {}),
+          },
+        };
+        this.sessions.set(contactPhone, session);
+        return this._executeStep(contactPhone, activeFlow, initialStepId);
+      } else {
+        // Retoma o passo atual onde o cliente já estava
+        return this._executeStep(contactPhone, activeFlow, session.currentStepId);
+      }
+    }
+
+    // 2. Verifica se a mensagem de entrada aciona o gatilho de início/reinício de fluxo
     const textBody = (message.body || "").trim().toLowerCase();
     const isTriggerWord = (activeFlow.triggerKeywords || []).some((kw) => textBody === kw.toLowerCase());
 

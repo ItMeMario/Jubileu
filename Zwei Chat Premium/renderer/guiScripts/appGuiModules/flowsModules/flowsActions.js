@@ -40,6 +40,51 @@ export function openFlowBuilder(flow) {
   const initialStepId = stepKeys[0] || null;
   setActiveEditingStepId(initialStepId);
 
+  // Sincroniza configurações de Mensagens Fora do Padrão (Mídias, Vídeos, Áudios, Stickers)
+  const outConfig = currentEditingFlow.outOfPatternConfig || {
+    enabled: true,
+    types: ["image", "video", "audio", "document", "sticker"],
+    message: "Desculpe, nosso atendimento automático não aceita este tipo de arquivo ou mídia. Por favor, utilize as opções abaixo para prosseguirmos: 👇",
+    action: "resume",
+  };
+
+  const toggleOutOfPattern = $("#toggle-out-of-pattern");
+  const outOfPatternBody = $("#out-of-pattern-body");
+  const outOfPatternPanel = $("#out-of-pattern-panel");
+  const outOfPatternMessage = $("#out-of-pattern-message");
+
+  if (toggleOutOfPattern) {
+    toggleOutOfPattern.checked = Boolean(outConfig.enabled);
+  }
+  if (outOfPatternBody) {
+    outOfPatternBody.style.display = outConfig.enabled ? "flex" : "none";
+  }
+  if (outOfPatternPanel) {
+    if (outConfig.enabled) {
+      outOfPatternPanel.classList.add("is-active");
+    } else {
+      outOfPatternPanel.classList.remove("is-active");
+    }
+  }
+  if (outOfPatternMessage) {
+    outOfPatternMessage.value = outConfig.message || "";
+  }
+
+  // Sincroniza checkboxes de tipos
+  const configuredTypes = Array.isArray(outConfig.types)
+    ? outConfig.types
+    : ["image", "video", "audio", "document", "sticker"];
+  $$(".out-type-cb").forEach((cb) => {
+    cb.checked = configuredTypes.includes(cb.value);
+  });
+
+  // Sincroniza radio da ação
+  const configuredAction = outConfig.action || "resume";
+  const actionRadio = $(`input[name="out-of-pattern-action"][value="${configuredAction}"]`);
+  if (actionRadio) {
+    actionRadio.checked = true;
+  }
+
   renderBuilderSteps();
   updateBuilderSimulator(initialStepId);
 }
@@ -167,12 +212,58 @@ export function initFlows(api) {
         currentEditingFlow.initialStepId = stepKeys[0];
       }
 
+      // 4.1 Coleta e salva as configurações de Mensagens Fora do Padrão
+      const toggleOutOfPattern = $("#toggle-out-of-pattern");
+      const outOfPatternMessage = $("#out-of-pattern-message");
+      const selectedTypes = [];
+      $$(".out-type-cb:checked").forEach((cb) => {
+        selectedTypes.push(cb.value);
+      });
+      const selectedActionRadio = $('input[name="out-of-pattern-action"]:checked');
+      const action = selectedActionRadio ? selectedActionRadio.value : "resume";
+
+      currentEditingFlow.outOfPatternConfig = {
+        enabled: Boolean(toggleOutOfPattern?.checked),
+        types: selectedTypes,
+        message:
+          outOfPatternMessage?.value?.trim() ||
+          "Desculpe, nosso atendimento automático não aceita este tipo de arquivo ou mídia. Por favor, utilize as opções abaixo para prosseguirmos: 👇",
+        action: action,
+      };
+
       try {
         await api.saveFlow(currentEditingFlow);
         await customAlert("✅ Fluxo salvo com sucesso!");
         btnBackToFlowsList?.click();
       } catch (err) {
         await customAlert(`Erro ao salvar fluxo: ${err.message}`);
+      }
+    });
+  }
+
+  // 4.2 Eventos do Painel de Mensagens Fora do Padrão
+  const toggleOutOfPattern = $("#toggle-out-of-pattern");
+  const outOfPatternBody = $("#out-of-pattern-body");
+  const outOfPatternPanel = $("#out-of-pattern-panel");
+  const outOfPatternHeader = $("#out-of-pattern-header");
+
+  if (toggleOutOfPattern) {
+    toggleOutOfPattern.addEventListener("change", (e) => {
+      const isEnabled = e.target.checked;
+      if (outOfPatternBody) outOfPatternBody.style.display = isEnabled ? "flex" : "none";
+      if (outOfPatternPanel) {
+        if (isEnabled) outOfPatternPanel.classList.add("is-active");
+        else outOfPatternPanel.classList.remove("is-active");
+      }
+    });
+  }
+
+  if (outOfPatternHeader) {
+    outOfPatternHeader.addEventListener("click", (e) => {
+      if (e.target.closest(".switch")) return;
+      if (toggleOutOfPattern) {
+        toggleOutOfPattern.checked = !toggleOutOfPattern.checked;
+        toggleOutOfPattern.dispatchEvent(new Event("change"));
       }
     });
   }
