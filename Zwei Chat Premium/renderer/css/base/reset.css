@@ -1,0 +1,17 @@
+/* renderer/css/base/reset.css - Resets Globais e Estilo Base */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  user-select: none;
+}

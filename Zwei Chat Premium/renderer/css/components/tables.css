@@ -1,0 +1,32 @@
+/* renderer/css/components/tables.css - Tabelas e Listas Tabulares */
+
+.table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13.5px;
+}
+
+th {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px 18px;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+}
+
+td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
