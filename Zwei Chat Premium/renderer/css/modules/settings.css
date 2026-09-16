@@ -1,0 +1,302 @@
+/* renderer/css/modules/settings.css - Estilos da Tela Comercial de Onboarding e Configurações */
+
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 860px;
+}
+
+/* =========================================================
+   1. CARD DE ONBOARDING (ESTADO DESCONECTADO)
+   ========================================================= */
+.onboarding-card {
+  padding: 36px 32px;
+  background: linear-gradient(145deg, rgba(22, 27, 38, 0.95) 0%, rgba(14, 18, 28, 0.9) 100%);
+  border: 1px solid rgba(37, 211, 102, 0.2);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+.onboarding-hero {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.onboarding-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: rgba(37, 211, 102, 0.15);
+  border: 1px solid rgba(37, 211, 102, 0.35);
+  border-radius: 50%;
+  font-size: 26px;
+  margin-bottom: 16px;
+  box-shadow: 0 0 20px rgba(37, 211, 102, 0.25);
+  animation: pulse-glow 3s infinite alternate;
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 12px rgba(37, 211, 102, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 24px rgba(37, 211, 102, 0.45);
+  }
+}
+
+.onboarding-hero h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.onboarding-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 540px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Grid de 3 Passos */
+.onboarding-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-bottom: 32px;
+}
+
+.onboarding-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  transition: var(--transition);
+}
+
+.onboarding-step-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(37, 211, 102, 0.3);
+  transform: translateY(-2px);
+}
+
+.step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #000000;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.step-content h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.step-content p {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Área de Ação */
+.onboarding-action-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-lg {
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 20px rgba(37, 211, 102, 0.35);
+  transition: all 0.25s ease;
+}
+
+.btn-lg:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 26px rgba(37, 211, 102, 0.5);
+}
+
+.onboarding-guarantees {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* =========================================================
+   2. CARD DE CONECTADO (ESTADO ATIVO)
+   ========================================================= */
+.connected-card {
+  padding: 28px;
+  background: rgba(22, 27, 38, 0.9);
+  border: 1px solid rgba(37, 211, 102, 0.25);
+}
+
+.connected-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.connected-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.connected-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.info-box {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  transition: var(--transition);
+}
+
+.info-box:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.info-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.info-value {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  word-break: break-all;
+}
+
+.info-value.highlight-green {
+  color: var(--primary);
+}
+
+.info-subtext {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.connected-footer-note {
+  background: rgba(37, 211, 102, 0.08);
+  border: 1px dashed rgba(37, 211, 102, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+/* =========================================================
+   3. ACCORDION DO MODO TÉCNICO / SUPORTE
+   ========================================================= */
+.technical-accordion {
+  background: rgba(22, 27, 38, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.technical-accordion:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  background: rgba(255, 255, 255, 0.02);
+  transition: background 0.2s ease;
+}
+
+.accordion-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.accordion-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.accordion-subtext {
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--text-dim);
+}
+
+.accordion-arrow {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: transform 0.25s ease;
+}
+
+.accordion-arrow.open {
+  transform: rotate(180deg);
+}
+
+.accordion-body {
+  padding: 22px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(14, 18, 29, 0.8);
+}
+
+.technical-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--status-yellow);
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}

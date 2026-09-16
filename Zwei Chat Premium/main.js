@@ -9,6 +9,8 @@ const log = require("electron-log");
 const metaConfig = require("./config/metaConfig");
 const { metaApiClient } = require("./client/metaApiClient");
 const { metaAccountService } = require("./services/metaAccountService");
+const { metaOnboardingService } = require("./services/metaOnboardingService");
+const { oauthDialogManager } = require("./services/oauthDialogManager");
 const { metaTemplateService } = require("./services/metaTemplateService");
 const { metaBroadcastService } = require("./services/metaBroadcastService");
 const { broadcastRecipientsService } = require("./services/broadcastRecipientsService");
@@ -54,7 +56,7 @@ function registerIpcHandlers() {
   ipcMain.handle("meta:get-config", () => metaConfig.getConfig());
 
   ipcMain.handle("meta:save-config", async (_event, newConfig) => {
-    metaConfig.updateConfig(newConfig);
+    metaConfig.saveToEnvFile(newConfig);
     const health = await metaAccountService.checkConnectionStatus();
     return { success: true, health };
   });
@@ -65,6 +67,44 @@ function registerIpcHandlers() {
 
   ipcMain.handle("meta:get-account-health", async () => {
     return metaAccountService.checkConnectionStatus();
+  });
+
+  // Onboarding Oficial Meta (Embedded Signup)
+  ipcMain.handle("meta:get-embedded-signup-url", () => {
+    return metaOnboardingService.getEmbeddedSignupUrl();
+  });
+
+  ipcMain.handle("meta:start-embedded-signup", async () => {
+    try {
+      const authResult = await oauthDialogManager.openMetaAuthDialog(mainWindow);
+
+      if (!authResult.success) {
+        return {
+          success: false,
+          cancelled: !!authResult.cancelled,
+          error: authResult.error || "Operação cancelada ou falha na autenticação.",
+        };
+      }
+
+      // Troca o código obtido pelas credenciais completas e ativa a conta
+      const onboardingResult = await metaOnboardingService.completeOnboarding(
+        authResult.code,
+        authResult.redirectUri
+      );
+
+      return onboardingResult;
+    } catch (err) {
+      console.error("Erro no fluxo do Embedded Signup:", err);
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle("meta:complete-onboarding", async (_event, { authCode, redirectUri }) => {
+    return metaOnboardingService.completeOnboarding(authCode, redirectUri);
+  });
+
+  ipcMain.handle("meta:disconnect-account", async () => {
+    return metaOnboardingService.disconnectAccount();
   });
 
   // 2. Message Templates

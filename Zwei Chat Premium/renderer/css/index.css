@@ -21,4 +21,5 @@
 /* 4. Módulos Específicos */
 @import url('modules/flows.css');
 @import url('modules/broadcast.css');
+@import url('modules/settings.css');
 @import url('modules/out-of-pattern.css');

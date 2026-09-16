@@ -8,6 +8,8 @@ require("dotenv").config();
 class MetaConfigManager {
   constructor() {
     this.config = {
+      appId: process.env.META_APP_ID || "1824502742321385",
+      configId: process.env.META_CONFIG_ID || "",
       phoneNumberId: process.env.META_PHONE_NUMBER_ID || "",
       wabaId: process.env.META_WABA_ID || "",
       accessToken: process.env.META_ACCESS_TOKEN || "",
@@ -33,12 +35,85 @@ class MetaConfigManager {
   updateConfig(newConfig) {
     if (!newConfig || typeof newConfig !== "object") return;
 
+    if (newConfig.appId !== undefined) this.config.appId = String(newConfig.appId).trim();
+    if (newConfig.configId !== undefined) this.config.configId = String(newConfig.configId).trim();
     if (newConfig.phoneNumberId !== undefined) this.config.phoneNumberId = String(newConfig.phoneNumberId).trim();
     if (newConfig.wabaId !== undefined) this.config.wabaId = String(newConfig.wabaId).trim();
     if (newConfig.accessToken !== undefined) this.config.accessToken = String(newConfig.accessToken).trim();
     if (newConfig.appSecret !== undefined) this.config.appSecret = String(newConfig.appSecret).trim();
     if (newConfig.verifyToken !== undefined) this.config.verifyToken = String(newConfig.verifyToken).trim();
     if (newConfig.apiVersion !== undefined) this.config.apiVersion = String(newConfig.apiVersion).trim();
+  }
+
+  /**
+   * Salva as configurações permanentemente no arquivo .env
+   * @param {object} newConfig - Novas configurações a persistir
+   * @returns {boolean} true se gravou com sucesso
+   */
+  saveToEnvFile(newConfig = {}) {
+    this.updateConfig(newConfig);
+
+    const envPath = path.join(__dirname, "../.env");
+    let envContent = "";
+    if (fs.existsSync(envPath)) {
+      envContent = fs.readFileSync(envPath, "utf-8");
+    }
+
+    const mapping = {
+      META_APP_ID: this.config.appId,
+      META_CONFIG_ID: this.config.configId,
+      META_PHONE_NUMBER_ID: this.config.phoneNumberId,
+      META_WABA_ID: this.config.wabaId,
+      META_ACCESS_TOKEN: this.config.accessToken,
+      META_APP_SECRET: this.config.appSecret,
+      META_VERIFY_TOKEN: this.config.verifyToken,
+      META_GRAPH_API_VERSION: this.config.apiVersion,
+    };
+
+    let lines = envContent ? envContent.split(/\r?\n/) : [];
+    const keysHandled = new Set();
+
+    lines = lines.map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return line;
+
+      const equalIndex = line.indexOf("=");
+      if (equalIndex === -1) return line;
+
+      const key = line.slice(0, equalIndex).trim();
+      if (key in mapping) {
+        keysHandled.add(key);
+        process.env[key] = mapping[key] || "";
+        return `${key}=${mapping[key] || ""}`;
+      }
+      return line;
+    });
+
+    // Adiciona chaves que ainda não existiam no .env
+    for (const [key, value] of Object.entries(mapping)) {
+      if (!keysHandled.has(key) && value) {
+        lines.push(`${key}=${value}`);
+        process.env[key] = value;
+      }
+    }
+
+    fs.writeFileSync(envPath, lines.join("\n"), "utf-8");
+    return true;
+  }
+
+  /**
+   * Limpa as credenciais do cliente (Desconectar) e persiste no .env
+   */
+  clearCredentials() {
+    this.config.phoneNumberId = "";
+    this.config.wabaId = "";
+    this.config.accessToken = "";
+
+    return this.saveToEnvFile({
+      phoneNumberId: "",
+      wabaId: "",
+      accessToken: "",
+    });
   }
 
   /**
@@ -59,7 +134,7 @@ class MetaConfigManager {
 
   /**
    * Retorna a URL base formatada da Graph API com a versão configurada
-   * @returns {string} Ex: https://graph.facebook.com/v21.0
+   * @returns {string} 
    */
   getApiBaseUrl() {
     return `${this.config.baseUrl}/${this.config.apiVersion}`;
@@ -67,7 +142,7 @@ class MetaConfigManager {
 
   /**
    * Retorna a URL do endpoint de mensagens para o Phone Number ID ativo
-   * @returns {string} Ex: https://graph.facebook.com/v21.0/123456789/messages
+   * @returns {string} 
    */
   getMessagesEndpoint() {
     return `${this.getApiBaseUrl()}/${this.config.phoneNumberId}/messages`;

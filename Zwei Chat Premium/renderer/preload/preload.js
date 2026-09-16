@@ -10,6 +10,12 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
   testConnection: (config) => ipcRenderer.invoke("meta:test-connection", config),
   getAccountHealth: () => ipcRenderer.invoke("meta:get-account-health"),
 
+  // Onboarding Oficial Meta (Embedded Signup)
+  getEmbeddedSignupUrl: () => ipcRenderer.invoke("meta:get-embedded-signup-url"),
+  startEmbeddedSignup: () => ipcRenderer.invoke("meta:start-embedded-signup"),
+  completeOnboarding: (data) => ipcRenderer.invoke("meta:complete-onboarding", data),
+  disconnectAccount: () => ipcRenderer.invoke("meta:disconnect-account"),
+
   // 2. Message Templates
   syncTemplates: () => ipcRenderer.invoke("templates:sync"),
   getApprovedTemplates: (language) => ipcRenderer.invoke("templates:get-approved", language),
