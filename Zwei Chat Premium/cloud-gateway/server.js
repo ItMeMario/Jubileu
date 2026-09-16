@@ -14,6 +14,7 @@ const { flowExecutor } = require("../client/flowExecutor");
 const { botIntegrationService } = require("../services/botIntegrationService");
 const { syncService } = require("../services/syncService");
 const { window24hService } = require("../services/window24hService");
+const metaConfig = require("../config/metaConfig");
 
 class CloudGatewayService extends EventEmitter {
   constructor() {
@@ -101,6 +102,47 @@ class CloudGatewayService extends EventEmitter {
   }
 
   /**
+   * Validação de Assinatura Criptográfica HMAC-SHA256 da Meta
+   * Garante que o payload recebido partiu exclusivamente dos servidores oficiais da Meta.
+   * @param {Buffer|string} rawBody - Corpo bruto da requisição
+   * @param {string} signatureHeader - Header x-hub-signature-256
+   * @param {string} appSecret - Segredo do Aplicativo Meta (App Secret)
+   * @returns {boolean}
+   */
+  verifyMetaSignature(rawBody, signatureHeader, appSecret) {
+    if (!signatureHeader || !appSecret) {
+      return false;
+    }
+
+    const parts = signatureHeader.split("=");
+    if (parts.length !== 2) return false;
+
+    const [algorithm, signatureHash] = parts;
+    if (algorithm.toLowerCase() !== "sha256" || !signatureHash) {
+      return false;
+    }
+
+    try {
+      const expectedHash = crypto
+        .createHmac("sha256", appSecret)
+        .update(typeof rawBody === "string" ? Buffer.from(rawBody, "utf8") : rawBody)
+        .digest("hex");
+
+      const signatureBuffer = Buffer.from(signatureHash, "hex");
+      const expectedBuffer = Buffer.from(expectedHash, "hex");
+
+      if (signatureBuffer.length !== expectedBuffer.length) {
+        return false;
+      }
+
+      // Comparação em tempo constante para prevenir Timing Attacks
+      return crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
    * Cria o servidor HTTP do Webhook
    */
   createHttpServer() {
@@ -145,6 +187,31 @@ class CloudGatewayService extends EventEmitter {
         });
 
         req.on("end", async () => {
+          // Validação Obrigatória da Assinatura HMAC-SHA256 da Meta
+          const signatureHeader =
+            req.headers["x-hub-signature-256"] || req.headers["X-Hub-Signature-256"];
+          const currentAppSecret =
+            (metaConfig && typeof metaConfig.getConfig === "function"
+              ? metaConfig.getConfig().appSecret
+              : null) ||
+            this.appSecret ||
+            process.env.META_APP_SECRET;
+
+          // Se houver App Secret configurado, rejeita estritamente payloads forjados ou não assinados
+          if (currentAppSecret) {
+            const isValid = this.verifyMetaSignature(rawBody, signatureHeader, currentAppSecret);
+            if (!isValid) {
+              console.warn("⛔ [Segurança Webhook] Requisição POST rejeitada: Assinatura HMAC-SHA256 ausente ou inválida!");
+              res.writeHead(403, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  error: "Forbidden: Assinatura de autenticação da Meta ausente ou inválida.",
+                })
+              );
+              return;
+            }
+          }
+
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ status: "received" }));
 

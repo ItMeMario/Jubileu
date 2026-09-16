@@ -3,16 +3,19 @@
 
 const path = require("path");
 const fs = require("fs");
+const { cryptoStorageService } = require("../services/cryptoStorageService");
 require("dotenv").config();
 
 class MetaConfigManager {
   constructor() {
+    const rawAccessToken = process.env.META_ACCESS_TOKEN || "";
+
     this.config = {
       appId: process.env.META_APP_ID || "1824502742321385",
       configId: process.env.META_CONFIG_ID || "",
       phoneNumberId: process.env.META_PHONE_NUMBER_ID || "",
       wabaId: process.env.META_WABA_ID || "",
-      accessToken: process.env.META_ACCESS_TOKEN || "",
+      accessToken: cryptoStorageService.decrypt(rawAccessToken),
       appSecret: process.env.META_APP_SECRET || "",
       verifyToken: process.env.META_VERIFY_TOKEN || "",
       apiVersion: process.env.META_GRAPH_API_VERSION || "v21.0",
@@ -39,14 +42,17 @@ class MetaConfigManager {
     if (newConfig.configId !== undefined) this.config.configId = String(newConfig.configId).trim();
     if (newConfig.phoneNumberId !== undefined) this.config.phoneNumberId = String(newConfig.phoneNumberId).trim();
     if (newConfig.wabaId !== undefined) this.config.wabaId = String(newConfig.wabaId).trim();
-    if (newConfig.accessToken !== undefined) this.config.accessToken = String(newConfig.accessToken).trim();
+    if (newConfig.accessToken !== undefined) {
+      // Garante que o token armazenado em memória esteja sempre descriptografado
+      this.config.accessToken = cryptoStorageService.decrypt(String(newConfig.accessToken).trim());
+    }
     if (newConfig.appSecret !== undefined) this.config.appSecret = String(newConfig.appSecret).trim();
     if (newConfig.verifyToken !== undefined) this.config.verifyToken = String(newConfig.verifyToken).trim();
     if (newConfig.apiVersion !== undefined) this.config.apiVersion = String(newConfig.apiVersion).trim();
   }
 
   /**
-   * Salva as configurações permanentemente no arquivo .env
+   * Salva as configurações permanentemente no arquivo .env criptografando credenciais sensíveis
    * @param {object} newConfig - Novas configurações a persistir
    * @returns {boolean} true se gravou com sucesso
    */
@@ -59,12 +65,17 @@ class MetaConfigManager {
       envContent = fs.readFileSync(envPath, "utf-8");
     }
 
+    // Criptografa o token de acesso sensível antes de gravar no disco
+    const encryptedToken = this.config.accessToken
+      ? cryptoStorageService.encrypt(this.config.accessToken)
+      : "";
+
     const mapping = {
       META_APP_ID: this.config.appId,
       META_CONFIG_ID: this.config.configId,
       META_PHONE_NUMBER_ID: this.config.phoneNumberId,
       META_WABA_ID: this.config.wabaId,
-      META_ACCESS_TOKEN: this.config.accessToken,
+      META_ACCESS_TOKEN: encryptedToken,
       META_APP_SECRET: this.config.appSecret,
       META_VERIFY_TOKEN: this.config.verifyToken,
       META_GRAPH_API_VERSION: this.config.apiVersion,

@@ -14,7 +14,8 @@ class OAuthDialogManager {
   openMetaAuthDialog(parentWindow) {
     return new Promise((resolve) => {
       const redirectUri = "https://www.facebook.com/connect/login_success.html";
-      const authUrl = metaOnboardingService.getEmbeddedSignupUrl(redirectUri);
+      const expectedState = metaOnboardingService.generateOAuthState();
+      const authUrl = metaOnboardingService.getEmbeddedSignupUrl(redirectUri, expectedState);
 
       const isValidParent = parentWindow && !parentWindow.isDestroyed();
 
@@ -67,12 +68,25 @@ class OAuthDialogManager {
 
           if (isRedirectTarget) {
             const code = parsed.searchParams.get("code");
+            const incomingState = parsed.searchParams.get("state");
             const error =
               parsed.searchParams.get("error_description") ||
               parsed.searchParams.get("error");
 
             if (code) {
-              finish({ success: true, code, redirectUri });
+              // Validação estrita de segurança anti-CSRF
+              const isStateValid = metaOnboardingService.validateOAuthState(incomingState, expectedState);
+              if (!isStateValid) {
+                console.error("⛔ [Alerta de Segurança] Tentativa de CSRF detectada no retorno do OAuth da Meta!");
+                finish({
+                  success: false,
+                  cancelled: false,
+                  error: "Violação de segurança (CSRF): o parâmetro de estado retornado pela Meta é inválido ou ausente.",
+                });
+                return;
+              }
+
+              finish({ success: true, code, redirectUri, state: incomingState });
             } else if (error) {
               finish({
                 success: false,

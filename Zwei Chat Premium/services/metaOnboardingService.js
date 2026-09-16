@@ -2,16 +2,29 @@
 // Serviço de Autenticação e Onboarding Automático via Meta Embedded Signup
 
 const axios = require("axios");
+const crypto = require("crypto");
 const metaConfig = require("../config/metaConfig");
 const { metaAccountService } = require("./metaAccountService");
 
 class MetaOnboardingService {
   /**
-   * Constrói a URL oficial de diálogo OAuth do Facebook/Meta para Embedded Signup
+   * Gera um token de estado aleatório (CSRF State Token) de alta entropia
+   * @returns {string} Token hexadecimal de 48 caracteres
+   */
+  generateOAuthState() {
+    return crypto.randomBytes(24).toString("hex");
+  }
+
+  /**
+   * Constrói a URL oficial de diálogo OAuth do Facebook/Meta para Embedded Signup com proteção anti-CSRF
    * @param {string} redirectUri - URI de retorno (padrão: página de sucesso padrão da Meta)
+   * @param {string} [state=null] - Token de estado anti-CSRF para validação de integridade da sessão
    * @returns {string} URL completa de autenticação
    */
-  getEmbeddedSignupUrl(redirectUri = "https://www.facebook.com/connect/login_success.html") {
+  getEmbeddedSignupUrl(
+    redirectUri = "https://www.facebook.com/connect/login_success.html",
+    state = null
+  ) {
     const config = metaConfig.getConfig();
     const appId = config.appId || process.env.META_APP_ID || "1824502742321385";
     const configId = config.configId || process.env.META_CONFIG_ID || "";
@@ -26,12 +39,37 @@ class MetaOnboardingService {
       "whatsapp_business_management,whatsapp_business_messaging"
     );
 
+    // Adiciona o parâmetro de integridade state se fornecido
+    if (state) {
+      url.searchParams.set("state", state);
+    }
+
     // Se houver um Configuration ID criado no painel da Meta, inclui na URL
     if (configId) {
       url.searchParams.set("config_id", configId);
     }
 
     return url.toString();
+  }
+
+  /**
+   * Valida a integridade do parâmetro state retornado pela Meta para prevenir CSRF
+   * @param {string} incomingState - State retornado na URL de callback
+   * @param {string} expectedState - State original gerado pela aplicação
+   * @returns {boolean}
+   */
+  validateOAuthState(incomingState, expectedState) {
+    if (!incomingState || !expectedState) return false;
+    if (typeof incomingState !== "string" || typeof expectedState !== "string") return false;
+    if (incomingState.length !== expectedState.length) return false;
+
+    try {
+      const incomingBuf = Buffer.from(incomingState, "utf8");
+      const expectedBuf = Buffer.from(expectedState, "utf8");
+      return crypto.timingSafeEqual(incomingBuf, expectedBuf);
+    } catch (e) {
+      return false;
+    }
   }
 
   /**
