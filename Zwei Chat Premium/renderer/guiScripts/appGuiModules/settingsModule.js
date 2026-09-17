@@ -230,9 +230,14 @@ export function initSettings(api, callbacks = {}) {
         phoneNumberId: cfgPhoneId?.value?.trim() || "",
         wabaId: cfgWabaId?.value?.trim() || "",
         accessToken: cfgAccessToken?.value?.trim() || "",
-        appSecret: cfgAppSecret?.value?.trim() || "",
         verifyToken: cfgVerifyToken?.value?.trim() || "",
       };
+
+      // Apenas adiciona appSecret se o desenvolvedor preencheu explicitamente o campo avançado
+      const secretInput = cfgAppSecret?.value?.trim();
+      if (secretInput) {
+        newConfig.appSecret = secretInput;
+      }
 
       try {
         const res = await api.saveConfig(newConfig);

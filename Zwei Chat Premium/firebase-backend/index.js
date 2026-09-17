@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const axios = require("axios");
 
 let functions;
 try {
@@ -310,13 +311,209 @@ async function handleWebhookRequest(req, res) {
   return res.status(405).send("Method Not Allowed");
 }
 
+/**
+ * Endpoint de Troca Segura de Código OAuth da Meta (Embedded Signup)
+ * Isola o META_APP_SECRET 100% no servidor/Cloud Function, impedindo sua distribuição no cliente.
+ * Recebe { code, redirectUri } e troca por access_token e dados da conta WABA.
+ * @param {object} req - Objeto de requisição HTTP (Express / Cloud Functions)
+ * @param {object} res - Objeto de resposta HTTP
+ */
+async function handleOAuthExchangeRequest(req, res) {
+  // 1. Cabeçalhos de Segurança e CORS
+  if (typeof res.set === "function") {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  } else if (typeof res.setHeader === "function") {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  }
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).send("");
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      success: false,
+      error: "Método não permitido. Utilize POST.",
+    });
+  }
+
+  try {
+    let body = req.body;
+    if (typeof body === "string") {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        return res.status(400).json({ success: false, error: "Corpo da requisição JSON inválido." });
+      }
+    }
+
+    const { code, redirectUri } = body || {};
+
+    if (!code || typeof code !== "string" || !code.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Parâmetro 'code' é obrigatório para a troca OAuth.",
+      });
+    }
+
+    const appId =
+      process.env.META_APP_ID ||
+      (functions?.config?.()?.meta?.app_id) ||
+      "1824502742321385";
+
+    const appSecret =
+      process.env.META_APP_SECRET ||
+      (functions?.config?.()?.meta?.app_secret);
+
+    if (!appSecret) {
+      console.error("❌ META_APP_SECRET não configurado nas variáveis de ambiente da Cloud Function.");
+      return res.status(500).json({
+        success: false,
+        error: "Configuração de servidor incompleta: META_APP_SECRET ausente na nuvem.",
+      });
+    }
+
+    const apiVersion = process.env.META_GRAPH_API_VERSION || "v21.0";
+    const targetRedirectUri =
+      redirectUri || "https://www.facebook.com/connect/login_success.html";
+
+    // 2. Troca o authorization code pelo user access token diretamente na Graph API
+    const tokenResponse = await axios.get(
+      `https://graph.facebook.com/${apiVersion}/oauth/access_token`,
+      {
+        params: {
+          client_id: appId,
+          client_secret: appSecret,
+          code: code.trim(),
+          redirect_uri: targetRedirectUri,
+        },
+        timeout: 15000,
+      }
+    );
+
+    const tokenData = tokenResponse.data || {};
+    const userAccessToken = tokenData.access_token;
+
+    if (!userAccessToken) {
+      return res.status(400).json({
+        success: false,
+        error: "Resposta da Meta não continha um access_token válido.",
+      });
+    }
+
+    // 3. Inspeção e Resolução de WABA com o App Access Token (no servidor seguro)
+    let wabaId = null;
+    try {
+      const debugRes = await axios.get(
+        `https://graph.facebook.com/${apiVersion}/debug_token`,
+        {
+          params: {
+            input_token: userAccessToken,
+            access_token: `${appId}|${appSecret}`,
+          },
+          timeout: 10000,
+        }
+      );
+
+      const granularScopes = debugRes.data?.data?.granular_scopes || [];
+      const wabaScope = granularScopes.find(
+        (s) => s.scope === "whatsapp_business_management"
+      );
+
+      if (wabaScope && Array.isArray(wabaScope.target_ids) && wabaScope.target_ids.length > 0) {
+        wabaId = wabaScope.target_ids[0];
+      }
+    } catch (debugErr) {
+      console.warn("Aviso no debug_token no servidor (tentando método alternativo):", debugErr.message);
+    }
+
+    // 4. Fallback de busca de WABA caso debug_token não tenha target_ids
+    if (!wabaId) {
+      try {
+        const sharedWabaRes = await axios.get(
+          `https://graph.facebook.com/${apiVersion}/me/assigned_whatsapp_business_accounts`,
+          {
+            params: { access_token: userAccessToken },
+            timeout: 10000,
+          }
+        );
+
+        const accounts = sharedWabaRes.data?.data || [];
+        if (accounts.length > 0) {
+          wabaId = accounts[0].id;
+        }
+      } catch (fallbackErr) {
+        console.warn("Aviso ao buscar WABAs atribuídos:", fallbackErr.message);
+      }
+    }
+
+    // 5. Busca dados do número primário se wabaId estiver disponível
+    let primaryPhone = null;
+    if (wabaId) {
+      try {
+        const phoneRes = await axios.get(
+          `https://graph.facebook.com/${apiVersion}/${wabaId}/phone_numbers`,
+          {
+            params: {
+              access_token: userAccessToken,
+              fields: "id,display_phone_number,verified_name,quality_rating,code_verification_status",
+            },
+            timeout: 10000,
+          }
+        );
+
+        const phones = phoneRes.data?.data || [];
+        if (phones.length > 0) {
+          primaryPhone = phones[0];
+        }
+      } catch (phoneErr) {
+        console.warn("Aviso ao buscar dados do telefone no servidor:", phoneErr.message);
+      }
+    }
+
+    // Retorna credenciais e metadados ao cliente SEM NUNCA revelar o META_APP_SECRET
+    return res.status(200).json({
+      success: true,
+      accessToken: userAccessToken,
+      tokenType: tokenData.token_type || "bearer",
+      expiresIn: tokenData.expires_in || null,
+      wabaId: wabaId || null,
+      phone: primaryPhone || null,
+    });
+  } catch (error) {
+    const metaErrorMsg =
+      error.response?.data?.error?.message ||
+      error.message ||
+      "Falha interna na troca do código OAuth.";
+    const status = error.response?.status && error.response.status >= 400 && error.response.status < 600
+      ? error.response.status
+      : 500;
+
+    console.error("❌ Erro ao processar oauthExchange na Cloud Function:", metaErrorMsg);
+    return res.status(status).json({
+      success: false,
+      error: `Erro Meta OAuth: ${metaErrorMsg}`,
+    });
+  }
+}
+
 const metaWebhook = functions?.https?.onRequest
   ? functions.https.onRequest(handleWebhookRequest)
   : handleWebhookRequest;
 
+const oauthExchange = functions?.https?.onRequest
+  ? functions.https.onRequest(handleOAuthExchangeRequest)
+  : handleOAuthExchangeRequest;
+
 module.exports = {
   metaWebhook,
+  oauthExchange,
   handleWebhookRequest,
+  handleOAuthExchangeRequest,
   verifyMetaSignature,
   normalizeIncomingMessage,
   processStatusUpdate,

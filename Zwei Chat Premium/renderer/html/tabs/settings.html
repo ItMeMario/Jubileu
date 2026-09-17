@@ -167,17 +167,24 @@
             <input type="password" class="form-control" id="cfg-access-token" placeholder="Bearer EAAG...">
           </div>
 
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label for="cfg-app-secret">App Secret (Segredo do App):</label>
-              <input type="password" class="form-control" id="cfg-app-secret" placeholder="Segredo para validação de Webhooks">
-            </div>
-
-            <div class="form-group">
-              <label for="cfg-verify-token">Webhook Verify Token:</label>
-              <input type="text" class="form-control" id="cfg-verify-token" placeholder="Token de handshake">
-            </div>
+          <div class="form-group">
+            <label for="cfg-verify-token">Webhook Verify Token:</label>
+            <input type="text" class="form-control" id="cfg-verify-token" placeholder="Token de handshake (ex: frase secreta)">
           </div>
+
+          <!-- Seção Opcional de Desenvolvimento / Diagnóstico Avançado -->
+          <details style="margin-top: 14px; margin-bottom: 10px; font-size: 0.85rem; color: #8b949e;">
+            <summary style="cursor: pointer; color: #58a6ff; user-select: none;">⚙️ Opções Avançadas de Desenvolvedor (Opcional)</summary>
+            <div style="margin-top: 10px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px dashed #30363d;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="cfg-app-secret">App Secret Local (Apenas para testes locais offline):</label>
+                <input type="password" class="form-control" id="cfg-app-secret" placeholder="Opcional - protegido na nuvem">
+                <small style="color: #8b949e; display: block; margin-top: 6px;">
+                  🔒 <strong>Segurança Comercial:</strong> Em produção, o App Secret reside exclusivamente na Cloud Function do Firebase para garantir que sua chave mestra nunca seja exposta no cliente.
+                </small>
+              </div>
+            </div>
+          </details>
 
           <div style="display: flex; gap: 12px; margin-top: 16px;">
             <button type="submit" class="btn btn-primary" id="btn-save-meta-config">💾 Salvar Manualmente</button>

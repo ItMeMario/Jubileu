@@ -73,24 +73,110 @@ class MetaOnboardingService {
   }
 
   /**
-   * Troca o código de autorização OAuth por um Access Token do usuário/cliente
+   * Obtém a URL da Cloud Function para troca de OAuth
+   * @returns {string|null}
+   */
+  getCloudFunctionsExchangeUrl() {
+    if (process.env.FIREBASE_FUNCTIONS_URL) {
+      const base = process.env.FIREBASE_FUNCTIONS_URL.replace(/\/$/, "");
+      return base.endsWith("/oauthExchange") ? base : `${base}/oauthExchange`;
+    }
+
+    const config = metaConfig.getConfig();
+    const functionsUrl = config.functionsUrl || "";
+    if (functionsUrl) {
+      const base = functionsUrl.replace(/\/$/, "");
+      return base.endsWith("/oauthExchange") ? base : `${base}/oauthExchange`;
+    }
+
+    const projectId =
+      config.firebaseProjectId ||
+      process.env.FIREBASE_PROJECT_ID;
+
+    if (projectId) {
+      const region = process.env.FIREBASE_FUNCTIONS_REGION || "us-central1";
+      return `https://${region}-${projectId}.cloudfunctions.net/oauthExchange`;
+    }
+
+    return null;
+  }
+
+  /**
+   * Troca o código de autorização OAuth por um Access Token do usuário/cliente.
+   * Prioridade 1: Executa via Cloud Function segura (META_APP_SECRET 100% isolado na nuvem).
+   * Prioridade 2 (Modo Dev): Se houver META_APP_SECRET local em ambiente de teste/dev.
    * @param {string} authCode - Código de autorização capturado no callback
    * @param {string} redirectUri - Mesma URI de redirecionamento usada no login
-   * @returns {Promise<{ access_token: string, token_type: string }>}
+   * @param {string} [cloudEndpoint=null] - URL opcional do endpoint da Cloud Function
+   * @returns {Promise<{ access_token: string, token_type: string, wabaId?: string, phone?: object }>}
    */
   async exchangeCodeForToken(
     authCode,
-    redirectUri = "https://www.facebook.com/connect/login_success.html"
+    redirectUri = "https://www.facebook.com/connect/login_success.html",
+    cloudEndpoint = null
   ) {
+    const cloudUrl = cloudEndpoint || this.getCloudFunctionsExchangeUrl();
+
+    // 1. Método Oficial Seguro: Cloud Function (Sem META_APP_SECRET no cliente)
+    if (cloudUrl) {
+      try {
+        console.log(`🔒 [OAuth Seguro] Trocando código via Cloud Function: ${cloudUrl}`);
+        const response = await axios.post(
+          cloudUrl,
+          {
+            code: authCode,
+            redirectUri,
+          },
+          {
+            timeout: 20000,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        if (response.data && response.data.success) {
+          return {
+            access_token: response.data.accessToken || response.data.access_token,
+            token_type: response.data.tokenType || response.data.token_type || "bearer",
+            expires_in: response.data.expiresIn || response.data.expires_in,
+            wabaId: response.data.wabaId || null,
+            phone: response.data.phone || null,
+          };
+        } else {
+          throw new Error(response.data?.error || "Falha na resposta da Cloud Function");
+        }
+      } catch (cloudErr) {
+        const config = metaConfig.getConfig();
+        const appSecret = config.appSecret || process.env.META_APP_SECRET;
+
+        // Se o cliente não tem appSecret (modo de produção normal), propaga o erro de forma clara
+        if (!appSecret) {
+          const msg =
+            cloudErr.response?.data?.error ||
+            cloudErr.message ||
+            "Erro de conexão com o servidor de autenticação.";
+          throw new Error(`Falha na autenticação OAuth na nuvem: ${msg}`);
+        }
+
+        console.warn(
+          "⚠️ Falha na Cloud Function. Recorrendo ao fallback local de desenvolvimento com META_APP_SECRET..."
+        );
+      }
+    }
+
+    // 2. Fallback de Desenvolvimento Local (Apenas se META_APP_SECRET foi configurado localmente)
     const config = metaConfig.getConfig();
     const appId = config.appId || process.env.META_APP_ID || "1824502742321385";
     const appSecret = config.appSecret || process.env.META_APP_SECRET;
 
     if (!appSecret) {
       throw new Error(
-        "App Secret da Meta não configurado. Verifique o arquivo .env (META_APP_SECRET)."
+        "Troca OAuth segura não configurada: Defina FIREBASE_PROJECT_ID ou FIREBASE_FUNCTIONS_URL no .env para utilizar a Cloud Function de autenticação sem expor o segredo da Meta."
       );
     }
+
+    console.warn(
+      "⚠️ [Aviso de Segurança - Modo Dev]: Usando META_APP_SECRET local para troca de token. Em produção comercial, utilize a Cloud Function na nuvem."
+    );
 
     try {
       const response = await axios.get(
@@ -119,44 +205,60 @@ class MetaOnboardingService {
   /**
    * Identifica o WABA ID e os dados do número de telefone vinculados ao token
    * @param {string} userAccessToken - Token do cliente obtido na troca do OAuth
+   * @param {string} [preResolvedWabaId=null] - WABA ID previamente resolvido pelo backend
+   * @param {object} [preResolvedPhone=null] - Dados do telefone previamente resolvidos pelo backend
    * @returns {Promise<{ wabaId: string, phone: object }>}
    */
-  async fetchClientWabaAndPhone(userAccessToken) {
+  async fetchClientWabaAndPhone(
+    userAccessToken,
+    preResolvedWabaId = null,
+    preResolvedPhone = null
+  ) {
+    // Se o backend seguro já resolveu tanto o WABA ID quanto o Telefone, retorna direto
+    if (preResolvedWabaId && preResolvedPhone) {
+      return {
+        wabaId: preResolvedWabaId,
+        phone: preResolvedPhone,
+      };
+    }
+
     const config = metaConfig.getConfig();
     const appId = config.appId || process.env.META_APP_ID || "1824502742321385";
     const appSecret = config.appSecret || process.env.META_APP_SECRET;
 
-    let wabaId = null;
+    let wabaId = preResolvedWabaId;
 
-    // 1. Tenta inspecionar o token via debug_token para extrair o WABA ID dos granular_scopes
-    try {
-      const debugRes = await axios.get(
-        `${config.baseUrl}/${config.apiVersion}/debug_token`,
-        {
-          params: {
-            input_token: userAccessToken,
-            access_token: `${appId}|${appSecret}`,
-          },
-          timeout: 10000,
+    // 1. Tenta inspecionar o token via debug_token apenas se appSecret estiver disponível localmente (dev mode)
+    if (!wabaId && appSecret) {
+      try {
+        const debugRes = await axios.get(
+          `${config.baseUrl}/${config.apiVersion}/debug_token`,
+          {
+            params: {
+              input_token: userAccessToken,
+              access_token: `${appId}|${appSecret}`,
+            },
+            timeout: 10000,
+          }
+        );
+
+        const granularScopes = debugRes.data?.data?.granular_scopes || [];
+        const wabaScope = granularScopes.find(
+          (s) => s.scope === "whatsapp_business_management"
+        );
+
+        if (wabaScope && Array.isArray(wabaScope.target_ids) && wabaScope.target_ids.length > 0) {
+          wabaId = wabaScope.target_ids[0];
         }
-      );
-
-      const granularScopes = debugRes.data?.data?.granular_scopes || [];
-      const wabaScope = granularScopes.find(
-        (s) => s.scope === "whatsapp_business_management"
-      );
-
-      if (wabaScope && Array.isArray(wabaScope.target_ids) && wabaScope.target_ids.length > 0) {
-        wabaId = wabaScope.target_ids[0];
+      } catch (debugErr) {
+        console.warn(
+          "Aviso no debug_token local (tentando método sem segredo):",
+          debugErr.message
+        );
       }
-    } catch (debugErr) {
-      console.warn(
-        "Aviso no debug_token (tentando método alternativo de busca de WABA):",
-        debugErr.message
-      );
     }
 
-    // 2. Fallback: Se não encontrou pelo debug_token, busca pelas contas compartilhadas
+    // 2. Método Padrão Seguro sem Segredo: busca pelas contas comerciais atribuídas ao usuário
     if (!wabaId) {
       try {
         const sharedWabaRes = await axios.get(
@@ -182,7 +284,12 @@ class MetaOnboardingService {
       );
     }
 
-    // 3. Busca a lista de números de telefone associados a esse WABA
+    // Se o telefone já foi resolvido, retorna
+    if (preResolvedPhone) {
+      return { wabaId, phone: preResolvedPhone };
+    }
+
+    // 3. Busca a lista de números de telefone associados ao WABA (usando apenas userAccessToken)
     const phoneRes = await axios.get(
       `${config.baseUrl}/${config.apiVersion}/${wabaId}/phone_numbers`,
       {
@@ -255,7 +362,11 @@ class MetaOnboardingService {
       const userAccessToken = tokenData.access_token;
 
       console.log("⚡ [Onboarding] Identificando WABA ID e Número do Cliente...");
-      const { wabaId, phone } = await this.fetchClientWabaAndPhone(userAccessToken);
+      const { wabaId, phone } = await this.fetchClientWabaAndPhone(
+        userAccessToken,
+        tokenData.wabaId,
+        tokenData.phone
+      );
 
       console.log(`⚡ [Onboarding] WABA encontrado: ${wabaId} | Número: ${phone.display_phone_number} (ID: ${phone.id})`);
 

@@ -20,15 +20,22 @@ class MetaConfigManager {
       verifyToken: process.env.META_VERIFY_TOKEN || "",
       apiVersion: process.env.META_GRAPH_API_VERSION || "v21.0",
       baseUrl: "https://graph.facebook.com",
+      functionsUrl: process.env.FIREBASE_FUNCTIONS_URL || "",
+      firebaseProjectId: process.env.FIREBASE_PROJECT_ID || "",
     };
   }
 
   /**
    * Obtém a configuração atual
+   * @param {object} [options={}] - Opções de visualização ({ safeForClient: boolean })
    * @returns {object} Configurações ativas
    */
-  getConfig() {
-    return { ...this.config };
+  getConfig(options = {}) {
+    const configCopy = { ...this.config };
+    if (options.safeForClient || options.maskSecrets) {
+      delete configCopy.appSecret;
+    }
+    return configCopy;
   }
 
   /**
@@ -49,6 +56,8 @@ class MetaConfigManager {
     if (newConfig.appSecret !== undefined) this.config.appSecret = String(newConfig.appSecret).trim();
     if (newConfig.verifyToken !== undefined) this.config.verifyToken = String(newConfig.verifyToken).trim();
     if (newConfig.apiVersion !== undefined) this.config.apiVersion = String(newConfig.apiVersion).trim();
+    if (newConfig.functionsUrl !== undefined) this.config.functionsUrl = String(newConfig.functionsUrl).trim();
+    if (newConfig.firebaseProjectId !== undefined) this.config.firebaseProjectId = String(newConfig.firebaseProjectId).trim();
   }
 
   /**
@@ -76,10 +85,16 @@ class MetaConfigManager {
       META_PHONE_NUMBER_ID: this.config.phoneNumberId,
       META_WABA_ID: this.config.wabaId,
       META_ACCESS_TOKEN: encryptedToken,
-      META_APP_SECRET: this.config.appSecret,
       META_VERIFY_TOKEN: this.config.verifyToken,
       META_GRAPH_API_VERSION: this.config.apiVersion,
+      FIREBASE_FUNCTIONS_URL: this.config.functionsUrl,
+      FIREBASE_PROJECT_ID: this.config.firebaseProjectId,
     };
+
+    // Apenas persiste META_APP_SECRET se expressamente definido em ambiente dev
+    if (this.config.appSecret) {
+      mapping.META_APP_SECRET = this.config.appSecret;
+    }
 
     let lines = envContent ? envContent.split(/\r?\n/) : [];
     const keysHandled = new Set();

@@ -277,8 +277,22 @@ class CloudGatewayService extends EventEmitter {
    * Registra a URL do Webhook na Meta via Graph API
    */
   async registerWebhookOnMeta(callbackUrl) {
+    const currentAppSecret =
+      (metaConfig && typeof metaConfig.getConfig === "function"
+        ? metaConfig.getConfig().appSecret
+        : null) ||
+      this.appSecret ||
+      process.env.META_APP_SECRET;
+
+    if (!currentAppSecret) {
+      console.log(
+        "ℹ️ [Gateway Webhook] Cliente operando em modo seguro (sem META_APP_SECRET local). Webhooks são gerenciados centralmente pela Cloud Function."
+      );
+      return true;
+    }
+
     try {
-      const appAccessToken = `${this.appId}|${this.appSecret}`;
+      const appAccessToken = `${this.appId}|${currentAppSecret}`;
       const endpoint = `https://graph.facebook.com/v21.0/${this.appId}/subscriptions`;
 
       const res = await axios.post(endpoint, null, {
@@ -332,18 +346,31 @@ class CloudGatewayService extends EventEmitter {
     }
 
     if (!isReachable) {
-      console.warn("⚠️ Aviso: Túnel demorou para propagar, tentando registro na Meta mesmo assim...");
+      console.warn("⚠️ Aviso: Túnel demorou para propagar, verificando registro na Meta...");
     }
 
-    // Registra na Meta com retry
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const registered = await this.registerWebhookOnMeta(this.publicUrl);
-        if (registered) break;
-      } catch (e) {
-        console.warn(`Tentativa ${attempt} de registro na Meta falhou, tentando novamente em 2s...`);
-        await new Promise((r) => setTimeout(r, 2000));
+    // Registra na Meta com retry apenas se houver segredo local (modo dev)
+    const currentAppSecret =
+      (metaConfig && typeof metaConfig.getConfig === "function"
+        ? metaConfig.getConfig().appSecret
+        : null) ||
+      this.appSecret ||
+      process.env.META_APP_SECRET;
+
+    if (currentAppSecret) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const registered = await this.registerWebhookOnMeta(this.publicUrl);
+          if (registered) break;
+        } catch (e) {
+          console.warn(`Tentativa ${attempt} de registro na Meta falhou, tentando novamente em 2s...`);
+          await new Promise((r) => setTimeout(r, 2000));
+        }
       }
+    } else {
+      console.log(
+        "ℹ️ [Gateway Cloudflare] Túnel ativo localmente. Validação de produção com HMAC-SHA256 é realizada pela Cloud Function na nuvem e sincronizada via Firestore."
+      );
     }
 
     this.emit("ready", { publicUrl: this.publicUrl });

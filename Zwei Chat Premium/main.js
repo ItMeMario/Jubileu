@@ -74,7 +74,7 @@ function createWindow() {
  */
 function registerIpcHandlers() {
   // 1. Configurações e Diagnóstico Meta
-  ipcMain.handle("meta:get-config", () => metaConfig.getConfig());
+  ipcMain.handle("meta:get-config", () => metaConfig.getConfig({ safeForClient: true }));
 
   ipcMain.handle("meta:save-config", async (_event, newConfig) => {
     metaConfig.saveToEnvFile(newConfig);
