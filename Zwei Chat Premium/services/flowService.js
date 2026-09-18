@@ -31,6 +31,26 @@ class FlowService {
       if (fs.existsSync(this.flowsFilePath)) {
         const raw = fs.readFileSync(this.flowsFilePath, "utf8");
         this.flows = JSON.parse(raw || "[]");
+        // Garante que fluxos existentes tenham antiLoopConfig padrão
+        let modified = false;
+        this.flows.forEach((flow) => {
+          if (!flow.antiLoopConfig) {
+            flow.antiLoopConfig = {
+              enabled: true,
+              action: "notify_and_pause",
+              message:
+                "Identificamos muitas mensagens em sequência. Para sua comodidade e melhor atendimento, pausamos as respostas automáticas e transferimos seu contato para nossa equipe humana.",
+              fallbackAction: "notify_and_pause",
+              fallbackMessage:
+                "Não conseguimos identificar sua opção. Para melhor atendê-lo, transferimos seu atendimento para um especialista humano. Por favor, aguarde!",
+              maxFallbacks: 3,
+            };
+            modified = true;
+          }
+        });
+        if (modified) {
+          this.saveFlows();
+        }
       } else {
         this.flows = this._getDefaultFlows();
         this.saveFlows();
@@ -150,6 +170,16 @@ class FlowService {
       isActive: this.flows.length === 0, // Se for o primeiro, ativa automaticamente
       triggerKeywords: ["oi", "ola", "menu"],
       initialStepId: "step_1",
+      antiLoopConfig: {
+        enabled: true,
+        action: "notify_and_pause",
+        message:
+          "Identificamos muitas mensagens em sequência. Para sua comodidade e melhor atendimento, pausamos as respostas automáticas e transferimos seu contato para nossa equipe humana.",
+        fallbackAction: "notify_and_pause",
+        fallbackMessage:
+          "Não conseguimos identificar sua opção. Para melhor atendê-lo, transferimos seu atendimento para um especialista humano. Por favor, aguarde!",
+        maxFallbacks: 3,
+      },
       outOfPatternConfig: {
         enabled: true,
         types: ["image", "video", "audio", "document", "sticker"],
@@ -199,6 +229,16 @@ class FlowService {
         isActive: true,
         triggerKeywords: ["oi", "ola", "olá", "menu", "iniciar", "ajuda", "bom dia", "boa tarde", "boa noite"],
         initialStepId: "step_boas_vindas",
+        antiLoopConfig: {
+          enabled: true,
+          action: "notify_and_pause",
+          message:
+            "Identificamos muitas mensagens em sequência. Para sua comodidade e melhor atendimento, pausamos as respostas automáticas e transferimos seu contato para nossa equipe humana.",
+          fallbackAction: "notify_and_pause",
+          fallbackMessage:
+            "Não conseguimos identificar sua opção. Para melhor atendê-lo, transferimos seu atendimento para um especialista humano. Por favor, aguarde!",
+          maxFallbacks: 3,
+        },
         steps: {
           step_boas_vindas: {
             id: "step_boas_vindas",
@@ -291,6 +331,16 @@ class FlowService {
         isActive: false,
         triggerKeywords: ["quero participar", "evento", "cidade", "inscricao", "inscrição"],
         initialStepId: "step_cidades",
+        antiLoopConfig: {
+          enabled: true,
+          action: "notify_and_pause",
+          message:
+            "Identificamos muitas mensagens em sequência. Para sua comodidade e melhor atendimento, pausamos as respostas automáticas e transferimos seu contato para nossa equipe humana.",
+          fallbackAction: "notify_and_pause",
+          fallbackMessage:
+            "Não conseguimos identificar sua opção. Para melhor atendê-lo, transferimos seu atendimento para um especialista humano. Por favor, aguarde!",
+          maxFallbacks: 3,
+        },
         steps: {
           step_cidades: {
             id: "step_cidades",

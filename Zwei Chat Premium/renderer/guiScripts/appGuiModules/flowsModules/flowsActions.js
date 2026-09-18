@@ -85,6 +85,40 @@ export function openFlowBuilder(flow) {
     actionRadio.checked = true;
   }
 
+  // Sincroniza configurações de Proteção Anti-Loop & Guerra de Robôs (Bot vs Bot)
+  const antiLoopCfg = currentEditingFlow.antiLoopConfig || {
+    enabled: true,
+    action: "notify_and_pause",
+    message:
+      "Identificamos muitas mensagens em sequência. Para sua comodidade e melhor atendimento, pausamos as respostas automáticas e transferimos seu contato para nossa equipe humana.",
+    fallbackAction: "notify_and_pause",
+    fallbackMessage:
+      "Não conseguimos identificar sua opção. Para melhor atendê-lo, transferimos seu atendimento para um especialista humano. Por favor, aguarde!",
+    maxFallbacks: 3,
+  };
+
+  const toggleAntiLoop = $("#toggle-anti-loop");
+  const antiLoopBody = $("#anti-loop-body");
+  const antiLoopPanel = $("#anti-loop-panel");
+  const antiLoopMessage = $("#anti-loop-message");
+  const antiLoopFallbackMessage = $("#anti-loop-fallback-message");
+
+  if (toggleAntiLoop) toggleAntiLoop.checked = Boolean(antiLoopCfg.enabled !== false);
+  if (antiLoopBody) antiLoopBody.style.display = antiLoopCfg.enabled !== false ? "flex" : "none";
+  if (antiLoopPanel) {
+    if (antiLoopCfg.enabled !== false) antiLoopPanel.classList.add("is-active");
+    else antiLoopPanel.classList.remove("is-active");
+  }
+
+  const loopActionRadio = $(`input[name="anti-loop-action"][value="${antiLoopCfg.action || "notify_and_pause"}"]`);
+  if (loopActionRadio) loopActionRadio.checked = true;
+
+  const fallbackActionRadio = $(`input[name="anti-loop-fallback-action"][value="${antiLoopCfg.fallbackAction || "notify_and_pause"}"]`);
+  if (fallbackActionRadio) fallbackActionRadio.checked = true;
+
+  if (antiLoopMessage) antiLoopMessage.value = antiLoopCfg.message || "";
+  if (antiLoopFallbackMessage) antiLoopFallbackMessage.value = antiLoopCfg.fallbackMessage || "";
+
   renderBuilderSteps();
   updateBuilderSimulator(initialStepId);
 }
@@ -231,6 +265,26 @@ export function initFlows(api) {
         action: action,
       };
 
+      // 4.2 Coleta e salva as configurações de Proteção Anti-Loop & Bot vs Bot
+      const toggleAntiLoop = $("#toggle-anti-loop");
+      const antiLoopMessage = $("#anti-loop-message");
+      const antiLoopFallbackMessage = $("#anti-loop-fallback-message");
+      const selectedLoopAction = $('input[name="anti-loop-action"]:checked');
+      const selectedFallbackAction = $('input[name="anti-loop-fallback-action"]:checked');
+
+      currentEditingFlow.antiLoopConfig = {
+        enabled: Boolean(toggleAntiLoop?.checked),
+        action: selectedLoopAction ? selectedLoopAction.value : "notify_and_pause",
+        message:
+          antiLoopMessage?.value?.trim() ||
+          "Identificamos muitas mensagens em sequência. Para sua comodidade e melhor atendimento, pausamos as respostas automáticas e transferimos seu contato para nossa equipe humana.",
+        fallbackAction: selectedFallbackAction ? selectedFallbackAction.value : "notify_and_pause",
+        fallbackMessage:
+          antiLoopFallbackMessage?.value?.trim() ||
+          "Não conseguimos identificar sua opção. Para melhor atendê-lo, transferimos seu atendimento para um especialista humano. Por favor, aguarde!",
+        maxFallbacks: 3,
+      };
+
       try {
         await api.saveFlow(currentEditingFlow);
         await customAlert("✅ Fluxo salvo com sucesso!");
@@ -264,6 +318,33 @@ export function initFlows(api) {
       if (toggleOutOfPattern) {
         toggleOutOfPattern.checked = !toggleOutOfPattern.checked;
         toggleOutOfPattern.dispatchEvent(new Event("change"));
+      }
+    });
+  }
+
+  // 4.3 Eventos do Painel Anti-Loop & Guerra de Robôs
+  const toggleAntiLoop = $("#toggle-anti-loop");
+  const antiLoopBody = $("#anti-loop-body");
+  const antiLoopPanel = $("#anti-loop-panel");
+  const antiLoopHeader = $("#anti-loop-header");
+
+  if (toggleAntiLoop) {
+    toggleAntiLoop.addEventListener("change", (e) => {
+      const isEnabled = e.target.checked;
+      if (antiLoopBody) antiLoopBody.style.display = isEnabled ? "flex" : "none";
+      if (antiLoopPanel) {
+        if (isEnabled) antiLoopPanel.classList.add("is-active");
+        else antiLoopPanel.classList.remove("is-active");
+      }
+    });
+  }
+
+  if (antiLoopHeader) {
+    antiLoopHeader.addEventListener("click", (e) => {
+      if (e.target.closest(".switch")) return;
+      if (toggleAntiLoop) {
+        toggleAntiLoop.checked = !toggleAntiLoop.checked;
+        toggleAntiLoop.dispatchEvent(new Event("change"));
       }
     });
   }

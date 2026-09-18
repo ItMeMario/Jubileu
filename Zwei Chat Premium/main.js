@@ -19,6 +19,7 @@ const { flowService } = require("./services/flowService");
 const { window24hService } = require("./services/window24hService");
 const { syncService } = require("./services/syncService");
 const { botIntegrationService } = require("./services/botIntegrationService");
+const { antiLoopService } = require("./services/antiLoopService");
 const { firebaseService } = require("./services/firebaseService");
 const { cloudGatewayService } = require("./cloud-gateway/server");
 
@@ -237,6 +238,15 @@ function registerIpcHandlers() {
   ipcMain.handle("window24h:check", (_event, phone) => {
     return window24hService.checkWindow(phone);
   });
+
+  // 7. Proteção Anti-Loop & Guerra de Robôs
+  ipcMain.handle("anti-loop:get-status", () => {
+    return antiLoopService.getAllActiveCooldowns();
+  });
+
+  ipcMain.handle("anti-loop:release", (_event, phone) => {
+    return antiLoopService.releaseCooldown(phone);
+  });
 }
 
 /**
@@ -285,6 +295,13 @@ function setupEventForwarding() {
   syncService.on("conversations:updated", (conversations) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send("conversations:updated", conversations);
+    }
+  });
+
+  // Evento de Alerta de Loop Infinito / Bot vs Bot
+  syncService.on("bot:anti_loop_triggered", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("bot:anti_loop_triggered", data);
     }
   });
 }

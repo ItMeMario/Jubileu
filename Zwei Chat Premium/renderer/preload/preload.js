@@ -93,4 +93,13 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
     ipcRenderer.on("conversations:updated", subscription);
     return () => ipcRenderer.removeListener("conversations:updated", subscription);
   },
+
+  // 7. Proteção Anti-Loop & Guerra de Robôs
+  getAntiLoopStatus: () => ipcRenderer.invoke("anti-loop:get-status"),
+  releaseAntiLoop: (phone) => ipcRenderer.invoke("anti-loop:release", phone),
+  onAntiLoopTriggered: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("bot:anti_loop_triggered", subscription);
+    return () => ipcRenderer.removeListener("bot:anti_loop_triggered", subscription);
+  },
 });

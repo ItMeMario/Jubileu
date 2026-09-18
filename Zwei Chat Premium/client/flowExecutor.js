@@ -4,6 +4,8 @@
 const { metaApiClient, normalizePhoneNumber } = require("./metaApiClient");
 const { flowService } = require("../services/flowService");
 const { window24hService } = require("../services/window24hService");
+const { antiLoopService } = require("../services/antiLoopService");
+const { syncService } = require("../services/syncService");
 
 // Tempo limite de expiração da sessão ativa: 30 minutos
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
@@ -73,6 +75,58 @@ class FlowExecutor {
 
     if (!activeFlow) {
       return { handled: false, error: "Nenhum fluxo configurado ou ativo" };
+    }
+
+    // 🛡️ PROTEÇÃO ANTI-LOOP & GUERRA DE ROBÔS (Bot vs Bot - Vulnerabilidade #2)
+    const antiLoopResult = antiLoopService.checkAndRecordInbound(contactPhone, message.body, activeFlow);
+    if (!antiLoopResult.allowed) {
+      if (antiLoopResult.triggeredNow) {
+        console.warn(
+          `🛑 [ANTI-LOOP TRIGGERED] Alerta de Loop Infinito detectado para o contato ${contactPhone}! Motivo: ${antiLoopResult.reason}. Ação: ${antiLoopResult.action}. Cooldown ativado por 15 minutos.`
+        );
+
+        // Encerra sessão ativa para liberar o estado em loop
+        this.resetSession(contactPhone);
+
+        // Dispara evento para o barramento / painel
+        syncService.emit("bot:anti_loop_triggered", {
+          phone: contactPhone,
+          reason: antiLoopResult.reason,
+          action: antiLoopResult.action,
+          cooldownUntil: Date.now() + (antiLoopResult.remainingMs || 15 * 60 * 1000),
+          remainingMs: antiLoopResult.remainingMs,
+        });
+
+        // Se a ação for "notify_and_pause", envia a mensagem amigável uma única vez
+        if (antiLoopResult.action === "notify_and_pause" && antiLoopResult.message) {
+          try {
+            await metaApiClient.sendTextMessage(contactPhone, antiLoopResult.message);
+          } catch (err) {
+            console.error(`❌ Erro ao enviar mensagem amigável de anti-loop para ${contactPhone}:`, err.message);
+          }
+        }
+
+        return {
+          handled: true,
+          actionTaken:
+            antiLoopResult.action === "notify_and_pause"
+              ? "ANTI_LOOP_NOTIFIED_AND_PAUSED"
+              : "ANTI_LOOP_SILENT_PAUSED",
+          antiLoop: true,
+          reason: antiLoopResult.reason,
+        };
+      } else {
+        // Contato já em cooldown ativo: descarte silencioso estrito (zero envio à Meta)
+        console.log(
+          `⏳ [ANTI-LOOP] Contato ${contactPhone} em cooldown de proteção (${Math.ceil((antiLoopResult.remainingMs || 0) / 1000)}s restantes). Mensagem ignorada.`
+        );
+        return {
+          handled: false,
+          antiLoop: true,
+          reason: antiLoopResult.reason || "CONTACT_IN_COOLDOWN",
+          remainingMs: antiLoopResult.remainingMs,
+        };
+      }
     }
 
     // 1. Tratamento de mensagens fora do padrão (imagens, vídeos, áudios, documentos, stickers, etc.)
@@ -155,14 +209,55 @@ class FlowExecutor {
     const resolution = this._resolveNextStep(message, currentStep);
 
     if (resolution && resolution.nextStepId) {
+      // Zera contador de fallbacks ao avançar com sucesso
+      antiLoopService.resetFallback(contactPhone);
+
       // Salva as variáveis capturadas nesta etapa no contexto da sessão
       if (resolution.variables) {
         Object.assign(session.context, resolution.variables);
       }
       return this._executeStep(contactPhone, activeFlow, resolution.nextStepId);
     } else {
-      // Fallback: Resposta não reconhecida para o menu atual
-      console.log(`ℹ️ Resposta não reconhecida de ${contactPhone}. Reenviando opções...`);
+      // 🛡️ Fallback: Resposta não reconhecida para o menu atual
+      const fallbackCheck = antiLoopService.recordFallback(contactPhone, activeFlow);
+
+      if (fallbackCheck.triggered) {
+        console.warn(
+          `🛑 [ANTI-LOOP FALLBACK] Limite de ${fallbackCheck.count} respostas inválidas consecutivas atingido para ${contactPhone}. Ação: ${fallbackCheck.action}.`
+        );
+
+        this.resetSession(contactPhone);
+
+        syncService.emit("bot:anti_loop_triggered", {
+          phone: contactPhone,
+          reason: fallbackCheck.reason,
+          action: fallbackCheck.action,
+          cooldownUntil: Date.now() + (fallbackCheck.remainingMs || 15 * 60 * 1000),
+          remainingMs: fallbackCheck.remainingMs,
+        });
+
+        if (fallbackCheck.action === "notify_and_pause" && fallbackCheck.message) {
+          try {
+            await metaApiClient.sendTextMessage(contactPhone, fallbackCheck.message);
+          } catch (err) {
+            console.error(`❌ Erro ao enviar mensagem amigável de fallback para ${contactPhone}:`, err.message);
+          }
+        }
+
+        return {
+          handled: true,
+          actionTaken:
+            fallbackCheck.action === "notify_and_pause"
+              ? "FALLBACK_LIMIT_NOTIFIED_AND_PAUSED"
+              : "FALLBACK_LIMIT_SILENT_PAUSED",
+          antiLoop: true,
+          reason: fallbackCheck.reason,
+        };
+      }
+
+      console.log(
+        `ℹ️ Resposta não reconhecida de ${contactPhone} (Tentativa ${fallbackCheck.count}/${activeFlow.antiLoopConfig?.maxFallbacks || 3}). Reenviando opções...`
+      );
       return this._executeStep(contactPhone, activeFlow, session.currentStepId);
     }
   }
@@ -416,6 +511,7 @@ class FlowExecutor {
   resetSession(contactPhone) {
     const phone = normalizePhoneNumber(contactPhone);
     this.sessions.delete(phone);
+    antiLoopService.resetFallback(phone);
   }
 
   /**

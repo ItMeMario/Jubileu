@@ -127,6 +127,94 @@
           </div>
         </div>
 
+        <!-- Painel de Proteção Anti-Loop & Guerra de Robôs (Bot vs Bot) -->
+        <div class="anti-loop-panel is-active" id="anti-loop-panel">
+          <div class="anti-loop-header" id="anti-loop-header">
+            <div class="anti-loop-title-wrap">
+              <span class="anti-loop-icon">🛡️</span>
+              <div>
+                <h4>
+                  Proteção Anti-Loop & Guerra de Robôs
+                  <span class="anti-loop-badge">BOT VS BOT</span>
+                </h4>
+                <p>Bloqueie respostas em loop infinito e fallbacks repetitivos, blindando a fatura da Meta API</p>
+              </div>
+            </div>
+            <div class="out-of-pattern-switch-wrap" onclick="event.stopPropagation()">
+              <label class="switch">
+                <input type="checkbox" id="toggle-anti-loop" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="anti-loop-body" id="anti-loop-body" style="display: flex;">
+            <!-- Seção 1: Loop de Disparos Rápidos / Mensagens Repetidas -->
+            <div class="anti-loop-section-box">
+              <div class="anti-loop-section-title">
+                <span>⚡ Disparo Rápido / Loop de Mensagens (&gt; 3 msgs em 10s ou repetidas)</span>
+              </div>
+              <div class="anti-loop-action-radios">
+                <label class="anti-loop-radio-label">
+                  <input type="radio" name="anti-loop-action" value="notify_and_pause" checked>
+                  <span>
+                    <strong>💬 Enviar mensagem amigável e pausar o bot</strong>
+                    <br>
+                    <small style="color: var(--text-dim);">Envia uma mensagem amigável de transbordo e pausa o bot por 15 minutos para este número.</small>
+                  </span>
+                </label>
+                <label class="anti-loop-radio-label">
+                  <input type="radio" name="anti-loop-action" value="silent_pause">
+                  <span>
+                    <strong>🔇 Encerrar silenciosamente (Silent Pause)</strong>
+                    <br>
+                    <small style="color: var(--text-dim);">Recomendado para proteção financeira estrita. O bot não envia nenhuma mensagem à Meta e silencia o fluxo.</small>
+                  </span>
+                </label>
+              </div>
+
+              <div class="form-group" id="anti-loop-message-group" style="margin-top: 12px; margin-bottom: 0;">
+                <label for="anti-loop-message" style="font-weight: 600; font-size: 12px; margin-bottom: 6px; display: block;">
+                  💬 Mensagem de aviso ao pausar o atendimento:
+                </label>
+                <textarea id="anti-loop-message" class="form-control" rows="2" placeholder="Ex: Identificamos muitas mensagens em sequência. Para sua comodidade e melhor atendimento, pausamos as respostas automáticas e transferimos seu contato para nossa equipe humana." style="font-size: 13px; line-height: 1.4; resize: vertical;"></textarea>
+              </div>
+            </div>
+
+            <!-- Seção 2: Fallbacks Consecutivos de Menu -->
+            <div class="anti-loop-section-box">
+              <div class="anti-loop-section-title">
+                <span>🔄 Fallback Consecutivo de Menu (3 tentativas sem resposta válida)</span>
+              </div>
+              <div class="anti-loop-action-radios">
+                <label class="anti-loop-radio-label">
+                  <input type="radio" name="anti-loop-fallback-action" value="notify_and_pause" checked>
+                  <span>
+                    <strong>💬 Enviar aviso amigável e transferir para atendente humano</strong>
+                    <br>
+                    <small style="color: var(--text-dim);">Informa que a opção não foi compreendida e transfere para atendimento humano.</small>
+                  </span>
+                </label>
+                <label class="anti-loop-radio-label">
+                  <input type="radio" name="anti-loop-fallback-action" value="silent_pause">
+                  <span>
+                    <strong>🔇 Encerrar silenciosamente</strong>
+                    <br>
+                    <small style="color: var(--text-dim);">Pára de reenviar menus para o número e encerra a sessão sem novo envio.</small>
+                  </span>
+                </label>
+              </div>
+
+              <div class="form-group" id="anti-loop-fallback-message-group" style="margin-top: 12px; margin-bottom: 0;">
+                <label for="anti-loop-fallback-message" style="font-weight: 600; font-size: 12px; margin-bottom: 6px; display: block;">
+                  💬 Mensagem de aviso no limite de fallbacks:
+                </label>
+                <textarea id="anti-loop-fallback-message" class="form-control" rows="2" placeholder="Ex: Não conseguimos identificar sua opção. Para melhor atendê-lo, transferimos seu atendimento para um especialista humano. Por favor, aguarde!" style="font-size: 13px; line-height: 1.4; resize: vertical;"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div id="builder-steps-container">
           <!-- Blocos renderizados dinamicamente -->
         </div>
