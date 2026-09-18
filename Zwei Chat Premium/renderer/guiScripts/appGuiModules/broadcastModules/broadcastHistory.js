@@ -31,12 +31,12 @@ export async function loadBroadcastHistory(api) {
       tr.innerHTML = `
         <td><b>${escapeHtml(camp.campaignId)}</b></td>
         <td><span class="status-pill status-green">${escapeHtml(camp.templateName)}</span></td>
-        <td>${camp.total}</td>
-        <td style="color: var(--status-green); font-weight: bold;">${camp.sent}</td>
-        <td style="color: var(--status-red); font-weight: bold;">${camp.failed}</td>
-        <td>${dateStr}</td>
+        <td>${Number(camp.total) || 0}</td>
+        <td style="color: var(--status-green); font-weight: bold;">${Number(camp.sent) || 0}</td>
+        <td style="color: var(--status-red); font-weight: bold;">${Number(camp.failed) || 0}</td>
+        <td>${escapeHtml(dateStr)}</td>
         <td>
-          <button class="btn btn-secondary btn-export-csv" data-id="${camp.campaignId}" style="padding: 4px 8px; font-size: 11px;">
+          <button class="btn btn-secondary btn-export-csv" data-id="${escapeHtml(camp.campaignId)}" style="padding: 4px 8px; font-size: 11px;">
             📥 CSV
           </button>
         </td>

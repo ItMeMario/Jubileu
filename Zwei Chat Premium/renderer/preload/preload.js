@@ -56,6 +56,8 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
   check24hWindow: (phone) => ipcRenderer.invoke("window24h:check", phone),
   getConversations: () => ipcRenderer.invoke("sync:get-conversations"),
   getGatewayStatus: () => ipcRenderer.invoke("gateway:get-status"),
+  getRecentInboundMessages: (limit) => ipcRenderer.invoke("sync:get-recent-inbound", limit),
+  clearRecentInboundMessages: () => ipcRenderer.invoke("sync:clear-recent-inbound"),
 
   // 6. Listeners de Eventos em Tempo Real
   onBroadcastLog: (callback) => {

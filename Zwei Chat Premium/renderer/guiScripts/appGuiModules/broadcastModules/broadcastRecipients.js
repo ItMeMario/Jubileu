@@ -52,8 +52,8 @@ export function renderRecipientsList(api) {
 
   currentRecipients.forEach((rcpt) => {
     const li = document.createElement("li");
-    li.className = "contact-item";
-    li.id = `contact-item-${rcpt.id}`;
+    const safeId = escapeHtml(rcpt.id);
+    li.id = `contact-item-${safeId}`;
 
     let statusLabel = "Pendente";
     let badgeClass = "status-pill status-yellow";
@@ -84,7 +84,7 @@ export function renderRecipientsList(api) {
       </div>
       <div class="contact-item-actions">
         <span class="${badgeClass}" style="font-size: 11px; padding: 2px 8px;">${statusLabel}</span>
-        <button class="btn-remove-contact" data-id="${rcpt.id}" title="Remover contato">✕</button>
+        <button class="btn-remove-contact" data-id="${safeId}" title="Remover contato">✕</button>
       </div>
     `;
 

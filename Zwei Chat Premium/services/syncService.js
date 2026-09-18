@@ -10,6 +10,58 @@ class SyncService extends EventEmitter {
     this.db = null;
     this.isListening = false;
     this.unsubscribers = [];
+    this.recentInboundBuffer = [];
+    this.maxBufferSize = 50;
+
+    // Bufferiza automaticamente mensagens recebidas emitidas pelo Webhook ou Firestore
+    this.on("message:inbound", (msg) => {
+      this._recordInboundToBuffer(msg);
+    });
+  }
+
+  /**
+   * Armazena mensagem recebida no buffer em memória
+   * @private
+   * @param {object} msg
+   */
+  _recordInboundToBuffer(msg) {
+    if (!msg) return;
+    const entry = {
+      id: msg.id || `inbound_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      from: msg.from || "",
+      senderName: msg.senderName || "",
+      body: msg.body || "",
+      timestamp: msg.timestamp || Date.now(),
+      type: msg.type || "text",
+      interactiveType: msg.interactiveType || null,
+    };
+
+    const exists = this.recentInboundBuffer.some((m) => m.id === entry.id);
+    if (!exists) {
+      this.recentInboundBuffer.unshift(entry);
+      if (this.recentInboundBuffer.length > this.maxBufferSize) {
+        this.recentInboundBuffer.pop();
+      }
+    }
+  }
+
+  /**
+   * Obtém as mensagens inbound mais recentes do buffer
+   * @param {number} [limit=50]
+   * @returns {Array}
+   */
+  getRecentInboundMessages(limit = 50) {
+    const lim = Math.max(1, Math.min(Number(limit) || 50, 100));
+    return this.recentInboundBuffer.slice(0, lim);
+  }
+
+  /**
+   * Esvazia o buffer em memória
+   * @returns {boolean}
+   */
+  clearRecentInboundMessages() {
+    this.recentInboundBuffer = [];
+    return true;
   }
 
   /**

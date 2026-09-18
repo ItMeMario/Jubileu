@@ -196,11 +196,13 @@ export function setupBroadcastIPCListeners(api) {
       if (placeholder) placeholder.remove();
 
       const timeStr = new Date(logEntry.timestamp || Date.now()).toLocaleTimeString("pt-BR");
-      const entryDiv = document.createElement("div");
-      entryDiv.className = `log-entry ${logEntry.status || "info"}`;
+      const safeStatus = ["info", "success", "error", "warn", "pending"].includes(logEntry.status)
+        ? logEntry.status
+        : "info";
+      entryDiv.className = `log-entry ${safeStatus}`;
 
       entryDiv.innerHTML = `
-        <span class="log-time">[${timeStr}]</span>
+        <span class="log-time">[${escapeHtml(timeStr)}]</span>
         <span class="log-text">${escapeHtml(logEntry.message)}</span>
       `;
 

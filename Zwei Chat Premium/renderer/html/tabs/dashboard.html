@@ -41,7 +41,39 @@
     </div>
   </div>
 
-  <div class="card">
+  <!-- Painel do Feed de Mensagens Recebidas em Tempo Real -->
+  <div class="card live-feed-card">
+    <div class="live-feed-header">
+      <div class="live-feed-title-area">
+        <div class="live-feed-title">
+          <span class="live-feed-indicator"></span>
+          <h3>Feed de Mensagens em Tempo Real</h3>
+          <span class="status-pill status-green" id="dash-feed-status-badge">Ao Vivo</span>
+        </div>
+        <p class="live-feed-subtitle">Feed monitorado de mensagens recebidas via WhatsApp Webhook & Firestore (Renderização 100% imune a XSS)</p>
+      </div>
+      <div class="live-feed-actions">
+        <span class="feed-count-badge" id="dash-feed-count-badge">0 mensagens</span>
+        <button class="btn btn-secondary btn-sm" id="btn-refresh-inbound-feed" title="Atualizar histórico">
+          <span>🔄</span> Atualizar
+        </button>
+        <button class="btn btn-secondary btn-sm" id="btn-clear-inbound-feed" title="Limpar mensagens do feed">
+          <span>🧹</span> Limpar
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista de Mensagens Recebidas -->
+    <div class="live-feed-container" id="dash-inbound-feed-container">
+      <div class="feed-placeholder" id="dash-feed-placeholder">
+        <div class="feed-placeholder-icon">💬</div>
+        <div class="feed-placeholder-text">Aguardando novas mensagens de clientes pelo WhatsApp...</div>
+        <div class="feed-placeholder-subtext">As mensagens recebidas serão exibidas aqui em tempo real de forma segura.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 20px;">
     <div class="page-header" style="margin-bottom: 16px;">
       <h3>Ações Rápidas</h3>
     </div>

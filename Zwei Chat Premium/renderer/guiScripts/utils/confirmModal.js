@@ -41,6 +41,8 @@ export function customConfirm(
 
     const safeTitle = escapeHtml(title);
     const safeMessage = escapeHtml(message);
+    const allowedClasses = ["btn-primary", "btn-danger", "btn-secondary", "btn-warning", "btn-success"];
+    const safeBtnClass = allowedClasses.includes(confirmBtnClass) ? confirmBtnClass : "btn-danger";
 
     overlay.innerHTML = `
       <div class="modal-content" role="dialog" aria-modal="true">
@@ -48,7 +50,7 @@ export function customConfirm(
         <p>${safeMessage}</p>
         <div class="modal-buttons">
           <button class="btn btn-secondary confirm-btn-cancel">${escapeHtml(cancelText)}</button>
-          <button class="btn ${confirmBtnClass} confirm-btn-confirm">${escapeHtml(confirmText)}</button>
+          <button class="btn ${safeBtnClass} confirm-btn-confirm">${escapeHtml(confirmText)}</button>
         </div>
       </div>
     `;

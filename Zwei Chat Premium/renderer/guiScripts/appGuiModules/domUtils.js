@@ -56,7 +56,7 @@ export function getStatusBadgeClass(status) {
 }
 
 /**
- * Escapa strings para inserção segura em HTML
+ * Escapa strings para inserção segura em HTML, mitigando XSS e quebra de atributos
  * @param {string} str
  * @returns {string}
  */
@@ -67,7 +67,54 @@ export function escapeHtml(str) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/'/g, "&#039;")
+    .replace(/`/g, "&#96;");
+}
+
+/**
+ * Cria com segurança um elemento DOM para item de mensagem sem risco de injeção de HTML
+ * Atribui todos os textos dinâmicos estritamente via textContent
+ * @param {object} msg - Dados da mensagem (from, senderName, body, timestamp, type)
+ * @returns {HTMLElement}
+ */
+export function safeCreateMessageElement(msg = {}) {
+  const item = document.createElement("div");
+  item.className = "feed-message-item";
+  if (msg.id) {
+    item.setAttribute("data-msg-id", escapeHtml(String(msg.id)));
+  }
+
+  const header = document.createElement("div");
+  header.className = "feed-msg-header";
+
+  const senderSpan = document.createElement("span");
+  senderSpan.className = "feed-msg-sender";
+  const senderDisplayName = msg.senderName ? `${msg.senderName} (${msg.from || ""})` : (msg.from || "Desconhecido");
+  senderSpan.textContent = senderDisplayName;
+
+  const timeSpan = document.createElement("span");
+  timeSpan.className = "feed-msg-time";
+  timeSpan.textContent = formatDate(msg.timestamp || Date.now());
+
+  header.appendChild(senderSpan);
+
+  if (msg.type && msg.type !== "text") {
+    const badge = document.createElement("span");
+    badge.className = "feed-msg-type-badge";
+    badge.textContent = String(msg.type).toUpperCase();
+    header.appendChild(badge);
+  }
+
+  header.appendChild(timeSpan);
+
+  const bodyDiv = document.createElement("div");
+  bodyDiv.className = "feed-msg-body";
+  bodyDiv.textContent = msg.body || "(Mensagem sem texto)";
+
+  item.appendChild(header);
+  item.appendChild(bodyDiv);
+
+  return item;
 }
 
 /**
@@ -90,6 +137,14 @@ export function downloadCsvFile(filename, csvContent) {
 
 // Compatibilidade para testes em ambiente Node.js
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { $, $$, formatDate, getStatusBadgeClass, escapeHtml, downloadCsvFile };
+  module.exports = {
+    $,
+    $$,
+    formatDate,
+    getStatusBadgeClass,
+    escapeHtml,
+    safeCreateMessageElement,
+    downloadCsvFile,
+  };
 }
 

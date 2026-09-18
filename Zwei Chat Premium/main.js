@@ -247,6 +247,15 @@ function registerIpcHandlers() {
   ipcMain.handle("anti-loop:release", (_event, phone) => {
     return antiLoopService.releaseCooldown(phone);
   });
+
+  // 8. Histórico em Tempo Real de Mensagens Recebidas (Inbound Feed)
+  ipcMain.handle("sync:get-recent-inbound", (_event, limit) => {
+    return syncService.getRecentInboundMessages(limit);
+  });
+
+  ipcMain.handle("sync:clear-recent-inbound", () => {
+    return syncService.clearRecentInboundMessages();
+  });
 }
 
 /**
