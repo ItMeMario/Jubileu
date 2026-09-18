@@ -8,6 +8,7 @@ class SyncService extends EventEmitter {
   constructor() {
     super();
     this.db = null;
+    this.tenantId = null;
     this.isListening = false;
     this.unsubscribers = [];
     this.recentInboundBuffer = [];
@@ -65,16 +66,72 @@ class SyncService extends EventEmitter {
   }
 
   /**
-   * Inicializa o serviço com a instância do Firestore
+   * Inicializa o serviço com a instância do Firestore e opcionalmente o Tenant ID
    * @param {object} firestoreInstance - Instância do Firestore (Firebase Client ou Admin)
+   * @param {string} [tenantId=null] - Identificador único do tenant para isolamento de dados
    */
-  initialize(firestoreInstance) {
+  initialize(firestoreInstance, tenantId = null) {
     if (!firestoreInstance) {
       console.warn("⚠️ SyncService: Firestore não fornecido. Modo offline/desconectado.");
       return;
     }
 
     this.db = firestoreInstance;
+    if (tenantId) {
+      this.tenantId = String(tenantId).trim();
+    }
+  }
+
+  /**
+   * Define ou atualiza o Tenant ID em tempo de execução
+   * Se os ouvintes estiverem ativos, reinicia a escuta na subcoleção isolada correspondente
+   * @param {string} tenantId
+   */
+  setTenantId(tenantId) {
+    const cleanTenantId = tenantId ? String(tenantId).trim() : null;
+    if (this.tenantId !== cleanTenantId) {
+      this.tenantId = cleanTenantId;
+      console.log(`🏢 SyncService: Tenant ID configurado para: ${cleanTenantId || "nenhum (modo legado/offline)"}`);
+
+      if (this.isListening) {
+        this.stopListening();
+        this.startListening();
+      }
+    }
+  }
+
+  /**
+   * Retorna o Tenant ID atualmente ativo
+   * @returns {string|null}
+   */
+  getTenantId() {
+    return this.tenantId;
+  }
+
+  /**
+   * Retorna a referência da coleção de mensagens (com isolamento multi-tenant se ativo)
+   * @private
+   */
+  _getMessagesRef() {
+    if (!this.db || typeof this.db.collection !== "function") return null;
+
+    if (this.tenantId) {
+      return this.db.collection("tenants").doc(this.tenantId).collection("messages");
+    }
+    return this.db.collection("messages");
+  }
+
+  /**
+   * Retorna a referência da coleção de conversas (com isolamento multi-tenant se ativo)
+   * @private
+   */
+  _getConversationsRef() {
+    if (!this.db || typeof this.db.collection !== "function") return null;
+
+    if (this.tenantId) {
+      return this.db.collection("tenants").doc(this.tenantId).collection("conversations");
+    }
+    return this.db.collection("conversations");
   }
 
   /**
@@ -84,7 +141,8 @@ class SyncService extends EventEmitter {
     if (this.isListening || !this.db) return;
 
     this.isListening = true;
-    console.log("🔄 SyncService: Iniciando sincronização em tempo real com Firestore...");
+    const scopeMsg = this.tenantId ? `Tenant: ${this.tenantId}` : "Escopo Global/Legado";
+    console.log(`🔄 SyncService: Iniciando sincronização em tempo real com Firestore (${scopeMsg})...`);
 
     try {
       this._listenToMessages();
@@ -99,11 +157,8 @@ class SyncService extends EventEmitter {
    * @private
    */
   _listenToMessages() {
-    if (!this.db) return;
-
-    // Suporta tanto o SDK Modular quanto o tradicional do Firestore
-    const messagesRef = this.db.collection ? this.db.collection("messages") : null;
-    if (!messagesRef) return;
+    const messagesRef = this._getMessagesRef();
+    if (!messagesRef || typeof messagesRef.onSnapshot !== "function") return;
 
     const unsubscribe = messagesRef.onSnapshot(
       (snapshot) => {
@@ -150,10 +205,8 @@ class SyncService extends EventEmitter {
    * @private
    */
   _listenToConversations() {
-    if (!this.db) return;
-
-    const conversationsRef = this.db.collection ? this.db.collection("conversations") : null;
-    if (!conversationsRef) return;
+    const conversationsRef = this._getConversationsRef();
+    if (!conversationsRef || typeof conversationsRef.onSnapshot !== "function") return;
 
     const unsubscribe = conversationsRef.onSnapshot(
       (snapshot) => {

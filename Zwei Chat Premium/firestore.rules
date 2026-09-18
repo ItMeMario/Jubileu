@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =======================================================
+    // ZWEI CHAT PREMIUM - REGRAS DE SEGURANÇA FIRESTORE
+    // Blindagem Comercial e Isolamento Estrito Multi-Tenant
+    // =======================================================
+
+    // Helper: Verifica se a requisição possui autenticação válida no Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Verifica se o usuário autenticado é o proprietário legítimo do Tenant
+    // Valida se o UID do Auth corresponde ao clientId do tenant OU se o token JWT
+    // contém as claims 'tenantId' ou 'wabaId' emitidas pela Cloud Function
+    function isTenantOwner(clientId) {
+      return isAuthenticated() && (
+        request.auth.uid == clientId ||
+        (request.auth.token.tenantId != null && request.auth.token.tenantId == clientId) ||
+        (request.auth.token.wabaId != null && request.auth.token.wabaId == clientId)
+      );
+    }
+
+    // =======================================================
+    // 1. ISOLAMENTO MULTI-TENANT (/tenants/{clientId})
+    // =======================================================
+    match /tenants/{clientId} {
+      // O cliente só pode ler o documento de cadastro do seu próprio tenant
+      allow read: if isTenantOwner(clientId);
+
+      // Bloqueia escrita/modificação direta na raiz do tenant por clientes.
+      // Apenas o Firebase Admin SDK (Cloud Functions / Webhook) tem permissão de provisionar tenants.
+      allow write: if false;
+
+      // 1.1 Histórico de Mensagens do Tenant (/messages)
+      match /messages/{messageId} {
+        // Apenas o dono do tenant pode ler suas próprias mensagens
+        allow read: if isTenantOwner(clientId);
+
+        // Criação de mensagens pelo cliente autenticado (mensagens outbound enviadas)
+        allow create: if isTenantOwner(clientId) &&
+          request.resource.data.keys().hasAll(['id', 'direction', 'timestamp']) &&
+          request.resource.data.direction in ['inbound', 'outbound'];
+
+        // Atualização de mensagens (ex: atualização de status ou anotações)
+        allow update: if isTenantOwner(clientId);
+
+        // 🛡️ Proteção LGPD e Auditoria: Bloqueia exclusão de mensagens por clientes
+        // Evita manipulação maliciosa ou destruição de evidências de conversas
+        allow delete: if false;
+      }
+
+      // 1.2 Lista de Conversas Ativas do Tenant (/conversations)
+      match /conversations/{conversationId} {
+        allow read: if isTenantOwner(clientId);
+        allow create, update: if isTenantOwner(clientId);
+        // Exclusão de conversas bloqueada para clientes finais
+        allow delete: if false;
+      }
+
+      // 1.3 Logs de Status de Mensagens (/status_logs)
+      match /status_logs/{logId} {
+        // Leitura permitida apenas ao dono do tenant
+        allow read: if isTenantOwner(clientId);
+        // Escrita bloqueada para clientes (gerenciado exclusivamente pelo Webhook da Meta na nuvem)
+        allow write: if false;
+      }
+
+      // 1.4 Demais subcoleções sob o tenant (fluxos personalizados, configurações)
+      match /{subcollection}/{document=**} {
+        allow read, write: if isTenantOwner(clientId);
+      }
+    }
+
+    // =======================================================
+    // 2. COLEÇÕES DE USUÁRIOS E LICENÇAS (COMPATIBILIDADE)
+    // =======================================================
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.resource.data.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    match /licenses/{licenseKey} {
+      // Permite validação pontual de uma chave pelo cliente autenticado
+      allow get: if isAuthenticated();
+      // Bloqueia listagem de todas as chaves de licença no banco
+      allow list: if false;
+      // Criação, alteração arbitrária e exclusão restritas ao Admin SDK
+      allow write: if false;
+    }
+
+    // =======================================================
+    // 3. REGRA PADRÃO DE NEGAÇÃO TOTAL (DEFAULT DENY)
+    // =======================================================
+    // Bloqueia rigorosamente qualquer acesso a coleções raiz não autorizadas (/messages, /conversations, etc.)
+    // Neutraliza o modo de teste público do Firebase (allow read, write: if true;)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

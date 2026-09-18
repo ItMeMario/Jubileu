@@ -172,8 +172,9 @@ function normalizeIncomingMessage(message, contact, metadata) {
 /**
  * Processa atualizações de status de mensagens enviadas (sent, delivered, read, failed)
  * @param {object} statusUpdate - Objeto de status do payload da Meta
+ * @param {string} [tenantId=null] - Identificador único do tenant para isolamento
  */
-async function processStatusUpdate(statusUpdate) {
+async function processStatusUpdate(statusUpdate, tenantId = null) {
   const messageId = statusUpdate.id;
   const recipientId = statusUpdate.recipient_id;
   const status = statusUpdate.status; // 'sent' | 'delivered' | 'read' | 'failed'
@@ -182,26 +183,48 @@ async function processStatusUpdate(statusUpdate) {
   const updateData = {
     status: status,
     [`statusTimestamps.${status}`]: timestamp,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin?.firestore?.FieldValue
+      ? admin.firestore.FieldValue.serverTimestamp()
+      : new Date(),
   };
 
   if (statusUpdate.errors && statusUpdate.errors.length > 0) {
     updateData.errors = statusUpdate.errors;
   }
 
-  // Atualiza o documento da mensagem específica se existir
-  const messageRef = db.collection("messages").doc(messageId);
-  await messageRef.set(updateData, { merge: true });
+  // 1. Grava na subcoleção isolada do Tenant (/tenants/{tenantId}/...)
+  if (tenantId && db) {
+    const tenantMessageRef = db.collection("tenants").doc(tenantId).collection("messages").doc(messageId);
+    await tenantMessageRef.set(updateData, { merge: true });
 
-  // Registra no histórico de logs de status
-  await db.collection("status_logs").add({
-    messageId,
-    recipientId,
-    status,
-    timestamp,
-    errors: statusUpdate.errors || null,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+    await db.collection("tenants").doc(tenantId).collection("status_logs").add({
+      messageId,
+      recipientId,
+      status,
+      timestamp,
+      errors: statusUpdate.errors || null,
+      createdAt: admin?.firestore?.FieldValue
+        ? admin.firestore.FieldValue.serverTimestamp()
+        : new Date(),
+    });
+  }
+
+  // 2. Grava na coleção raiz para manter compatibilidade
+  if (db) {
+    const messageRef = db.collection("messages").doc(messageId);
+    await messageRef.set(updateData, { merge: true });
+
+    await db.collection("status_logs").add({
+      messageId,
+      recipientId,
+      status,
+      timestamp,
+      errors: statusUpdate.errors || null,
+      createdAt: admin?.firestore?.FieldValue
+        ? admin.firestore.FieldValue.serverTimestamp()
+        : new Date(),
+    });
+  }
 }
 
 async function handleWebhookRequest(req, res) {
@@ -244,6 +267,7 @@ async function handleWebhookRequest(req, res) {
       const entries = body.entry || [];
 
       for (const entry of entries) {
+        const entryWabaId = entry.id;
         const changes = entry.changes || [];
 
         for (const change of changes) {
@@ -254,6 +278,7 @@ async function handleWebhookRequest(req, res) {
 
           const metadata = value.metadata;
           const contacts = value.contacts || [];
+          const tenantId = entryWabaId || metadata?.phone_number_id || null;
 
           // 2.1 Processa Mensagens Recebidas (Inbound)
           if (value.messages && value.messages.length > 0) {
@@ -262,7 +287,39 @@ async function handleWebhookRequest(req, res) {
               const normalizedMessage = normalizeIncomingMessage(message, contact, metadata);
 
               if (db) {
-                // Idempotência: Grava a mensagem usando o próprio ID da Meta
+                // Gravação com isolamento estrito Multi-Tenant (/tenants/{tenantId}/...)
+                if (tenantId) {
+                  await db
+                    .collection("tenants")
+                    .doc(tenantId)
+                    .collection("messages")
+                    .doc(normalizedMessage.id)
+                    .set(normalizedMessage, { merge: true });
+
+                  const tenantConvRef = db
+                    .collection("tenants")
+                    .doc(tenantId)
+                    .collection("conversations")
+                    .doc(message.from);
+
+                  await tenantConvRef.set(
+                    {
+                      contactPhone: message.from,
+                      contactName: contact?.profile?.name || message.from,
+                      lastMessage: normalizedMessage.body,
+                      lastMessageType: normalizedMessage.type,
+                      lastInteractionTimestamp: normalizedMessage.timestamp,
+                      lastDirection: "inbound",
+                      unreadCount: admin ? admin.firestore.FieldValue.increment(1) : 1,
+                      updatedAt: admin?.firestore?.FieldValue
+                        ? admin.firestore.FieldValue.serverTimestamp()
+                        : new Date(),
+                    },
+                    { merge: true }
+                  );
+                }
+
+                // Idempotência: Grava a mensagem usando o próprio ID da Meta na raiz para compatibilidade
                 await db.collection("messages").doc(normalizedMessage.id).set(normalizedMessage, { merge: true });
 
                 // Atualiza / Cria a Conversa no Firestore
@@ -282,7 +339,7 @@ async function handleWebhookRequest(req, res) {
                 );
               }
 
-              console.log(`📩 Mensagem recebida de ${message.from}: [${normalizedMessage.type}] ${normalizedMessage.body}`);
+              console.log(`📩 Mensagem recebida de ${message.from} (Tenant: ${tenantId || "Global"}): [${normalizedMessage.type}] ${normalizedMessage.body}`);
             }
           }
 
@@ -290,9 +347,9 @@ async function handleWebhookRequest(req, res) {
           if (value.statuses && value.statuses.length > 0) {
             for (const statusUpdate of value.statuses) {
               if (db) {
-                await processStatusUpdate(statusUpdate);
+                await processStatusUpdate(statusUpdate, tenantId);
               }
-              console.log(`📊 Status da mensagem ${statusUpdate.id}: ${statusUpdate.status}`);
+              console.log(`📊 Status da mensagem ${statusUpdate.id}: ${statusUpdate.status} (Tenant: ${tenantId || "Global"})`);
             }
           }
         }
@@ -475,6 +532,22 @@ async function handleOAuthExchangeRequest(req, res) {
       }
     }
 
+    // 6. Emite Custom Token do Firebase para autenticação multi-tenant no Firestore
+    let firebaseCustomToken = null;
+    if (admin && admin.auth) {
+      try {
+        const tenantIdentifier = wabaId || primaryPhone?.id || `tenant_${Date.now()}`;
+        firebaseCustomToken = await admin.auth().createCustomToken(tenantIdentifier, {
+          tenantId: tenantIdentifier,
+          wabaId: wabaId || null,
+          phoneNumberId: primaryPhone?.id || null,
+        });
+        console.log(`🔐 [OAuth Exchange] Custom Token do Firebase gerado para o Tenant: ${tenantIdentifier}`);
+      } catch (authErr) {
+        console.warn("Aviso ao gerar Firebase Custom Token na Cloud Function:", authErr.message);
+      }
+    }
+
     // Retorna credenciais e metadados ao cliente SEM NUNCA revelar o META_APP_SECRET
     return res.status(200).json({
       success: true,
@@ -483,6 +556,7 @@ async function handleOAuthExchangeRequest(req, res) {
       expiresIn: tokenData.expires_in || null,
       wabaId: wabaId || null,
       phone: primaryPhone || null,
+      firebaseCustomToken: firebaseCustomToken || null,
     });
   } catch (error) {
     const metaErrorMsg =

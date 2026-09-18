@@ -140,6 +140,7 @@ class MetaOnboardingService {
             expires_in: response.data.expiresIn || response.data.expires_in,
             wabaId: response.data.wabaId || null,
             phone: response.data.phone || null,
+            firebaseCustomToken: response.data.firebaseCustomToken || null,
           };
         } else {
           throw new Error(response.data?.error || "Falha na resposta da Cloud Function");
@@ -380,6 +381,16 @@ class MetaOnboardingService {
         accessToken: userAccessToken,
       });
 
+      // Vincula o tenant e opcionalmente autentica no FirebaseService
+      try {
+        const { firebaseService } = require("./firebaseService");
+        if (firebaseService) {
+          await firebaseService.setTenant(wabaId, tokenData.firebaseCustomToken || null);
+        }
+      } catch (fbErr) {
+        console.warn("Aviso ao vincular tenant no FirebaseService:", fbErr.message);
+      }
+
       // Valida o status de saúde da nova conta
       const health = await metaAccountService.checkConnectionStatus();
 
@@ -410,6 +421,17 @@ class MetaOnboardingService {
   async disconnectAccount() {
     try {
       metaConfig.clearCredentials();
+
+      // Desvincula o tenant no FirebaseService
+      try {
+        const { firebaseService } = require("./firebaseService");
+        if (firebaseService) {
+          await firebaseService.setTenant(null);
+        }
+      } catch (fbErr) {
+        console.warn("Aviso ao limpar tenant no FirebaseService:", fbErr.message);
+      }
+
       await metaAccountService.checkConnectionStatus();
       return { success: true };
     } catch (error) {
