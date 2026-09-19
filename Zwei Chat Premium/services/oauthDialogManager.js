@@ -1,7 +1,7 @@
 // services/oauthDialogManager.js
 // Gerenciador de Janela Modal OAuth para Login e Embedded Signup da Meta
 
-const { BrowserWindow } = require("electron");
+const { BrowserWindow, app } = require("electron");
 const { metaOnboardingService } = require("./metaOnboardingService");
 
 class OAuthDialogManager {
@@ -33,6 +33,7 @@ class OAuthDialogManager {
           nodeIntegration: false,
           contextIsolation: true,
           sandbox: true,
+          devTools: !app.isPackaged,
         },
       });
 

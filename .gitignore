@@ -3,6 +3,7 @@ node_modules/
 data/
 dist/
 build/
+build-protected/
 scratch/
 .wwebjs_auth/
 .wwebjs_auth_deejay

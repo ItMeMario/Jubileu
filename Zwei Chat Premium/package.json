@@ -6,10 +6,11 @@
   "scripts": {
     "start": "electron .",
     "gateway": "node cloud-gateway/server.js",
+    "build:obfuscate": "node scripts/build-obfuscate.js",
     "test:webhook": "node tests/testWebhookSimulator.js",
     "test:xss": "node tests/xssSecurity.test.js",
-    "dist": "electron-builder",
-    "dist:win": "electron-builder --win",
+    "dist": "npm run build:obfuscate && electron-builder",
+    "dist:win": "npm run build:obfuscate && electron-builder --win",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "electron": "^39.2.3",
     "electron-builder": "^26.0.12",
     "firebase-admin": "^14.3.0",
+    "javascript-obfuscator": "^5.7.0",
     "localtunnel": "^2.0.2"
   },
   "build": {
@@ -35,19 +37,28 @@
       "output": "dist"
     },
     "files": [
-      "**/*",
+      {
+        "from": "build-protected",
+        "to": ".",
+        "filter": [
+          "**/*"
+        ]
+      },
       "!node_modules/.cache/**/*",
       "!dist/**/*",
+      "!build-protected/**/*",
       "!data/**/*",
       "!scratch/**/*",
       "!tests/**/*",
+      "!docs/**/*",
+      "!scripts/**/*",
       "!firebase-backend/**/*",
       "!serviceAccountKey*.json",
       "!firestore.rules",
       "!*.log",
       "!.git/**/*",
       "!.gitignore",
-      "!README.md"
+      "!*.md"
     ],
     "asarUnpack": [
       "node_modules/sqlite3/**/*"

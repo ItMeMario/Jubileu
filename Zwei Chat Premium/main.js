@@ -1,7 +1,7 @@
 // main.js
 // Processo Principal Electron para Zwei Chat Premium (Meta Official API Edition)
 
-const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require("electron");
 const path = require("path");
 const log = require("electron-log");
 
@@ -26,6 +26,11 @@ const { cloudGatewayService } = require("./cloud-gateway/server");
 let mainWindow = null;
 
 function createWindow() {
+  // 🛡️ Segurança: Remove o menu nativo da aplicação em produção para evitar atalhos e menus de depuração
+  if (app.isPackaged) {
+    Menu.setApplicationMenu(null);
+  }
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 850,
@@ -38,11 +43,32 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      devTools: !app.isPackaged,
     },
     autoHideMenuBar: true,
   });
 
   mainWindow.loadFile(path.join(__dirname, "renderer/html/index.html"));
+
+  // 🛡️ Segurança: Bloqueia abertura de DevTools e intercepta atalhos de depuração em produção
+  if (app.isPackaged) {
+    mainWindow.webContents.on("devtools-opened", () => {
+      mainWindow.webContents.closeDevTools();
+    });
+
+    mainWindow.webContents.on("before-input-event", (event, input) => {
+      const key = (input.key || "").toUpperCase();
+      const isCtrlOrCmd = input.control || input.meta;
+      const isInspectShortcut =
+        key === "F12" ||
+        (isCtrlOrCmd && input.shift && (key === "I" || key === "J" || key === "C")) ||
+        (isCtrlOrCmd && key === "U");
+
+      if (isInspectShortcut) {
+        event.preventDefault();
+      }
+    });
+  }
 
   // 🛡️ Segurança: Bloqueia navegações internas indevidas e abre links externos no navegador padrão do SO
   mainWindow.webContents.on("will-navigate", (event, navigationUrl) => {
