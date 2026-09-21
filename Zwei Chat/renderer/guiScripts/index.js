@@ -591,6 +591,11 @@ tabBtnDeejay.addEventListener("click", async () => {
       const htmlText = await response.text();
       tabContentDeejay.innerHTML = htmlText;
       deejayHtmlLoaded = true;
+
+      // Inicializa divisores arrastáveis da aba Dee Jay
+      if (window.panelResizer && typeof window.panelResizer.initDeeJayResizers === "function") {
+        window.panelResizer.initDeeJayResizers();
+      }
     }
     
     // Inicializa a lógica do Dee Jay exposta por deejay.js

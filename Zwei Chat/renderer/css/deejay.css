@@ -85,38 +85,55 @@
   height: 16px;
 }
 
-/* Grid Principal */
+/* Grid Principal do Dee Jay (Flex com Divisores Arrastáveis) */
 .deejay-main-grid {
-  display: grid;
-  grid-template-columns: minmax(min(340px, 100%), 1.6fr) minmax(min(220px, 100%), 0.9fr);
-  gap: clamp(10px, 1.2vw, 20px);
+  display: flex;
+  flex-direction: row;
+  gap: 0;
   flex-grow: 1;
-  overflow-y: auto;
   min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .deejay-left-column {
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 1.2vh, 20px);
+  gap: 0;
   min-height: 0;
+  min-width: 260px;
+  width: var(--dj-left-width, 60%);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.deejay-right-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 240px;
+  flex-grow: 1;
+  flex-shrink: 1;
+  overflow: hidden;
 }
 
 .deejay-section {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  flex-grow: 1;
+  overflow: hidden;
 }
 
 .deejay-section.deejay-instances-section {
-  flex-grow: 2.5;
-  min-height: 200px;
+  height: var(--dj-instances-height, 58%);
+  min-height: 120px;
+  flex-shrink: 0;
 }
 
 .deejay-section.deejay-messages-section {
-  flex-grow: 0.5;
-  max-height: clamp(110px, 18vh, 180px);
+  flex-grow: 1;
+  min-height: 120px;
+  /* Sem max-height rígido: pode ser expandido conforme o usuário redimensiona */
 }
 
 .deejay-section.glass-panel {
@@ -159,12 +176,22 @@
 }
 
 .deejay-instances-grid::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
+}
+
+.deejay-instances-grid::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
 }
 
 .deejay-instances-grid::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.deejay-instances-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(18, 202, 98, 0.45);
 }
 
 .dj-card {
@@ -341,12 +368,22 @@
 }
 
 .dj-messages-list-wrapper::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
+}
+
+.dj-messages-list-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
 }
 
 .dj-messages-list-wrapper::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.dj-messages-list-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(18, 202, 98, 0.45);
 }
 
 .dj-messages-list {
@@ -441,9 +478,19 @@
   width: 6px;
 }
 
-.dj-logs-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.05);
+.dj-logs-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 3px;
+}
+
+.dj-logs-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.dj-logs-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(18, 202, 98, 0.45);
 }
 
 .dj-log-placeholder {

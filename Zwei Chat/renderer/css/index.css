@@ -52,9 +52,10 @@ body {
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-columns: clamp(240px, 25vw, 380px) 1fr;
+  grid-template-columns: var(--sidebar-width, clamp(240px, 25vw, 380px)) auto 1fr;
   padding: clamp(10px, 1.5vw, 24px);
-  gap: clamp(10px, 1.5vw, 24px);
+  gap: clamp(6px, 0.8vw, 14px);
+  min-width: 0;
 }
 
 /* Glassmorphism Panel Common */
@@ -965,4 +966,87 @@ body {
   .instances-list { max-height: 60px; }
   .action-buttons .btn { padding: 10px 16px; font-size: 13px; }
 }
+
+/* ==========================================================================
+   DIVISORES ARRASTÁVEIS (SPLITTERS / RESIZERS)
+   ========================================================================== */
+.resizer-col {
+  width: 12px;
+  cursor: col-resize;
+  position: relative;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+
+.resizer-col::before {
+  content: "";
+  width: 3px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.resizer-col:hover::before,
+.resizer-col.active::before {
+  width: 5px;
+  height: 56px;
+  background: var(--primary);
+  box-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow);
+}
+
+.resizer-sidebar {
+  align-self: stretch;
+}
+
+.resizer-row {
+  height: 12px;
+  cursor: row-resize;
+  position: relative;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+
+.resizer-row::before {
+  content: "";
+  height: 3px;
+  width: 44px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.resizer-row:hover::before,
+.resizer-row.active::before {
+  height: 5px;
+  width: 68px;
+  background: var(--primary);
+  box-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow);
+}
+
+/* Previne seleção de texto e fixa o cursor durante o arraste */
+body.is-resizing-col,
+body.is-resizing-col * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.is-resizing-row,
+body.is-resizing-row * {
+  cursor: row-resize !important;
+  user-select: none !important;
+}
+
 
