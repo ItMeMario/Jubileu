@@ -1,6 +1,7 @@
 // main/ipc/authHandlers.js
 const authService = require("../../services/authService");
 const firebaseService = require("../../services/firebaseService");
+const credentialService = require("../../services/credentialService");
 
 class AuthHandlers {
   constructor(windowManager) {
@@ -15,8 +16,16 @@ class AuthHandlers {
     });
 
     // 2. Login
-    ipcMain.handle("auth:login", async (event, { email, password } = {}) => {
-      return authService.login(email || "", password || "");
+    ipcMain.handle("auth:login", async (event, { email, password, remember = false } = {}) => {
+      const result = await authService.login(email || "", password || "");
+      if (result && result.success) {
+        if (remember) {
+          credentialService.save(email, password, true, true);
+        } else {
+          credentialService.clear();
+        }
+      }
+      return result;
     });
 
     // 3. Cadastro
@@ -31,6 +40,7 @@ class AuthHandlers {
 
     // 5. Logout
     ipcMain.handle("auth:logout", async () => {
+      credentialService.setAutoLogin(false);
       return authService.logout();
     });
 
@@ -57,6 +67,16 @@ class AuthHandlers {
       return authService.checkRenewal();
     });
 
+    // 9. Obter credenciais salvas (Lembrar Login)
+    ipcMain.handle("auth:get-saved-credentials", async () => {
+      return credentialService.get();
+    });
+
+    // 10. Limpar credenciais salvas
+    ipcMain.handle("auth:clear-credentials", async () => {
+      return credentialService.clear();
+    });
+
     // Escuta mudanças de estado no AuthService e transmite para a janela do Renderer
     this.removeStateListener = authService.addStateListener((state) => {
       const mainWindow = this.windowManager?.getMainWindow();
@@ -77,6 +97,8 @@ class AuthHandlers {
     ipcMain.removeHandler("auth:activate-key");
     ipcMain.removeHandler("auth:save-firebase-config");
     ipcMain.removeHandler("auth:check-renewal");
+    ipcMain.removeHandler("auth:get-saved-credentials");
+    ipcMain.removeHandler("auth:clear-credentials");
 
     if (this.removeStateListener) {
       this.removeStateListener();

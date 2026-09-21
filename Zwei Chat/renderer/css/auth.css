@@ -338,6 +338,72 @@
   margin-top: 4px;
 }
 
+/* Lembrar Login */
+.auth-remember-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.auth-remember-label:hover {
+  color: var(--text-main);
+}
+
+.auth-remember-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(18, 202, 98, 0.4);
+  background: rgba(6, 12, 10, 0.7);
+  cursor: pointer;
+  outline: none;
+  margin: 0;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  vertical-align: middle;
+}
+
+.auth-remember-checkbox:hover {
+  border-color: var(--primary);
+  background: rgba(18, 202, 98, 0.1);
+  box-shadow: 0 0 8px rgba(18, 202, 98, 0.2);
+}
+
+.auth-remember-checkbox:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(18, 202, 98, 0.4);
+}
+
+.auth-remember-checkbox:checked::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 8px;
+  border: solid #040807;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.auth-remember-checkbox:focus-visible {
+  box-shadow: 0 0 0 3px rgba(18, 202, 98, 0.3);
+}
+
+.auth-remember-text {
+  line-height: 1;
+}
+
 .auth-link {
   color: var(--text-muted);
   text-decoration: none;

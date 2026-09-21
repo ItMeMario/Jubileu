@@ -29,6 +29,7 @@
   // Inputs
   const inputLoginEmail = document.getElementById("login-email");
   const inputLoginPassword = document.getElementById("login-password");
+  const checkboxRememberLogin = document.getElementById("remember-login");
   const inputRegisterName = document.getElementById("register-name");
   const inputRegisterEmail = document.getElementById("register-email");
   const inputRegisterPassword = document.getElementById("register-password");
@@ -284,6 +285,7 @@
 
         const email = inputLoginEmail.value.trim();
         const password = inputLoginPassword.value;
+        const remember = checkboxRememberLogin ? checkboxRememberLogin.checked : false;
         const btnSubmit = formLogin.querySelector("button[type='submit']");
 
         if (!email || !password) {
@@ -293,7 +295,7 @@
 
         try {
           setButtonLoading(btnSubmit, true, "Entrando...");
-          const result = await window.authAPI.login(email, password);
+          const result = await window.authAPI.login(email, password, remember);
 
           if (!result.success) {
             showAlert(result.message || "Erro ao realizar login.");
@@ -304,6 +306,22 @@
           showAlert(err.message || "Falha de comunicação com o servidor de autenticação.");
         } finally {
           setButtonLoading(btnSubmit, false);
+        }
+      });
+    }
+
+    // Listener para limpar credenciais imediatamente ao desmarcar Lembrar Login
+    if (checkboxRememberLogin) {
+      checkboxRememberLogin.addEventListener("change", async (e) => {
+        if (!e.target.checked) {
+          try {
+            if (window.authAPI && typeof window.authAPI.clearSavedCredentials === "function") {
+              await window.authAPI.clearSavedCredentials();
+              console.log("ℹ️ Credenciais salvas limpas após desmarcação.");
+            }
+          } catch (err) {
+            console.warn("Erro ao limpar credenciais salvas:", err);
+          }
         }
       });
     }
@@ -557,6 +575,38 @@
         const initialState = await window.authAPI.getAuthState();
         console.log("🔐 Estado inicial de autenticação:", initialState);
         renderAuthState(initialState);
+
+        // Se o usuário não estiver autenticado, carrega credenciais salvas
+        if (!initialState.isAuthenticated && typeof window.authAPI.getSavedCredentials === "function") {
+          try {
+            const saved = await window.authAPI.getSavedCredentials();
+            if (saved && saved.remember && saved.email) {
+              if (inputLoginEmail) inputLoginEmail.value = saved.email;
+              if (inputLoginPassword && saved.password) inputLoginPassword.value = saved.password;
+              if (checkboxRememberLogin) checkboxRememberLogin.checked = true;
+
+              // Se a opção de auto-login estiver ativa, entra automaticamente
+              if (saved.autoLogin && saved.password) {
+                const btnSubmit = formLogin ? formLogin.querySelector("button[type='submit']") : null;
+                if (btnSubmit) setButtonLoading(btnSubmit, true, "Entrando automaticamente...");
+
+                try {
+                  const autoResult = await window.authAPI.login(saved.email, saved.password, true);
+                  if (!autoResult.success) {
+                    if (btnSubmit) setButtonLoading(btnSubmit, false);
+                    showAlert(`Falha no login automático: ${autoResult.message || "Verifique suas credenciais."}`, "warning", 7000);
+                  }
+                } catch (autoErr) {
+                  if (btnSubmit) setButtonLoading(btnSubmit, false);
+                  console.warn("Erro no auto-login:", autoErr);
+                  showAlert("Não foi possível conectar automaticamente. Por favor, entre manualmente.", "warning", 6000);
+                }
+              }
+            }
+          } catch (savedErr) {
+            console.warn("Erro ao carregar credenciais salvas:", savedErr);
+          }
+        }
       } catch (err) {
         console.error("Erro ao obter estado de autenticação:", err);
       }
