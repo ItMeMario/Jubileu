@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper: Verifica se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper: Verifica se é o dono do perfil
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ==========================================
+    // Regras da Coleção de Licenças (licenses)
+    // ==========================================
+    match /licenses/{licenseKey} {
+      // Permite ler (get) uma chave específica para validação na ativação
+      allow get: if isAuthenticated();
+      
+      // Bloqueia listagem geral de chaves no banco
+      allow list: if false;
+
+      // Criação e Exclusão: Bloqueada para clientes. Apenas você (Admin SDK) pode criar
+      allow create, delete: if false;
+
+      // Ativação da Licença pelo Usuário:
+      // Permite atualização exclusivamente se:
+      // 1. O status atual for "available"
+      // 2. O novo status for "active"
+      // 3. O usedByUid for o UID do usuário que está autenticado
+      // 4. A chave em si (key) e o plano (plan) não forem alterados
+      allow update: if isAuthenticated() &&
+        resource.data.status == "available" &&
+        request.resource.data.status == "active" &&
+        request.resource.data.usedByUid == request.auth.uid &&
+        request.resource.data.key == resource.data.key;
+    }
+
+    // ==========================================
+    // Regras da Coleção de Usuários (users)
+    // ==========================================
+    match /users/{userId} {
+      // Cada usuário só pode ler seus próprios dados
+      allow read: if isOwner(userId);
+      
+      // Criação no cadastro com o UID correspondente
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      
+      // Atualização de perfil e ativação de licença pelo próprio dono
+      allow update: if isOwner(userId);
+      
+      // Exclusão bloqueada para clientes
+      allow delete: if false;
+    }
+  }
+}

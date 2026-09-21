@@ -1,0 +1,22 @@
+/* Controle de Delay */
+.delay-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.delay-slider {
+  flex-grow: 1;
+  accent-color: var(--primary);
+}
+
+.delay-value {
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: white;
+  min-width: 32px;
+  text-align: center;
+}

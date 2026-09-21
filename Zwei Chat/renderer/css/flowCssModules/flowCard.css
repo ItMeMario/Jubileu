@@ -1,0 +1,41 @@
+/* Flow Cards */
+.flow-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.25s ease;
+}
+
+.flow-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(139, 92, 246, 0.2);
+  transform: translateY(-2px);
+}
+
+.flow-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.flow-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+}
+
+.flow-card-trigger {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: 'Fira Code', monospace;
+}
+
+.flow-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}

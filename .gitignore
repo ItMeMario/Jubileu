@@ -2,6 +2,29 @@ node_modules/
 .wwebjs_cache
 /data/
 dist/
+build/
+build-protected/
+scratch/
 .wwebjs_auth/
 .wwebjs_auth_deejay
 .wwebjs_auth_crm
+
+
+.env
+.env.*
+.env.local
+!.env.example
+serviceAccountKey*.json
+*firebase-config.json
+*.pem
+*.key
+*.cert
+
+
+*.log
+npm-debug.log*
+
+.DS_Store
+Thumbs.db
+Zwei Chat Premium/docs/RELATORIO_SEGURANCA.md
+Zwei Chat Premium/docs/RELATORIO_VULNERABILIDADES.md

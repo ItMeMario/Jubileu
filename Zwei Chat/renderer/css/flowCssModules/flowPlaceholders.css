@@ -1,0 +1,57 @@
+/* Placeholders e usabilidade */
+.flow-placeholder-card {
+  text-align: center;
+  padding: 60px 40px;
+  color: var(--text-muted);
+  border: 2px dashed rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.empty-steps-placeholder {
+  text-align: center;
+  padding: 48px 32px;
+  border: 2px dashed rgba(139, 92, 246, 0.15);
+  border-radius: 16px;
+  background: rgba(139, 92, 246, 0.02);
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  animation: scale-up 0.3s ease-out;
+}
+
+.empty-steps-placeholder .placeholder-emoji {
+  font-size: 36px;
+  animation: float 2.5s ease-in-out infinite;
+}
+
+.empty-steps-placeholder p {
+  font-size: 14px;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.step-help-text {
+  font-size: 12px;
+  color: var(--text-dark);
+  margin-top: 4px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.step-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  margin-bottom: 0;
+  font-weight: 400;
+  line-height: 1.4;
+}
