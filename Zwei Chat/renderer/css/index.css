@@ -80,6 +80,8 @@ body {
 .sidebar {
   padding: clamp(12px, 2vh, 32px) clamp(12px, 1.5vw, 24px);
   justify-content: space-between;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .brand-section {
@@ -553,8 +555,134 @@ body {
   display: flex;
 }
 
+/* ==========================================================================
+   AÇÕES DO CABEÇALHO E CONTROLES DE ZOOM / ESCALA DA UI
+   ========================================================================== */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
+.zoom-controls-container {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 2px 4px;
+  gap: 3px;
+  transition: all 0.25s ease;
+  user-select: none;
+}
 
+.zoom-controls-container:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(18, 202, 98, 0.25);
+  box-shadow: 0 0 12px rgba(18, 202, 98, 0.08);
+}
+
+.zoom-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zoom-btn:hover {
+  color: #FFFFFF;
+  background: rgba(18, 202, 98, 0.2);
+  transform: scale(1.05);
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+.zoom-btn-reset {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.zoom-btn-reset:hover {
+  opacity: 1;
+  color: var(--primary);
+}
+
+.zoom-level-badge {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Fira Code', monospace;
+  cursor: pointer;
+  min-width: 48px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.zoom-level-badge:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(18, 202, 98, 0.1);
+  box-shadow: 0 0 8px var(--primary-glow);
+}
+
+/* ==========================================================================
+   FLOATING HUD DE FEEDBACK DE ZOOM
+   ========================================================================== */
+.zoom-hud {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(13, 22, 19, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(18, 202, 98, 0.45);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(18, 202, 98, 0.25);
+  border-radius: 12px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #FFFFFF;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  z-index: 99999;
+  opacity: 0;
+  transform: translateY(14px) scale(0.92);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.zoom-hud.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.zoom-hud-icon {
+  font-size: 18px;
+}
+
+.zoom-hud-text {
+  font-family: 'Fira Code', monospace;
+  color: var(--primary);
+  font-weight: 700;
+}
 
 /* ==========================================================================
    MODAL DE CONFIRMAÇÃO PERSONALIZADO (CONFIRMMODAL.JS)

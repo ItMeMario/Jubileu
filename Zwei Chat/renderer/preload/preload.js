@@ -1,5 +1,5 @@
 // renderer/preload/preload.js
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webFrame } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
   startWhatsApp: (instanceId) => ipcRenderer.invoke("start-whatsapp", instanceId),
@@ -10,6 +10,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   saveFlow: (flow) => ipcRenderer.invoke("save-flow", flow),
   deleteFlow: (id) => ipcRenderer.invoke("delete-flow", id),
   toggleFlow: (id, active) => ipcRenderer.invoke("toggle-flow", { id, active }),
+
+  // Controle de Zoom / Escala da UI
+  setZoomFactor: (factor) => webFrame.setZoomFactor(factor),
+  getZoomFactor: () => webFrame.getZoomFactor(),
 
   // Rotas de instâncias
   getInstances: () => ipcRenderer.invoke("get-instances"),

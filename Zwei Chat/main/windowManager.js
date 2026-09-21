@@ -12,8 +12,8 @@ class WindowManager {
     this.mainWindow = new BrowserWindow({
       width: 1200,
       height: 800,
-      minWidth: 860,
-      minHeight: 580,
+      minWidth: 720,
+      minHeight: 500,
       webPreferences: {
         preload: path.join(__dirname, "../renderer/preload/preload.js"),
         nodeIntegration: false,

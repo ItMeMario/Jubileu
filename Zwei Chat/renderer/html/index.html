@@ -107,6 +107,22 @@
           </button>
         </div>
         <div class="header-actions">
+          <!-- Controles de Zoom / Escala da UI -->
+          <div class="zoom-controls-container" title="Escala da Interface (Atalhos: Ctrl + / Ctrl - / Ctrl 0 / Ctrl + Scroll)">
+            <button id="btn-zoom-out" class="zoom-btn" title="Diminuir Zoom (Ctrl -)" aria-label="Diminuir Zoom">
+              <span>−</span>
+            </button>
+            <button id="btn-zoom-display" class="zoom-level-badge" title="Clique para redefinir para 100% (Ctrl 0)">
+              <span id="zoom-level-text">100%</span>
+            </button>
+            <button id="btn-zoom-in" class="zoom-btn" title="Aumentar Zoom (Ctrl +)" aria-label="Aumentar Zoom">
+              <span>+</span>
+            </button>
+            <button id="btn-zoom-reset" class="zoom-btn zoom-btn-reset" title="Redefinir para 100% (Ctrl 0)" aria-label="Redefinir Zoom">
+              <span>↺</span>
+            </button>
+          </div>
+
           <div id="logs-controls" class="tab-controls active">
             <button id="btn-clear-logs" class="control-btn" title="Limpar Console">🗑️</button>
           </div>
@@ -367,10 +383,15 @@
       </div>
 
     </div>
+  <!-- Floating Toast HUD para Feedback de Zoom -->
+  <div id="zoom-hud" class="zoom-hud" aria-hidden="true">
+    <div class="zoom-hud-icon">🔍</div>
+    <span id="zoom-hud-text" class="zoom-hud-text">100%</span>
   </div>
 
   <script src="../guiScripts/utils/confirmModal.js"></script>
   <script src="../guiScripts/utils/intervalSelector.js"></script>
+  <script src="../guiScripts/zoomManager.js"></script>
   <script src="../guiScripts/deejay.js" defer></script>
   <script src="../guiScripts/drone.js" defer></script>
   <script type="module" src="../guiScripts/flows.js" defer></script>
