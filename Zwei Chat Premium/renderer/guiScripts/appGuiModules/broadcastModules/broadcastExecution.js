@@ -196,14 +196,48 @@ export function setupBroadcastIPCListeners(api) {
       if (placeholder) placeholder.remove();
 
       const timeStr = new Date(logEntry.timestamp || Date.now()).toLocaleTimeString("pt-BR");
-      const safeStatus = ["info", "success", "error", "warn", "pending"].includes(logEntry.status)
+      const safeStatus = ["info", "success", "error", "warn", "warning", "pending"].includes(logEntry.status)
         ? logEntry.status
         : "info";
+      const entryDiv = document.createElement("div");
       entryDiv.className = `log-entry ${safeStatus}`;
 
       entryDiv.innerHTML = `
         <span class="log-time">[${escapeHtml(timeStr)}]</span>
         <span class="log-text">${escapeHtml(logEntry.message)}</span>
+      `;
+
+      terminalContainer.appendChild(entryDiv);
+      terminalContainer.scrollTop = terminalContainer.scrollHeight;
+    });
+  }
+
+  // 🛡️ Alerta visual de Throttling e Proteção contra Rate Limit da Meta (Vulnerabilidade #5)
+  if (typeof api.onBroadcastThrottled === "function") {
+    api.onBroadcastThrottled((data) => {
+      if (!terminalContainer) return;
+
+      const placeholder = $("#bc-terminal-placeholder");
+      if (placeholder) placeholder.remove();
+
+      const timeStr = new Date().toLocaleTimeString("pt-BR");
+      const entryDiv = document.createElement("div");
+      const isExhausted = !!(data && data.exhausted);
+      entryDiv.className = isExhausted
+        ? "log-entry failed throttle-alert"
+        : "log-entry warning throttle-alert";
+
+      const seconds = data && data.waitedMs ? (data.waitedMs / 1000).toFixed(1) : "0.0";
+      const tierLabel = data && data.tier ? ` [${escapeHtml(data.tier)}]` : "";
+
+      let msg = `⏳ Rate Limit da Meta atingido${tierLabel}: aguardando cooldown anti-bloqueio (${seconds}s)...`;
+      if (isExhausted) {
+        msg = `🚨 Limite da Meta esgotado${tierLabel}: requisição bloqueada por excesso de taxa. Reduza a cadência de envio.`;
+      }
+
+      entryDiv.innerHTML = `
+        <span class="log-time">[${escapeHtml(timeStr)}]</span>
+        <span class="log-text"><strong>${msg}</strong></span>
       `;
 
       terminalContainer.appendChild(entryDiv);

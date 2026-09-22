@@ -22,6 +22,7 @@ const { botIntegrationService } = require("./services/botIntegrationService");
 const { antiLoopService } = require("./services/antiLoopService");
 const { firebaseService } = require("./services/firebaseService");
 const { cloudGatewayService } = require("./cloud-gateway/server");
+const { rateLimiterService } = require("./services/rateLimiterService");
 
 let mainWindow = null;
 
@@ -282,6 +283,11 @@ function registerIpcHandlers() {
   ipcMain.handle("sync:clear-recent-inbound", () => {
     return syncService.clearRecentInboundMessages();
   });
+
+  // 9. Controle de Vazão Adaptativo e Anti-Bloqueio (Rate Limiting)
+  ipcMain.handle("ratelimit:get-status", () => {
+    return rateLimiterService.getStatus();
+  });
 }
 
 /**
@@ -311,6 +317,25 @@ function setupEventForwarding() {
   metaBroadcastService.on("broadcast:recipient_updated", (data) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send("broadcast:recipient_updated", data);
+    }
+  });
+
+  metaBroadcastService.on("broadcast:throttled", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("broadcast:throttled", data);
+    }
+  });
+
+  // Eventos de Rate Limiting Adaptativo
+  rateLimiterService.on("ratelimit:tier-upgraded", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("ratelimit:tier-upgraded", data);
+    }
+  });
+
+  rateLimiterService.on("ratelimit:tier-changed", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("ratelimit:tier-changed", data);
     }
   });
 
@@ -354,6 +379,16 @@ app.whenReady().then(async () => {
     await firebaseService.initialize();
     botIntegrationService.initialize();
     await metaAccountService.checkConnectionStatus();
+
+    // Consulta periódica do tier da conta para ajuste adaptativo de vazão (a cada 30 min)
+    rateLimiterService.startTierAutoRefresh(async () => {
+      const res = await metaAccountService.checkConnectionStatus();
+      if (res && res.success && res.data) {
+        return res.data.messagingLimitTier;
+      }
+      return null;
+    });
+
     await cloudGatewayService.start();
   } catch (err) {
     log.error("Aviso na inicialização dos serviços:", err.message);
@@ -367,6 +402,7 @@ app.whenReady().then(async () => {
 });
 
 app.on("before-quit", async () => {
+  rateLimiterService.destroy();
   await cloudGatewayService.stop();
 });
 

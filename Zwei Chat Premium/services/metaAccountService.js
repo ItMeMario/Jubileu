@@ -3,6 +3,7 @@
 
 const { metaApiClient } = require("../client/metaApiClient");
 const metaConfig = require("../config/metaConfig");
+const { rateLimiterService } = require("./rateLimiterService");
 
 class MetaAccountService {
   constructor() {
@@ -44,16 +45,24 @@ class MetaAccountService {
 
       if (response.success && response.data) {
         const data = response.data;
+        const tier = data.messaging_limit_tier || "TIER_1K";
         this.accountInfo = {
           isConnected: true,
           displayPhoneNumber: data.display_phone_number || null,
           verifiedName: data.verified_name || "Nome não cadastrado",
           qualityRating: data.quality_rating || "UNKNOWN",
           codeVerificationStatus: data.code_verification_status || "VERIFIED",
-          messagingLimitTier: data.messaging_limit_tier || "TIER_1K",
+          messagingLimitTier: tier,
           lastCheckedAt: new Date(),
           errorMessage: null,
         };
+
+        // Sincroniza o tier detectado com o serviço de rate limiting adaptativo
+        try {
+          rateLimiterService.updateTier(tier);
+        } catch (tierErr) {
+          console.warn("[MetaAccountService] Falha ao atualizar tier no rate limiter:", tierErr.message);
+        }
 
         return { success: true, data: this.accountInfo };
       } else {

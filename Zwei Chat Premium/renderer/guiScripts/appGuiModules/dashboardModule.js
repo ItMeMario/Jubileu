@@ -204,6 +204,16 @@ export function initDashboard(api) {
   setupLiveFeedListeners(api);
   loadRecentInboundMessages(api);
 
+  // Atualização em tempo real do tier da conta no dashboard
+  if (api && typeof api.onRateLimitTierChanged === "function") {
+    api.onRateLimitTierChanged((data) => {
+      const dashLimitTier = $("#dash-limit-tier");
+      if (dashLimitTier && data && data.newTier) {
+        dashLimitTier.textContent = data.newTier;
+      }
+    });
+  }
+
   return {
     refreshAccountHealth: () => refreshAccountHealth(api),
     loadRecentInboundMessages: () => loadRecentInboundMessages(api),

@@ -3,6 +3,7 @@
 
 const axios = require("axios");
 const metaConfig = require("../config/metaConfig");
+const { rateLimiterService } = require("../services/rateLimiterService");
 
 /**
  * Normaliza número de telefone removendo caracteres especiais e garantindo formato E.164 sem o '+'
@@ -65,10 +66,16 @@ class MetaApiClient {
   }
 
   /**
-   * Executa uma chamada HTTP genérica para a Meta Graph API com tratamento de erros robusto
+   * Executa uma chamada HTTP genérica para a Meta Graph API com tratamento de erros robusto.
+   * Inclui retry automático com backoff exponencial para erros de Rate Limit (130429).
    * @private
+   * @param {string} method - Método HTTP (GET, POST, etc.)
+   * @param {string} url - URL completa da Graph API
+   * @param {object|null} data - Payload da requisição
+   * @param {object} customHeaders - Headers adicionais
+   * @param {number} [_retryCount=0] - Contador interno de retries (não usar externamente)
    */
-  async _request(method, url, data = null, customHeaders = {}) {
+  async _request(method, url, data = null, customHeaders = {}, _retryCount = 0) {
     const validation = this.config.validateCredentials();
     if (!validation.isValid) {
       throw new Error(`Configurações ausentes: ${validation.missing.join(", ")}`);
@@ -86,12 +93,34 @@ class MetaApiClient {
         timeout: 30000, // 30s timeout
       });
 
+      // 🛡️ Sucesso: reseta o backoff do Rate Limiter (sequência de erros interrompida)
+      rateLimiterService.resetBackoff();
+
       return {
         success: true,
         data: response.data,
         messageId: response.data?.messages?.[0]?.id || null,
       };
     } catch (error) {
+      const metaError = error.response?.data?.error || {};
+      const errorCode = metaError.code;
+
+      // 🛡️ PROTEÇÃO CONTRA RATE LIMIT (Vulnerabilidade #5)
+      // Erro 130429: Rate Limit Hit — ativa backoff exponencial e retenta automaticamente
+      if (errorCode === 130429 && _retryCount < 3) {
+        const backoff = rateLimiterService.handleRateLimitHit();
+
+        if (backoff.shouldRetry) {
+          console.warn(
+            `⏳ [RATE LIMIT] Erro 130429 detectado (tentativa ${backoff.attempt}/${3}). ` +
+            `Aguardando ${(backoff.delayMs / 1000).toFixed(1)}s antes de retentar...`
+          );
+
+          await new Promise((resolve) => setTimeout(resolve, backoff.delayMs));
+          return this._request(method, url, data, customHeaders, _retryCount + 1);
+        }
+      }
+
       const friendlyMessage = parseMetaErrorMessage(error.response);
       const rawError = error.response?.data || error.message;
 
@@ -100,6 +129,8 @@ class MetaApiClient {
         error: friendlyMessage,
         raw: rawError,
         status: error.response?.status || 500,
+        rateLimited: errorCode === 130429,
+        retryAttempts: _retryCount,
       };
     }
   }

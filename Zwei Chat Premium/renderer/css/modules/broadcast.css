@@ -365,6 +365,18 @@
 
 .log-entry.warning {
   color: #f2cc60;
+  background: rgba(242, 204, 96, 0.08);
+}
+
+.log-entry.throttle-alert {
+  border-left: 3px solid #f2cc60;
+  background: rgba(242, 204, 96, 0.12);
+  padding-left: 8px;
+}
+
+.log-entry.throttle-alert.failed {
+  border-left-color: #ff7b72;
+  background: rgba(239, 68, 68, 0.12);
 }
 
 .log-time {

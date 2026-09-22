@@ -104,4 +104,22 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
     ipcRenderer.on("bot:anti_loop_triggered", subscription);
     return () => ipcRenderer.removeListener("bot:anti_loop_triggered", subscription);
   },
+
+  // 8. Proteção Anti-Bloqueio e Rate Limiter Adaptativo (Vulnerabilidade #5)
+  getRateLimitStatus: () => ipcRenderer.invoke("ratelimit:get-status"),
+  onBroadcastThrottled: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("broadcast:throttled", subscription);
+    return () => ipcRenderer.removeListener("broadcast:throttled", subscription);
+  },
+  onRateLimitTierUpgraded: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("ratelimit:tier-upgraded", subscription);
+    return () => ipcRenderer.removeListener("ratelimit:tier-upgraded", subscription);
+  },
+  onRateLimitTierChanged: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("ratelimit:tier-changed", subscription);
+    return () => ipcRenderer.removeListener("ratelimit:tier-changed", subscription);
+  },
 });
