@@ -106,6 +106,17 @@ function registerIpcHandlers() {
 
   ipcMain.handle("meta:save-config", async (_event, newConfig) => {
     metaConfig.saveToEnvFile(newConfig);
+    if (
+      cloudGatewayService &&
+      typeof cloudGatewayService.registerWebhookOnMeta === "function" &&
+      cloudGatewayService.publicUrl
+    ) {
+      try {
+        await cloudGatewayService.registerWebhookOnMeta(cloudGatewayService.publicUrl);
+      } catch (gwErr) {
+        log.warn("Aviso ao sincronizar webhook com novas credenciais:", gwErr.message);
+      }
+    }
     const health = await metaAccountService.checkConnectionStatus();
     return { success: true, health };
   });
@@ -140,6 +151,19 @@ function registerIpcHandlers() {
         authResult.code,
         authResult.redirectUri
       );
+
+      if (
+        onboardingResult.success &&
+        cloudGatewayService &&
+        typeof cloudGatewayService.registerWebhookOnMeta === "function" &&
+        cloudGatewayService.publicUrl
+      ) {
+        try {
+          await cloudGatewayService.registerWebhookOnMeta(cloudGatewayService.publicUrl);
+        } catch (gwErr) {
+          log.warn("Aviso ao sincronizar webhook pós-onboarding:", gwErr.message);
+        }
+      }
 
       return onboardingResult;
     } catch (err) {
