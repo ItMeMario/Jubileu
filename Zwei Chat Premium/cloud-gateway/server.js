@@ -174,7 +174,15 @@ class CloudGatewayService extends EventEmitter {
 
         console.log(`\n🔍 [Webhook GET] Handshake recebido: mode=${mode}, token=${token}`);
 
-        if (mode === "subscribe" && token === this.verifyToken) {
+        const activeVerifyToken =
+          (metaConfig && typeof metaConfig.getConfig === "function"
+            ? metaConfig.getConfig().verifyToken
+            : null) ||
+          this.verifyToken ||
+          process.env.META_VERIFY_TOKEN ||
+          "zwei_chat_meta_verify_token_2026";
+
+        if (mode === "subscribe" && (token === activeVerifyToken || token === this.verifyToken)) {
           console.log("✅ [Webhook GET] Token verificado com sucesso! Retornando challenge.");
           res.writeHead(200, { "Content-Type": "text/plain" });
           res.end(challenge);
@@ -299,15 +307,31 @@ class CloudGatewayService extends EventEmitter {
       return true;
     }
 
+    const currentAppId =
+      (metaConfig && typeof metaConfig.getConfig === "function"
+        ? metaConfig.getConfig().appId
+        : null) ||
+      this.appId ||
+      process.env.META_APP_ID ||
+      "1824502742321385";
+
+    const currentVerifyToken =
+      (metaConfig && typeof metaConfig.getConfig === "function"
+        ? metaConfig.getConfig().verifyToken
+        : null) ||
+      this.verifyToken ||
+      process.env.META_VERIFY_TOKEN ||
+      "zwei_chat_meta_verify_token_2026";
+
     try {
-      const appAccessToken = `${this.appId}|${currentAppSecret}`;
-      const endpoint = `https://graph.facebook.com/v21.0/${this.appId}/subscriptions`;
+      const appAccessToken = `${currentAppId}|${currentAppSecret}`;
+      const endpoint = `https://graph.facebook.com/v21.0/${currentAppId}/subscriptions`;
 
       const res = await axios.post(endpoint, null, {
         params: {
           object: "whatsapp_business_account",
           callback_url: callbackUrl,
-          verify_token: this.verifyToken,
+          verify_token: currentVerifyToken,
           fields: "messages,message_template_status_update",
           access_token: appAccessToken,
         },

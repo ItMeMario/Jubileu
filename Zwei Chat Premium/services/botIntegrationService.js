@@ -3,6 +3,7 @@
 
 const { syncService } = require("./syncService");
 const { flowExecutor } = require("../client/flowExecutor");
+const metaConfig = require("../config/metaConfig");
 
 class BotIntegrationService {
   constructor() {
@@ -29,6 +30,24 @@ class BotIntegrationService {
   async _onInboundMessage(message) {
     if (!this.isBotEnabled) {
       console.log(`ℹ️ Bot desativado temporariamente. Ignorando mensagem de ${message.from}`);
+      return;
+    }
+
+    // 🛡️ Isolamento por Linha: Se a mensagem foi recebida para um recipientPhoneNumberId específico
+    // e esta máquina tem um phoneNumberId configurado, garante que são para a mesma linha
+    const activePhoneId =
+      metaConfig && typeof metaConfig.getConfig === "function"
+        ? metaConfig.getConfig().phoneNumberId
+        : null;
+
+    if (
+      message.recipientPhoneNumberId &&
+      activePhoneId &&
+      message.recipientPhoneNumberId !== activePhoneId
+    ) {
+      console.log(
+        `ℹ️ [Bot] Mensagem destinada à linha ${message.recipientPhoneNumberId}. Ignorando pois esta máquina atende a linha ${activePhoneId}.`
+      );
       return;
     }
 

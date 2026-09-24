@@ -171,7 +171,7 @@ class MetaOnboardingService {
 
     if (!appSecret) {
       throw new Error(
-        "Troca OAuth segura não configurada: Defina FIREBASE_PROJECT_ID ou FIREBASE_FUNCTIONS_URL no .env para utilizar a Cloud Function de autenticação sem expor o segredo da Meta."
+        "Servidor de autenticação na nuvem indisponível. Para conectar este computador manualmente, insira seu Access Token e Phone Number ID na aba Configurações > Modo Técnico."
       );
     }
 
@@ -310,8 +310,12 @@ class MetaOnboardingService {
       );
     }
 
-    // Seleciona o primeiro número disponível
-    const primaryPhone = phones[0];
+    // Prioriza número com verificação confirmada ou nome aprovado caso haja múltiplos
+    const verifiedPhone = phones.find(
+      (p) => p.code_verification_status === "VERIFIED" || p.verified_name
+    );
+    const primaryPhone = verifiedPhone || phones[0];
+    console.log(`📱 [Onboarding] Encontrado(s) ${phones.length} número(s). Linha selecionada: ${primaryPhone.display_phone_number || primaryPhone.id} (ID: ${primaryPhone.id})`);
 
     return {
       wabaId,
