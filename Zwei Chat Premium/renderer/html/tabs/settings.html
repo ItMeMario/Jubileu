@@ -137,6 +137,38 @@
           ⚠️ <strong>Atenção:</strong> Estes parâmetros são gerenciados automaticamente pelo sistema. Modifique apenas se orientado pelo suporte técnico do Zwei Chat.
         </p>
 
+        <!-- Painel de Telemetria do Gateway & Cloudflare Tunnel -->
+        <div class="tunnel-diagnostic-panel" id="settings-tunnel-panel">
+          <div class="tunnel-diag-header">
+            <h4>🌐 Status do Gateway & Cloudflare Tunnel</h4>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-settings-refresh-tunnel">
+              🔄 Testar / Reconectar Túnel
+            </button>
+          </div>
+          <div class="tunnel-diag-grid">
+            <div>
+              <span class="diag-label">Estado do Watchdog:</span>
+              <span class="diag-val" id="settings-tunnel-state"><span class="status-pill status-yellow">Verificando...</span></span>
+            </div>
+            <div>
+              <span class="diag-label">Latência do Heartbeat:</span>
+              <span class="diag-val" id="settings-tunnel-latency">-- ms</span>
+            </div>
+            <div>
+              <span class="diag-label">Porta Local:</span>
+              <span class="diag-val" id="settings-tunnel-port">3000</span>
+            </div>
+            <div>
+              <span class="diag-label">Total de Reconexões:</span>
+              <span class="diag-val" id="settings-tunnel-reconnects">0</span>
+            </div>
+          </div>
+          <div class="tunnel-diag-url-row">
+            <span class="diag-label">URL Pública Webhook:</span>
+            <code id="settings-tunnel-public-url" class="tunnel-url-code">Carregando...</code>
+          </div>
+        </div>
+
         <form id="form-meta-config">
           <div class="form-grid-2">
             <div class="form-group">

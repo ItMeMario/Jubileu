@@ -14,6 +14,7 @@ import {
   loadBroadcastConfig,
 } from "./appGuiModules/broadcastModule.js";
 import { initFlows, loadFlowsList } from "./appGuiModules/flowsModule.js";
+import { initTunnelModule } from "./appGuiModules/tunnelModule.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("⚡ Inicializando interface modular do Zwei Chat Premium...");
@@ -66,6 +67,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       await loadTemplatesList(api);
     },
   });
+
+  // Telemetria do Cloudflare Tunnel Watchdog (Vulnerabilidade #7)
+  initTunnelModule(api);
 
   // ==========================================
   // 2. CARREGAMENTO INICIAL DOS DADOS

@@ -9,6 +9,7 @@
     "build:obfuscate": "node scripts/build-obfuscate.js",
     "test:webhook": "node tests/testWebhookSimulator.js",
     "test:xss": "node tests/xssSecurity.test.js",
+    "test:tunnel": "node tests/tunnelWatchdogSecurity.test.js",
     "dist": "npm run build:obfuscate && electron-builder",
     "dist:win": "npm run build:obfuscate && electron-builder --win",
     "postinstall": "electron-builder install-app-deps"

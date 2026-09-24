@@ -1,7 +1,7 @@
 // main.js
 // Processo Principal Electron para Zwei Chat Premium (Meta Official API Edition)
 
-const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu, powerMonitor } = require("electron");
 const path = require("path");
 const log = require("electron-log");
 
@@ -21,7 +21,7 @@ const { syncService } = require("./services/syncService");
 const { botIntegrationService } = require("./services/botIntegrationService");
 const { antiLoopService } = require("./services/antiLoopService");
 const { firebaseService } = require("./services/firebaseService");
-const { cloudGatewayService } = require("./cloud-gateway/server");
+const { cloudGatewayService, tunnelWatchdogService } = require("./cloud-gateway/server");
 const { rateLimiterService } = require("./services/rateLimiterService");
 
 let mainWindow = null;
@@ -288,6 +288,19 @@ function registerIpcHandlers() {
   ipcMain.handle("ratelimit:get-status", () => {
     return rateLimiterService.getStatus();
   });
+
+  // 10. Cloudflare Tunnel Watchdog & Alta Disponibilidade (Vulnerabilidade #7)
+  ipcMain.handle("tunnel:get-status", () => {
+    return tunnelWatchdogService.getStatus();
+  });
+
+  ipcMain.handle("tunnel:reconnect-now", async () => {
+    return await tunnelWatchdogService.forceReconnect();
+  });
+
+  ipcMain.handle("tunnel:check-health", async () => {
+    return await tunnelWatchdogService.executeHeartbeat();
+  });
 }
 
 /**
@@ -364,6 +377,37 @@ function setupEventForwarding() {
       mainWindow.webContents.send("bot:anti_loop_triggered", data);
     }
   });
+
+  // Eventos do Cloudflare Tunnel Watchdog (Vulnerabilidade #7)
+  tunnelWatchdogService.on("status-changed", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("tunnel:status-changed", data);
+    }
+  });
+
+  tunnelWatchdogService.on("heartbeat", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("tunnel:heartbeat", data);
+    }
+  });
+
+  tunnelWatchdogService.on("reconnecting", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("tunnel:reconnecting", data);
+    }
+  });
+
+  tunnelWatchdogService.on("reconnected", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("tunnel:reconnected", data);
+    }
+  });
+
+  tunnelWatchdogService.on("url-changed", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("tunnel:url-changed", data);
+    }
+  });
 }
 
 // Inicialização do Ciclo de Vida do App
@@ -390,6 +434,19 @@ app.whenReady().then(async () => {
     });
 
     await cloudGatewayService.start();
+
+    // 🛡️ Proteção de Suspensão/Hibernação: Vincula o powerMonitor do Electron ao TunnelWatchdog
+    if (powerMonitor) {
+      powerMonitor.on("suspend", () => {
+        log.info("💤 powerMonitor: Máquina entrando em suspensão. Pausando TunnelWatchdog.");
+        tunnelWatchdogService.handleSuspend();
+      });
+
+      powerMonitor.on("resume", () => {
+        log.info("⚡ powerMonitor: Máquina acordou do sleep. Acionando TunnelWatchdog.");
+        tunnelWatchdogService.handleResume();
+      });
+    }
   } catch (err) {
     log.error("Aviso na inicialização dos serviços:", err.message);
   }
@@ -402,6 +459,7 @@ app.whenReady().then(async () => {
 });
 
 app.on("before-quit", async () => {
+  tunnelWatchdogService.stop();
   rateLimiterService.destroy();
   await cloudGatewayService.stop();
 });

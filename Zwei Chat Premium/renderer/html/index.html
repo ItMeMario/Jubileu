@@ -43,6 +43,20 @@
       </nav>
 
       <div class="sidebar-footer">
+        <!-- Widget Persistente do Cloudflare Tunnel Watchdog -->
+        <div class="tunnel-widget-container" id="tunnel-status-widget" title="Verificando status do túnel...">
+          <div class="tunnel-widget-left">
+            <span class="status-dot status-dot-pulse status-dot-yellow" id="tunnel-status-dot"></span>
+            <div class="tunnel-info-text">
+              <span class="tunnel-title">Túnel Cloudflare</span>
+              <span class="tunnel-subtext" id="tunnel-status-text">Verificando...</span>
+            </div>
+          </div>
+          <button type="button" class="btn-tunnel-refresh" id="btn-tunnel-reconnect" title="Forçar Reconexão do Túnel">
+            <span>🔄</span>
+          </button>
+        </div>
+
         <div class="bot-switch-container">
           <span>Chatbot Ativo</span>
           <label class="switch">

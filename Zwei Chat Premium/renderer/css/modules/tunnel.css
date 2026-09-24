@@ -1,0 +1,184 @@
+/* renderer/css/modules/tunnel.css - Telemetria e Status do Cloudflare Tunnel Watchdog */
+
+/* 1. Widget na Barra Lateral */
+.tunnel-widget-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 8px);
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  transition: var(--transition, all 0.2s ease);
+}
+
+.tunnel-widget-container:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.tunnel-widget-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.tunnel-info-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  overflow: hidden;
+}
+
+.tunnel-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-main, #ffffff);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.tunnel-subtext {
+  font-size: 11px;
+  color: var(--text-muted, #9ca3af);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 135px;
+}
+
+/* Botão de Reconexão Rápida */
+.btn-tunnel-refresh {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: var(--text-muted, #9ca3af);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 13px;
+}
+
+.btn-tunnel-refresh:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main, #ffffff);
+}
+
+.btn-tunnel-refresh.spinning span {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 2. Micro-animação de Pulso para os Indicadores */
+.status-dot-pulse {
+  position: relative;
+}
+
+.status-dot-pulse::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+
+.status-dot-green.status-dot-pulse::after {
+  border: 2px solid rgba(16, 185, 129, 0.6);
+}
+
+.status-dot-yellow.status-dot-pulse::after {
+  border: 2px solid rgba(245, 158, 11, 0.6);
+}
+
+.status-dot-red.status-dot-pulse::after {
+  border: 2px solid rgba(239, 68, 68, 0.6);
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* 3. Painel de Diagnóstico na Aba Configurações */
+.tunnel-diagnostic-panel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 8px);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.tunnel-diag-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.tunnel-diag-header h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main, #ffffff);
+  margin: 0;
+}
+
+.tunnel-diag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.diag-label {
+  font-size: 11px;
+  color: var(--text-muted, #9ca3af);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.diag-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main, #ffffff);
+}
+
+.tunnel-diag-url-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 6px;
+}
+
+.tunnel-url-code {
+  font-family: monospace;
+  font-size: 12px;
+  color: #58a6ff;
+  word-break: break-all;
+}

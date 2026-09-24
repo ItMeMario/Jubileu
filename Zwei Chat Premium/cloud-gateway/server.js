@@ -14,6 +14,7 @@ const { flowExecutor } = require("../client/flowExecutor");
 const { botIntegrationService } = require("../services/botIntegrationService");
 const { syncService } = require("../services/syncService");
 const { window24hService } = require("../services/window24hService");
+const { tunnelWatchdogService } = require("../services/tunnelWatchdogService");
 const metaConfig = require("../config/metaConfig");
 
 class CloudGatewayService extends EventEmitter {
@@ -423,15 +424,79 @@ class CloudGatewayService extends EventEmitter {
 
     try {
       await this.startTunnel();
+      // Inicializa e acopla o Watchdog de alta disponibilidade
+      tunnelWatchdogService.setGatewayService(this);
+      tunnelWatchdogService.start();
     } catch (err) {
       console.error("❌ Erro ao iniciar Cloudflare tunnel:", err.message);
     }
   }
 
   /**
+   * Reinicia o Cloudflare Tunnel de forma limpa e recuperável
+   * Utilizado pelo TunnelWatchdogService durante auto-recuperação
+   */
+  async restartTunnel() {
+    console.log("🔄 [ZWEI PREMIUM] Reiniciando Cloudflare Tunnel...");
+    if (this.tunnel && typeof this.tunnel.close === "function") {
+      try {
+        await this.tunnel.close();
+      } catch (e) {
+        console.warn("⚠️ Aviso ao fechar túnel anterior:", e.message);
+      }
+      this.tunnel = null;
+    }
+
+    await this.startTunnel();
+    return this.publicUrl;
+  }
+
+  /**
+   * Diagnóstico instantâneo de saúde local e remota do Gateway
+   * @returns {Promise<object>}
+   */
+  async checkHealth() {
+    const start = Date.now();
+    let localOk = false;
+    let publicOk = false;
+    let error = null;
+
+    // 1. Checagem local
+    try {
+      const localRes = await axios.get(`http://127.0.0.1:${this.port}/webhook?hub.challenge=ping`, { timeout: 2500 });
+      localOk = localRes.data === "ping";
+    } catch (err) {
+      error = `Servidor local inacessível: ${err.message}`;
+    }
+
+    // 2. Checagem pública
+    if (this.publicUrl) {
+      try {
+        const pingUrl = `${this.publicUrl}?hub.mode=subscribe&hub.verify_token=${this.verifyToken}&hub.challenge=ping`;
+        const pubRes = await axios.get(pingUrl, { timeout: 5000 });
+        publicOk = pubRes.data === "ping";
+      } catch (err) {
+        error = `Túnel público inacessível: ${err.message}`;
+      }
+    }
+
+    const latencyMs = Date.now() - start;
+    return {
+      healthy: localOk && publicOk,
+      localOk,
+      publicOk,
+      latencyMs,
+      error: (localOk && publicOk) ? null : error,
+    };
+  }
+
+  /**
    * Encerra o Gateway e o Túnel
    */
   async stop() {
+    // Para o Watchdog primeiro
+    tunnelWatchdogService.stop();
+
     if (this.server) {
       this.server.close();
       this.server = null;
@@ -456,4 +521,5 @@ if (require.main === module) {
 module.exports = {
   CloudGatewayService,
   cloudGatewayService,
+  tunnelWatchdogService,
 };

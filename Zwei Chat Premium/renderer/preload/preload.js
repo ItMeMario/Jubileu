@@ -122,4 +122,35 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
     ipcRenderer.on("ratelimit:tier-changed", subscription);
     return () => ipcRenderer.removeListener("ratelimit:tier-changed", subscription);
   },
+
+  // 9. Cloudflare Tunnel Watchdog & Alta Disponibilidade (Vulnerabilidade #7)
+  getTunnelStatus: () => ipcRenderer.invoke("tunnel:get-status"),
+  reconnectTunnel: () => ipcRenderer.invoke("tunnel:reconnect-now"),
+  checkTunnelHealth: () => ipcRenderer.invoke("tunnel:check-health"),
+  onTunnelStatusChanged: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("tunnel:status-changed", subscription);
+    return () => ipcRenderer.removeListener("tunnel:status-changed", subscription);
+  },
+  onTunnelHeartbeat: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("tunnel:heartbeat", subscription);
+    return () => ipcRenderer.removeListener("tunnel:heartbeat", subscription);
+  },
+  onTunnelReconnecting: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("tunnel:reconnecting", subscription);
+    return () => ipcRenderer.removeListener("tunnel:reconnecting", subscription);
+  },
+  onTunnelReconnected: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("tunnel:reconnected", subscription);
+    return () => ipcRenderer.removeListener("tunnel:reconnected", subscription);
+  },
+  onTunnelUrlChanged: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("tunnel:url-changed", subscription);
+    return () => ipcRenderer.removeListener("tunnel:url-changed", subscription);
+  },
 });
+
