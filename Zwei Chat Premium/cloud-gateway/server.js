@@ -7,8 +7,15 @@ const crypto = require("crypto");
 const path = require("path");
 const axios = require("axios");
 const EventEmitter = require("events");
+const fs = require("fs");
 const { startTunnel: startCloudflareTunnel } = require("untun");
-require("dotenv").config({ path: path.join(__dirname, "../.env") });
+const { storagePaths } = require("../services/storagePaths");
+const envPath = storagePaths.getEnvPath();
+if (fs.existsSync(envPath)) {
+  require("dotenv").config({ path: envPath });
+} else {
+  require("dotenv").config();
+}
 
 const { flowExecutor } = require("../client/flowExecutor");
 const { botIntegrationService } = require("../services/botIntegrationService");

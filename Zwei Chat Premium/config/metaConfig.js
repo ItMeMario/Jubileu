@@ -4,7 +4,15 @@
 const path = require("path");
 const fs = require("fs");
 const { cryptoStorageService } = require("../services/cryptoStorageService");
-require("dotenv").config();
+const { storagePaths } = require("../services/storagePaths");
+
+// Carrega .env do caminho seguro (AppData em produção ou raiz em desenvolvimento)
+const envPath = storagePaths.getEnvPath();
+if (fs.existsSync(envPath)) {
+  require("dotenv").config({ path: envPath });
+} else {
+  require("dotenv").config();
+}
 
 class MetaConfigManager {
   constructor() {
@@ -68,7 +76,7 @@ class MetaConfigManager {
   saveToEnvFile(newConfig = {}) {
     this.updateConfig(newConfig);
 
-    const envPath = path.join(__dirname, "../.env");
+    const envPath = storagePaths.getEnvPath();
     let envContent = "";
     if (fs.existsSync(envPath)) {
       envContent = fs.readFileSync(envPath, "utf-8");

@@ -12,7 +12,14 @@ const {
 const { getFirestore } = require("firebase/firestore");
 const { syncService } = require("./syncService");
 const metaConfig = require("../config/metaConfig");
-require("dotenv").config();
+const fs = require("fs");
+const { storagePaths } = require("./storagePaths");
+const envPath = storagePaths.getEnvPath();
+if (fs.existsSync(envPath)) {
+  require("dotenv").config({ path: envPath });
+} else {
+  require("dotenv").config();
+}
 
 class FirebaseService {
   constructor() {

@@ -4,11 +4,12 @@
 const path = require("path");
 const fs = require("fs");
 const { aplicarTransformacoes } = require("./numberTransformer");
+const { storagePaths } = require("./storagePaths");
 
 class BroadcastRecipientsService {
   constructor() {
-    this.recipientsFilePath = path.join(__dirname, "../data/broadcast_recipients.json");
-    this.configFilePath = path.join(__dirname, "../data/broadcast_config.json");
+    this.recipientsFilePath = storagePaths.getDataPath("broadcast_recipients.json");
+    this.configFilePath = storagePaths.getDataPath("broadcast_config.json");
     this._ensureDataDir();
 
     this.defaultConfig = {

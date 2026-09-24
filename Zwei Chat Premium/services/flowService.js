@@ -3,10 +3,11 @@
 
 const path = require("path");
 const fs = require("fs");
+const { storagePaths } = require("./storagePaths");
 
 class FlowService {
   constructor() {
-    this.flowsFilePath = path.join(__dirname, "../data/interactive_flows.json");
+    this.flowsFilePath = storagePaths.getDataPath("interactive_flows.json");
     this.flows = [];
     this._ensureDataDir();
     this.loadFlows();
@@ -52,7 +53,18 @@ class FlowService {
           this.saveFlows();
         }
       } else {
-        this.flows = this._getDefaultFlows();
+        // Tenta recuperar do seed embutido se existir, senão usa os fluxos de fábrica
+        const bundledPath = path.join(__dirname, "../data/interactive_flows.json");
+        if (fs.existsSync(bundledPath)) {
+          try {
+            const seed = fs.readFileSync(bundledPath, "utf8");
+            this.flows = JSON.parse(seed || "[]");
+          } catch (e) {
+            this.flows = this._getDefaultFlows();
+          }
+        } else {
+          this.flows = this._getDefaultFlows();
+        }
         this.saveFlows();
       }
     } catch (error) {

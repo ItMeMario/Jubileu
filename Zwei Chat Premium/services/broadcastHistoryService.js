@@ -3,10 +3,11 @@
 
 const path = require("path");
 const fs = require("fs");
+const { storagePaths } = require("./storagePaths");
 
 class BroadcastHistoryService {
   constructor() {
-    this.historyFilePath = path.join(__dirname, "../data/broadcast_history.json");
+    this.historyFilePath = storagePaths.getDataPath("broadcast_history.json");
     this._ensureDataDir();
   }
 
