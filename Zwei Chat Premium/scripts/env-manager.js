@@ -62,6 +62,7 @@ function printStatus() {
   console.log(`🆔 Meta App ID:        ${current.META_APP_ID || "(vazio)"}`);
   console.log(`🔑 Access Token:       ${mask(current.META_ACCESS_TOKEN, 6)}`);
   console.log(`🛡️ Verify Token:       ${mask(current.META_VERIFY_TOKEN, 4)}`);
+  console.log(`🔥 Firebase Project:   ${current.FIREBASE_PROJECT_ID || "(não configurado)"}`);
   console.log("========================================================\n");
 }
 
