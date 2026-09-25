@@ -5,6 +5,11 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "start:dev": "node scripts/env-manager.js dev && electron .",
+    "start:prod": "node scripts/env-manager.js prod && electron .",
+    "env:dev": "node scripts/env-manager.js dev",
+    "env:prod": "node scripts/env-manager.js prod",
+    "env:status": "node scripts/env-manager.js status",
     "gateway": "node cloud-gateway/server.js",
     "build:obfuscate": "node scripts/build-obfuscate.js",
     "test:webhook": "node tests/testWebhookSimulator.js",
