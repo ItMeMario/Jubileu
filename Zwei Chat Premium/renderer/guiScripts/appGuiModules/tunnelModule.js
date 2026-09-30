@@ -12,7 +12,7 @@ export function updateTunnelUi(statusData) {
 
   const state = (statusData.state || statusData.status || "INITIALIZING").toUpperCase();
   const latency = statusData.latencyMs || 0;
-  const publicUrl = statusData.publicUrl || "Iniciando...";
+  const publicUrl = statusData.publicUrl || null;
 
   // 1. Sidebar Footer Widget
   const dot = $("#tunnel-status-dot");
@@ -113,8 +113,13 @@ export function updateTunnelUi(statusData) {
   }
   if (cfgLatency) cfgLatency.textContent = `${latency} ms`;
   if (cfgPort) cfgPort.textContent = String(statusData.port || 3000);
-  if (cfgReconnects) cfgReconnects.textContent = String(statusData.totalReconnects || 0);
-  if (cfgUrl) cfgUrl.textContent = publicUrl;
+  if (cfgUrl) {
+    if (publicUrl) {
+      cfgUrl.textContent = publicUrl;
+    } else if (!cfgUrl.textContent || cfgUrl.textContent === "Carregando...") {
+      cfgUrl.textContent = "Iniciando...";
+    }
+  }
 }
 
 /**
@@ -171,9 +176,60 @@ export function initTunnelModule(api) {
     });
   }
 
+  // Copiar URL Pública do Webhook com 1 clique
+  const btnCopyUrl = $("#btn-copy-tunnel-url");
+  const cfgUrl = $("#settings-tunnel-public-url");
+
+  const copyWebhookUrl = async () => {
+    const textToCopy = cfgUrl?.textContent?.trim();
+    if (!textToCopy || textToCopy.includes("Iniciando") || textToCopy.includes("Carregando")) return;
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        await navigator.clipboard.writeText(textToCopy);
+      } else {
+        const input = document.createElement("textarea");
+        input.value = textToCopy;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+      }
+      if (btnCopyUrl) {
+        const originalText = btnCopyUrl.innerHTML;
+        btnCopyUrl.innerHTML = "✅ Copiado!";
+        btnCopyUrl.classList.add("btn-success");
+        setTimeout(() => {
+          btnCopyUrl.innerHTML = originalText;
+          btnCopyUrl.classList.remove("btn-success");
+        }, 2500);
+      }
+    } catch (e) {
+      console.warn("Falha ao copiar URL:", e);
+    }
+  };
+
+  if (btnCopyUrl) {
+    btnCopyUrl.addEventListener("click", copyWebhookUrl);
+  }
+  if (cfgUrl) {
+    cfgUrl.addEventListener("click", copyWebhookUrl);
+  }
+
   // Ouvintes de eventos em tempo real do Electron
   if (typeof api.onTunnelStatusChanged === "function") {
     api.onTunnelStatusChanged(updateTunnelUi);
+  }
+  if (typeof api.onTunnelUrlChanged === "function") {
+    api.onTunnelUrlChanged((data) => {
+      const newUrl = data?.newUrl || data?.publicUrl;
+      if (newUrl) {
+        updateTunnelUi({
+          publicUrl: newUrl,
+          status: "online",
+          state: "ONLINE",
+        });
+      }
+    });
   }
   if (typeof api.onTunnelHeartbeat === "function") {
     api.onTunnelHeartbeat(updateTunnelUi);
@@ -184,4 +240,18 @@ export function initTunnelModule(api) {
   if (typeof api.onTunnelReconnected === "function") {
     api.onTunnelReconnected(updateTunnelUi);
   }
+
+  // Sondagem rápida caso a inicialização do túnel ocorra logo após o carregamento da janela
+  const initialPoll = setInterval(async () => {
+    try {
+      if (typeof api.getTunnelStatus === "function") {
+        const s = await api.getTunnelStatus();
+        if (s && s.publicUrl) {
+          updateTunnelUi(s);
+          clearInterval(initialPoll);
+        }
+      }
+    } catch (e) {}
+  }, 1500);
+  setTimeout(() => clearInterval(initialPoll), 20000);
 }

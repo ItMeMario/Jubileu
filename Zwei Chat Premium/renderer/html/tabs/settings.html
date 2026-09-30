@@ -163,9 +163,14 @@
               <span class="diag-val" id="settings-tunnel-reconnects">0</span>
             </div>
           </div>
-          <div class="tunnel-diag-url-row">
-            <span class="diag-label">URL Pública Webhook:</span>
-            <code id="settings-tunnel-public-url" class="tunnel-url-code">Carregando...</code>
+          <div class="tunnel-diag-url-row" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 250px;">
+              <span class="diag-label">URL Pública Webhook:</span>
+              <code id="settings-tunnel-public-url" class="tunnel-url-code" style="cursor: pointer; user-select: all;" title="Clique para copiar">Carregando...</code>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-tunnel-url" style="padding: 4px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
+              📋 Copiar URL
+            </button>
           </div>
         </div>
 

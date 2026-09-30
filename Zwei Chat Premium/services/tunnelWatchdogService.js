@@ -99,6 +99,17 @@ class TunnelWatchdogService extends EventEmitter {
   }
 
   /**
+   * Notifica que a URL pública do túnel está provisionada e pronta
+   * @param {string} publicUrl
+   */
+  notifyUrlReady(publicUrl) {
+    if (!publicUrl) return;
+    this._setState(TUNNEL_STATES.ONLINE, { publicUrl });
+    this.emit("url-changed", { oldUrl: null, newUrl: publicUrl });
+    this.emit("status-changed", this.getStatus());
+  }
+
+  /**
    * Inicia a rotina contínua de Watchdog / Heartbeat
    */
   start() {
@@ -110,7 +121,12 @@ class TunnelWatchdogService extends EventEmitter {
 
     console.log(`⏱️ [TunnelWatchdog] Serviço iniciado. Auditoria a cada ${this.heartbeatIntervalMs / 1000}s.`);
 
-    // Executa primeira checagem com pequeno delay para permitir estabilização inicial do túnel
+    // Executa primeira checagem rápida após 1s para atualizar a interface imediatamente
+    setTimeout(() => {
+      this.executeHeartbeat();
+    }, 1000);
+
+    // Auditoria periódica a cada intervalo configurado
     this._heartbeatTimer = setInterval(() => {
       this.executeHeartbeat();
     }, this.heartbeatIntervalMs);
@@ -198,7 +214,7 @@ class TunnelWatchdogService extends EventEmitter {
       errorMessage = `Falha no servidor local (porta ${port}): ${err.message}`;
     }
 
-    // 2. Auditoria Externa através do túnel Cloudflare
+    // 2. Auditoria Externa através do túnel Cloudflare (verificação informativa)
     if (localOk) {
       try {
         const pingUrl = `${publicUrl}?hub.mode=subscribe&hub.verify_token=${verifyToken}&hub.challenge=ping`;
@@ -206,30 +222,35 @@ class TunnelWatchdogService extends EventEmitter {
         publicOk = pubRes.data === "ping";
       } catch (err) {
         publicOk = false;
-        errorMessage = `Falha no túnel externo Cloudflare: ${err.message}`;
+        errorMessage = `Aviso túnel externo Cloudflare: ${err.message}`;
       }
     }
 
     this._lastLatencyMs = Date.now() - startTime;
     this._lastHeartbeatTime = Date.now();
 
-    if (localOk && publicOk) {
-      // Conexão 100% íntegra
+    // Se o servidor local está respondendo e a URL pública existe, o túnel está operacional
+    if (localOk) {
       this._consecutiveFailures = 0;
       this._consecutiveReconnects = 0;
-      this._setState(TUNNEL_STATES.ONLINE, { latencyMs: this._lastLatencyMs });
+      this._setState(TUNNEL_STATES.ONLINE, {
+        latencyMs: this._lastLatencyMs,
+        externalVerified: publicOk,
+      });
       this.emit("heartbeat", {
+        ...this.getStatus(),
         healthy: true,
         latencyMs: this._lastLatencyMs,
         timestamp: this._lastHeartbeatTime,
+        externalVerified: publicOk,
       });
 
       return { healthy: true, latencyMs: this._lastLatencyMs };
     } else {
-      // Falha detectada
+      // Falha local crítica: o servidor interno parou de responder
       this._consecutiveFailures++;
       console.warn(
-        `⚠️ [TunnelWatchdog] Falha no Heartbeat (${this._consecutiveFailures}/${this.maxConsecutiveFailures}): ${errorMessage}`
+        `⚠️ [TunnelWatchdog] Falha no servidor local (${this._consecutiveFailures}/${this.maxConsecutiveFailures}): ${errorMessage}`
       );
 
       if (this._consecutiveFailures >= this.maxConsecutiveFailures) {

@@ -1,59 +1,325 @@
 <!-- renderer/html/tabs/templates.html -->
 <!-- 2. ABA TEMPLATES META -->
 <section class="tab-pane" id="tab-templates">
-  <div class="page-header">
-    <div class="page-title">
-      <h2>Message Templates Oficiais</h2>
-      <p>Gerencie e pré-visualize seus templates aprovados pela Meta</p>
-    </div>
-    <button class="btn btn-primary" id="btn-sync-templates-action">
-      <span>🔄</span> Sincronizar com a Meta
-    </button>
-  </div>
 
-  <div class="simulator-container">
-    <!-- Lista e Seleção de Template -->
-    <div class="simulator-form">
-      <div class="card" style="margin-bottom: 20px;">
-        <div class="form-group">
-          <label for="template-select">Selecione o Template:</label>
-          <select class="form-control" id="template-select">
-            <option value="">Carregando templates...</option>
-          </select>
+  <!-- ========================================================
+       2.1 VISÃO 1: LISTA E GESTÃO DE MESSAGE TEMPLATES
+       ======================================================== -->
+  <div id="templates-list-view">
+    <div class="page-header">
+      <div class="page-title">
+        <h2>Message Templates Oficiais</h2>
+        <p>Crie, acompanhe a aprovação e gerencie seus templates da Meta</p>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-secondary" id="btn-sync-templates-action">
+          <span>🔄</span> Sincronizar com a Meta
+        </button>
+        <button class="btn btn-primary" id="btn-open-create-template">
+          <span>➕</span> Novo Template
+        </button>
+      </div>
+    </div>
+
+    <!-- Barra de Ferramentas: Filtros por Status e Campo de Busca -->
+    <div class="templates-toolbar">
+      <div class="tmpl-filter-chips">
+        <button class="tmpl-filter-chip active" data-status="ALL">
+          Todos <span class="count" id="tmpl-count-all">0</span>
+        </button>
+        <button class="tmpl-filter-chip" data-status="APPROVED">
+          🟢 Aprovados <span class="count" id="tmpl-count-approved">0</span>
+        </button>
+        <button class="tmpl-filter-chip" data-status="PENDING">
+          🟡 Em Análise <span class="count" id="tmpl-count-pending">0</span>
+        </button>
+        <button class="tmpl-filter-chip" data-status="REJECTED">
+          🔴 Rejeitados <span class="count" id="tmpl-count-rejected">0</span>
+        </button>
+      </div>
+
+      <div class="tmpl-search-wrap">
+        <span class="tmpl-search-icon">🔍</span>
+        <input type="text" id="tmpl-search-input" class="form-control tmpl-search-input" placeholder="Buscar template por nome ou texto...">
+      </div>
+    </div>
+
+    <!-- Workspace Principal: Lista na Esquerda + Simulador na Direita -->
+    <div class="templates-workspace">
+      <!-- Coluna da Esquerda: Lista de Cartões de Templates -->
+      <div class="templates-list-col">
+        <div class="templates-cards-list" id="templates-cards-container">
+          <!-- Renderizado dinamicamente via JS -->
         </div>
 
-        <div id="template-meta-info" style="display: none; margin-bottom: 16px;">
-          <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-            <span class="status-pill status-green" id="tmpl-badge-status">APPROVED</span>
-            <span class="status-pill status-yellow" id="tmpl-badge-cat">UTILITY</span>
-            <span class="status-pill status-green" id="tmpl-badge-lang">pt_BR</span>
+        <div id="templates-empty-state" style="display: none; text-align: center; padding: 48px 24px; background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+          <div style="font-size: 40px; margin-bottom: 12px;">📑</div>
+          <h4 style="color: var(--text-main); margin-bottom: 6px;">Nenhum template encontrado</h4>
+          <p style="color: var(--text-muted); font-size: 13px; max-width: 320px; margin: 0 auto 16px auto;">
+            Sincronize com sua conta WABA da Meta ou crie seu primeiro Message Template agora.
+          </p>
+          <button class="btn btn-primary" id="btn-empty-create-template">
+            <span>➕</span> Criar Primeiro Template
+          </button>
+        </div>
+      </div>
+
+      <!-- Coluna da Direita: Simulador e Detalhes do Template Selecionado -->
+      <div class="templates-preview-col">
+        <!-- Banner de Rejeição (se aplicável ao template selecionado) -->
+        <div id="tmpl-rejection-banner" class="tmpl-rejection-banner" style="display: none;">
+          <h5><span>⚠️</span> Rejeitado pela Meta</h5>
+          <p id="tmpl-rejection-reason-text">O template não atendeu às políticas da Meta.</p>
+          <div id="tmpl-rejection-rec-box" class="recommendation" style="display: none;">
+            <strong>💡 Recomendação:</strong> <span id="tmpl-rejection-rec-text"></span>
+          </div>
+          <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+            <button class="btn btn-sm btn-secondary" id="btn-fix-rejected-template">
+              <span>✏️</span> Corrigir e Reenviar
+            </button>
           </div>
         </div>
 
-        <div id="template-variables-inputs">
-          <!-- Inputs dinâmicos para cada variável {{1}}, {{2}} -->
+        <!-- Badges e Cabeçalho do Template Selecionado -->
+        <div id="template-meta-info" class="card" style="margin-bottom: 16px; padding: 12px 16px; display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong id="tmpl-selected-name" style="font-size: 14px; color: var(--text-main);">nome_do_template</strong>
+            <span class="status-pill status-green" id="tmpl-badge-status">APPROVED</span>
+          </div>
+          <div style="display: flex; gap: 8px; font-size: 11px; color: var(--text-muted);">
+            <span class="status-pill status-yellow" id="tmpl-badge-cat" style="padding: 2px 8px; font-size: 11px;">UTILITY</span>
+            <span class="status-pill status-green" id="tmpl-badge-lang" style="padding: 2px 8px; font-size: 11px;">pt_BR</span>
+          </div>
         </div>
+
+        <!-- Simulador do Celular WhatsApp -->
+        <div class="simulator-phone" style="margin-bottom: 16px;">
+          <div class="simulator-phone-header">
+            <div class="sim-avatar">Z</div>
+            <div class="sim-header-text">
+              <h4 id="sim-company-name">Zwei Chat Oficial</h4>
+              <p>Conta comercial oficial</p>
+            </div>
+          </div>
+
+          <div class="simulator-phone-body">
+            <div class="wa-message-bubble">
+              <div class="wa-bubble-header" id="sim-bubble-header" style="display: none;"></div>
+              <div class="wa-bubble-body" id="sim-bubble-body">Selecione um template para visualizar.</div>
+              <div class="wa-bubble-footer" id="sim-bubble-footer" style="display: none;"></div>
+              <div class="wa-buttons-container" id="sim-bubble-buttons"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Teste de Variáveis Dinâmicas -->
+        <div class="card" id="template-variables-card" style="margin-bottom: 16px; display: none;">
+          <div id="template-variables-inputs">
+            <!-- Inputs dinâmicos para cada variável {{1}}, {{2}} -->
+          </div>
+        </div>
+
+        <!-- Ações do Template Selecionado -->
+        <div class="card" id="template-actions-card" style="display: none; padding: 12px 16px;">
+          <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" id="btn-edit-selected-template">
+              <span>✏️</span> Editar
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-refresh-selected-template" title="Consultar status mais recente na Meta">
+              <span>🔄</span> Checar Status
+            </button>
+            <button class="btn btn-danger btn-sm" id="btn-delete-selected-template">
+              <span>🗑️</span> Excluir
+            </button>
+          </div>
+        </div>
+
+        <!-- Select invisível para retrocompatibilidade -->
+        <select id="template-select" style="display: none;"></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       2.2 VISÃO 2: FORMULÁRIO DE CRIAÇÃO / EDIÇÃO DE TEMPLATE
+       ======================================================== -->
+  <div id="templates-editor-view" style="display: none;">
+    <div class="editor-top-header">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <button class="btn btn-secondary" id="btn-back-to-templates-list">
+          <span>⬅️</span> Voltar para Lista
+        </button>
+        <div>
+          <h3 id="editor-view-title" style="margin: 0; font-size: 16px; color: var(--text-main);">Criar Novo Message Template</h3>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">
+            O template será enviado diretamente para a validação da Meta
+          </p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-secondary" id="btn-cancel-template-top">
+          Cancelar
+        </button>
+        <button class="btn btn-primary" id="btn-submit-template-top">
+          <span>📤</span> Enviar para a Meta
+        </button>
       </div>
     </div>
 
-    <!-- Simulador de Visualização WhatsApp no Celular -->
-    <div class="simulator-phone">
-      <div class="simulator-phone-header">
-        <div class="sim-avatar">Z</div>
-        <div class="sim-header-text">
-          <h4 id="sim-company-name">Zwei Chat Oficial</h4>
-          <p>Conta comercial oficial</p>
+    <div class="templates-workspace">
+      <!-- Coluna da Esquerda: Formulário de Configuração -->
+      <div class="editor-form-col">
+        <!-- 1. Informações Básicas -->
+        <div class="editor-form-card">
+          <div class="editor-card-header">
+            <span class="editor-card-title"><span>📋</span> 1. Dados Básicos</span>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label for="editor-tmpl-name">Nome do Template: <span style="color: var(--status-red);">*</span></label>
+            <input type="text" id="editor-tmpl-name" class="form-control" placeholder="ex: confirmacao_pedido_v1" maxlength="512">
+            <span style="font-size: 11px; color: var(--text-dim); margin-top: 4px; display: block;">
+              Apenas letras minúsculas (a-z), números (0-9) e sublinhados (_). Espaços serão convertidos automaticamente.
+            </span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label for="editor-tmpl-category">Categoria: <span style="color: var(--status-red);">*</span></label>
+              <select id="editor-tmpl-category" class="form-control">
+                <option value="UTILITY" selected>UTILITY (Transacional, Pedidos, Avisos)</option>
+                <option value="MARKETING">MARKETING (Ofertas, Campanhas, Promoções)</option>
+                <option value="AUTHENTICATION">AUTHENTICATION (Códigos OTP / Segurança)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="editor-tmpl-language">Idioma: <span style="color: var(--status-red);">*</span></label>
+              <select id="editor-tmpl-language" class="form-control">
+                <option value="pt_BR" selected>Português (Brasil) [pt_BR]</option>
+                <option value="en_US">Inglês (EUA) [en_US]</option>
+                <option value="es_ES">Espanhol (Espanha) [es_ES]</option>
+                <option value="es_LA">Espanhol (América Latina) [es_LA]</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Cabeçalho (Header) Opcional -->
+        <div class="editor-form-card">
+          <div class="editor-card-header">
+            <span class="editor-card-title"><span>🏷️</span> 2. Cabeçalho (Opcional)</span>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label for="editor-tmpl-header-type">Tipo de Cabeçalho:</label>
+            <select id="editor-tmpl-header-type" class="form-control">
+              <option value="NONE" selected>Nenhum Cabeçalho</option>
+              <option value="TEXT">Texto</option>
+              <option value="IMAGE">Mídia: Imagem</option>
+              <option value="VIDEO">Mídia: Vídeo</option>
+              <option value="DOCUMENT">Mídia: Documento / PDF</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="editor-tmpl-header-text-group" style="display: none;">
+            <label for="editor-tmpl-header-text">Texto do Cabeçalho: (máx. 60 caracteres)</label>
+            <input type="text" id="editor-tmpl-header-text" class="form-control" placeholder="ex: Pedido Confirmado" maxlength="60">
+          </div>
+        </div>
+
+        <!-- 3. Corpo da Mensagem (Body) Obrigatório -->
+        <div class="editor-form-card">
+          <div class="editor-card-header">
+            <span class="editor-card-title"><span>💬</span> 3. Corpo da Mensagem <span style="color: var(--status-red);">*</span></span>
+          </div>
+
+          <div class="editor-body-toolbar">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-insert-variable">
+              <span>➕</span> Inserir Variável {{n}}
+            </button>
+            <span class="editor-char-counter" id="editor-tmpl-body-count">0 / 1024</span>
+          </div>
+
+          <div class="form-group">
+            <textarea id="editor-tmpl-body-text" class="form-control" rows="5" maxlength="1024" placeholder="Olá {{1}}, seu pedido #{{2}} foi confirmado com sucesso e tem entrega prevista para {{3}}."></textarea>
+            <span style="font-size: 11px; color: var(--text-dim); margin-top: 6px; display: block;">
+              💡 Use variáveis sequenciais iniciando em {{1}}. Não pule números. A Meta exige parâmetros ordenados.
+            </span>
+          </div>
+        </div>
+
+        <!-- 4. Rodapé (Footer) Opcional -->
+        <div class="editor-form-card">
+          <div class="editor-card-header">
+            <span class="editor-card-title"><span>📝</span> 4. Rodapé (Opcional)</span>
+          </div>
+
+          <div class="form-group">
+            <label for="editor-tmpl-footer-text">Texto de Rodapé: (máx. 60 caracteres)</label>
+            <input type="text" id="editor-tmpl-footer-text" class="form-control" placeholder="ex: Zwei Chat Premium | Atendimento Oficial" maxlength="60">
+          </div>
+        </div>
+
+        <!-- 5. Botões Interativos (Opcional) -->
+        <div class="editor-form-card">
+          <div class="editor-card-header">
+            <span class="editor-card-title"><span>🔘</span> 5. Botões Interativos (Opcional)</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-editor-button">
+              <span>➕</span> Adicionar Botão
+            </button>
+          </div>
+
+          <div id="editor-buttons-container">
+            <!-- Botões dinâmicos inseridos aqui via JS -->
+          </div>
+
+          <span style="font-size: 11px; color: var(--text-dim); margin-top: 6px; display: block;">
+            Permitido até 3 botões por mensagem (Quick Reply, Link para Site ou Ligação Telefônica).
+          </span>
+        </div>
+
+        <!-- Rodapé com Botões de Submissão -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 30px;">
+          <button class="btn btn-secondary" id="btn-cancel-template-bottom">
+            Cancelar
+          </button>
+          <button class="btn btn-primary" id="btn-submit-template-bottom">
+            <span>📤</span> Enviar para Análise da Meta
+          </button>
         </div>
       </div>
 
-      <div class="simulator-phone-body">
-        <div class="wa-message-bubble">
-          <div class="wa-bubble-header" id="sim-bubble-header" style="display: none;"></div>
-          <div class="wa-bubble-body" id="sim-bubble-body">Selecione um template para visualizar a mensagem aqui.</div>
-          <div class="wa-bubble-footer" id="sim-bubble-footer" style="display: none;"></div>
-          <div class="wa-buttons-container" id="sim-bubble-buttons"></div>
+      <!-- Coluna da Direita: Simulador ao Vivo enquanto digita -->
+      <div class="editor-preview-col">
+        <div class="card" style="padding: 12px 16px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 13px; color: var(--text-main);">👁️ Pré-visualização em Tempo Real</strong>
+            <span class="status-pill status-yellow" id="editor-preview-badge">NOVO</span>
+          </div>
+        </div>
+
+        <!-- Simulador do Celular no Editor -->
+        <div class="simulator-phone">
+          <div class="simulator-phone-header">
+            <div class="sim-avatar">Z</div>
+            <div class="sim-header-text">
+              <h4>Zwei Chat Oficial</h4>
+              <p>Prévia do WhatsApp</p>
+            </div>
+          </div>
+
+          <div class="simulator-phone-body">
+            <div class="wa-message-bubble">
+              <div class="wa-bubble-header" id="editor-sim-header" style="display: none;"></div>
+              <div class="wa-bubble-body" id="editor-sim-body">Comece a preencher o formulário para visualizar seu template aqui...</div>
+              <div class="wa-bubble-footer" id="editor-sim-footer" style="display: none;"></div>
+              <div class="wa-buttons-container" id="editor-sim-buttons"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
 </section>

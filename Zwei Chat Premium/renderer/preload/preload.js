@@ -20,6 +20,14 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
   syncTemplates: () => ipcRenderer.invoke("templates:sync"),
   getApprovedTemplates: (language) => ipcRenderer.invoke("templates:get-approved", language),
   getTemplates: (language) => ipcRenderer.invoke("templates:get-approved", language),
+  getAllTemplates: (filters) => ipcRenderer.invoke("templates:get-all", filters),
+  getTemplateById: (templateId) => ipcRenderer.invoke("templates:get-by-id", templateId),
+  createTemplate: (templateData) => ipcRenderer.invoke("templates:create", templateData),
+  updateTemplate: (templateId, updateData) =>
+    ipcRenderer.invoke("templates:update", { templateId, ...updateData }),
+  deleteTemplate: (templateName, templateId) =>
+    ipcRenderer.invoke("templates:delete", { templateName, templateId }),
+  refreshTemplateStatus: (templateId) => ipcRenderer.invoke("templates:refresh-status", templateId),
   renderTemplatePreview: (templateName, values) =>
     ipcRenderer.invoke("templates:render-preview", { templateName, values }),
 
@@ -94,6 +102,11 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
     const subscription = (_event, conversations) => callback(conversations);
     ipcRenderer.on("conversations:updated", subscription);
     return () => ipcRenderer.removeListener("conversations:updated", subscription);
+  },
+  onTemplateStatusChanged: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("template:status-changed", subscription);
+    return () => ipcRenderer.removeListener("template:status-changed", subscription);
   },
 
   // 7. Proteção Anti-Loop & Guerra de Robôs

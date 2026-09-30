@@ -28,6 +28,26 @@ function parseMetaErrorMessage(errorResponse) {
   const subcode = metaError.error_subcode;
   const message = metaError.message || "Erro desconhecido na Meta API";
 
+  // Erros específicos de Message Templates da Meta
+  if (subcode === 2388040 || code === 2388040) {
+    return "Já existe um template cadastrado com este nome na sua conta do WhatsApp Business.";
+  }
+  if (subcode === 2388044 || code === 2388044) {
+    return "Formato de componente do template inválido. Verifique cabeçalho, corpo ou botões.";
+  }
+  if (subcode === 2388045 || code === 2388045) {
+    return "O corpo (body) do template é obrigatório e não pode estar vazio.";
+  }
+  if (subcode === 2388046 || code === 2388046) {
+    return "O nome do template deve conter apenas letras minúsculas, números e sublinhados (_).";
+  }
+  if (subcode === 2388070 || code === 2388070) {
+    return "Limite de criação de templates atingido para esta conta (máx. 100 por hora). Aguarde antes de tentar novamente.";
+  }
+  if (subcode === 2388091 || code === 2388091) {
+    return "O número máximo de edições para este template foi atingido no período permitido pela Meta.";
+  }
+
   switch (code) {
     case 131047:
       return "Janela de atendimento de 24 horas expirada. Para iniciar uma conversa com este usuário, utilize um Message Template aprovado pela Meta.";
@@ -41,11 +61,88 @@ function parseMetaErrorMessage(errorResponse) {
       return "O template de mensagem informado não existe ou não foi aprovado para o idioma solicitado.";
     case 132001:
       return "A quantidade ou ordem dos parâmetros fornecidos para o template não corresponde ao cadastrado na Meta.";
+    case 100:
+      return `Parâmetro inválido na requisição da Meta (${message}). Verifique a formatação dos campos e componentes do template.`;
     case 190:
       return "Token de Acesso da Meta expirou ou é inválido. Gere um novo System User Token permanente no Gerenciador de Negócios.";
     default:
       return `[Meta Error ${code}${subcode ? `:${subcode}` : ""}] ${message}`;
   }
+}
+
+/**
+ * Valida a estrutura e regras de conformidade de um Message Template antes do envio à Meta Graph API
+ * @param {object} params
+ * @param {string} params.name - Nome do template
+ * @param {string} params.category - Categoria ('MARKETING' | 'UTILITY' | 'AUTHENTICATION')
+ * @param {string} params.language - Código do idioma (ex: 'pt_BR')
+ * @param {Array<object>} params.components - Componentes do template
+ * @returns {{ valid: boolean, error?: string }}
+ */
+function validateTemplateDefinition({ name, category, language, components }) {
+  if (!name || typeof name !== "string") {
+    return { valid: false, error: "Nome do template é obrigatório." };
+  }
+
+  const cleanName = name.trim();
+  if (!/^[a-z0-9_]+$/.test(cleanName)) {
+    return {
+      valid: false,
+      error: "O nome do template deve conter apenas letras minúsculas (a-z), números (0-9) e sublinhados (_), sem espaços ou caracteres especiais.",
+    };
+  }
+
+  if (cleanName.length > 512) {
+    return { valid: false, error: "O nome do template não pode exceder 512 caracteres." };
+  }
+
+  const validCategories = ["MARKETING", "UTILITY", "AUTHENTICATION"];
+  const upperCategory = String(category || "").trim().toUpperCase();
+  if (!validCategories.includes(upperCategory)) {
+    return {
+      valid: false,
+      error: `Categoria inválida: '${category}'. Escolha entre: ${validCategories.join(", ")}.`,
+    };
+  }
+
+  if (!language || typeof language !== "string" || !language.trim()) {
+    return { valid: false, error: "Código de idioma é obrigatório (ex: pt_BR, en_US)." };
+  }
+
+  if (!Array.isArray(components) || components.length === 0) {
+    return { valid: false, error: "O template deve conter ao menos um componente (BODY)." };
+  }
+
+  const bodyComponent = components.find((c) => c && String(c.type || "").toUpperCase() === "BODY");
+  if (!bodyComponent || !bodyComponent.text || !String(bodyComponent.text).trim()) {
+    return { valid: false, error: "O componente de corpo (BODY) é obrigatório e deve conter texto." };
+  }
+
+  // Validação de variáveis sequenciais {{1}}, {{2}}, etc.
+  const bodyText = String(bodyComponent.text);
+  const matches = bodyText.match(/\{\{(\d+)\}\}/g) || [];
+  if (matches.length > 0) {
+    const indices = matches.map((m) => parseInt(m.replace(/[{}]/g, ""), 10));
+    const uniqueIndices = [...new Set(indices)].sort((a, b) => a - b);
+
+    if (uniqueIndices[0] !== 1) {
+      return {
+        valid: false,
+        error: `As variáveis do template devem iniciar em {{1}}. Primeira variável encontrada: {{${uniqueIndices[0]}}}.`,
+      };
+    }
+
+    for (let i = 0; i < uniqueIndices.length; i++) {
+      if (uniqueIndices[i] !== i + 1) {
+        return {
+          valid: false,
+          error: `As variáveis do template devem ser estritamente sequenciais. Falta {{${i + 1}}} antes de {{${uniqueIndices[i]}}}.`,
+        };
+      }
+    }
+  }
+
+  return { valid: true };
 }
 
 class MetaApiClient {
@@ -352,16 +449,161 @@ class MetaApiClient {
   }
 
   /**
-   * Lista todos os templates cadastrados e aprovados na conta WABA
+   * Lista templates cadastrados na conta WABA com suporte a limites e filtros
+   * @param {number} [limit=100] - Quantidade máxima de templates a retornar
+   * @param {object} [options={}] - Filtros opcionais (status, category, after)
+   * @returns {Promise<{ success: boolean, data?: object, error?: string }>}
    */
-  async getWabaTemplates(limit = 100) {
+  async getWabaTemplates(limit = 100, options = {}) {
     const config = this.config.getConfig();
     if (!config.wabaId) {
-      throw new Error("WABA_ID não configurado.");
+      return { success: false, error: "WABA_ID não configurado. Verifique as configurações da Meta." };
     }
 
-    const url = `${this.config.getApiBaseUrl()}/${config.wabaId}/message_templates?limit=${limit}`;
+    let url = `${this.config.getApiBaseUrl()}/${config.wabaId}/message_templates?limit=${limit}`;
+    if (options.status) {
+      url += `&status=${encodeURIComponent(String(options.status).toUpperCase())}`;
+    }
+    if (options.category) {
+      url += `&category=${encodeURIComponent(String(options.category).toUpperCase())}`;
+    }
+    if (options.after) {
+      url += `&after=${encodeURIComponent(String(options.after))}`;
+    }
+
     return this._request("GET", url);
+  }
+
+  /**
+   * Obtém detalhes de um template específico pelo seu ID na Meta
+   * @param {string} templateId - ID do template (ex: retornado na listagem ou na criação)
+   * @returns {Promise<{ success: boolean, data?: object, error?: string }>}
+   */
+  async getTemplateById(templateId) {
+    if (!templateId) {
+      return { success: false, error: "ID do template é obrigatório." };
+    }
+
+    const url = `${this.config.getApiBaseUrl()}/${encodeURIComponent(String(templateId).trim())}`;
+    return this._request("GET", url);
+  }
+
+  /**
+   * Cria um novo Message Template e o submete automaticamente para aprovação da Meta
+   * @param {string} name - Nome do template (apenas a-z, 0-9 e _)
+   * @param {'MARKETING'|'UTILITY'|'AUTHENTICATION'} category - Categoria do template
+   * @param {string} [language='pt_BR'] - Idioma (padrão: pt_BR)
+   * @param {Array<object>} [components=[]] - Lista de componentes (HEADER, BODY, FOOTER, BUTTONS)
+   * @param {object} [options={}] - Opções extras (libraryTemplateName, allowCategoryChange)
+   * @returns {Promise<{ success: boolean, data?: object, id?: string, status?: string, category?: string, error?: string }>}
+   */
+  async createTemplate(name, category, language = "pt_BR", components = [], options = {}) {
+    const config = this.config.getConfig();
+    if (!config.wabaId) {
+      return { success: false, error: "WABA_ID não configurado. Verifique as configurações da Meta." };
+    }
+
+    const cleanName = String(name || "").trim().toLowerCase();
+    const cleanCategory = String(category || "").trim().toUpperCase();
+    const cleanLanguage = String(language || "pt_BR").trim();
+
+    // Validação local prévia
+    const validation = validateTemplateDefinition({
+      name: cleanName,
+      category: cleanCategory,
+      language: cleanLanguage,
+      components,
+    });
+
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    const payload = {
+      name: cleanName,
+      category: cleanCategory,
+      language: cleanLanguage,
+      components,
+    };
+
+    if (options.libraryTemplateName) {
+      payload.library_template_name = options.libraryTemplateName;
+    }
+
+    if (options.allowCategoryChange !== undefined) {
+      payload.allow_category_change = Boolean(options.allowCategoryChange);
+    }
+
+    const url = `${this.config.getApiBaseUrl()}/${config.wabaId}/message_templates`;
+    const response = await this._request("POST", url, payload);
+
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: response.data,
+        id: response.data.id || null,
+        status: response.data.status || "PENDING",
+        category: response.data.category || cleanCategory,
+      };
+    }
+
+    return response;
+  }
+
+  /**
+   * Atualiza os componentes ou categoria de um Message Template existente
+   * (Nota: templates aprovados, rejeitados ou pausados podem ser editados)
+   * @param {string} templateId - ID do template retornado pela Meta
+   * @param {Array<object>} components - Novos componentes do template
+   * @param {string|null} [category=null] - Nova categoria opcional
+   * @returns {Promise<{ success: boolean, data?: object, error?: string }>}
+   */
+  async updateTemplate(templateId, components, category = null) {
+    if (!templateId) {
+      return { success: false, error: "ID do template (templateId) é obrigatório para atualização." };
+    }
+
+    if (!Array.isArray(components) || components.length === 0) {
+      return { success: false, error: "Componentes atualizados são obrigatórios." };
+    }
+
+    const payload = {
+      components,
+    };
+
+    if (category) {
+      payload.category = String(category).trim().toUpperCase();
+    }
+
+    const url = `${this.config.getApiBaseUrl()}/${encodeURIComponent(String(templateId).trim())}`;
+    return this._request("POST", url, payload);
+  }
+
+  /**
+   * Exclui um Message Template na Meta por nome ou por ID específico
+   * @param {string} templateName - Nome do template a excluir
+   * @param {string|null} [templateId=null] - ID específico (hsm_id) para excluir apenas uma variante de idioma
+   * @returns {Promise<{ success: boolean, data?: object, error?: string }>}
+   */
+  async deleteTemplate(templateName, templateId = null) {
+    const config = this.config.getConfig();
+    if (!config.wabaId) {
+      return { success: false, error: "WABA_ID não configurado. Verifique as configurações da Meta." };
+    }
+
+    if (!templateName) {
+      return { success: false, error: "Nome do template é obrigatório para exclusão." };
+    }
+
+    let url = `${this.config.getApiBaseUrl()}/${config.wabaId}/message_templates?name=${encodeURIComponent(
+      String(templateName).trim().toLowerCase()
+    )}`;
+
+    if (templateId) {
+      url += `&hsm_id=${encodeURIComponent(String(templateId).trim())}`;
+    }
+
+    return this._request("DELETE", url);
   }
 }
 
@@ -372,4 +614,5 @@ module.exports = {
   metaApiClient,
   normalizePhoneNumber,
   parseMetaErrorMessage,
+  validateTemplateDefinition,
 };

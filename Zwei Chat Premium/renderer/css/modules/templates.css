@@ -1,0 +1,358 @@
+/* renderer/css/modules/templates.css - Estilos do Módulo de Message Templates Meta */
+
+/* ========================================================
+   1. ESTRUTURA GERAL E LAYOUT
+   ======================================================== */
+.templates-workspace {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .templates-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================================
+   2. BARRA DE FERRAMENTAS E FILTROS DA LISTAGEM
+   ======================================================== */
+.templates-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.tmpl-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tmpl-filter-chip {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tmpl-filter-chip:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tmpl-filter-chip.active {
+  background: rgba(37, 211, 102, 0.15);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.tmpl-filter-chip span.count {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.tmpl-filter-chip.active span.count {
+  background: rgba(37, 211, 102, 0.25);
+  color: #fff;
+}
+
+.tmpl-search-wrap {
+  position: relative;
+  min-width: 260px;
+  flex: 1;
+  max-width: 400px;
+}
+
+.tmpl-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.tmpl-search-input {
+  padding-left: 36px !important;
+}
+
+/* ========================================================
+   3. LISTA DE CARDS DE TEMPLATES
+   ======================================================== */
+.templates-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: calc(100vh - 240px);
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.tmpl-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+}
+
+.tmpl-card:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(37, 211, 102, 0.3);
+  transform: translateY(-1px);
+}
+
+.tmpl-card.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 16px var(--primary-glow);
+  background: rgba(22, 27, 38, 0.98);
+}
+
+.tmpl-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.tmpl-card-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.tmpl-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tmpl-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.tmpl-card-preview-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tmpl-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.tmpl-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tmpl-action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tmpl-action-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+}
+
+.tmpl-action-btn.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--status-red);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Indicador Pulsante para PENDING */
+.tmpl-pulse-pending {
+  animation: tmplPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes tmplPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+/* ========================================================
+   4. BANNER DE REJEIÇÃO E ALERTA META
+   ======================================================== */
+.tmpl-rejection-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+
+.tmpl-rejection-banner h5 {
+  color: var(--status-red);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tmpl-rejection-banner p {
+  color: #fca5a5;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.tmpl-rejection-banner .recommendation {
+  color: #fef08a;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-top: 6px;
+  border-left: 2px solid var(--status-yellow);
+}
+
+/* ========================================================
+   5. FORMULÁRIO DO EDITOR / CRIADOR
+   ======================================================== */
+.editor-top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.editor-form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.editor-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.editor-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-body-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.editor-char-counter {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* Linhas de botões interativos dinâmicos */
+.editor-button-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.editor-button-item:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.btn-icon-delete {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--status-red);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.btn-icon-delete:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+/* Estilos de pills personalizadas */
+.status-pill.status-paused {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.status-pill.status-disabled {
+  background: rgba(107, 114, 128, 0.15);
+  color: #9ca3af;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}

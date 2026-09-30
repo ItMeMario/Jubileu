@@ -189,7 +189,31 @@ function registerIpcHandlers() {
     return metaTemplateService.getApprovedTemplates(language);
   });
 
-  ipcMain.handle("templates:render-preview", (_event, { templateName, values }) => {
+  ipcMain.handle("templates:get-all", (_event, filters) => {
+    return metaTemplateService.getAllTemplates(filters);
+  });
+
+  ipcMain.handle("templates:get-by-id", (_event, templateId) => {
+    return metaTemplateService.getTemplateById(templateId);
+  });
+
+  ipcMain.handle("templates:create", async (_event, templateData) => {
+    return metaTemplateService.createTemplate(templateData || {});
+  });
+
+  ipcMain.handle("templates:update", async (_event, { templateId, components, category } = {}) => {
+    return metaTemplateService.updateTemplate(templateId, { components, category });
+  });
+
+  ipcMain.handle("templates:delete", async (_event, { templateName, templateId } = {}) => {
+    return metaTemplateService.deleteTemplate(templateName, templateId);
+  });
+
+  ipcMain.handle("templates:refresh-status", async (_event, templateId) => {
+    return metaTemplateService.refreshTemplateStatus(templateId);
+  });
+
+  ipcMain.handle("templates:render-preview", (_event, { templateName, values } = {}) => {
     const template = metaTemplateService.getTemplateByName(templateName);
     return metaTemplateService.renderPreview(template, values);
   });
@@ -399,6 +423,19 @@ function setupEventForwarding() {
   syncService.on("bot:anti_loop_triggered", (data) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send("bot:anti_loop_triggered", data);
+    }
+  });
+
+  // Eventos de Message Templates da Meta (Aprovação, Rejeição, etc.)
+  syncService.on("template:status_updated", (templateData) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("template:status-changed", templateData);
+    }
+  });
+
+  metaTemplateService.on("template:status_changed", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("template:status-changed", data);
     }
   });
 

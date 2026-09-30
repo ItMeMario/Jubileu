@@ -110,6 +110,53 @@ class CloudGatewayService extends EventEmitter {
   }
 
   /**
+   * Processa eventos de atualização de status de Message Template da Meta
+   * (APPROVED, REJECTED, FLAGGED, DISABLED, PAUSED)
+   * @param {object} change - Objeto change recebido no webhook da Meta
+   * @returns {object} Dados normalizados do evento de status
+   */
+  handleTemplateStatusUpdate(change) {
+    const value = change?.value || {};
+    const event = String(value.event || "").toUpperCase();
+    const templateId = String(value.message_template_id || "");
+    const templateName = value.message_template_name || "";
+    const language = value.message_template_language || "pt_BR";
+    const category = value.message_template_category || "";
+    const reason = value.reason || value.rejection_info?.reason || null;
+    const recommendation = value.rejection_info?.recommendation || null;
+
+    console.log(`\n========================================`);
+    console.log(`📋 [WEBHOOK META - STATUS DE TEMPLATE]`);
+    console.log(`🏷️ Evento: ${event}`);
+    console.log(`📝 Template: "${templateName}" (ID: ${templateId})`);
+    console.log(`🌐 Idioma: ${language} | Categoria: ${category}`);
+    if (reason && reason !== "NONE") {
+      console.log(`⚠️ Motivo: ${reason}`);
+    }
+    if (recommendation) {
+      console.log(`💡 Recomendação: ${recommendation}`);
+    }
+    console.log(`========================================\n`);
+
+    const updatePayload = {
+      event,
+      templateId,
+      templateName,
+      language,
+      category,
+      reason: reason === "NONE" ? null : reason,
+      recommendation,
+      raw: value,
+      timestamp: Date.now(),
+    };
+
+    syncService.emit("template:status_updated", updatePayload);
+    this.emit("template:status_updated", updatePayload);
+
+    return updatePayload;
+  }
+
+  /**
    * Validação de Assinatura Criptográfica HMAC-SHA256 da Meta
    * Garante que o payload recebido partiu exclusivamente dos servidores oficiais da Meta.
    * @param {Buffer|string} rawBody - Corpo bruto da requisição
@@ -239,41 +286,48 @@ class CloudGatewayService extends EventEmitter {
             for (const entry of entries) {
               const changes = entry.changes || [];
               for (const change of changes) {
-                if (change.field !== "messages") continue;
-                const value = change.value || {};
-                const metadata = value.metadata || {};
-                const contacts = value.contacts || [];
-                const messages = value.messages || [];
-                const statuses = value.statuses || [];
+                // 1. Mensagens recebidas e confirmações de entrega
+                if (change.field === "messages") {
+                  const value = change.value || {};
+                  const metadata = value.metadata || {};
+                  const contacts = value.contacts || [];
+                  const messages = value.messages || [];
+                  const statuses = value.statuses || [];
 
-                // Status updates (sent, delivered, read)
-                for (const status of statuses) {
-                  console.log(`📊 [Status Meta] Msg: ${status.id.slice(0, 15)}... -> ${status.status.toUpperCase()} (${status.recipient_id})`);
-                  syncService.emit("message:status_updated", {
-                    id: status.id,
-                    status: status.status,
-                    recipientId: status.recipient_id,
-                    timestamp: status.timestamp,
-                  });
+                  // Status updates (sent, delivered, read)
+                  for (const status of statuses) {
+                    console.log(`📊 [Status Meta] Msg: ${status.id.slice(0, 15)}... -> ${status.status.toUpperCase()} (${status.recipient_id})`);
+                    syncService.emit("message:status_updated", {
+                      id: status.id,
+                      status: status.status,
+                      recipientId: status.recipient_id,
+                      timestamp: status.timestamp,
+                    });
+                  }
+
+                  // Mensagens recebidas
+                  for (const message of messages) {
+                    const contact = contacts.find((c) => c.wa_id === message.from) || contacts[0];
+                    const normalized = this.normalizeMessage(message, contact, metadata);
+
+                    console.log(`\n========================================`);
+                    console.log(`📩 [MENSAGEM RECEBIDA DO WHATSAPP]`);
+                    console.log(`👤 De: ${normalized.senderName} (${normalized.from})`);
+                    console.log(`💬 Conteúdo: "${normalized.body}"`);
+                    console.log(`🏷️ Tipo: ${normalized.type} ${normalized.interactiveType ? `(${normalized.interactiveType})` : ""}`);
+                    console.log(`========================================\n`);
+
+                    // Atualiza janela de 24h
+                    window24hService.recordInboundInteraction(normalized.from, normalized.timestamp);
+
+                    // Dispara evento para o bot processar o fluxo
+                    syncService.emit("message:inbound", normalized);
+                  }
                 }
 
-                // Mensagens recebidas
-                for (const message of messages) {
-                  const contact = contacts.find((c) => c.wa_id === message.from) || contacts[0];
-                  const normalized = this.normalizeMessage(message, contact, metadata);
-
-                  console.log(`\n========================================`);
-                  console.log(`📩 [MENSAGEM RECEBIDA DO WHATSAPP]`);
-                  console.log(`👤 De: ${normalized.senderName} (${normalized.from})`);
-                  console.log(`💬 Conteúdo: "${normalized.body}"`);
-                  console.log(`🏷️ Tipo: ${normalized.type} ${normalized.interactiveType ? `(${normalized.interactiveType})` : ""}`);
-                  console.log(`========================================\n`);
-
-                  // Atualiza janela de 24h
-                  window24hService.recordInboundInteraction(normalized.from, normalized.timestamp);
-
-                  // Dispara evento para o bot processar o fluxo
-                  syncService.emit("message:inbound", normalized);
+                // 2. Atualização de status de Message Templates oficiais
+                else if (change.field === "message_template_status_update") {
+                  this.handleTemplateStatusUpdate(change);
                 }
               }
             }
@@ -360,6 +414,10 @@ class CloudGatewayService extends EventEmitter {
     console.log(`👉 URL Pública do Webhook: ${this.publicUrl}`);
     console.log(`🔑 Verify Token: ${this.verifyToken}`);
 
+    // Notifica imediatamente o Watchdog e a interface gráfica do Electron
+    tunnelWatchdogService.setGatewayService(this);
+    tunnelWatchdogService.notifyUrlReady(this.publicUrl);
+
     // Aguarda propagação DNS externa antes de acionar a Meta (evita 502: Failed to resolve host)
     console.log(`⏳ Aguardando propagação do túnel Cloudflare...`);
     let isReachable = false;
@@ -437,7 +495,7 @@ class CloudGatewayService extends EventEmitter {
 
     this.server = this.createHttpServer();
     await new Promise((resolve, reject) => {
-      this.server.listen(this.port, () => {
+      this.server.listen(this.port, "0.0.0.0", () => {
         console.log(`\n🚀 [ZWEI PREMIUM] Servidor Webhook rodando localmente na porta ${this.port}`);
         this.isRunning = true;
         resolve();

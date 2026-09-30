@@ -17,6 +17,7 @@
 @import url('components/progress.css');
 @import url('components/simulator.css');
 @import url('components/modal.css');
+@import url('components/toast.css');
 
 /* 4. Módulos Específicos */
 @import url('modules/flows.css');
@@ -26,3 +27,4 @@
 @import url('modules/anti-loop.css');
 @import url('modules/live-feed.css');
 @import url('modules/tunnel.css');
+@import url('modules/templates.css');
