@@ -26,6 +26,37 @@ export function interpolateVariables(text, values = {}) {
 }
 
 /**
+ * Escapa caracteres HTML
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeHtmlText(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Converte a marcação do WhatsApp em HTML seguro para a prévia:
+ * *negrito*, _itálico_, ~tachado~ e ```monoespaçado```
+ * @param {string} text
+ * @returns {string} HTML escapado e formatado
+ */
+export function formatWhatsAppText(text) {
+  let html = escapeHtmlText(text || "");
+
+  html = html.replace(/```([\s\S]+?)```/g, "<code>$1</code>");
+  html = html.replace(/(^|[^\w*])\*(?!\s)([^*\n]+?)(?<!\s)\*(?=[^\w*]|$)/gm, "$1<strong>$2</strong>");
+  html = html.replace(/(^|[^\w_])_(?!\s)([^_\n]+?)(?<!\s)_(?=[^\w_]|$)/gm, "$1<em>$2</em>");
+  html = html.replace(/(^|[^\w~])~(?!\s)([^~\n]+?)(?<!\s)~(?=[^\w~]|$)/gm, "$1<del>$2</del>");
+
+  return html;
+}
+
+/**
  * Renderiza o balão de mensagem do WhatsApp nos elementos do DOM fornecidos
  * @param {object} params
  * @param {object} params.elements - Referências dos elementos DOM
@@ -100,8 +131,13 @@ export function renderWhatsAppBubble({
     }
   }
 
-  // 3. Corpo com Interpolação de Variáveis
-  bodyEl.textContent = interpolateVariables(bodyText, values) || "Mensagem vazia";
+  // 3. Corpo com Interpolação de Variáveis e formatação do WhatsApp
+  const renderedBody = interpolateVariables(bodyText, values);
+  if (renderedBody) {
+    bodyEl.innerHTML = formatWhatsAppText(renderedBody);
+  } else {
+    bodyEl.textContent = "Mensagem vazia";
+  }
 
   // 4. Rodapé
   if (footerEl) {
@@ -137,6 +173,6 @@ export function renderWhatsAppBubble({
 
 // Compatibilidade para testes em ambiente Node.js
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { interpolateVariables, renderWhatsAppBubble };
+  module.exports = { interpolateVariables, formatWhatsAppText, renderWhatsAppBubble };
 }
 

@@ -630,6 +630,59 @@ function insertVariableIntoBody() {
 }
 
 /**
+ * Aplica (ou remove) a marcação de formatação do WhatsApp na seleção atual do corpo
+ * @param {string} marker - "*" (negrito), "_" (itálico), "~" (tachado) ou "```" (mono)
+ */
+function wrapSelectionInBody(marker) {
+  const textarea = $("#editor-tmpl-body-text");
+  if (!textarea || !marker) return;
+
+  const value = textarea.value;
+  let start = textarea.selectionStart ?? value.length;
+  let end = textarea.selectionEnd ?? value.length;
+
+  // WhatsApp não formata se houver espaços colados ao marcador: ajusta a seleção
+  while (start < end && /\s/.test(value[start])) start++;
+  while (end > start && /\s/.test(value[end - 1])) end--;
+
+  const selected = value.substring(start, end);
+  const len = marker.length;
+  const before = value.substring(start - len, start);
+  const after = value.substring(end, end + len);
+
+  let newValue;
+  let selStart;
+  let selEnd;
+
+  if (before === marker && after === marker) {
+    // Já formatado: remove a marcação
+    newValue = value.substring(0, start - len) + selected + value.substring(end + len);
+    selStart = start - len;
+    selEnd = selStart + selected.length;
+  } else if (selected) {
+    newValue = value.substring(0, start) + marker + selected + marker + value.substring(end);
+    selStart = start + len;
+    selEnd = selStart + selected.length;
+  } else {
+    // Sem seleção: insere os marcadores e posiciona o cursor no meio
+    newValue = value.substring(0, start) + marker + marker + value.substring(start);
+    selStart = selEnd = start + len;
+  }
+
+  if (newValue.length > 1024) {
+    toastWarning("Limite atingido", "O corpo do template não pode exceder 1024 caracteres.");
+    return;
+  }
+
+  textarea.value = newValue;
+  textarea.focus();
+  textarea.setSelectionRange(selStart, selEnd);
+
+  updateBodyCharCount();
+  renderLiveEditorPreview();
+}
+
+/**
  * Renderiza a lista dinâmica de botões no editor
  */
 function renderEditorButtons() {
@@ -1050,6 +1103,26 @@ export function initTemplates(api) {
 
   // 11. Botão Inserir Variável {{n}}
   $("#btn-insert-variable")?.addEventListener("click", insertVariableIntoBody);
+
+  // 11.1 Botões de formatação do WhatsApp (*negrito*, _itálico_, ~tachado~, ```mono```)
+  $$(".editor-format-btn").forEach((btn) => {
+    btn.addEventListener("mousedown", (e) => e.preventDefault()); // mantém a seleção na textarea
+    btn.addEventListener("click", () => wrapSelectionInBody(btn.getAttribute("data-wrap")));
+  });
+
+  if (bodyTextarea) {
+    bodyTextarea.addEventListener("keydown", (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+      const key = e.key.toLowerCase();
+      if (key === "b") {
+        e.preventDefault();
+        wrapSelectionInBody("*");
+      } else if (key === "i") {
+        e.preventDefault();
+        wrapSelectionInBody("_");
+      }
+    });
+  }
 
   // 12. Atualização ao vivo do rodapé
   const footerInput = $("#editor-tmpl-footer-text");

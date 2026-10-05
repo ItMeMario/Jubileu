@@ -83,6 +83,25 @@
   font-size: 13px;
 }
 
+.wa-bubble-body,
+.wa-bubble-header,
+.wa-bubble-footer {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.wa-bubble-body strong {
+  font-weight: 700;
+}
+
+.wa-bubble-body code {
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 12.5px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
 .wa-bubble-footer {
   font-size: 11px;
   color: #8696a0;

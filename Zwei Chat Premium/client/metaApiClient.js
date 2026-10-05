@@ -27,6 +27,11 @@ function parseMetaErrorMessage(errorResponse) {
   const code = metaError.code;
   const subcode = metaError.error_subcode;
   const message = metaError.message || "Erro desconhecido na Meta API";
+  // Detalhe legível retornado pela Meta (ex: "Formato do cabeçalho incorreto")
+  const userDetail =
+    [metaError.error_user_title, metaError.error_user_msg].filter(Boolean).join(": ") ||
+    metaError.error_data?.details ||
+    "";
 
   // Erros específicos de Message Templates da Meta
   if (subcode === 2388040 || code === 2388040) {
@@ -62,12 +67,122 @@ function parseMetaErrorMessage(errorResponse) {
     case 132001:
       return "A quantidade ou ordem dos parâmetros fornecidos para o template não corresponde ao cadastrado na Meta.";
     case 100:
-      return `Parâmetro inválido na requisição da Meta (${message}). Verifique a formatação dos campos e componentes do template.`;
+      return userDetail
+        ? `Parâmetro inválido na requisição da Meta: ${userDetail}`
+        : `Parâmetro inválido na requisição da Meta (${message}). Verifique a formatação dos campos e componentes do template.`;
     case 190:
       return "Token de Acesso da Meta expirou ou é inválido. Gere um novo System User Token permanente no Gerenciador de Negócios.";
     default:
-      return `[Meta Error ${code}${subcode ? `:${subcode}` : ""}] ${message}`;
+      return `[Meta Error ${code}${subcode ? `:${subcode}` : ""}] ${userDetail || message}`;
   }
+}
+
+/**
+ * Normaliza um texto de template para as regras da Meta, preservando a formatação do WhatsApp
+ * (*negrito*, _itálico_, ~tachado~, ```mono```) e emojis.
+ * - Remove caracteres invisíveis comuns em textos copiados (zero-width, BOM, marcas de direção)
+ * - Converte espaços não separáveis e tabs em espaço comum
+ * - Remove espaços no fim de cada linha (linhas "em branco" com espaços viram vazias)
+ * - Limita a 1 linha em branco seguida (Meta recusa mais de 2 quebras consecutivas)
+ * - Limita a 4 espaços consecutivos (regra da Meta)
+ * @param {string} text
+ * @param {{ allowNewlines?: boolean }} [opts]
+ * @returns {string}
+ */
+function normalizeTemplateText(text, { allowNewlines = true } = {}) {
+  let clean = String(text ?? "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[\u200B\u200E\u200F\u2060\uFEFF]/g, "") // Mantém U+200D (usado em emojis compostos)
+    .replace(/[\u00A0\u202F\t]/g, " ");
+
+  if (!allowNewlines) {
+    clean = clean.replace(/\n+/g, " ");
+  }
+
+  clean = clean
+    .split("\n")
+    .map((line) => line.replace(/ +$/, ""))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/ {5,}/g, "    ");
+
+  return clean.trim();
+}
+
+/**
+ * Retorna uma cópia dos componentes com os textos normalizados para a Meta
+ * @param {Array<object>} components
+ * @returns {Array<object>}
+ */
+function sanitizeTemplateComponents(components) {
+  if (!Array.isArray(components)) return components;
+
+  return components.map((comp) => {
+    if (!comp || typeof comp.text !== "string") return comp;
+    const type = String(comp.type || "").toUpperCase();
+
+    if (type === "BODY") {
+      const text = normalizeTemplateText(comp.text, { allowNewlines: true });
+      const varCount = new Set(text.match(/\{\{\d+\}\}/g) || []).size;
+      const next = { ...comp, text };
+      // A Meta exige valores de exemplo quando o corpo possui variáveis {{n}}
+      if (varCount > 0 && !comp.example) {
+        next.example = { body_text: [Array.from({ length: varCount }, (_, i) => `exemplo${i + 1}`)] };
+      }
+      return next;
+    }
+    if (type === "HEADER" || type === "FOOTER") {
+      const text = normalizeTemplateText(comp.text, { allowNewlines: false });
+      const next = { ...comp, text };
+      if (type === "HEADER" && /\{\{1\}\}/.test(text) && !comp.example) {
+        next.example = { header_text: ["exemplo"] };
+      }
+      return next;
+    }
+    return comp;
+  });
+}
+
+/**
+ * Valida as regras de conteúdo dos componentes (cabeçalho, corpo, rodapé)
+ * @param {Array<object>} components
+ * @returns {{ valid: boolean, error?: string }}
+ */
+function validateTemplateComponents(components) {
+  const find = (t) => components.find((c) => c && String(c.type || "").toUpperCase() === t);
+  const header = find("HEADER");
+  const body = find("BODY");
+  const footer = find("FOOTER");
+
+  if (header && String(header.format || "").toUpperCase() === "TEXT") {
+    const headerText = String(header.text || "");
+    if (headerText.length > 60) {
+      return { valid: false, error: "O cabeçalho (Header) não pode exceder 60 caracteres." };
+    }
+    if (/[*_~`]/.test(headerText) || /\p{Extended_Pictographic}/u.test(headerText)) {
+      return {
+        valid: false,
+        error:
+          "A Meta não permite emojis nem formatação (*negrito*, _itálico_, ~tachado~) no CABEÇALHO. Use a formatação apenas no Corpo da mensagem.",
+      };
+    }
+  }
+
+  if (body) {
+    const bodyText = String(body.text || "");
+    if (bodyText.length > 1024) {
+      return { valid: false, error: `O corpo (Body) excede o limite de 1024 caracteres da Meta (${bodyText.length}).` };
+    }
+    if (/^\{\{\d+\}\}/.test(bodyText) || /\{\{\d+\}\}$/.test(bodyText)) {
+      return { valid: false, error: "A Meta não permite que o corpo comece ou termine com uma variável {{n}}." };
+    }
+  }
+
+  if (footer && String(footer.text || "").length > 60) {
+    return { valid: false, error: "O rodapé (Footer) não pode exceder 60 caracteres." };
+  }
+
+  return { valid: true };
 }
 
 /**
@@ -142,7 +257,7 @@ function validateTemplateDefinition({ name, category, language, components }) {
     }
   }
 
-  return { valid: true };
+  return validateTemplateComponents(components);
 }
 
 class MetaApiClient {
@@ -506,6 +621,7 @@ class MetaApiClient {
     const cleanName = String(name || "").trim().toLowerCase();
     const cleanCategory = String(category || "").trim().toUpperCase();
     const cleanLanguage = String(language || "pt_BR").trim();
+    components = sanitizeTemplateComponents(components);
 
     // Validação local prévia
     const validation = validateTemplateDefinition({
@@ -567,6 +683,12 @@ class MetaApiClient {
       return { success: false, error: "Componentes atualizados são obrigatórios." };
     }
 
+    components = sanitizeTemplateComponents(components);
+    const contentValidation = validateTemplateComponents(components);
+    if (!contentValidation.valid) {
+      return { success: false, error: contentValidation.error };
+    }
+
     const payload = {
       components,
     };
@@ -615,4 +737,6 @@ module.exports = {
   normalizePhoneNumber,
   parseMetaErrorMessage,
   validateTemplateDefinition,
+  normalizeTemplateText,
+  sanitizeTemplateComponents,
 };

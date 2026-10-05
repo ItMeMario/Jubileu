@@ -235,16 +235,23 @@
           </div>
 
           <div class="editor-body-toolbar">
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-insert-variable">
-              <span>➕</span> Inserir Variável {{n}}
-            </button>
+            <div class="editor-format-group">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-insert-variable">
+                <span>➕</span> Inserir Variável {{n}}
+              </button>
+              <button type="button" class="editor-format-btn" id="btn-format-bold" data-wrap="*" title="Negrito (*texto*) — Ctrl+B"><strong>B</strong></button>
+              <button type="button" class="editor-format-btn" id="btn-format-italic" data-wrap="_" title="Itálico (_texto_) — Ctrl+I"><em>I</em></button>
+              <button type="button" class="editor-format-btn" id="btn-format-strike" data-wrap="~" title="Tachado (~texto~)"><del>S</del></button>
+              <button type="button" class="editor-format-btn" id="btn-format-mono" data-wrap="```" title="Monoespaçado (```texto```)"><code>{ }</code></button>
+            </div>
             <span class="editor-char-counter" id="editor-tmpl-body-count">0 / 1024</span>
           </div>
 
           <div class="form-group">
             <textarea id="editor-tmpl-body-text" class="form-control" rows="5" maxlength="1024" placeholder="Olá {{1}}, seu pedido #{{2}} foi confirmado com sucesso e tem entrega prevista para {{3}}."></textarea>
             <span style="font-size: 11px; color: var(--text-dim); margin-top: 6px; display: block;">
-              💡 Use variáveis sequenciais iniciando em {{1}}. Não pule números. A Meta exige parâmetros ordenados.
+              💡 Use variáveis sequenciais iniciando em {{1}}. Não pule números. A Meta exige parâmetros ordenados.<br>
+              ✍️ Formatação: *negrito*, _itálico_, ~tachado~, ```mono```. Emojis e quebras de linha são permitidos no corpo (máx. 1 linha em branco seguida).
             </span>
           </div>
         </div>
