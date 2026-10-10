@@ -88,13 +88,17 @@ function dbGetDroneClients() {
 }
 
 function dbAddDroneClient(name, tel) {
+    const cleanTel = (tel || "").toString().replace(/\D/g, "");
+    if (!cleanTel || cleanTel.length < 8) {
+        return Promise.reject(new Error("Número de telefone inválido (mínimo 8 dígitos)."));
+    }
     return new Promise((resolve, reject) => {
         db.run(
             "INSERT OR IGNORE INTO drone_clients (name, tel, status) VALUES (?, ?, 'pending')",
-            [name, tel],
+            [name, cleanTel],
             function(err) {
                 if (err) reject(err);
-                else resolve({ id: this.lastID, name, tel, status: "pending" });
+                else resolve({ id: this.lastID, name, tel: cleanTel, status: "pending" });
             }
         );
     });
@@ -108,11 +112,14 @@ function dbAddDroneClientsBatch(clients) {
             
             let added = 0;
             clients.forEach(c => {
-                stmt.run([c.name, c.tel], function(err) {
-                    if (!err && this.changes > 0) {
-                        added++;
-                    }
-                });
+                const cleanTel = (c.tel || "").toString().replace(/\D/g, "");
+                if (cleanTel && cleanTel.length >= 8) {
+                    stmt.run([c.name, cleanTel], function(err) {
+                        if (!err && this.changes > 0) {
+                            added++;
+                        }
+                    });
+                }
             });
 
             stmt.finalize((err) => {

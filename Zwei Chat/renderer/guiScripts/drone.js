@@ -500,13 +500,14 @@ function setupDroneUIEventListeners() {
   // Adicionar número manual
   droneBtnAddNum.addEventListener("click", async () => {
     const name = droneNumName.value.trim();
-    const tel = droneNumTel.value.trim();
-    if (!tel) {
-      alert("Insira pelo menos o telefone!");
+    const rawTel = droneNumTel.value.trim();
+    const cleanTel = rawTel.replace(/\D/g, "");
+    if (!cleanTel || cleanTel.length < 8) {
+      alert("Insira um telefone válido com pelo menos 8 dígitos!");
       return;
     }
     try {
-      const client = await window.droneAPI.addClient({ name, tel });
+      const client = await window.droneAPI.addClient({ name, tel: cleanTel });
       droneClients.unshift(client);
       renderDroneClients();
       await updateDroneStats();
@@ -662,13 +663,17 @@ function processCsvFile(file) {
         const parts = line.split(/[;,]/);
         if (parts.length >= 2) {
           const name = parts[0].trim().replace(/^["']|["']$/g, '');
-          const tel = parts[1].trim().replace(/^["']|["']$/g, '');
-          if (tel) {
-            contacts.push({ name, tel });
+          const rawTel = parts[1].trim().replace(/^["']|["']$/g, '');
+          const cleanTel = rawTel.replace(/\D/g, "");
+          if (cleanTel && cleanTel.length >= 8) {
+            contacts.push({ name, tel: cleanTel });
           }
         } else if (parts.length === 1 && parts[0].trim()) {
-          const tel = parts[0].trim().replace(/^["']|["']$/g, '');
-          contacts.push({ name: "", tel });
+          const rawTel = parts[0].trim().replace(/^["']|["']$/g, '');
+          const cleanTel = rawTel.replace(/\D/g, "");
+          if (cleanTel && cleanTel.length >= 8) {
+            contacts.push({ name: "", tel: cleanTel });
+          }
         }
       });
 

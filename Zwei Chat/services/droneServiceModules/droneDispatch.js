@@ -39,24 +39,68 @@ async function startDispatch(service) {
     }
 
     service.isDispatching = true;
+    service.dispatchedNumbers = new Set();
     service.emit('dispatch-status', { active: true });
 
-    // Inicializa estatísticas de progresso
+    // Configurações de formatação para pré-processamento
+    const formatOptions = {
+        prefixoPais: service.config.addCountryPrefix ? service.config.defaultCountryPrefix : null,
+        ddd: service.config.addDDD ? service.config.defaultDDD : null,
+        adicionar9Digito: service.config.add9thDigit
+    };
+
+    // ETAPA 1: Pré-sorteio único e deduplicação determinística em memória
+    const uniqueTasks = [];
+    const seenNumbers = new Set();
+
+    for (const clientData of clientsToSend) {
+        const formattedNum = aplicarTransformacoes(clientData.tel, formatOptions);
+        const whatsappNumber = formattedNum + "@c.us";
+
+        // Se este número de WhatsApp já teve uma mensagem sorteada nesta lista
+        if (seenNumbers.has(whatsappNumber)) {
+            console.warn(`Drone: Contato duplicado ignorado para ${clientData.name || 'Cliente'} (${formattedNum}, id: ${clientData.id})`);
+            // Marca no banco como 'sent' para não reprocessar no futuro
+            service.dbUpdateClientStatus(clientData.id, 'sent').catch(e => console.error("Erro ao atualizar duplicado:", e));
+            continue;
+        }
+
+        seenNumbers.add(whatsappNumber);
+
+        // Realiza o sorteio ÚNICO e determinístico para este contato
+        const msgObj = messages[Math.floor(Math.random() * messages.length)];
+
+        uniqueTasks.push({
+            clientData,
+            formattedNum,
+            whatsappNumber,
+            messageContent: msgObj.message_content,
+            messageId: msgObj.id
+        });
+    }
+
+    if (uniqueTasks.length === 0) {
+        service.isDispatching = false;
+        service.emit('dispatch-status', { active: false });
+        throw new Error("Nenhum contato válido restante após a remoção de duplicatas.");
+    }
+
+    // Inicializa estatísticas de progresso com a quantidade real de contatos únicos
     service.dispatchProgress = {
-        total: clientsToSend.length,
+        total: uniqueTasks.length,
         current: 0,
         sent: 0,
         failed: 0
     };
 
-    // Divide os clientes entre as instâncias disponíveis
-    const numClients = clientsToSend.length;
+    // Divide as tarefas pré-sorteadas entre as instâncias disponíveis
+    const numClients = uniqueTasks.length;
     const numDrones = connected.length;
     const droneTasks = Array.from({ length: numDrones }, () => []);
 
     for (let i = 0; i < numClients; i++) {
         const droneIndex = i % numDrones;
-        droneTasks[droneIndex].push(clientsToSend[i]);
+        droneTasks[droneIndex].push(uniqueTasks[i]);
     }
 
     // Inicia loops paralelos de envio para cada drone
@@ -68,15 +112,17 @@ async function startDispatch(service) {
     // Aguarda todas as tarefas completarem em background
     Promise.all(promises).then(() => {
         service.isDispatching = false;
+        if (service.dispatchedNumbers) service.dispatchedNumbers.clear();
         service.emit('dispatch-status', { active: false });
         service.emit('dispatch-complete', service.dispatchProgress);
     }).catch(err => {
         console.error("Erro no processamento geral de disparo:", err);
         service.isDispatching = false;
+        if (service.dispatchedNumbers) service.dispatchedNumbers.clear();
         service.emit('dispatch-status', { active: false });
     });
 
-    return { success: true, message: `Disparo iniciado para ${clientsToSend.length} contatos usando ${connected.length} instâncias.` };
+    return { success: true, message: `Disparo iniciado para ${uniqueTasks.length} contatos únicos usando ${connected.length} instâncias.` };
 }
 
 async function runDroneLoop(service, drone, tasks, messages) {
@@ -86,26 +132,44 @@ async function runDroneLoop(service, drone, tasks, messages) {
     for (let i = 0; i < tasks.length; i++) {
         if (!service.isDispatching) break;
 
-        const clientData = tasks[i];
+        const taskItem = tasks[i];
         
-        // Transforma o número seguindo as configurações
-        const formatOptions = {
-            prefixoPais: service.config.addCountryPrefix ? service.config.defaultCountryPrefix : null,
-            ddd: service.config.addDDD ? service.config.defaultDDD : null,
-            adicionar9Digito: service.config.add9thDigit
-        };
+        // Suporta tanto o novo formato pré-sorteado quanto fallback legado
+        const clientData = taskItem.clientData || taskItem;
+        let formattedNum = taskItem.formattedNum;
+        let whatsappNumber = taskItem.whatsappNumber;
+        let messageText = taskItem.messageContent;
 
-        const formattedNum = aplicarTransformacoes(clientData.tel, formatOptions);
-        const whatsappNumber = formattedNum + "@c.us";
+        if (!whatsappNumber) {
+            const formatOptions = {
+                prefixoPais: service.config.addCountryPrefix ? service.config.defaultCountryPrefix : null,
+                ddd: service.config.addDDD ? service.config.defaultDDD : null,
+                adicionar9Digito: service.config.add9thDigit
+            };
+            formattedNum = aplicarTransformacoes(clientData.tel, formatOptions);
+            whatsappNumber = formattedNum + "@c.us";
+        }
 
-        // Escolhe mensagem aleatória e substitui variáveis
-        const msgObj = messages[Math.floor(Math.random() * messages.length)];
-        let text = msgObj.message_content;
-        
-        // Substitui {{name}}
+        // Trava anti-double-draw: se este número já foi despachado por outro robô nesta sessão, ignora
+        if (service.dispatchedNumbers && service.dispatchedNumbers.has(whatsappNumber)) {
+            console.warn(`Drone: Bloqueio anti-duplicidade em execução para ${whatsappNumber}`);
+            continue;
+        }
+        if (service.dispatchedNumbers) {
+            service.dispatchedNumbers.add(whatsappNumber);
+        }
+
+        // Se a mensagem não veio pré-sorteada, usa o fallback
+        if (!messageText) {
+            const msgObj = messages[Math.floor(Math.random() * messages.length)];
+            messageText = msgObj.message_content;
+        }
+
+        let text = messageText;
         const clientName = clientData.name || "Cliente";
         text = text.replace(/\{\{name\}\}/g, clientName);
 
+        let messageSent = false;
         try {
             // Atualiza status como enviando
             service.emit('dispatch-progress', {
@@ -116,11 +180,16 @@ async function runDroneLoop(service, drone, tasks, messages) {
                 droneName: drone.name
             });
 
-            // Envia
+            // Envia mensagem via WhatsApp
             await drone.client.sendMessage(whatsappNumber, text);
+            messageSent = true;
             
-            // Atualiza banco
-            await service.dbUpdateClientStatus(clientData.id, 'sent');
+            // Atualiza banco de dados de forma isolada
+            try {
+                await service.dbUpdateClientStatus(clientData.id, 'sent');
+            } catch (dbErr) {
+                console.error(`Drone: Mensagem enviada para ${formattedNum}, mas erro ao atualizar banco para 'sent':`, dbErr);
+            }
             
             service.dispatchProgress.sent++;
             service.dispatchProgress.current++;
@@ -145,32 +214,38 @@ async function runDroneLoop(service, drone, tasks, messages) {
             });
 
         } catch (err) {
-            console.error(`Drone: Erro ao enviar mensagem para ${clientData.tel} usando ${drone.name}:`, err);
+            console.error(`Drone: Erro durante envio para ${clientData.tel} usando ${drone.name}:`, err);
             
-            // Atualiza banco
-            await service.dbUpdateClientStatus(clientData.id, 'failed');
-            
-            service.dispatchProgress.failed++;
-            service.dispatchProgress.current++;
+            // Se a mensagem já foi enviada no WhatsApp, NUNCA marca como falha para evitar re-disparo
+            if (!messageSent) {
+                try {
+                    await service.dbUpdateClientStatus(clientData.id, 'failed');
+                } catch (dbErr) {
+                    console.error(`Drone: Erro ao atualizar status 'failed' no banco:`, dbErr);
+                }
+                
+                service.dispatchProgress.failed++;
+                service.dispatchProgress.current++;
 
-            const logMsg = `[Falha] ${drone.name} ➔ ${clientName} (${formattedNum}): ${err.message}`;
-            service.emit('log', {
-                timestamp: new Date(),
-                droneName: drone.name,
-                clientName: clientName,
-                message: logMsg,
-                status: 'failed'
-            });
+                const logMsg = `[Falha] ${drone.name} ➔ ${clientName} (${formattedNum}): ${err.message}`;
+                service.emit('log', {
+                    timestamp: new Date(),
+                    droneName: drone.name,
+                    clientName: clientName,
+                    message: logMsg,
+                    status: 'failed'
+                });
 
-            service.emit('dispatch-progress', {
-                clientName: clientName,
-                phoneNumber: clientData.tel,
-                formattedNumber: formattedNum,
-                status: 'failed',
-                error: err.message,
-                droneName: drone.name,
-                progress: service.dispatchProgress
-            });
+                service.emit('dispatch-progress', {
+                    clientName: clientName,
+                    phoneNumber: clientData.tel,
+                    formattedNumber: formattedNum,
+                    status: 'failed',
+                    error: err.message,
+                    droneName: drone.name,
+                    progress: service.dispatchProgress
+                });
+            }
         }
 
         // Aguarda delay configurado se não for o último item
@@ -188,6 +263,9 @@ async function runDroneLoop(service, drone, tasks, messages) {
 
 async function stopDispatch(service) {
     service.isDispatching = false;
+    if (service.dispatchedNumbers) {
+        service.dispatchedNumbers.clear();
+    }
     service.emit('dispatch-status', { active: false });
     return { success: true };
 }
