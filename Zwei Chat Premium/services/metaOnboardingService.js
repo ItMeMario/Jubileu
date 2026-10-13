@@ -16,23 +16,37 @@ class MetaOnboardingService {
   }
 
   /**
+   * Retorna a URI padrão de redirecionamento configurada para o OAuth
+   * @returns {string}
+   */
+  getDefaultRedirectUri() {
+    const config = metaConfig.getConfig();
+    return (
+      config.redirectUri ||
+      process.env.META_REDIRECT_URI ||
+      "https://zwei-chat-c9d1f.firebaseapp.com/__/auth/handler"
+    );
+  }
+
+  /**
    * Constrói a URL oficial de diálogo OAuth do Facebook/Meta para Embedded Signup com proteção anti-CSRF
-   * @param {string} redirectUri - URI de retorno (padrão: página de sucesso padrão da Meta)
+   * @param {string} [redirectUri=null] - URI de retorno
    * @param {string} [state=null] - Token de estado anti-CSRF para validação de integridade da sessão
    * @returns {string} URL completa de autenticação
    */
   getEmbeddedSignupUrl(
-    redirectUri = "https://www.facebook.com/connect/login_success.html",
+    redirectUri = null,
     state = null
   ) {
     const config = metaConfig.getConfig();
+    const effectiveRedirectUri = redirectUri || this.getDefaultRedirectUri();
     const appId = config.appId || process.env.META_APP_ID || "1824502742321385";
     const configId = config.configId || process.env.META_CONFIG_ID || "";
     const apiVersion = config.apiVersion || "v21.0";
 
     const url = new URL(`https://www.facebook.com/${apiVersion}/dialog/oauth`);
     url.searchParams.set("client_id", appId);
-    url.searchParams.set("redirect_uri", redirectUri);
+    url.searchParams.set("redirect_uri", effectiveRedirectUri);
     url.searchParams.set("response_type", "code");
     url.searchParams.set(
       "scope",
@@ -106,15 +120,16 @@ class MetaOnboardingService {
    * Prioridade 1: Executa via Cloud Function segura (META_APP_SECRET 100% isolado na nuvem).
    * Prioridade 2 (Modo Dev): Se houver META_APP_SECRET local em ambiente de teste/dev.
    * @param {string} authCode - Código de autorização capturado no callback
-   * @param {string} redirectUri - Mesma URI de redirecionamento usada no login
+   * @param {string} [redirectUri=null] - Mesma URI de redirecionamento usada no login
    * @param {string} [cloudEndpoint=null] - URL opcional do endpoint da Cloud Function
    * @returns {Promise<{ access_token: string, token_type: string, wabaId?: string, phone?: object }>}
    */
   async exchangeCodeForToken(
     authCode,
-    redirectUri = "https://www.facebook.com/connect/login_success.html",
+    redirectUri = null,
     cloudEndpoint = null
   ) {
+    const effectiveRedirectUri = redirectUri || this.getDefaultRedirectUri();
     const cloudUrl = cloudEndpoint || this.getCloudFunctionsExchangeUrl();
 
     // 1. Método Oficial Seguro: Cloud Function (Sem META_APP_SECRET no cliente)
@@ -125,7 +140,7 @@ class MetaOnboardingService {
           cloudUrl,
           {
             code: authCode,
-            redirectUri,
+            redirectUri: effectiveRedirectUri,
           },
           {
             timeout: 20000,
@@ -187,7 +202,7 @@ class MetaOnboardingService {
             client_id: appId,
             client_secret: appSecret,
             code: authCode,
-            redirect_uri: redirectUri,
+            redirect_uri: effectiveRedirectUri,
           },
           timeout: 15000,
         }
@@ -359,11 +374,12 @@ class MetaOnboardingService {
    */
   async completeOnboarding(
     authCode,
-    redirectUri = "https://www.facebook.com/connect/login_success.html"
+    redirectUri = null
   ) {
     try {
+      const effectiveRedirectUri = redirectUri || this.getDefaultRedirectUri();
       console.log("⚡ [Onboarding] Trocando código de autorização por Access Token...");
-      const tokenData = await this.exchangeCodeForToken(authCode, redirectUri);
+      const tokenData = await this.exchangeCodeForToken(authCode, effectiveRedirectUri);
       const userAccessToken = tokenData.access_token;
 
       console.log("⚡ [Onboarding] Identificando WABA ID e Número do Cliente...");

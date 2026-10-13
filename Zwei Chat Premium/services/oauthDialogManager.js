@@ -2,6 +2,7 @@
 // Gerenciador de Janela Modal OAuth para Login e Embedded Signup da Meta
 
 const { BrowserWindow, app } = require("electron");
+const metaConfig = require("../config/metaConfig");
 const { metaOnboardingService } = require("./metaOnboardingService");
 
 class OAuthDialogManager {
@@ -13,7 +14,11 @@ class OAuthDialogManager {
    */
   openMetaAuthDialog(parentWindow) {
     return new Promise((resolve) => {
-      const redirectUri = "https://www.facebook.com/connect/login_success.html";
+      const config = metaConfig.getConfig();
+      const redirectUri =
+        config.redirectUri ||
+        process.env.META_REDIRECT_URI ||
+        "https://zwei-chat-c9d1f.firebaseapp.com/__/auth/handler";
       const expectedState = metaOnboardingService.generateOAuthState();
       const authUrl = metaOnboardingService.getEmbeddedSignupUrl(redirectUri, expectedState);
 
@@ -63,6 +68,7 @@ class OAuthDialogManager {
           // Verifica se atingiu a URL de retorno ou possui os parâmetros code / error
           const isRedirectTarget =
             navUrl.startsWith(redirectUri) ||
+            parsed.pathname.includes("/auth/handler") ||
             parsed.pathname.includes("login_success") ||
             parsed.searchParams.has("code") ||
             parsed.searchParams.has("error");
@@ -119,7 +125,14 @@ class OAuthDialogManager {
         "did-fail-load",
         (_event, errorCode, errorDescription, validatedURL) => {
           // Se falhou no redirectUri após captura ou se for cancelamento de navegação, ignora
-          if (validatedURL && validatedURL.startsWith(redirectUri)) return;
+          if (
+            validatedURL &&
+            (validatedURL.startsWith(redirectUri) ||
+              validatedURL.includes("/auth/handler") ||
+              validatedURL.includes("login_success"))
+          ) {
+            return;
+          }
           if (errorCode === -3) return; // ERR_ABORTED
 
           finish({

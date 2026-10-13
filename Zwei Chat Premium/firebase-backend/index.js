@@ -436,7 +436,9 @@ async function handleOAuthExchangeRequest(req, res) {
 
     const apiVersion = process.env.META_GRAPH_API_VERSION || "v21.0";
     const targetRedirectUri =
-      redirectUri || "https://www.facebook.com/connect/login_success.html";
+      redirectUri ||
+      process.env.META_REDIRECT_URI ||
+      "https://zwei-chat-c9d1f.firebaseapp.com/__/auth/handler";
 
     // 2. Troca o authorization code pelo user access token diretamente na Graph API
     const tokenResponse = await axios.get(

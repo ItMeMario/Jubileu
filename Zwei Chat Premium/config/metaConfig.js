@@ -28,6 +28,11 @@ class MetaConfigManager {
       verifyToken: process.env.META_VERIFY_TOKEN || "",
       apiVersion: process.env.META_GRAPH_API_VERSION || "v21.0",
       baseUrl: "https://graph.facebook.com",
+      redirectUri:
+        process.env.META_REDIRECT_URI ||
+        (process.env.FIREBASE_PROJECT_ID
+          ? `https://${process.env.FIREBASE_PROJECT_ID}.firebaseapp.com/__/auth/handler`
+          : "https://zwei-chat-c9d1f.firebaseapp.com/__/auth/handler"),
       functionsUrl: process.env.FIREBASE_FUNCTIONS_URL || "",
       firebaseProjectId: process.env.FIREBASE_PROJECT_ID || "",
     };
@@ -63,6 +68,7 @@ class MetaConfigManager {
     }
     if (newConfig.appSecret !== undefined) this.config.appSecret = String(newConfig.appSecret).trim();
     if (newConfig.verifyToken !== undefined) this.config.verifyToken = String(newConfig.verifyToken).trim();
+    if (newConfig.redirectUri !== undefined) this.config.redirectUri = String(newConfig.redirectUri).trim();
     if (newConfig.apiVersion !== undefined) this.config.apiVersion = String(newConfig.apiVersion).trim();
     if (newConfig.functionsUrl !== undefined) this.config.functionsUrl = String(newConfig.functionsUrl).trim();
     if (newConfig.firebaseProjectId !== undefined) this.config.firebaseProjectId = String(newConfig.firebaseProjectId).trim();
@@ -94,6 +100,7 @@ class MetaConfigManager {
       META_WABA_ID: this.config.wabaId,
       META_ACCESS_TOKEN: encryptedToken,
       META_VERIFY_TOKEN: this.config.verifyToken,
+      META_REDIRECT_URI: this.config.redirectUri,
       META_GRAPH_API_VERSION: this.config.apiVersion,
       FIREBASE_FUNCTIONS_URL: this.config.functionsUrl,
       FIREBASE_PROJECT_ID: this.config.firebaseProjectId,
