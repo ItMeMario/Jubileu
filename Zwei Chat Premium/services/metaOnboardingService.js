@@ -166,10 +166,27 @@ class MetaOnboardingService {
 
         // Se o cliente não tem appSecret (modo de produção normal), propaga o erro de forma clara
         if (!appSecret) {
-          const msg =
-            cloudErr.response?.data?.error ||
-            cloudErr.message ||
-            "Erro de conexão com o servidor de autenticação.";
+          let msg = "Erro de conexão com o servidor de autenticação.";
+
+          if (cloudErr.response?.data?.error) {
+            const errData = cloudErr.response.data.error;
+            msg =
+              typeof errData === "object"
+                ? errData.message || JSON.stringify(errData)
+                : String(errData);
+          } else if (cloudErr.response?.status === 404) {
+            msg =
+              "Serviço de autenticação temporariamente indisponível na nuvem (HTTP 404). Aguarde alguns instantes ou contate o suporte.";
+          } else if (
+            cloudErr.code === "ECONNABORTED" ||
+            cloudErr.message?.includes("timeout")
+          ) {
+            msg =
+              "Tempo limite de conexão com a nuvem esgotado (timeout de 20s). Verifique sua conexão e tente novamente.";
+          } else if (cloudErr.message) {
+            msg = cloudErr.message;
+          }
+
           throw new Error(`Falha na autenticação OAuth na nuvem: ${msg}`);
         }
 
