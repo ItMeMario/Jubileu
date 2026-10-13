@@ -33,8 +33,10 @@ class MetaConfigManager {
         (process.env.FIREBASE_PROJECT_ID
           ? `https://${process.env.FIREBASE_PROJECT_ID}.firebaseapp.com/__/auth/handler`
           : "https://zwei-chat-c9d1f.firebaseapp.com/__/auth/handler"),
-      functionsUrl: process.env.FIREBASE_FUNCTIONS_URL || "",
-      firebaseProjectId: process.env.FIREBASE_PROJECT_ID || "",
+      functionsUrl:
+        process.env.FIREBASE_FUNCTIONS_URL ||
+        "https://us-central1-zwei-chat-c9d1f.cloudfunctions.net/oauthExchange",
+      firebaseProjectId: process.env.FIREBASE_PROJECT_ID || "zwei-chat-c9d1f",
     };
   }
 
