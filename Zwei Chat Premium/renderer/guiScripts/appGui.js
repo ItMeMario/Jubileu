@@ -15,6 +15,7 @@ import {
 } from "./appGuiModules/broadcastModule.js";
 import { initFlows, loadFlowsList } from "./appGuiModules/flowsModule.js";
 import { initTunnelModule } from "./appGuiModules/tunnelModule.js";
+import { initConversations, loadConversationsList } from "./appGuiModules/conversationsModule.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("⚡ Inicializando interface modular do Zwei Chat Premium...");
@@ -71,6 +72,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Telemetria do Cloudflare Tunnel Watchdog (Vulnerabilidade #7)
   initTunnelModule(api);
 
+  // Conversas & Atendimento Humano (Takeover)
+  initConversations(api);
+
   // ==========================================
   // 2. CARREGAMENTO INICIAL DOS DADOS
   // ==========================================
@@ -82,6 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadBroadcastRecipients(api);
     await loadBroadcastHistory(api);
     await loadFlowsList(api);
+    await loadConversationsList(api);
     console.log("✅ Todos os módulos e dados foram carregados com sucesso!");
   } catch (error) {
     console.error("⚠️ Erro durante o carregamento inicial da interface:", error);

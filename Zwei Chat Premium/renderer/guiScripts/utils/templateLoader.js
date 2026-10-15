@@ -6,6 +6,7 @@
  */
 export const DEFAULT_TABS = [
   "tabs/dashboard.html",
+  "tabs/conversations.html",
   "tabs/templates.html",
   "tabs/broadcast.html",
   "tabs/flows.html",

@@ -3,6 +3,7 @@
 
 const { syncService } = require("./syncService");
 const { flowExecutor } = require("../client/flowExecutor");
+const { conversationService } = require("./conversationService");
 const metaConfig = require("../config/metaConfig");
 
 class BotIntegrationService {
@@ -30,6 +31,12 @@ class BotIntegrationService {
   async _onInboundMessage(message) {
     if (!this.isBotEnabled) {
       console.log(`ℹ️ Bot desativado temporariamente. Ignorando mensagem de ${message.from}`);
+      return;
+    }
+
+    // 🛡️ Isolamento por Contato: se o robô foi pausado para este contato específico (atendimento humano), não responde
+    if (conversationService && !conversationService.isBotActiveForContact(message.from)) {
+      console.log(`👤 [Atendimento Humano] Contato ${message.from} com bot pausado. Mensagem recebida aguardando operador.`);
       return;
     }
 

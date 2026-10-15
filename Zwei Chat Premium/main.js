@@ -23,6 +23,7 @@ const { antiLoopService } = require("./services/antiLoopService");
 const { firebaseService } = require("./services/firebaseService");
 const { cloudGatewayService, tunnelWatchdogService } = require("./cloud-gateway/server");
 const { rateLimiterService } = require("./services/rateLimiterService");
+const { conversationService } = require("./services/conversationService");
 
 let mainWindow = null;
 
@@ -349,6 +350,41 @@ function registerIpcHandlers() {
   ipcMain.handle("tunnel:check-health", async () => {
     return await tunnelWatchdogService.executeHeartbeat();
   });
+
+  // 11. Gestão de Conversas Locais & Atendimento Humano (Takeover)
+  ipcMain.handle("conversations:get-all", () => {
+    return conversationService.getAllConversations();
+  });
+
+  ipcMain.handle("conversations:get-by-phone", (_event, phone) => {
+    return conversationService.getConversationByPhone(phone);
+  });
+
+  ipcMain.handle("conversations:takeover", (_event, phone) => {
+    return conversationService.takeoverConversation(phone);
+  });
+
+  ipcMain.handle("conversations:activate-bot", (_event, phone) => {
+    return conversationService.activateBotForContact(phone);
+  });
+
+  ipcMain.handle("conversations:send-manual-message", async (_event, { phone, text } = {}) => {
+    return await conversationService.sendManualMessage(phone, text);
+  });
+
+  ipcMain.handle("conversations:mark-as-read", (_event, phone) => {
+    conversationService.markAsRead(phone);
+    return true;
+  });
+
+  ipcMain.handle("conversations:clear", () => {
+    return conversationService.clearConversations();
+  });
+
+  // Alias para retrocompatibilidade
+  ipcMain.handle("sync:get-conversations", () => {
+    return conversationService.getAllConversations();
+  });
 }
 
 /**
@@ -467,6 +503,25 @@ function setupEventForwarding() {
   tunnelWatchdogService.on("url-changed", (data) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send("tunnel:url-changed", data);
+    }
+  });
+
+  // Eventos de Conversas Locais & Atendimento Humano
+  conversationService.on("conversation:updated", (conv) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("conversation:updated", conv);
+    }
+  });
+
+  conversationService.on("conversation:message-added", (data) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("conversation:message-added", data);
+    }
+  });
+
+  conversationService.on("conversations:cleared", () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("conversations:cleared");
     }
   });
 }

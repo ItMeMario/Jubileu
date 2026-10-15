@@ -1,0 +1,146 @@
+<!-- renderer/html/tabs/conversations.html -->
+<!-- ABA DE CONVERSAS & ATENDIMENTO HUMANO -->
+<section class="tab-pane" id="tab-conversations">
+  <div class="page-header">
+    <div class="page-title">
+      <h2>Conversas & Atendimento</h2>
+      <p>Gerenciamento em tempo real de contatos, histórico e transbordo humano (Takeover)</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary btn-sm" id="btn-refresh-conversations" title="Atualizar lista de conversas">
+        <span>🔄</span> Atualizar
+      </button>
+      <button class="btn btn-secondary btn-sm" id="btn-clear-conversations" title="Limpar histórico local de conversas">
+        <span>🧹</span> Limpar
+      </button>
+    </div>
+  </div>
+
+  <!-- Container Split-View: Lista de Cards (Esquerda) e Chat Ativo (Direita) -->
+  <div class="conversations-split-view">
+    
+    <!-- Painel Esquerdo: Cards de Conversas -->
+    <aside class="conversations-sidebar-panel">
+      <!-- Barra de Busca -->
+      <div class="conv-search-box">
+        <span class="conv-search-icon">🔍</span>
+        <input
+          type="text"
+          id="conv-search-input"
+          class="conv-search-input"
+          placeholder="Buscar por telefone ou nome..."
+          autocomplete="off"
+        />
+        <button type="button" id="btn-conv-search-clear" class="conv-search-clear-btn" style="display: none;">✕</button>
+      </div>
+
+      <!-- Filtros Rápidos de Status -->
+      <div class="conv-filter-bar">
+        <button type="button" class="conv-filter-pill active" data-filter="all">
+          Todos <span class="filter-count" id="conv-count-all">0</span>
+        </button>
+        <button type="button" class="conv-filter-pill" data-filter="client" title="Última mensagem enviada pelo Cliente">
+          <span class="indicator-dot dot-green"></span> Cliente <span class="filter-count" id="conv-count-client">0</span>
+        </button>
+        <button type="button" class="conv-filter-pill" data-filter="bot" title="Última mensagem enviada pelo Bot/Atendente">
+          <span class="indicator-dot dot-red"></span> Bot <span class="filter-count" id="conv-count-bot">0</span>
+        </button>
+        <button type="button" class="conv-filter-pill" data-filter="human" title="Conversas assumidas pelo operador humano">
+          👤 Assumidos <span class="filter-count" id="conv-count-human">0</span>
+        </button>
+      </div>
+
+      <!-- Lista Rolável de Cards -->
+      <div class="conv-cards-scroll" id="conv-cards-container">
+        <div class="conv-empty-state" id="conv-cards-empty">
+          <div class="empty-icon">💬</div>
+          <div class="empty-title">Nenhuma conversa encontrada</div>
+          <div class="empty-subtext">As conversas recebidas pelo WhatsApp aparecerão aqui automaticamente em tempo real.</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Painel Direito: Histórico de Mensagens e Atendimento Manual -->
+    <main class="conversations-chat-panel" id="conv-chat-panel">
+      
+      <!-- Estado Vazio (Nenhuma conversa selecionada) -->
+      <div class="conv-chat-placeholder" id="conv-chat-placeholder">
+        <div class="placeholder-graphic">⚡</div>
+        <h3>Selecione uma conversa para atender</h3>
+        <p>Clique em um dos cartões à esquerda para visualizar o histórico de mensagens, conferir o status da janela de 24 horas ou assumir o atendimento.</p>
+      </div>
+
+      <!-- Painel de Chat Ativo (Exibido após selecionar um card) -->
+      <div class="conv-chat-active" id="conv-chat-active" style="display: none;">
+        
+        <!-- Cabeçalho do Chat -->
+        <header class="conv-chat-header">
+          <div class="conv-chat-contact-info">
+            <div class="contact-avatar-circle" id="conv-active-avatar">👤</div>
+            <div class="contact-details">
+              <div class="contact-name-row">
+                <h3 id="conv-active-name">Carregando...</h3>
+                <span class="status-pill status-green" id="conv-active-bot-status">🤖 Robô Ativo</span>
+              </div>
+              <div class="contact-phone-row">
+                <span id="conv-active-phone">--</span>
+                <span class="conv-separator">•</span>
+                <span id="conv-active-last-time">--</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="conv-chat-header-actions">
+            <!-- Badge Dinâmica da Janela de 24 Horas -->
+            <div class="conv-window-badge" id="conv-active-window-badge" title="Janela de atendimento oficial da Meta">
+              <span class="window-dot"></span>
+              <span id="conv-active-window-text">Janela de 24h: Verificando...</span>
+            </div>
+
+            <!-- Botão de Ação: Assumir ou Reativar Robô -->
+            <button type="button" class="btn btn-secondary" id="btn-conv-toggle-bot">
+              <span id="btn-conv-toggle-icon">👤</span>
+              <span id="btn-conv-toggle-text">Assumir Conversa</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Área de Histórico de Mensagens (Rolagem Estilo WhatsApp) -->
+        <div class="conv-messages-history" id="conv-messages-history">
+          <!-- Balões de mensagens injetados dinamicamente via conversationsModule.js -->
+        </div>
+
+        <!-- Rodapé de Envio Manual -->
+        <footer class="conv-chat-footer">
+          <!-- Alerta de Janela de 24h Expirada (Exibido condicionalmente) -->
+          <div class="conv-window-expired-alert" id="conv-window-expired-alert" style="display: none;">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-content">
+              <strong>Janela de 24 horas expirada para este contato.</strong>
+              <span>A Meta bloqueia mensagens de texto livre fora da janela. Para reiniciar o contato, envie um Template aprovado na aba "Disparador".</span>
+            </div>
+          </div>
+
+          <!-- Caixa de Entrada de Texto -->
+          <div class="conv-input-wrapper">
+            <textarea
+              id="conv-message-input"
+              class="conv-message-textarea"
+              placeholder="Digite uma mensagem... (Pressione Enter para enviar, Shift+Enter para quebra de linha)"
+              rows="1"
+            ></textarea>
+            <button type="button" class="btn btn-primary btn-send-message" id="btn-conv-send-message" title="Enviar mensagem">
+              <span>Enviar</span>
+              <span class="send-icon">📤</span>
+            </button>
+          </div>
+          <div class="conv-input-hint">
+            <span>Dica: Enviar uma mensagem manual pausará o robô automaticamente para este contato.</span>
+          </div>
+        </footer>
+
+      </div>
+    </main>
+
+  </div>
+</section>

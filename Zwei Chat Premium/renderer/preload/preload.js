@@ -62,7 +62,13 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
 
   // 5. Janela de 24 Horas e Conversas
   check24hWindow: (phone) => ipcRenderer.invoke("window24h:check", phone),
-  getConversations: () => ipcRenderer.invoke("sync:get-conversations"),
+  getConversations: () => ipcRenderer.invoke("conversations:get-all"),
+  getConversationByPhone: (phone) => ipcRenderer.invoke("conversations:get-by-phone", phone),
+  takeoverConversation: (phone) => ipcRenderer.invoke("conversations:takeover", phone),
+  activateBotForContact: (phone) => ipcRenderer.invoke("conversations:activate-bot", phone),
+  sendManualMessage: (phone, text) => ipcRenderer.invoke("conversations:send-manual-message", { phone, text }),
+  markConversationAsRead: (phone) => ipcRenderer.invoke("conversations:mark-as-read", phone),
+  clearConversations: () => ipcRenderer.invoke("conversations:clear"),
   getGatewayStatus: () => ipcRenderer.invoke("gateway:get-status"),
   getRecentInboundMessages: (limit) => ipcRenderer.invoke("sync:get-recent-inbound", limit),
   clearRecentInboundMessages: () => ipcRenderer.invoke("sync:clear-recent-inbound"),
@@ -102,6 +108,21 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
     const subscription = (_event, conversations) => callback(conversations);
     ipcRenderer.on("conversations:updated", subscription);
     return () => ipcRenderer.removeListener("conversations:updated", subscription);
+  },
+  onConversationUpdated: (callback) => {
+    const subscription = (_event, conv) => callback(conv);
+    ipcRenderer.on("conversation:updated", subscription);
+    return () => ipcRenderer.removeListener("conversation:updated", subscription);
+  },
+  onConversationMessageAdded: (callback) => {
+    const subscription = (_event, data) => callback(data);
+    ipcRenderer.on("conversation:message-added", subscription);
+    return () => ipcRenderer.removeListener("conversation:message-added", subscription);
+  },
+  onConversationsCleared: (callback) => {
+    const subscription = () => callback();
+    ipcRenderer.on("conversations:cleared", subscription);
+    return () => ipcRenderer.removeListener("conversations:cleared", subscription);
   },
   onTemplateStatusChanged: (callback) => {
     const subscription = (_event, data) => callback(data);

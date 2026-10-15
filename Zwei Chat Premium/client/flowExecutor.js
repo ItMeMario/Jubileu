@@ -101,6 +101,7 @@ class FlowExecutor {
         if (antiLoopResult.action === "notify_and_pause" && antiLoopResult.message) {
           try {
             await metaApiClient.sendTextMessage(contactPhone, antiLoopResult.message);
+            this._recordBotMessage(contactPhone, antiLoopResult.message);
           } catch (err) {
             console.error(`❌ Erro ao enviar mensagem amigável de anti-loop para ${contactPhone}:`, err.message);
           }
@@ -148,6 +149,7 @@ class FlowExecutor {
 
       // Envia a mensagem de aviso programada
       await metaApiClient.sendTextMessage(contactPhone, interpolatedWarning);
+      this._recordBotMessage(contactPhone, interpolatedWarning);
 
       // Pausa estratégica de 800ms para ordenação natural das mensagens no WhatsApp
       await sleep(800);
@@ -239,6 +241,7 @@ class FlowExecutor {
         if (fallbackCheck.action === "notify_and_pause" && fallbackCheck.message) {
           try {
             await metaApiClient.sendTextMessage(contactPhone, fallbackCheck.message);
+            this._recordBotMessage(contactPhone, fallbackCheck.message);
           } catch (err) {
             console.error(`❌ Erro ao enviar mensagem amigável de fallback para ${contactPhone}:`, err.message);
           }
@@ -456,6 +459,9 @@ class FlowExecutor {
           break;
       }
 
+      // Registra mensagem enviada pelo robô na conversa local
+      this._recordBotMessage(contactPhone, interpolatedBody, sendResult?.messageId);
+
       // Se o passo não tiver botões nem listas e definir um nextStepId imediato, avança automaticamente
       if (step.type === "text" && step.nextStepId) {
         return this._executeStep(contactPhone, flow, step.nextStepId);
@@ -512,6 +518,21 @@ class FlowExecutor {
     const phone = normalizePhoneNumber(contactPhone);
     this.sessions.delete(phone);
     antiLoopService.resetFallback(phone);
+  }
+
+  /**
+   * Registra mensagem enviada pelo bot no serviço de conversas locais
+   * @private
+   */
+  _recordBotMessage(contactPhone, text, messageId = null) {
+    try {
+      const { conversationService } = require("../services/conversationService");
+      if (conversationService && typeof conversationService.recordBotMessage === "function") {
+        conversationService.recordBotMessage(contactPhone, text, messageId);
+      }
+    } catch (_e) {
+      // Falha silenciosa para prevenir interrupção do fluxo
+    }
   }
 
   /**
