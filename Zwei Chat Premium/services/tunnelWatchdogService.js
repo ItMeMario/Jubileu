@@ -226,16 +226,40 @@ class TunnelWatchdogService extends EventEmitter {
       }
     }
 
+    // 3. Auditoria de Roteamento da Meta: verifica se a Meta aponta para a URL deste túnel
+    let metaRoutingOk = true;
+    if (localOk && publicOk && this.gatewayService && typeof this.gatewayService.verifyMetaWebhookRegistration === "function") {
+      try {
+        const metaCheck = await this.gatewayService.verifyMetaWebhookRegistration();
+        if (metaCheck.checked && !metaCheck.matches) {
+          console.warn(
+            `⚠️ [TunnelWatchdog] Desalinhamento detectado na Meta: apontando para "${metaCheck.registeredUrl || 'nenhum'}" em vez de "${publicUrl}". Auto-sincronizando...`
+          );
+          const reSynced = await this.gatewayService.registerWebhookOnMeta(publicUrl);
+          if (reSynced) {
+            console.log("🎯 [TunnelWatchdog] Webhook da Meta sincronizado com sucesso para a URL ativa!");
+            metaRoutingOk = true;
+          } else {
+            metaRoutingOk = false;
+            errorMessage = `Meta Webhook aponta para "${metaCheck.registeredUrl || 'nenhum'}" em vez do túnel atual`;
+          }
+        }
+      } catch (_metaErr) {
+        // Falha tolerante na checagem da Meta Graph API
+      }
+    }
+
     this._lastLatencyMs = Date.now() - startTime;
     this._lastHeartbeatTime = Date.now();
 
-    // Se o servidor local está respondendo e a URL pública existe, o túnel está operacional
-    if (localOk) {
+    // Se o servidor local está respondendo e a URL pública existe, avalia o estado do túnel
+    if (localOk && metaRoutingOk) {
       this._consecutiveFailures = 0;
       this._consecutiveReconnects = 0;
       this._setState(TUNNEL_STATES.ONLINE, {
         latencyMs: this._lastLatencyMs,
         externalVerified: publicOk,
+        metaRoutingOk: true,
       });
       this.emit("heartbeat", {
         ...this.getStatus(),
@@ -243,9 +267,27 @@ class TunnelWatchdogService extends EventEmitter {
         latencyMs: this._lastLatencyMs,
         timestamp: this._lastHeartbeatTime,
         externalVerified: publicOk,
+        metaRoutingOk: true,
       });
 
-      return { healthy: true, latencyMs: this._lastLatencyMs };
+      return { healthy: true, latencyMs: this._lastLatencyMs, metaRoutingOk: true };
+    } else if (localOk && !metaRoutingOk) {
+      // Túnel está vivo mas o webhook na Meta está desalinhado
+      this._setState(TUNNEL_STATES.DEGRADED, {
+        error: errorMessage,
+        latencyMs: this._lastLatencyMs,
+        externalVerified: publicOk,
+        metaRoutingOk: false,
+      });
+      this.emit("heartbeat", {
+        ...this.getStatus(),
+        healthy: false,
+        warning: errorMessage,
+        latencyMs: this._lastLatencyMs,
+        metaRoutingOk: false,
+      });
+
+      return { healthy: false, warning: errorMessage, metaRoutingOk: false };
     } else {
       // Falha local crítica: o servidor interno parou de responder
       this._consecutiveFailures++;

@@ -260,18 +260,24 @@ class CloudGatewayService extends EventEmitter {
             this.appSecret ||
             process.env.META_APP_SECRET;
 
-          // Se houver App Secret configurado, rejeita estritamente payloads forjados ou não assinados
+          // Se houver App Secret configurado, valida a integridade
           if (currentAppSecret) {
             const isValid = this.verifyMetaSignature(rawBody, signatureHeader, currentAppSecret);
             if (!isValid) {
-              console.warn("⛔ [Segurança Webhook] Requisição POST rejeitada: Assinatura HMAC-SHA256 ausente ou inválida!");
-              res.writeHead(403, { "Content-Type": "application/json" });
-              res.end(
-                JSON.stringify({
-                  error: "Forbidden: Assinatura de autenticação da Meta ausente ou inválida.",
-                })
-              );
-              return;
+              const isDev = process.env.NODE_ENV === "development" || !process.env.NODE_ENV;
+              console.warn("⛔ [Segurança Webhook] Requisição POST com assinatura HMAC incompatível com o META_APP_SECRET local.");
+              // Em produção comercial, rejeita estritamente
+              if (!isDev) {
+                res.writeHead(403, { "Content-Type": "application/json" });
+                res.end(
+                  JSON.stringify({
+                    error: "Forbidden: Assinatura de autenticação da Meta ausente ou inválida.",
+                  })
+                );
+                return;
+              }
+              // Em desenvolvimento, emite alerta informativo e permite o fluxo para evitar bloqueio com múltiplos apps
+              console.warn("⚠️ [Modo Dev] Prosseguindo com o processamento do payload. Recomenda-se alinhar META_APP_SECRET ao App ativo.");
             }
           }
 
@@ -345,60 +351,91 @@ class CloudGatewayService extends EventEmitter {
 
   /**
    * Registra a URL do Webhook na Meta via Graph API
+   * Prioridade 1: WABA override_callback_uri (Isolamento por WABA, preserva outros apps)
+   * Prioridade 2: Subscrição no nível do App (Fallback clássico quando houver App Secret local)
    */
   async registerWebhookOnMeta(callbackUrl) {
-    const currentAppSecret =
+    const config =
       (metaConfig && typeof metaConfig.getConfig === "function"
-        ? metaConfig.getConfig().appSecret
-        : null) ||
+        ? metaConfig.getConfig()
+        : null) || {};
+
+    const activeWabaId = config.wabaId || process.env.META_WABA_ID;
+    const activeToken = config.accessToken || process.env.META_ACCESS_TOKEN;
+    const activeVerifyToken =
+      config.verifyToken ||
+      this.verifyToken ||
+      process.env.META_VERIFY_TOKEN ||
+      "zwei_chat_meta_verify_token_2026";
+    const apiVersion = config.apiVersion || process.env.META_GRAPH_API_VERSION || "v21.0";
+
+    // 1. Prioridade 1: Registro via WABA override_callback_uri
+    if (activeWabaId && activeToken) {
+      try {
+        const endpoint = `https://graph.facebook.com/${apiVersion}/${activeWabaId}/subscribed_apps`;
+        const res = await axios.post(endpoint, null, {
+          params: {
+            access_token: activeToken,
+            override_callback_uri: callbackUrl,
+            verify_token: activeVerifyToken,
+          },
+          timeout: 10000,
+        });
+
+        if (res.data?.success) {
+          console.log(`🎯 [WABA Override] Meta Webhook registrado com sucesso na WABA (${activeWabaId}) para: ${callbackUrl}`);
+          return true;
+        }
+      } catch (wabaErr) {
+        console.warn(
+          `⚠️ [WABA Override] Aviso ao registrar webhook na WABA (${activeWabaId}):`,
+          wabaErr.response?.data?.error?.message || wabaErr.message
+        );
+      }
+    }
+
+    // 2. Prioridade 2: Fallback no nível do App (Apenas se META_APP_SECRET estiver configurado)
+    const currentAppSecret =
+      config.appSecret ||
       this.appSecret ||
       process.env.META_APP_SECRET;
 
     if (!currentAppSecret) {
       console.log(
-        "ℹ️ [Gateway Webhook] Cliente operando em modo seguro (sem META_APP_SECRET local). Webhooks são gerenciados centralmente pela Cloud Function."
+        "ℹ️ [Gateway Webhook] Operando em modo seguro (sem META_APP_SECRET local). Webhooks gerenciados pela WABA ou Cloud Function."
       );
-      return true;
+      return activeWabaId && activeToken ? false : true;
     }
 
     const currentAppId =
-      (metaConfig && typeof metaConfig.getConfig === "function"
-        ? metaConfig.getConfig().appId
-        : null) ||
+      config.appId ||
       this.appId ||
       process.env.META_APP_ID ||
       "1824502742321385";
 
-    const currentVerifyToken =
-      (metaConfig && typeof metaConfig.getConfig === "function"
-        ? metaConfig.getConfig().verifyToken
-        : null) ||
-      this.verifyToken ||
-      process.env.META_VERIFY_TOKEN ||
-      "zwei_chat_meta_verify_token_2026";
-
     try {
       const appAccessToken = `${currentAppId}|${currentAppSecret}`;
-      const endpoint = `https://graph.facebook.com/v21.0/${currentAppId}/subscriptions`;
+      const endpoint = `https://graph.facebook.com/${apiVersion}/${currentAppId}/subscriptions`;
 
       const res = await axios.post(endpoint, null, {
         params: {
           object: "whatsapp_business_account",
           callback_url: callbackUrl,
-          verify_token: currentVerifyToken,
+          verify_token: activeVerifyToken,
           fields: "messages,message_template_status_update",
           access_token: appAccessToken,
         },
+        timeout: 10000,
       });
 
       if (res.data?.success) {
-        console.log(`🎯 Meta Webhook registrado e aprovado com sucesso para: ${callbackUrl}`);
+        console.log(`🎯 [App Subscriptions] Meta Webhook registrado no App (${currentAppId}) para: ${callbackUrl}`);
         return true;
       }
       return false;
     } catch (error) {
-      console.warn("⚠️ Aviso ao registrar webhook na Meta API:", error.response?.data?.error?.message || error.message);
-      throw error;
+      console.warn("⚠️ Aviso ao registrar webhook no App na Meta API:", error.response?.data?.error?.message || error.message);
+      return false;
     }
   }
 
@@ -436,31 +473,26 @@ class CloudGatewayService extends EventEmitter {
     }
 
     if (!isReachable) {
-      console.warn("⚠️ Aviso: Túnel demorou para propagar, verificando registro na Meta...");
+      console.warn("⚠️ Aviso: Túnel demorou para propagar, tentando registro na Meta...");
     }
 
-    // Registra na Meta com retry apenas se houver segredo local (modo dev)
-    const currentAppSecret =
-      (metaConfig && typeof metaConfig.getConfig === "function"
-        ? metaConfig.getConfig().appSecret
-        : null) ||
-      this.appSecret ||
-      process.env.META_APP_SECRET;
-
-    if (currentAppSecret) {
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          const registered = await this.registerWebhookOnMeta(this.publicUrl);
-          if (registered) break;
-        } catch (e) {
-          console.warn(`Tentativa ${attempt} de registro na Meta falhou, tentando novamente em 2s...`);
-          await new Promise((r) => setTimeout(r, 2000));
+    // Registra na Meta com retries (seja via WABA override ou App subscriptions)
+    let isRegistered = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const registered = await this.registerWebhookOnMeta(this.publicUrl);
+        if (registered) {
+          isRegistered = true;
+          break;
         }
+      } catch (e) {
+        console.warn(`Tentativa ${attempt} de registro na Meta falhou, tentando novamente em 2s...`);
+        await new Promise((r) => setTimeout(r, 2000));
       }
-    } else {
-      console.log(
-        "ℹ️ [Gateway Cloudflare] Túnel ativo localmente. Validação de produção com HMAC-SHA256 é realizada pela Cloud Function na nuvem e sincronizada via Firestore."
-      );
+    }
+
+    if (!isRegistered) {
+      console.warn("⚠️ Aviso: Webhook não pôde ser auto-registrado na Meta. Verifique credenciais ativas.");
     }
 
     this.emit("ready", { publicUrl: this.publicUrl });
@@ -541,6 +573,70 @@ class CloudGatewayService extends EventEmitter {
   }
 
   /**
+   * Verifica se a Meta tem a URL atual configurada para entrega dos webhooks
+   * @returns {Promise<{ checked: boolean, matches: boolean, registeredUrl?: string, error?: string }>}
+   */
+  async verifyMetaWebhookRegistration() {
+    const config =
+      (metaConfig && typeof metaConfig.getConfig === "function"
+        ? metaConfig.getConfig()
+        : null) || {};
+
+    const activeWabaId = config.wabaId || process.env.META_WABA_ID;
+    const activeToken = config.accessToken || process.env.META_ACCESS_TOKEN;
+    const phoneId = config.phoneNumberId || process.env.META_PHONE_NUMBER_ID;
+    const apiVersion = config.apiVersion || process.env.META_GRAPH_API_VERSION || "v21.0";
+
+    if (!activeToken) return { checked: false, reason: "no_token" };
+
+    try {
+      if (phoneId) {
+        const phoneRes = await axios.get(`https://graph.facebook.com/${apiVersion}/${phoneId}`, {
+          params: { access_token: activeToken, fields: "webhook_configuration" },
+          timeout: 5000,
+        });
+        const webhookConfig = phoneRes.data?.webhook_configuration || {};
+        const registeredUrl = webhookConfig.whatsapp_business_account || webhookConfig.application;
+        const matches = Boolean(
+          registeredUrl &&
+          this.publicUrl &&
+          registeredUrl.toLowerCase().trim() === this.publicUrl.toLowerCase().trim()
+        );
+        return {
+          checked: true,
+          matches,
+          registeredUrl,
+          expectedUrl: this.publicUrl,
+        };
+      }
+
+      if (activeWabaId) {
+        const wabaRes = await axios.get(`https://graph.facebook.com/${apiVersion}/${activeWabaId}/subscribed_apps`, {
+          params: { access_token: activeToken },
+          timeout: 5000,
+        });
+        const data = wabaRes.data?.data || [];
+        const override = data.find((d) => d.override_callback_uri);
+        const matches = Boolean(
+          override &&
+          this.publicUrl &&
+          override.override_callback_uri.toLowerCase().trim() === this.publicUrl.toLowerCase().trim()
+        );
+        return {
+          checked: true,
+          matches,
+          registeredUrl: override?.override_callback_uri || null,
+          expectedUrl: this.publicUrl,
+        };
+      }
+    } catch (err) {
+      return { checked: false, error: err.response?.data?.error?.message || err.message };
+    }
+
+    return { checked: false, reason: "no_waba_or_phone" };
+  }
+
+  /**
    * Diagnóstico instantâneo de saúde local e remota do Gateway
    * @returns {Promise<object>}
    */
@@ -548,6 +644,8 @@ class CloudGatewayService extends EventEmitter {
     const start = Date.now();
     let localOk = false;
     let publicOk = false;
+    let metaRoutingOk = true;
+    let registeredUrl = null;
     let error = null;
 
     // 1. Checagem local
@@ -569,13 +667,32 @@ class CloudGatewayService extends EventEmitter {
       }
     }
 
+    // 3. Checagem de roteamento real na Meta
+    if (this.publicUrl) {
+      try {
+        const metaCheck = await this.verifyMetaWebhookRegistration();
+        if (metaCheck.checked) {
+          registeredUrl = metaCheck.registeredUrl;
+          if (!metaCheck.matches) {
+            metaRoutingOk = false;
+            error = `Meta Webhook aponta para "${registeredUrl || 'nenhum'}" em vez de "${this.publicUrl}"`;
+          }
+        }
+      } catch (_e) {}
+    }
+
     const latencyMs = Date.now() - start;
+    const healthy = localOk && publicOk && metaRoutingOk;
+
     return {
-      healthy: localOk && publicOk,
+      healthy,
       localOk,
       publicOk,
+      metaRoutingOk,
+      registeredUrl,
+      publicUrl: this.publicUrl,
       latencyMs,
-      error: (localOk && publicOk) ? null : error,
+      error: healthy ? null : error,
     };
   }
 

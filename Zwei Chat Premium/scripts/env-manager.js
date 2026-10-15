@@ -50,16 +50,23 @@ function printStatus() {
 
   let identified = "CUSTOMIZADO / MANUAL";
   if (dev && current.META_PHONE_NUMBER_ID === dev.META_PHONE_NUMBER_ID) {
-    identified = "DESENVOLVIMENTO / TESTES (App Developer)";
+    identified = "DESENVOLVIMENTO / TESTES (App Developer 984356641342628)";
   } else if (prod && current.META_PHONE_NUMBER_ID === prod.META_PHONE_NUMBER_ID) {
-    identified = "PRODUÇÃO (Conta Oficial Meta)";
+    identified = "PRODUÇÃO (App Oficial 1824502742321385)";
+  }
+
+  let appName = "Desconhecido";
+  if (current.META_APP_ID === "984356641342628") {
+    appName = "Zwei chat developer (Testes)";
+  } else if (current.META_APP_ID === "1824502742321385") {
+    appName = "Zwei Chat Oficial (Produção/Embedded Signup)";
   }
 
   console.log(`📌 Perfil Ativo:       ${identified}`);
   console.log(`🌐 NODE_ENV:           ${current.NODE_ENV || "development"}`);
   console.log(`📱 Phone Number ID:    ${current.META_PHONE_NUMBER_ID || "(vazio)"}`);
   console.log(`🏢 WABA ID:            ${current.META_WABA_ID || "(vazio)"}`);
-  console.log(`🆔 Meta App ID:        ${current.META_APP_ID || "(vazio)"}`);
+  console.log(`🆔 Meta App ID:        ${current.META_APP_ID || "(vazio)"} [${appName}]`);
   console.log(`🔑 Access Token:       ${mask(current.META_ACCESS_TOKEN, 6)}`);
   console.log(`🛡️ Verify Token:       ${mask(current.META_VERIFY_TOKEN, 4)}`);
   console.log(`🔥 Firebase Project:   ${current.FIREBASE_PROJECT_ID || "(não configurado)"}`);

@@ -11,6 +11,7 @@ class BotIntegrationService {
     this.isBotEnabled = true;
     this.boundHandler = this._onInboundMessage.bind(this);
     this.isInitialized = false;
+    this.processedMessageIds = new Map();
   }
 
   /**
@@ -32,6 +33,25 @@ class BotIntegrationService {
     if (!this.isBotEnabled) {
       console.log(`ℹ️ Bot desativado temporariamente. Ignorando mensagem de ${message.from}`);
       return;
+    }
+
+    // 🛡️ Deduplicação de Mensagens: previne processamento duplicado caso a mensagem chegue por múltiplos canais (Túnel + Firestore)
+    if (message && message.id) {
+      const now = Date.now();
+      // Limpeza periódica de mensagens com mais de 10 minutos
+      if (this.processedMessageIds.size > 500) {
+        for (const [id, ts] of this.processedMessageIds.entries()) {
+          if (now - ts > 10 * 60 * 1000) {
+            this.processedMessageIds.delete(id);
+          }
+        }
+      }
+
+      if (this.processedMessageIds.has(message.id)) {
+        console.log(`🛡️ [Deduplicação] Mensagem ${message.id} já processada recentemente. Ignorando duplicata.`);
+        return;
+      }
+      this.processedMessageIds.set(message.id, now);
     }
 
     // 🛡️ Isolamento por Contato: se o robô foi pausado para este contato específico (atendimento humano), não responde
