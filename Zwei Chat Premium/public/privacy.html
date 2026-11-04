@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Política de Privacidade - Zwei Chat Premium</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #131b2e;
+      --border: #1e293b;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --primary: #25d366;
+      --primary-hover: #1eb857;
+      --accent: #38bdf8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(37, 211, 102, 0.15);
+      color: var(--primary);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: 2rem;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .updated {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    h2 {
+      font-size: 1.3rem;
+      color: #fff;
+      margin-top: 28px;
+      margin-bottom: 12px;
+      border-left: 3px solid var(--primary);
+      padding-left: 10px;
+    }
+    p, li {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-bottom: 14px;
+    }
+    ul {
+      margin-left: 24px;
+      margin-bottom: 16px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    strong {
+      color: var(--text);
+    }
+    .footer {
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      margin-top: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="badge">WhatsApp Cloud API &amp; Meta Compliant</span>
+      <h1>Política de Privacidade</h1>
+      <p class="updated">Última atualização: Outubro de 2026 | Aplicativo: Zwei Chat Premium</p>
+    </div>
+
+    <section>
+      <h2>1. Visão Geral</h2>
+      <p>O <strong>Zwei Chat Premium</strong> é uma plataforma profissional de atendimento ao cliente, automação e gestão de conversas integrada à API oficial da Meta (WhatsApp Cloud API). Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos os dados dos usuários e das empresas que utilizam a nossa aplicação, em estrita conformidade com a <strong>LGPD (Lei Geral de Proteção de Dados - Lei nº 13.709/2018)</strong> e com os <strong>Termos da Plataforma Meta</strong>.</p>
+    </section>
+
+    <section>
+      <h2>2. Dados Coletados</h2>
+      <p>Para fornecer o serviço de envio e recebimento de mensagens através da API oficial da Meta, coletamos e processamos exclusivamente:</p>
+      <ul>
+        <li><strong>Credenciais de Conexão WhatsApp Business:</strong> Identificador da Conta WhatsApp Business (WABA ID), ID do Número de Telefone (Phone Number ID) e Tokens de Acesso concedidos pelo próprio usuário através do fluxo oficial de autorização da Meta (OAuth / Embedded Signup).</li>
+        <li><strong>Dados de Conversas e Mensagens:</strong> Mensagens de texto, mídias (áudio, imagem, documentos) enviadas e recebidas pelos clientes finais através do número de WhatsApp conectado pela sua empresa.</li>
+        <li><strong>Metadados de Entrega:</strong> Status de entrega (enviada, entregue, lida, falha) e registros de data e hora.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>3. Finalidade do Tratamento de Dados</h2>
+      <p>Os dados tratados destinam-se exclusivamente às seguintes finalidades:</p>
+      <ul>
+        <li>Permitir o envio e recebimento em tempo real de mensagens de suporte e atendimento via WhatsApp.</li>
+        <li>Sincronização de conversas entre os atendentes da sua empresa e os clientes finais.</li>
+        <li>Exibição do histórico de atendimento na interface do Zwei Chat.</li>
+      </ul>
+      <p><strong>NÃO comercializamos, NÃO compartilhamos e NÃO utilizamos dados de mensagens ou contatos para fins de publicidade, marketing de terceiros ou treinamento de modelos de linguagem sem autorização expressa.</strong></p>
+    </section>
+
+    <section>
+      <h2>4. Armazenamento e Segurança da Informação</h2>
+      <p>A segurança dos dados é nossa prioridade máxima:</p>
+      <ul>
+        <li><strong>Criptografia em Trânsito:</strong> Toda comunicação com os servidores da Meta e do Firebase é realizada via HTTPS/TLS com criptografia de ponta a ponta.</li>
+        <li><strong>Assinatura Criptográfica de Webhooks:</strong> Todas as mensagens recebidas são verificadas através de assinatura HMAC-SHA256 para garantir que provêm unicamente dos servidores da Meta.</li>
+        <li><strong>Isolamento Multi-Tenant:</strong> As conversas e dados de cada empresa são estritamente isolados por regras de controle de acesso (Firestore Security Rules), impedindo que qualquer outra empresa tenha acesso aos seus dados.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>5. Integração com a Meta e Provedores Terceiros</h2>
+      <p>Ao utilizar o Zwei Chat Premium, a infraestrutura da Meta Inc. processa as mensagens de acordo com os termos oficiais da Meta para o WhatsApp Business. Recomendamos também a leitura da <a href="https://www.whatsapp.com/legal/business-data-processing-terms" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">Política de Privacidade do WhatsApp Business</a>.</p>
+    </section>
+
+    <section>
+      <h2>6. Direitos do Titular dos Dados (LGPD) e Exclusão</h2>
+      <p>Você e seus clientes possuem o direito de solicitar a confirmação da existência de tratamento, o acesso aos dados, a correção de dados incompletos ou a <strong>exclusão definitiva dos dados</strong>.</p>
+      <p>Para solicitar a exclusão total da sua conta e de todas as mensagens e credenciais vinculadas, consulte as instruções em nossa página de <a href="deletion.html" style="color: var(--accent);">Exclusão de Dados</a> ou contate nosso suporte diretamente.</p>
+    </section>
+
+    <section>
+      <h2>7. Contato e Encarregado de Proteção de Dados (DPO)</h2>
+      <p>Para quaisquer dúvidas, solicitações de privacidade ou direitos relacionados à LGPD, entre em contato:</p>
+      <ul>
+        <li><strong>E-mail de Suporte / DPO:</strong> zweichat@gmail.com</li>
+        <li><strong>Aplicação:</strong> Zwei Chat Premium</li>
+      </ul>
+    </section>
+
+    <div class="footer">
+      <div>&copy; 2026 Zwei Chat Premium. Todos os direitos reservados.</div>
+      <div>
+        <a href="terms.html">Termos de Serviço</a> &bull; 
+        <a href="deletion.html">Exclusão de Dados</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

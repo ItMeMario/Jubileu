@@ -20,7 +20,7 @@ class MetaConfigManager {
 
     this.config = {
       appId: process.env.META_APP_ID || "1824502742321385",
-      configId: process.env.META_CONFIG_ID || "",
+      configId: process.env.META_CONFIG_ID || "2064216567567338",
       phoneNumberId: process.env.META_PHONE_NUMBER_ID || "",
       wabaId: process.env.META_WABA_ID || "",
       accessToken: cryptoStorageService.decrypt(rawAccessToken),
