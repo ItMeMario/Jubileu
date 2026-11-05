@@ -1,6 +1,7 @@
 node_modules/
 .wwebjs_cache
 data/
+diagnostics/
 dist/
 build/
 build-protected/

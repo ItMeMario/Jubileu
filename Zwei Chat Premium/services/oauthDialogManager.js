@@ -42,7 +42,17 @@ class OAuthDialogManager {
         },
       });
 
+      // Remove identificador Electron do User-Agent para compatibilidade plena com o fluxo Embedded Signup v4 da Meta
+      const defaultUa = authWindow.webContents.getUserAgent();
+      if (defaultUa) {
+        authWindow.webContents.setUserAgent(
+          defaultUa.replace(/\s*Electron\/[\d.]+/i, "")
+        );
+      }
+
       let isResolved = false;
+      let capturedWabaId = null;
+      let capturedPhoneId = null;
 
       const finish = (result) => {
         if (!isResolved) {
@@ -56,6 +66,61 @@ class OAuthDialogManager {
       };
 
       /**
+       * Injeta ouvinte de postMessage para capturar o evento WA_EMBEDDED_SIGNUP emitido pela Meta (v3/v4)
+       */
+      const injectMessageListener = () => {
+        if (!authWindow || authWindow.isDestroyed()) return;
+        const script = `
+          (function() {
+            if (window.__waEmbeddedListenerAttached) return;
+            window.__waEmbeddedListenerAttached = true;
+            window.addEventListener('message', function(event) {
+              try {
+                var raw = event.data;
+                var parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                if (
+                  parsed &&
+                  (parsed.type === 'WA_EMBEDDED_SIGNUP' ||
+                    parsed.event === 'FINISH' ||
+                    parsed.event === 'FINISH_ONLY_WABA' ||
+                    parsed.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING')
+                ) {
+                  console.log('__WA_EMBEDDED_SIGNUP__:' + JSON.stringify(parsed));
+                }
+              } catch(e) {}
+            });
+          })();
+        `;
+        authWindow.webContents.executeJavaScript(script).catch(() => {});
+      };
+
+      authWindow.webContents.on("dom-ready", injectMessageListener);
+      authWindow.webContents.on("did-finish-load", injectMessageListener);
+      authWindow.webContents.on("did-frame-finish-load", injectMessageListener);
+
+      // Escuta console-message emitida pelo script injetado para extrair waba_id e phone_number_id
+      authWindow.webContents.on("console-message", (_event, level, message) => {
+        if (typeof message === "string" && message.startsWith("__WA_EMBEDDED_SIGNUP__:")) {
+          try {
+            const rawJson = message.slice("__WA_EMBEDDED_SIGNUP__:".length);
+            const payload = JSON.parse(rawJson);
+            console.log("📩 [OAuthDialog] Evento WA_EMBEDDED_SIGNUP interceptado:", JSON.stringify(payload));
+            const detail = payload.data || payload;
+            if (detail.waba_id && !capturedWabaId) {
+              capturedWabaId = String(detail.waba_id);
+              console.log(`🎯 [OAuthDialog] WABA ID capturado via evento Meta: ${capturedWabaId}`);
+            }
+            if (detail.phone_number_id && !capturedPhoneId) {
+              capturedPhoneId = String(detail.phone_number_id);
+              console.log(`📱 [OAuthDialog] Phone Number ID capturado via evento Meta: ${capturedPhoneId}`);
+            }
+          } catch (e) {
+            console.warn("Aviso ao processar mensagem do Embedded Signup:", e.message);
+          }
+        }
+      });
+
+      /**
        * Inspeciona a URL de navegação para identificar o retorno do OAuth
        * @param {string} navUrl
        */
@@ -65,13 +130,34 @@ class OAuthDialogManager {
         try {
           const parsed = new URL(navUrl);
 
-          // Verifica se atingiu a URL de retorno ou possui os parâmetros code / error
+          const isFacebookHost =
+            parsed.hostname === "facebook.com" ||
+            parsed.hostname.endsWith(".facebook.com");
+
+          // Verifica se atingiu a URL oficial de callback (ignorando navegações intermediárias internas do facebook.com)
           const isRedirectTarget =
             navUrl.startsWith(redirectUri) ||
             parsed.pathname.includes("/auth/handler") ||
             parsed.pathname.includes("login_success") ||
-            parsed.searchParams.has("code") ||
-            parsed.searchParams.has("error");
+            (!isFacebookHost &&
+              (parsed.searchParams.has("code") ||
+                parsed.searchParams.has("error")));
+
+          // Inspeciona se a URL de callback ou hash traz waba_id / phone_number_id
+          const urlWaba = parsed.searchParams.get("waba_id") || parsed.searchParams.get("wabaId");
+          const urlPhone = parsed.searchParams.get("phone_number_id") || parsed.searchParams.get("phoneNumberId");
+          if (urlWaba && !capturedWabaId) capturedWabaId = urlWaba;
+          if (urlPhone && !capturedPhoneId) capturedPhoneId = urlPhone;
+
+          if (parsed.hash) {
+            try {
+              const hashParams = new URLSearchParams(parsed.hash.replace(/^#/, ""));
+              const hashWaba = hashParams.get("waba_id") || hashParams.get("wabaId");
+              const hashPhone = hashParams.get("phone_number_id") || hashParams.get("phoneNumberId");
+              if (hashWaba && !capturedWabaId) capturedWabaId = hashWaba;
+              if (hashPhone && !capturedPhoneId) capturedPhoneId = hashPhone;
+            } catch (hashErr) {}
+          }
 
           if (isRedirectTarget) {
             const code = parsed.searchParams.get("code");
@@ -93,7 +179,15 @@ class OAuthDialogManager {
                 return;
               }
 
-              finish({ success: true, code, redirectUri, state: incomingState });
+              console.log(`✅ [OAuthDialog] Autorização Meta bem-sucedida. WABA pré-resolvido: ${capturedWabaId || "nenhum"}, Phone pré-resolvido: ${capturedPhoneId || "nenhum"}`);
+              finish({
+                success: true,
+                code,
+                redirectUri,
+                state: incomingState,
+                preResolvedWabaId: capturedWabaId,
+                preResolvedPhoneId: capturedPhoneId,
+              });
             } else if (error) {
               finish({
                 success: false,

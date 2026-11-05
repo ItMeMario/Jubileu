@@ -408,7 +408,7 @@ async function handleOAuthExchangeRequest(req, res) {
       }
     }
 
-    const { code, redirectUri } = body || {};
+    const { code, redirectUri, preResolvedWabaId, preResolvedPhoneId } = body || {};
 
     if (!code || typeof code !== "string" || !code.trim()) {
       return res.status(400).json({
@@ -464,39 +464,150 @@ async function handleOAuthExchangeRequest(req, res) {
       });
     }
 
-    // 3. Inspeção e Resolução de WABA com o App Access Token (no servidor seguro)
-    let wabaId = null;
-    try {
-      const debugRes = await axios.get(
-        `https://graph.facebook.com/${apiVersion}/debug_token`,
-        {
-          params: {
-            input_token: userAccessToken,
-            access_token: `${appId}|${appSecret}`,
-          },
-          timeout: 10000,
-        }
-      );
+    // 3. Inspeção e Resolução de WABA multi-nível (no servidor seguro)
+    let wabaId = preResolvedWabaId ? String(preResolvedWabaId).trim() : null;
+    let primaryPhone = null;
 
-      const granularScopes = debugRes.data?.data?.granular_scopes || [];
-      const wabaScope = granularScopes.find(
-        (s) => s.scope === "whatsapp_business_management"
-      );
-
-      if (wabaScope && Array.isArray(wabaScope.target_ids) && wabaScope.target_ids.length > 0) {
-        wabaId = wabaScope.target_ids[0];
-      }
-    } catch (debugErr) {
-      console.warn("Aviso no debug_token no servidor (tentando método alternativo):", debugErr.message);
+    if (wabaId) {
+      console.log(`⚡ [Cloud OAuthExchange] Usando WABA ID pré-resolvido: ${wabaId}`);
     }
 
-    // 4. Fallback de busca de WABA caso debug_token não tenha target_ids
+    // NÍVEL 1: Inspeciona debug_token com App Secret (escopos granulares estendidos)
     if (!wabaId) {
       try {
+        console.log("🔍 [Cloud OAuthExchange] Nível 1: Inspecionando debug_token com appSecret...");
+        const debugRes = await axios.get(
+          `https://graph.facebook.com/${apiVersion}/debug_token`,
+          {
+            params: {
+              input_token: userAccessToken,
+              access_token: `${appId}|${appSecret}`,
+            },
+            timeout: 10000,
+          }
+        );
+
+        const granularScopes = debugRes.data?.data?.granular_scopes || [];
+        const targetScopeNames = [
+          "whatsapp_business_management",
+          "whatsapp_business_messaging",
+          "business_management",
+        ];
+
+        for (const scopeName of targetScopeNames) {
+          const match = granularScopes.find((s) => s.scope === scopeName);
+          if (match && Array.isArray(match.target_ids) && match.target_ids.length > 0) {
+            wabaId = match.target_ids[0];
+            console.log(`✅ [Cloud OAuthExchange] WABA ID encontrado via debug_token (${scopeName}): ${wabaId}`);
+            break;
+          }
+        }
+      } catch (debugErr) {
+        console.warn("⚠️ [Cloud OAuthExchange] Nível 1 (debug_token) falhou:", debugErr.response?.data?.error?.message || debugErr.message);
+      }
+    }
+
+    // NÍVEL 2: Portfólio de Negócios (/me?fields=businesses...)
+    if (!wabaId) {
+      try {
+        console.log("🔍 [Cloud OAuthExchange] Nível 2: Consultando portfólio de negócios (/me?fields=businesses)...");
+        const businessesRes = await axios.get(
+          `https://graph.facebook.com/${apiVersion}/me`,
+          {
+            params: {
+              access_token: userAccessToken,
+              fields: "id,name,businesses{id,name,owned_whatsapp_business_accounts{id,name,currency,timezone_id,phone_numbers{id,display_phone_number,verified_name,quality_rating,code_verification_status}},client_whatsapp_business_accounts{id,name,phone_numbers{id,display_phone_number,verified_name}}}",
+            },
+            timeout: 10000,
+          }
+        );
+
+        const businesses = businessesRes.data?.businesses?.data || [];
+        console.log(`🔍 [Cloud OAuthExchange] Nível 2: ${businesses.length} empresa(s) retornada(s).`);
+
+        for (const b of businesses) {
+          const ownedAccounts = b.owned_whatsapp_business_accounts?.data || [];
+          if (ownedAccounts.length > 0) {
+            wabaId = ownedAccounts[0].id;
+            console.log(`✅ [Cloud OAuthExchange] WABA ID encontrado via businesses.owned (${b.name || b.id}): ${wabaId}`);
+
+            const phones = ownedAccounts[0].phone_numbers?.data || [];
+            if (phones.length > 0) {
+              primaryPhone = phones.find(p => p.code_verification_status === "VERIFIED" || p.verified_name) || phones[0];
+              console.log(`📱 [Cloud OAuthExchange] Linha primária identificada: ${primaryPhone.display_phone_number || primaryPhone.id}`);
+            }
+            break;
+          }
+
+          const clientAccounts = b.client_whatsapp_business_accounts?.data || [];
+          if (clientAccounts.length > 0) {
+            wabaId = clientAccounts[0].id;
+            console.log(`✅ [Cloud OAuthExchange] WABA ID encontrado via businesses.client (${b.name || b.id}): ${wabaId}`);
+
+            const phones = clientAccounts[0].phone_numbers?.data || [];
+            if (phones.length > 0) {
+              primaryPhone = phones.find(p => p.code_verification_status === "VERIFIED" || p.verified_name) || phones[0];
+            }
+            break;
+          }
+        }
+      } catch (bizErr) {
+        console.warn("⚠️ [Cloud OAuthExchange] Nível 2 falhou, tentando fallback iterativo:", bizErr.response?.data?.error?.message || bizErr.message);
+
+        try {
+          const rawBizRes = await axios.get(
+            `https://graph.facebook.com/${apiVersion}/me/businesses`,
+            {
+              params: { access_token: userAccessToken, fields: "id,name" },
+              timeout: 10000,
+            }
+          );
+
+          const rawBusinesses = rawBizRes.data?.data || [];
+          for (const b of rawBusinesses) {
+            try {
+              const ownedRes = await axios.get(
+                `https://graph.facebook.com/${apiVersion}/${b.id}/owned_whatsapp_business_accounts`,
+                {
+                  params: {
+                    access_token: userAccessToken,
+                    fields: "id,name,phone_numbers{id,display_phone_number,verified_name,quality_rating,code_verification_status}",
+                  },
+                  timeout: 10000,
+                }
+              );
+
+              const ownedList = ownedRes.data?.data || [];
+              if (ownedList.length > 0) {
+                wabaId = ownedList[0].id;
+                console.log(`✅ [Cloud OAuthExchange] WABA ID encontrado via iterativo (${b.name || b.id}): ${wabaId}`);
+                const phones = ownedList[0].phone_numbers?.data || [];
+                if (phones.length > 0) {
+                  primaryPhone = phones.find(p => p.code_verification_status === "VERIFIED" || p.verified_name) || phones[0];
+                }
+                break;
+              }
+            } catch (innerErr) {
+              console.warn(`Aviso ao consultar WABAs da empresa ${b.id}:`, innerErr.message);
+            }
+          }
+        } catch (rawBizErr) {
+          console.warn("Aviso ao buscar /me/businesses iterativo:", rawBizErr.message);
+        }
+      }
+    }
+
+    // NÍVEL 3: Contas atribuídas/delegadas (/me/assigned_whatsapp_business_accounts)
+    if (!wabaId) {
+      try {
+        console.log("🔍 [Cloud OAuthExchange] Nível 3: Consultando contas atribuídas (/me/assigned_whatsapp_business_accounts)...");
         const sharedWabaRes = await axios.get(
           `https://graph.facebook.com/${apiVersion}/me/assigned_whatsapp_business_accounts`,
           {
-            params: { access_token: userAccessToken },
+            params: {
+              access_token: userAccessToken,
+              fields: "id,name,phone_numbers{id,display_phone_number,verified_name,quality_rating,code_verification_status}",
+            },
             timeout: 10000,
           }
         );
@@ -504,16 +615,50 @@ async function handleOAuthExchangeRequest(req, res) {
         const accounts = sharedWabaRes.data?.data || [];
         if (accounts.length > 0) {
           wabaId = accounts[0].id;
+          console.log(`✅ [Cloud OAuthExchange] WABA ID encontrado via assigned_whatsapp_business_accounts: ${wabaId}`);
+          const phones = accounts[0].phone_numbers?.data || [];
+          if (phones.length > 0) {
+            primaryPhone = phones.find(p => p.code_verification_status === "VERIFIED" || p.verified_name) || phones[0];
+          }
         }
       } catch (fallbackErr) {
-        console.warn("Aviso ao buscar WABAs atribuídos:", fallbackErr.message);
+        console.warn("⚠️ [Cloud OAuthExchange] Nível 3 falhou:", fallbackErr.response?.data?.error?.message || fallbackErr.message);
       }
     }
 
-    // 5. Busca dados do número primário se wabaId estiver disponível
-    let primaryPhone = null;
-    if (wabaId) {
+    // NÍVEL 4: Borda direta de contas (/me/whatsapp_business_accounts)
+    if (!wabaId) {
       try {
+        console.log("🔍 [Cloud OAuthExchange] Nível 4: Consultando borda direta (/me/whatsapp_business_accounts)...");
+        const directWabaRes = await axios.get(
+          `https://graph.facebook.com/${apiVersion}/me/whatsapp_business_accounts`,
+          {
+            params: {
+              access_token: userAccessToken,
+              fields: "id,name,phone_numbers{id,display_phone_number,verified_name,quality_rating,code_verification_status}",
+            },
+            timeout: 10000,
+          }
+        );
+
+        const directAccounts = directWabaRes.data?.data || [];
+        if (directAccounts.length > 0) {
+          wabaId = directAccounts[0].id;
+          console.log(`✅ [Cloud OAuthExchange] WABA ID encontrado via direct_whatsapp_business_accounts: ${wabaId}`);
+          const phones = directAccounts[0].phone_numbers?.data || [];
+          if (phones.length > 0) {
+            primaryPhone = phones.find(p => p.code_verification_status === "VERIFIED" || p.verified_name) || phones[0];
+          }
+        }
+      } catch (directErr) {
+        console.warn("⚠️ [Cloud OAuthExchange] Nível 4 falhou:", directErr.response?.data?.error?.message || directErr.message);
+      }
+    }
+
+    // 5. Busca dados do número primário se wabaId estiver disponível e primaryPhone ainda não foi resolvido
+    if (wabaId && !primaryPhone) {
+      try {
+        console.log(`📱 [Cloud OAuthExchange] Consultando números para o WABA ${wabaId}...`);
         const phoneRes = await axios.get(
           `https://graph.facebook.com/${apiVersion}/${wabaId}/phone_numbers`,
           {
@@ -527,10 +672,16 @@ async function handleOAuthExchangeRequest(req, res) {
 
         const phones = phoneRes.data?.data || [];
         if (phones.length > 0) {
-          primaryPhone = phones[0];
+          if (preResolvedPhoneId) {
+            primaryPhone = phones.find(p => String(p.id) === String(preResolvedPhoneId)) || null;
+          }
+          if (!primaryPhone) {
+            primaryPhone = phones.find(p => p.code_verification_status === "VERIFIED" || p.verified_name) || phones[0];
+          }
+          console.log(`📱 [Cloud OAuthExchange] Linha primária selecionada: ${primaryPhone.display_phone_number || primaryPhone.id} (ID: ${primaryPhone.id})`);
         }
       } catch (phoneErr) {
-        console.warn("Aviso ao buscar dados do telefone no servidor:", phoneErr.message);
+        console.warn("⚠️ [Cloud OAuthExchange] Aviso ao buscar dados do telefone no servidor:", phoneErr.response?.data?.error?.message || phoneErr.message);
       }
     }
 

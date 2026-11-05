@@ -113,12 +113,38 @@ class StoragePathsService {
   }
 
   /**
+   * Obtém o diretório seguro para gravação de relatórios de diagnóstico e telemetria
+   * @returns {string}
+   */
+  getDiagnosticsDir() {
+    const dir = path.join(this.getUserDataDir(), "diagnostics");
+    if (!fs.existsSync(dir)) {
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+      } catch (e) {
+        console.warn("⚠️ Não foi possível criar diagnosticsDir:", e.message);
+      }
+    }
+    return dir;
+  }
+
+  /**
+   * Obtém o caminho completo para um arquivo de diagnóstico
+   * @param {string} [filename="last-onboarding-attempt.json"]
+   * @returns {string}
+   */
+  getDiagnosticsPath(filename = "last-onboarding-attempt.json") {
+    return path.join(this.getDiagnosticsDir(), filename);
+  }
+
+  /**
    * Inicializa e valida todos os diretórios essenciais
    */
   initialize() {
     this.getUserDataDir();
     this.getDataDir();
     this.getEnvPath();
+    this.getDiagnosticsDir();
   }
 }
 

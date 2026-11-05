@@ -17,10 +17,16 @@ if (fs.existsSync(envPath)) {
 class MetaConfigManager {
   constructor() {
     const rawAccessToken = process.env.META_ACCESS_TOKEN || "";
+    const resolvedAppId = process.env.META_APP_ID || "1824502742321385";
+    const defaultConfigId =
+      resolvedAppId === "1824502742321385" ? "2064216567567338" : "";
 
     this.config = {
-      appId: process.env.META_APP_ID || "1824502742321385",
-      configId: process.env.META_CONFIG_ID || "2064216567567338",
+      appId: resolvedAppId,
+      configId:
+        process.env.META_CONFIG_ID !== undefined
+          ? process.env.META_CONFIG_ID
+          : defaultConfigId,
       phoneNumberId: process.env.META_PHONE_NUMBER_ID || "",
       wabaId: process.env.META_WABA_ID || "",
       accessToken: cryptoStorageService.decrypt(rawAccessToken),

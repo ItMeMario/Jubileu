@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld("zweiPremiumApi", {
   startEmbeddedSignup: () => ipcRenderer.invoke("meta:start-embedded-signup"),
   completeOnboarding: (data) => ipcRenderer.invoke("meta:complete-onboarding", data),
   disconnectAccount: () => ipcRenderer.invoke("meta:disconnect-account"),
+  getLastOnboardingDiagnostics: () => ipcRenderer.invoke("meta:get-last-diagnostics"),
 
   // 2. Message Templates
   syncTemplates: () => ipcRenderer.invoke("templates:sync"),

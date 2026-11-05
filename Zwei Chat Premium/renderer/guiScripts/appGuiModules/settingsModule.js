@@ -146,7 +146,9 @@ export function initSettings(api, callbacks = {}) {
           console.log("Onboarding cancelado pelo usuário.");
         } else {
           const errDetail = res?.error || "Não foi possível concluir o vínculo com a Meta.";
-          await customAlert(`⚠️ Aviso de Conexão: ${errDetail}`);
+          await customAlert(
+            `⚠️ Aviso de Conexão: ${errDetail}\n\n💡 Dica de Suporte: Você pode consultar ou copiar o Relatório de Diagnóstico completo em "Opções Avançadas & Suporte Técnico".`
+          );
         }
       } catch (err) {
         await customAlert(`❌ Erro ao abrir janela de conexão: ${err.message}`);
@@ -288,6 +290,71 @@ export function initSettings(api, callbacks = {}) {
       } finally {
         btnTestMetaConfig.disabled = false;
         btnTestMetaConfig.textContent = "🔍 Testar Conexão";
+      }
+    });
+  }
+
+  // ====================================================
+  // 6. AÇÃO: VISUALIZAR E COPIAR DIAGNÓSTICO DE ONBOARDING
+  // ====================================================
+  const btnViewDiag = $("#btn-view-onboarding-diag");
+  const btnCopyDiag = $("#btn-copy-onboarding-diag");
+
+  if (btnViewDiag) {
+    btnViewDiag.addEventListener("click", async () => {
+      try {
+        if (typeof api.getLastOnboardingDiagnostics !== "function") {
+          await customAlert("API de diagnóstico não disponível nesta versão.");
+          return;
+        }
+
+        const diag = await api.getLastOnboardingDiagnostics();
+        if (!diag) {
+          await customAlert("Nenhuma tentativa recente de onboarding foi registrada ainda.");
+          return;
+        }
+
+        const stagesText = Array.isArray(diag.stages)
+          ? diag.stages.map((s) => `  • [${s.status}] ${s.stage} (${s.durationMs || 0}ms)`).join("\n")
+          : "  Nenhuma etapa registrada";
+
+        const summary =
+          `📊 Relatório da Última Conexão com a Meta\n\n` +
+          `• Horário: ${diag.timestamp || "--"}\n` +
+          `• App ID: ${diag.appId || "--"}\n` +
+          `• Config ID: ${diag.configId || "--"}\n` +
+          `• Sucesso: ${diag.success ? "✅ SIM" : "❌ NÃO"}\n` +
+          `• Erro: ${diag.error || "Nenhum erro registrado"}\n\n` +
+          `🏢 Identificação:\n` +
+          `• WABA ID: ${diag.discovered?.wabaId || "Não identificado"}\n` +
+          `• Telefone: ${diag.discovered?.displayPhoneNumber || diag.discovered?.phoneNumberId || "Não identificado"}\n\n` +
+          `⚙️ Etapas de Execução:\n${stagesText}`;
+
+        await customAlert(summary);
+      } catch (e) {
+        await customAlert(`Erro ao consultar diagnóstico: ${e.message}`);
+      }
+    });
+  }
+
+  if (btnCopyDiag) {
+    btnCopyDiag.addEventListener("click", async () => {
+      try {
+        if (typeof api.getLastOnboardingDiagnostics !== "function") {
+          await customAlert("API de diagnóstico não disponível nesta versão.");
+          return;
+        }
+
+        const diag = await api.getLastOnboardingDiagnostics();
+        if (!diag) {
+          await customAlert("Nenhum relatório de diagnóstico encontrado para copiar.");
+          return;
+        }
+
+        await navigator.clipboard.writeText(JSON.stringify(diag, null, 2));
+        await customAlert("✅ Relatório de diagnóstico completo copiado para a área de transferência! Envie para o suporte técnico se necessário.");
+      } catch (e) {
+        await customAlert(`Erro ao copiar relatório: ${e.message}`);
       }
     });
   }

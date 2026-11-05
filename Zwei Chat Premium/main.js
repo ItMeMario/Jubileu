@@ -150,7 +150,9 @@ function registerIpcHandlers() {
       // Troca o código obtido pelas credenciais completas e ativa a conta
       const onboardingResult = await metaOnboardingService.completeOnboarding(
         authResult.code,
-        authResult.redirectUri
+        authResult.redirectUri,
+        authResult.preResolvedWabaId || null,
+        authResult.preResolvedPhoneId || null
       );
 
       if (
@@ -173,12 +175,16 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle("meta:complete-onboarding", async (_event, { authCode, redirectUri }) => {
-    return metaOnboardingService.completeOnboarding(authCode, redirectUri);
+  ipcMain.handle("meta:complete-onboarding", async (_event, { authCode, redirectUri, preResolvedWabaId, preResolvedPhoneId }) => {
+    return metaOnboardingService.completeOnboarding(authCode, redirectUri, preResolvedWabaId, preResolvedPhoneId);
   });
 
   ipcMain.handle("meta:disconnect-account", async () => {
     return metaOnboardingService.disconnectAccount();
+  });
+
+  ipcMain.handle("meta:get-last-diagnostics", () => {
+    return metaOnboardingService.getLastDiagnosticsReport();
   });
 
   // 2. Message Templates
