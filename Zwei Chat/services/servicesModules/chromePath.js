@@ -16,17 +16,61 @@ function getChromeExecutablePath() {
     }
 }
 
+const LAUNCH_TIMEOUT_MS = 90000;
+const AUTH_TIMEOUT_MS = 90000;
+
 const puppeteerArgs = [
-    '--no-sandbox', 
+    '--window-position=-10000,-10000',
+    '--no-sandbox',
     '--disable-setuid-sandbox',
     '--disable-dev-shm-usage',
     '--disable-accelerated-2d-canvas',
     '--no-first-run',
     '--no-zygote',
-    '--disable-gpu'
+    '--disable-gpu',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-ipc-flooding-protection',
+    '--disable-extensions',
+    '--disable-default-apps',
+    '--disable-sync',
+    '--disable-translate',
+    '--hide-scrollbars',
+    '--mute-audio',
+    '--disable-software-rasterizer',
+    '--disable-dev-tools',
+    '--disable-webgl',
+    '--disable-threaded-animation',
+    '--disable-threaded-scrolling',
+    '--disable-in-process-stack-traces',
+    '--disable-histogram-customizer',
+    '--disable-gl-extensions',
+    '--disable-composited-antialiasing',
+    '--disable-canvas-aa',
+    '--disable-3d-apis',
+    '--disable-breakpad',
+    '--disable-component-update',
+    '--disable-print-preview',
+    '--disable-background-networking',
+    '--disable-features=TranslateUI,AudioServiceOutOfProcess,IsolateOrigins,site-per-process',
+    '--disable-blink-features=AutomationControlled',
 ];
+
+function getPuppeteerOptions(overrides = {}) {
+    return {
+        executablePath: getChromeExecutablePath(),
+        headless: true,
+        timeout: LAUNCH_TIMEOUT_MS,
+        args: [...puppeteerArgs],
+        ...overrides,
+    };
+}
 
 module.exports = {
     getChromeExecutablePath,
-    puppeteerArgs
+    puppeteerArgs,
+    getPuppeteerOptions,
+    LAUNCH_TIMEOUT_MS,
+    AUTH_TIMEOUT_MS,
 };

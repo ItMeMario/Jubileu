@@ -4,10 +4,16 @@ const path = require("path");
 const fs = require("fs").promises;
 const { debug } = require("./debugService");
 const pathHelper = require("../utils/pathHelper");
+const {
+    safeDestroyClient,
+    ensureSessionUnlocked,
+    cleanupBaseSessionsLocks,
+} = require("../utils/processCleanup");
+const { buildFriendlyBrowserError } = require("../utils/browserErrorHelper");
 
 // Shared modules
 const { SERVICE_STATUS } = require("./servicesModules/constants");
-const { getChromeExecutablePath } = require("./servicesModules/chromePath");
+const { getPuppeteerOptions, AUTH_TIMEOUT_MS } = require("./servicesModules/chromePath");
 
 // Dee Jay modules
 const deeJayDb = require("./deeJayServiceModules/deeJayDb");
@@ -19,6 +25,7 @@ const DEE_JAY_STATUS = SERVICE_STATUS;
 class DeeJayService {
     constructor() {
         this.clients = new Map(); // instanceId -> { client, status, name, qrCode }
+        this.startingInstances = new Set(); // Lock síncrono para evitar inicializações simultâneas
         this.isRunning = false;
         this.config = {
             minIntervalMinutes: 1,
@@ -68,6 +75,9 @@ class DeeJayService {
         } catch (error) {
             console.error("Erro ao resetar status das instâncias Dee Jay:", error);
         }
+
+        // Limpa locks residuais / processos Chrome órfãos de fechamentos abruptos anteriores
+        await cleanupBaseSessionsLocks(this.getBaseSessionPath(), "DeeJay");
 
         // Carrega instâncias cadastradas no banco para a memória
         try {
@@ -132,40 +142,36 @@ class DeeJayService {
             throw new Error("Instância não encontrada na memória.");
         }
 
-        if (instanceData.client) {
-            await debug(`Dee Jay: Instância ${instanceId} já está rodando.`);
+        if (this.startingInstances.has(instanceId) || instanceData.client) {
+            await debug(`Dee Jay: Instância ${instanceId} já está em inicialização ou rodando.`);
             return;
         }
 
-        await debug(`Dee Jay: Iniciando cliente para ${instanceId}...`);
-
-        const executablePath = getChromeExecutablePath();
-        const client = new Client({
-            authStrategy: new LocalAuth({
-                clientId: instanceId,
-                dataPath: this.getBaseSessionPath(),
-            }),
-            puppeteer: {
-                executablePath: executablePath,
-                headless: true,
-                args: [
-                    '--window-position=-10000,-10000',
-                    '--no-sandbox', 
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--no-first-run',
-                    '--no-zygote',
-                    '--disable-gpu'
-                ]
-            }
-        });
-
-        instanceData.client = client;
-        instanceData.status = SERVICE_STATUS.CONNECTING;
-        this.clients.set(instanceId, instanceData);
+        this.startingInstances.add(instanceId);
+        let client = null;
+        let unlockResult = { hadLock: false, lockRemoved: false };
+        let launchStartedAt = Date.now();
 
         try {
+            await debug(`Dee Jay: Iniciando cliente para ${instanceId}...`);
+
+            const sessionDir = path.join(this.getBaseSessionPath(), `session-${instanceId}`);
+            unlockResult = await ensureSessionUnlocked(sessionDir, `DeeJay ${instanceId}`);
+            launchStartedAt = Date.now();
+
+            client = new Client({
+                authStrategy: new LocalAuth({
+                    clientId: instanceId,
+                    dataPath: this.getBaseSessionPath(),
+                }),
+                authTimeoutMs: AUTH_TIMEOUT_MS,
+                puppeteer: getPuppeteerOptions(),
+            });
+
+            instanceData.client = client;
+            instanceData.status = SERVICE_STATUS.CONNECTING;
+            this.clients.set(instanceId, instanceData);
+
             await this.dbUpdateDeeJayInstanceStatus(instanceId, SERVICE_STATUS.CONNECTING);
             this.emit('instance-update', { instanceId, status: SERVICE_STATUS.CONNECTING });
 
@@ -212,20 +218,33 @@ class DeeJayService {
             await debug(`Dee Jay: Cliente inicializado com sucesso para ${instanceId}`);
 
         } catch (e) {
-            console.error(`Dee Jay: ERRO ao iniciar instância ${instanceId}:`, e);
+            const friendlyErr = buildFriendlyBrowserError(e, {
+                elapsedMs: Date.now() - launchStartedAt,
+                hadRemainingLockBeforeLaunch: unlockResult.hadLock && !unlockResult.lockRemoved,
+            });
+            console.error(`Dee Jay: ERRO ao iniciar instância ${instanceId} [${friendlyErr.code}]:`, e);
+            if (client) {
+                try {
+                    client.removeAllListeners();
+                    await safeDestroyClient(client, `DeeJay ${instanceId} (falha na inicialização)`);
+                } catch (cleanupErr) {
+                    console.warn(`Dee Jay: Erro ao limpar cliente após falha (${instanceId}):`, cleanupErr.message);
+                }
+            }
             instanceData.client = null;
             instanceData.status = SERVICE_STATUS.DISCONNECTED;
             instanceData.qrCode = null;
             await this.dbUpdateDeeJayInstanceStatus(instanceId, SERVICE_STATUS.DISCONNECTED);
-            this.emit('instance-update', { instanceId, status: SERVICE_STATUS.DISCONNECTED, error: e.message });
-            throw e;
+            this.emit('instance-update', { instanceId, status: SERVICE_STATUS.DISCONNECTED, error: friendlyErr.userMessage });
+            throw friendlyErr;
+        } finally {
+            this.startingInstances.delete(instanceId);
         }
     }
 
     async stopInstance(instanceId) {
         const data = this.clients.get(instanceId);
         if (data && data.client) {
-            const { safeDestroyClient } = require("../utils/processCleanup");
             await safeDestroyClient(data.client, `DeeJay ${instanceId}`);
             data.client = null;
             data.status = SERVICE_STATUS.DISCONNECTED;
@@ -322,13 +341,13 @@ class DeeJayService {
         await this.stopLoop();
 
         const instanceIds = Array.from(this.clients.keys());
-        for (const instanceId of instanceIds) {
-            try {
-                await this.stopInstance(instanceId);
-            } catch (error) {
-                console.error(`Erro ao parar instância Dee Jay ${instanceId}:`, error.message);
-            }
-        }
+        await Promise.allSettled(
+            instanceIds.map((instanceId) =>
+                this.stopInstance(instanceId).catch((error) => {
+                    console.error(`Erro ao parar instância Dee Jay ${instanceId}:`, error.message);
+                })
+            )
+        );
         console.log("✅ Dee Jay: Todas as instâncias paradas.");
     }
 }

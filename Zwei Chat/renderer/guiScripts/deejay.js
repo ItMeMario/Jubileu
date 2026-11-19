@@ -6,6 +6,7 @@ let djInstances = [];
 let djMessages = [];
 let djLoopActive = false;
 const djInstanceStatuses = {}; // instanceId => { status, qrCode }
+const djPendingActions = new Set(); // instanceId em operação de conectar/desconectar
 let djInitialized = false;
 
 // DOM Elements
@@ -122,6 +123,39 @@ async function loadDeeJayMessages() {
   }
 }
 
+function getDjCardButtonState(status, isPending) {
+  if (status === "connected") {
+    return {
+      label: isPending ? "Desconectando..." : "Desconectar",
+      className: "btn btn-danger dj-btn-connect-card",
+      disabled: isPending,
+      action: "stop"
+    };
+  }
+  if (status === "qr_pending") {
+    return {
+      label: isPending ? "Cancelando..." : "Cancelar",
+      className: "btn btn-danger dj-btn-connect-card",
+      disabled: isPending,
+      action: "stop"
+    };
+  }
+  if (status === "connecting" || status === "authenticated" || isPending) {
+    return {
+      label: "Conectando...",
+      className: "btn btn-primary dj-btn-connect-card",
+      disabled: true,
+      action: "none"
+    };
+  }
+  return {
+    label: "Conectar",
+    className: "btn btn-primary dj-btn-connect-card",
+    disabled: false,
+    action: "start"
+  };
+}
+
 function renderDeeJayInstances() {
   if (!djInstancesList) return;
   djInstancesList.innerHTML = "";
@@ -133,6 +167,8 @@ function renderDeeJayInstances() {
   
   djInstances.forEach(inst => {
     const statusData = djInstanceStatuses[inst.instanceId] || { status: "disconnected" };
+    const isPending = djPendingActions.has(inst.instanceId);
+    const btnState = getDjCardButtonState(statusData.status, isPending);
     const card = document.createElement("div");
     card.className = "dj-card";
     card.id = `dj-card-${inst.instanceId}`;
@@ -175,28 +211,36 @@ function renderDeeJayInstances() {
         </div>
       </div>
       <div class="dj-card-actions">
-        <button class="dj-btn-delete-card" title="Excluir Instância">🗑️</button>
-        <button class="btn ${statusData.status === "connected" ? "btn-danger" : "btn-primary"} dj-btn-connect-card">
-          ${statusData.status === "connected" ? "Desconectar" : "Conectar"}
+        <button class="dj-btn-delete-card" title="Excluir Instância" ${isPending ? "disabled" : ""}>🗑️</button>
+        <button class="${btnState.className}" ${btnState.disabled ? "disabled" : ""}>
+          ${btnState.label}
         </button>
       </div>
     `;
     
     card.querySelector(".dj-btn-connect-card").addEventListener("click", async () => {
-      const btn = card.querySelector(".dj-btn-connect-card");
-      btn.disabled = true;
+      if (djPendingActions.has(inst.instanceId) || btnState.action === "none") return;
+
+      djPendingActions.add(inst.instanceId);
+      renderDeeJayInstances();
       try {
-        if (statusData.status === "disconnected" || statusData.status === "auth_failure") {
-          btn.textContent = "Conectando...";
-          await window.deeJayAPI.startInstance(inst.instanceId);
-        } else {
-          btn.textContent = "Desconectar...";
+        if (btnState.action === "start") {
+          const res = await window.deeJayAPI.startInstance(inst.instanceId);
+          if (res && res.success === false) {
+            if (res.technicalDetails) {
+              console.error(`Dee Jay [${res.code || "ERR"}]:`, res.technicalDetails);
+            }
+            alert("Erro ao conectar instância:\n\n" + res.message);
+          }
+        } else if (btnState.action === "stop") {
           await window.deeJayAPI.stopInstance(inst.instanceId);
         }
       } catch (err) {
-        alert("Erro ao alterar estado de conexão: " + err.message);
+        const cleanMsg = (err?.message || String(err)).replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/i, "");
+        alert("Erro ao alterar estado de conexão:\n\n" + cleanMsg);
       } finally {
-        btn.disabled = false;
+        djPendingActions.delete(inst.instanceId);
+        renderDeeJayInstances();
       }
     });
     
@@ -348,11 +392,24 @@ function setupUIEventListeners() {
       const newInst = await window.deeJayAPI.createInstance(finalName);
       djInstances.push(newInst);
       djInstanceStatuses[newInst.instanceId] = { status: "disconnected", qrCode: null };
+      djPendingActions.add(newInst.instanceId);
       renderDeeJayInstances();
-      
-      await window.deeJayAPI.startInstance(newInst.instanceId);
+
+      try {
+        const res = await window.deeJayAPI.startInstance(newInst.instanceId);
+        if (res && res.success === false) {
+          if (res.technicalDetails) {
+            console.error(`Dee Jay [${res.code || "ERR"}]:`, res.technicalDetails);
+          }
+          alert("Erro ao conectar nova instância:\n\n" + res.message);
+        }
+      } finally {
+        djPendingActions.delete(newInst.instanceId);
+        renderDeeJayInstances();
+      }
     } catch (err) {
-      alert("Erro ao criar conexão: " + err.message);
+      const cleanMsg = (err?.message || String(err)).replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/i, "");
+      alert("Erro ao criar conexão:\n\n" + cleanMsg);
     }
   });
 
@@ -480,7 +537,9 @@ function setupIPCListeners() {
     if (djInstanceStatuses[instanceId]) {
       djInstanceStatuses[instanceId].status = status;
       if (qr) djInstanceStatuses[instanceId].qrCode = qr;
-      else if (status === "connected") djInstanceStatuses[instanceId].qrCode = null;
+      else if (status === "connected" || status === "disconnected" || status === "auth_failure") {
+        djInstanceStatuses[instanceId].qrCode = null;
+      }
     }
     renderDeeJayInstances();
     updateDjLoopButtons();

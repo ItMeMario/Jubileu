@@ -7,6 +7,7 @@ let droneMessages = [];
 let droneClients = [];
 let droneDispatchActive = false;
 const droneInstanceStatuses = {}; // instanceId => { status, qrCode }
+const dronePendingActions = new Set(); // instanceId em operação de conectar/desconectar
 let droneInitialized = false;
 
 // DOM Elements
@@ -193,6 +194,39 @@ async function updateDroneStats() {
 
 // Renderizações de Front-end
 
+function getDroneCardButtonState(status, isPending) {
+  if (status === "connected") {
+    return {
+      label: isPending ? "Desconectando..." : "Desconectar",
+      className: "btn btn-danger dj-btn-connect-card",
+      disabled: isPending,
+      action: "stop"
+    };
+  }
+  if (status === "qr_pending") {
+    return {
+      label: isPending ? "Cancelando..." : "Cancelar",
+      className: "btn btn-danger dj-btn-connect-card",
+      disabled: isPending,
+      action: "stop"
+    };
+  }
+  if (status === "connecting" || status === "authenticated" || isPending) {
+    return {
+      label: "Conectando...",
+      className: "btn btn-primary dj-btn-connect-card",
+      disabled: true,
+      action: "none"
+    };
+  }
+  return {
+    label: "Conectar",
+    className: "btn btn-primary dj-btn-connect-card",
+    disabled: false,
+    action: "start"
+  };
+}
+
 function renderDroneInstances() {
   if (!droneInstancesGrid) return;
   droneInstancesGrid.innerHTML = "";
@@ -204,6 +238,8 @@ function renderDroneInstances() {
 
   droneInstances.forEach(inst => {
     const statusData = droneInstanceStatuses[inst.instanceId] || { status: "disconnected" };
+    const isPending = dronePendingActions.has(inst.instanceId);
+    const btnState = getDroneCardButtonState(statusData.status, isPending);
     const card = document.createElement("div");
     card.className = "dj-card";
     card.id = `drone-card-${inst.instanceId}`;
@@ -246,28 +282,36 @@ function renderDroneInstances() {
         </div>
       </div>
       <div class="dj-card-actions">
-        <button class="dj-btn-delete-card" title="Excluir Drone">🗑️</button>
-        <button class="btn ${statusData.status === "connected" ? "btn-danger" : "btn-primary"} dj-btn-connect-card">
-          ${statusData.status === "connected" ? "Desconectar" : "Conectar"}
+        <button class="dj-btn-delete-card" title="Excluir Drone" ${isPending ? "disabled" : ""}>🗑️</button>
+        <button class="${btnState.className}" ${btnState.disabled ? "disabled" : ""}>
+          ${btnState.label}
         </button>
       </div>
     `;
 
     card.querySelector(".dj-btn-connect-card").addEventListener("click", async () => {
-      const btn = card.querySelector(".dj-btn-connect-card");
-      btn.disabled = true;
+      if (dronePendingActions.has(inst.instanceId) || btnState.action === "none") return;
+
+      dronePendingActions.add(inst.instanceId);
+      renderDroneInstances();
       try {
-        if (statusData.status === "disconnected" || statusData.status === "auth_failure") {
-          btn.textContent = "Conectando...";
-          await window.droneAPI.startInstance(inst.instanceId);
-        } else {
-          btn.textContent = "Desconectar...";
+        if (btnState.action === "start") {
+          const res = await window.droneAPI.startInstance(inst.instanceId);
+          if (res && res.success === false) {
+            if (res.technicalDetails) {
+              console.error(`Drone [${res.code || "ERR"}]:`, res.technicalDetails);
+            }
+            alert("Erro ao conectar Drone:\n\n" + res.message);
+          }
+        } else if (btnState.action === "stop") {
           await window.droneAPI.stopInstance(inst.instanceId);
         }
       } catch (err) {
-        alert("Erro ao conectar Drone: " + err.message);
+        const cleanMsg = (err?.message || String(err)).replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/i, "");
+        alert("Erro ao conectar Drone:\n\n" + cleanMsg);
       } finally {
-        btn.disabled = false;
+        dronePendingActions.delete(inst.instanceId);
+        renderDroneInstances();
       }
     });
 
@@ -706,6 +750,9 @@ function setupDroneIPCListeners() {
     if (droneInstanceStatuses[instanceId]) {
       droneInstanceStatuses[instanceId].status = status;
       if (qr) droneInstanceStatuses[instanceId].qrCode = qr;
+      else if (status === "connected" || status === "disconnected" || status === "auth_failure") {
+        droneInstanceStatuses[instanceId].qrCode = null;
+      }
     }
 
     renderDroneInstances();

@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-11-04T22:53:53.066Z",
+  "appId": "984356641342628",
+  "configId": "2064216567567338",
+  "redirectUri": "https://test.redirect/uri",
+  "preResolvedInput": {
+    "wabaId": null,
+    "phoneId": null
+  },
+  "stages": [],
+  "discovered": {
+    "wabaId": null,
+    "phoneNumberId": null,
+    "displayPhoneNumber": null
+  },
+  "success": false,
+  "error": "Erro OAuth Meta: Não é possível carregar o URL: O domínio dessa URL não está incluído nos domínios do app. Para carregar essa URL, adicione todos os domínios e subdomínios ao campo Domínios do app nas configurações do app.",
+  "stack": "Error: Erro OAuth Meta: Não é possível carregar o URL: O domínio dessa URL não está incluído nos domínios do app. Para carregar essa URL, adicione todos os domínios e subdomínios ao campo Domínios do app nas configurações do app.\n    at MetaOnboardingService.exchangeCodeForToken (C:\\Users\\nigtm\\Documents\\Github\\Jubileu\\Zwei Chat Premium\\services\\metaOnboardingService.js:289:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async MetaOnboardingService.completeOnboarding (C:\\Users\\nigtm\\Documents\\Github\\Jubileu\\Zwei Chat Premium\\services\\metaOnboardingService.js:670:25)\n    at async runOnboardingTests (C:\\Users\\nigtm\\Documents\\Github\\Jubileu\\Zwei Chat Premium\\tests\\testOnboardingIntegration.js:86:22)"
+}

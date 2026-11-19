@@ -3,6 +3,8 @@ const { BrowserWindow } = require("electron");
 const fs = require("fs").promises;
 const path = require("path");
 const db = require("../../config/db");
+const { safeDestroyClient, ensureSessionUnlocked } = require("../../utils/processCleanup");
+const { formatBrowserStartError } = require("../../utils/browserErrorHelper");
 
 class WhatsAppHandlers {
   constructor(modules) {
@@ -85,12 +87,8 @@ class WhatsAppHandlers {
       const client = this.clients.get(instanceId);
       if (client) {
         client.removeAllListeners();
-        if (client.pupPage) {
-          try {
-            await client.destroy();
-          } catch (error) {
-            console.warn(`⚠️ Erro ao destruir cliente ${instanceId}:`, error.message);
-          }
+        if (client.pupPage || client.pupBrowser) {
+          await safeDestroyClient(client, `Cliente WhatsApp ${instanceId}`);
         }
         this.clients.delete(instanceId);
         await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -125,22 +123,54 @@ class WhatsAppHandlers {
       console.log(`🚀 Iniciando WhatsApp da instância ${instance.name}...`);
 
       let client = this.clients.get(instanceId);
-      if (client && client.pupPage) {
+      if (client && (client.pupPage || client.pupBrowser)) {
         await this.destroyClientCompletely(instanceId);
       }
+
+      const userDataDir = path.join(
+        this.getSessionPath(instanceId),
+        `session-zwei-chat-bot-${instanceId}`
+      );
+      const unlockResult = await ensureSessionUnlocked(userDataDir, `Cliente WhatsApp ${instanceId}`);
+      const launchStartedAt = Date.now();
 
       client = this.createClient(instanceId);
 
       client.removeAllListeners();
       this.setupClientEvents(instanceId, instance.name, client, mainWindow);
 
-      // Inicializa o cliente do WhatsApp
-      await client.initialize();
+      try {
+        // Inicializa o cliente do WhatsApp
+        await client.initialize();
+      } catch (initError) {
+        const formatted = formatBrowserStartError(initError, {
+          elapsedMs: Date.now() - launchStartedAt,
+          hadRemainingLockBeforeLaunch: unlockResult.hadLock && !unlockResult.lockRemoved,
+        });
+        console.error(
+          `❌ Erro ao inicializar WhatsApp na instância ${instanceId} [${formatted.code}]:`,
+          initError
+        );
+        await this.destroyClientCompletely(instanceId);
+        return {
+          success: false,
+          code: formatted.code,
+          message: formatted.userMessage,
+          technicalDetails: formatted.technicalDetails,
+        };
+      }
 
       return { success: true, message: `WhatsApp ${instance.name} inicializado` };
     } catch (error) {
       console.error(`❌ Erro ao inicializar WhatsApp na instância ${instanceId}:`, error);
-      return { success: false, message: error.message };
+      await this.destroyClientCompletely(instanceId);
+      const formatted = formatBrowserStartError(error);
+      return {
+        success: false,
+        code: formatted.code,
+        message: formatted.userMessage,
+        technicalDetails: formatted.technicalDetails,
+      };
     } finally {
       this.isInitializingMap.set(instanceId, false);
     }

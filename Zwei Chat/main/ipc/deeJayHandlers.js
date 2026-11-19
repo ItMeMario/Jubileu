@@ -80,7 +80,17 @@ class DeeJayHandlers {
   }
 
   async startInstance(event, instanceId) {
-    return await deeJayService.startInstance(instanceId);
+    try {
+      await deeJayService.startInstance(instanceId);
+      return { success: true };
+    } catch (e) {
+      return {
+        success: false,
+        code: e.code || "START_ERROR",
+        message: e.userMessage || e.message,
+        technicalDetails: e.technicalDetails || e.message,
+      };
+    }
   }
 
   async stopInstance(event, instanceId) {
